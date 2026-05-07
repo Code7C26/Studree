@@ -1,5 +1,0 @@
-# Studree
-infor proyecto
-
-## subtitulo
-
