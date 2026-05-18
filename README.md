@@ -51,3 +51,11 @@ Actualmente no utiliza hardware específico.
 ## Estado del proyecto
 
 En desarrollo.
+
+---
+
+## Formulario
+
+Link al formulario del proyecto:
+
+https://docs.google.com/forms/d/e/1FAIpQLSfnfoOQ9lGKmdaUYHCFlvHvtP2rAJ6pj6dMoiEgqp2LTUzfnQ/viewform?usp=publish-editor
