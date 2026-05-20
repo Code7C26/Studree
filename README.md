@@ -52,4 +52,3 @@ Actualmente no utiliza hardware específico.
 
 En desarrollo.
 
----
