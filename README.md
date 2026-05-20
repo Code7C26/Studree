@@ -51,3 +51,4 @@ Actualmente no utiliza hardware específico.
 ## Estado del proyecto
 
 En desarrollo.
+
