@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-text antialiased;
+  }
+}
+
+@layer components {
+  /* Botón con el color de acento (verde) */
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2
+      font-medium text-bg transition-colors hover:bg-accent-hover;
+  }
+
+  /* Tarjeta / panel base */
+  .card {
+    @apply rounded-xl border border-border bg-surface p-5;
+  }
+}
