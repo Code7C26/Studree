@@ -95,7 +95,7 @@ export function SubjectMapPage() {
         <span className="text-text">{subject.name}</span>
       </nav>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{subject.name}</h1>
           {nodes.length > 0 && (

@@ -6,6 +6,39 @@
 
 ---
 
+## [0.4.0] — 2026-08-10
+
+### Changed — Adaptación mobile / responsive (Método AInnovate · FASE 5, parcial)
+
+- `src/components/layout/Header.jsx` — nav y logo con tamaños/paddings responsive
+  (`px-2/py-1.5 text-xs` en mobile → `sm:px-3 text-sm`) para que quepan en pantallas
+  angostas sin desbordar.
+- `src/pages/FoldersPage.jsx`, `src/pages/FolderPage.jsx`, `src/pages/SubjectMapPage.jsx`
+  — encabezados (título + botón de acción) pasan de una fila fija a `flex-col` en mobile
+  y `sm:flex-row` en desktop, evitando que se aprieten con nombres largos.
+
+### Fixed
+- `src/components/features/folders/FolderCard.jsx`,
+  `src/components/features/subjects/SubjectCard.jsx`,
+  `src/components/features/conceptMap/TopicNode.jsx` — los botones de editar/eliminar
+  (y las acciones del nodo del mapa) dependían de `opacity-0 group-hover:opacity-100`,
+  por lo que eran invisibles e inutilizables en dispositivos táctiles (sin estado
+  `:hover`). Ahora son visibles por defecto (`opacity-100`) y solo se ocultan hasta el
+  hover a partir de `sm:` (desktop con mouse). Se agrandó levemente el área táctil
+  (`px-1.5` → `p-1.5`).
+- `docs/01-project-overview.md` — Fase 5 marcada como en progreso (responsive
+  completado; buscador y perfil siguen pendientes).
+
+### Verificación (Mandamiento X)
+- `npm run lint` — sin errores ni warnings.
+- `npm run build` — compila (235 módulos, ~15 s).
+- Verificación visual: probado en viewport mobile (DevTools responsive mode).
+
+### Request original
+> haz el A, adaptalo para mobiles
+
+---
+
 ## [0.3.0] — 2026-06-28
 
 ### Added — Recursos por Tema (Método AInnovate · FASE 4)

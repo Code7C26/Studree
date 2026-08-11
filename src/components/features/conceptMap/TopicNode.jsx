@@ -45,10 +45,10 @@ export function TopicNode({ data }) {
         )}
       </div>
 
-      <div className="mt-2 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="mt-2 flex justify-end gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
         <button
           onClick={data.onOpen}
-          className="nodrag rounded px-1.5 text-xs text-text-muted hover:text-accent"
+          className="nodrag rounded p-1.5 text-xs text-text-muted hover:text-accent"
           title="Recursos del tema"
           aria-label="Recursos del tema"
         >
@@ -56,7 +56,7 @@ export function TopicNode({ data }) {
         </button>
         <button
           onClick={data.onAddChild}
-          className="nodrag rounded px-1.5 text-xs text-text-muted hover:text-accent"
+          className="nodrag rounded p-1.5 text-xs text-text-muted hover:text-accent"
           title="Agregar subtema"
           aria-label="Agregar subtema"
         >
@@ -64,7 +64,7 @@ export function TopicNode({ data }) {
         </button>
         <button
           onClick={data.onDelete}
-          className="nodrag rounded px-1.5 text-xs text-text-muted hover:text-red-400"
+          className="nodrag rounded p-1.5 text-xs text-text-muted hover:text-red-400"
           title="Eliminar tema"
           aria-label="Eliminar tema"
         >

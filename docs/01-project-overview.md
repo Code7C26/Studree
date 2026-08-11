@@ -49,7 +49,7 @@ enlaces y recursos relacionados.
 | 2 | Carpetas (carrera/curso) + materias (CRUD) | ✅ Completada |
 | 3 | Mapa conceptual interactivo por materia (React Flow, híbrido) | ✅ Completada (base) |
 | 4 | Apuntes, enlaces y recursos en los nodos (sin subir binarios) | ✅ Completada (base) |
-| 5 | Buscador de contenido + perfil + responsive (mobile) | ⬜ Pendiente |
+| 5 | Buscador de contenido + perfil + responsive (mobile) | 🟡 En progreso (responsive ✅; buscador y perfil pendientes) |
 | 6 | Backend + autenticación + persistencia remota | ⬜ Pendiente |
 
 ## Identidad Visual

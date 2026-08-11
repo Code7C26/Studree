@@ -28,17 +28,17 @@ export function FolderCard({ folder, subjectCount, onEdit, onDelete }) {
           </div>
         </div>
       </Link>
-      <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="absolute right-3 top-3 flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
         <button
           onClick={onEdit}
-          className="rounded px-1.5 text-text-muted hover:text-accent"
+          className="rounded p-1.5 text-text-muted hover:text-accent"
           aria-label="Editar carpeta"
         >
           ✏️
         </button>
         <button
           onClick={onDelete}
-          className="rounded px-1.5 text-text-muted hover:text-red-400"
+          className="rounded p-1.5 text-text-muted hover:text-red-400"
           aria-label="Eliminar carpeta"
         >
           🗑
