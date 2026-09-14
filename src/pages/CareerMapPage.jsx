@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCareerMap } from '../hooks/useCareerMap.js'
+import { useEntityById } from '../hooks/useEntityById.js'
 import { careersService } from '../services/careers.service.js'
 import { CareerMap } from '../components/features/careerMap/CareerMap'
 import { PrerequisiteEditor } from '../components/features/careerMap/PrerequisiteEditor'
@@ -16,8 +17,11 @@ import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
 export function CareerMapPage() {
   const { careerId } = useParams()
   const navigate = useNavigate()
-  const [career, setCareer] = useState(null)
-  const [careerError, setCareerError] = useState(null)
+  const { entity: career, error: careerError } = useEntityById(
+    careersService,
+    careerId,
+    'No se encontró la carrera.',
+  )
   const {
     subjects,
     prerequisites,
@@ -32,18 +36,6 @@ export function CareerMapPage() {
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
   const [editingSubject, setEditingSubject] = useState(null)
-
-  useEffect(() => {
-    let cancelled = false
-    careersService.get(careerId).then(({ data, error: getError }) => {
-      if (cancelled) return
-      setCareer(data)
-      setCareerError(data ? null : (getError ?? 'No se encontró la carrera.'))
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [careerId])
 
   /** @param {React.FormEvent} event */
   async function handleCreate(event) {

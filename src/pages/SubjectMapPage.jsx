@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { useSubjectMap } from '../hooks/useSubjectMap.js'
+import { useEntityById } from '../hooks/useEntityById.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { SubjectMap } from '../components/features/subjectMap/SubjectMap'
 import { SheetListPanel } from '../components/features/sheets/SheetListPanel'
@@ -19,8 +20,11 @@ export function SubjectMapPage() {
   const { subjectId } = useParams()
   const navigate = useNavigate()
   const { openTab } = useOutletContext()
-  const [subject, setSubject] = useState(null)
-  const [subjectError, setSubjectError] = useState(null)
+  const { entity: subject, error: subjectError } = useEntityById(
+    subjectsService,
+    subjectId,
+    'No se encontró la materia.',
+  )
   const { units, loading, error, createUnit, deleteUnit, createTopic, deleteTopic } = useSubjectMap(subjectId)
   const [unitName, setUnitName] = useState('')
   const [creatingUnit, setCreatingUnit] = useState(false)
@@ -28,18 +32,6 @@ export function SubjectMapPage() {
   const [topicName, setTopicName] = useState('')
   const [creatingTopic, setCreatingTopic] = useState(false)
   const [openTopic, setOpenTopic] = useState(null)
-
-  useEffect(() => {
-    let cancelled = false
-    subjectsService.get(subjectId).then(({ data, error: getError }) => {
-      if (cancelled) return
-      setSubject(data)
-      setSubjectError(data ? null : (getError ?? 'No se encontró la materia.'))
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [subjectId])
 
   /** @param {React.FormEvent} event */
   async function handleCreateUnit(event) {
