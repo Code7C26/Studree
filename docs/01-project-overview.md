@@ -34,11 +34,14 @@ enlaces y recursos relacionados.
 | Lenguaje | JavaScript (ES2022) + JSDoc | - | Sin TypeScript (ver ADR-002) |
 | Estilos | TailwindCSS | 3.4 | Design system en `tailwind.config.js` |
 | Mapas conceptuales | React Flow (`@xyflow/react`) | 12 | Árboles/nodos interactivos |
+| Auto-layout | `@dagrejs/dagre` | - | Posiciones de nodos; no se guardan coordenadas (ADR-008) |
+| Editor de hojas | TipTap (ProseMirror) | 3 | Markdown como fuente de verdad (ADR-011) |
 | Routing | React Router (`react-router-dom`) | 6 | Navegación SPA |
-| Persistencia | `localStorage` (navegador) | - | Sin backend aún (ver ADR-003) |
-| Backend | _Pendiente_ | - | No definido en esta etapa |
-| Base de datos | _Pendiente_ | - | No definida en esta etapa |
-| Auth | _Pendiente_ | - | No definida en esta etapa |
+| Persistencia | **Supabase (Postgres)** | - | Fuente de verdad (ADR-007) |
+| Cache | `localStorage` (navegador) | - | Cache optimista de la UI (ADR-007) |
+| Backend | Supabase (BaaS) | - | Sin servidor propio |
+| Base de datos | PostgreSQL (Supabase) | - | Esquema en `docs/DB_SCHEMA.md` |
+| Auth | Supabase Auth | - | Necesaria para RLS (ver `docs/03-security.md`) |
 | Deploy | _Pendiente_ | - | Candidatos: Vercel / Netlify / GitHub Pages |
 
 ## Estado del Proyecto
@@ -50,7 +53,27 @@ enlaces y recursos relacionados.
 | 3 | Mapa conceptual interactivo por materia (React Flow, híbrido) | ✅ Completada (base) |
 | 4 | Apuntes, enlaces y recursos en los nodos (sin subir binarios) | ✅ Completada (base) |
 | 5 | Buscador de contenido + perfil + responsive (mobile) | 🟡 En progreso (responsive ✅; buscador y perfil pendientes) |
-| 6 | Backend + autenticación + persistencia remota | ⬜ Pendiente |
+| 6 | Backend + autenticación + persistencia remota | 🟡 En progreso (env + RLS documentados; ver Fase 7.1) |
+
+### Fase 7 — Shell de navegación (rediseño, 2026-08-24)
+
+Rediseño de la navegación a una jerarquía de 5 niveles
+(**Carrera → Materia → Unidad → Tema → Hoja**) con Supabase como fuente de verdad.
+Ver ADR-007 a ADR-011 en `docs/02-architecture.md`.
+
+| Sub-fase | Descripción | Doc | Estado |
+|----------|-------------|-----|--------|
+| 7.0 | Documentación del rediseño (ADRs, schema, features) | este bloque | ✅ Completada |
+| 7.1 | Modelo de datos + validación de ciclos + services + auth | `DB_SCHEMA.md` | ✅ Completada y verificada end-to-end (28/28) |
+| 7.2 | Shell: explorador + tabs + command palette | `features/navigation-shell.md` | ✅ Completada |
+| 7.3 | Canvas de carrera (React Flow + dagre + correlativas) | `features/career-map.md` | ✅ Completada |
+| 7.4 | Canvas de materia (unidades/temas) + panel de hojas | `features/subject-map.md` | ✅ Completada |
+| 7.5 | Editor TipTap con Markdown como fuente de verdad | `features/sheet-editor.md` | ✅ Completada |
+| 7.6 | Export a `.md` único y luego a `.zip` | `features/markdown-export.md` | ⬜ Pendiente |
+
+> **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
+> arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse
+> igual solo con el explorador y el command palette.
 
 ## Identidad Visual
 

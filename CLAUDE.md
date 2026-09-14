@@ -71,10 +71,30 @@
 | Archivo que se modifica | Doc que se debe leer primero |
 |------------------------|------------------------------|
 | `src/services/*.service.js` | `docs/API_DOCS.md` + `docs/DB_SCHEMA.md` |
+| `src/services/supabase.client.js` · `.env*` (claves Supabase) | `docs/03-security.md` + `docs/API_DOCS.md` |
+| `supabase/migrations/*.sql` | `docs/DB_SCHEMA.md` + `docs/03-security.md` (RLS) |
 | `src/constants/*` (claves de storage) | `docs/DB_SCHEMA.md` |
 | `tailwind.config.js` / `src/index.css` / `constants/palette.js` | `docs/02-architecture.md` (sistema de estilos) |
 | `features/folders/**` · `features/subjects/**` · `useFolders` · `useSubjects` | `docs/features/folders-and-subjects.md` |
-| `features/conceptMap/**` · `useConceptMap` · `lib/treeLayout.js` | `docs/features/concept-map.md` |
+| `features/conceptMap/**` · `useConceptMap` · `lib/treeLayout.js` | ⚠️ Reemplazado → `docs/features/subject-map.md` |
 | `features/resources/**` · `useResources` · `resources.service.js` · `constants/resourceTypes.js` | `docs/features/resources.md` |
+| `layout/WorkspaceLayout` · `layout/TabBar` · `layout/Header` · `features/explorer/**` · `features/commandPalette/**` · `useExplorerTree` · `useHotkeys` | `docs/features/navigation-shell.md` |
+| `public/**` · `index.html` (favicon, assets estáticos) | `docs/features/navigation-shell.md` (sección Logo) |
+| `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` | `docs/features/career-map.md` |
+| `features/subjectMap/**` · `features/sheets/**` · `useSubjectMap` · `useSheets` · `units/topics.service.js` | `docs/features/subject-map.md` |
+| `features/sheetEditor/**` · `lib/markdown/**` · `useSheet` · `sheets.service.js` | `docs/features/sheet-editor.md` |
+| `features/export/**` · `lib/export/**` | `docs/features/markdown-export.md` |
+| `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
+
+## Reglas del rediseño (Fase 7 — ADR-007 a ADR-011)
+
+> Vigentes desde 2026-08-24. Reemplazan a ADR-003 y ADR-006.
+
+- **Supabase es la fuente de verdad**; `localStorage` es SOLO cache optimista descartable.
+- **NUNCA persistir coordenadas `x`/`y`.** El layout lo calcula dagre desde la estructura.
+- **Validar el DAG de correlativas al GUARDAR**, nunca al renderizar.
+- **Markdown es la fuente de verdad del contenido**; el HTML de TipTap es solo de memoria.
+- La jerarquía es **fija**: Carrera → Materia → Unidad → Tema → Hoja (una tabla por nivel).
+- El canvas de materia **corta en Tema**: las hojas van en un panel lateral, no en nodos.

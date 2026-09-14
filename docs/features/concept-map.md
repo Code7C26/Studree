@@ -1,6 +1,18 @@
 # Feature: Mapa Conceptual de la Materia (estilo Obsidian / híbrido)
 
-> **Estado:** ✅ Completo (Fase 2 — versión base)
+> ## ⚠️ REEMPLAZADO (2026-08-24)
+>
+> Esta feature queda sustituida por **`docs/features/subject-map.md`** (canvas de
+> Unidades → Temas + panel de hojas). Se conserva como registro histórico.
+>
+> Qué cambió y por qué:
+> - El `TreeNode` recursivo se reemplaza por entidades explícitas `Unit` / `Topic` /
+>   `Sheet` (**ADR-010**).
+> - Las posiciones manuales dejan de persistirse: el layout lo calcula dagre siempre
+>   (**ADR-008**, que reemplaza al ADR-006 citado más abajo).
+> - El canvas **corta en Tema**: las hojas ya no son nodos, van en un panel lateral.
+
+> **Estado:** ⚠️ Reemplazado (implementado en Fase 2, retirado en 2026-08-24)
 > **Archivos clave:** `src/pages/SubjectMapPage.jsx`,
 > `src/components/features/conceptMap/ConceptMap.jsx`,
 > `src/components/features/conceptMap/TopicNode.jsx`,
