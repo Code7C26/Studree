@@ -29,4 +29,65 @@
   .card {
     @apply rounded-xl border border-border bg-surface p-5;
   }
+
+  /*
+   * Contenido del editor de hojas (TipTap/ProseMirror) — ver
+   * docs/features/sheet-editor.md. No hay plugin de tipografía de Tailwind
+   * instalado; se estiliza acá con los mismos tokens del design system en vez
+   * de sumar una dependencia nueva solo para esto (Mandamiento VII).
+   */
+  .sheet-editor .ProseMirror {
+    @apply text-text outline-none;
+  }
+  .sheet-editor .ProseMirror p {
+    @apply my-2 leading-relaxed;
+  }
+  .sheet-editor .ProseMirror h1 {
+    @apply mb-3 mt-6 text-2xl font-bold first:mt-0;
+  }
+  .sheet-editor .ProseMirror h2 {
+    @apply mb-2 mt-5 text-xl font-bold first:mt-0;
+  }
+  .sheet-editor .ProseMirror h3 {
+    @apply mb-2 mt-4 text-lg font-semibold first:mt-0;
+  }
+  .sheet-editor .ProseMirror h4 {
+    @apply mb-1 mt-3 text-base font-semibold first:mt-0;
+  }
+  .sheet-editor .ProseMirror ul {
+    @apply my-2 list-disc pl-6;
+  }
+  .sheet-editor .ProseMirror ol {
+    @apply my-2 list-decimal pl-6;
+  }
+  .sheet-editor .ProseMirror li {
+    @apply my-1;
+  }
+  .sheet-editor .ProseMirror ul[data-type='taskList'] {
+    @apply list-none pl-0;
+  }
+  .sheet-editor .ProseMirror ul[data-type='taskList'] li {
+    @apply flex items-start gap-2;
+  }
+  .sheet-editor .ProseMirror ul[data-type='taskList'] li > label {
+    @apply mt-1 select-none;
+  }
+  .sheet-editor .ProseMirror blockquote {
+    @apply my-3 border-l-2 border-accent pl-4 text-text-muted;
+  }
+  .sheet-editor .ProseMirror code {
+    @apply rounded bg-surface-2 px-1 py-0.5 font-mono text-[0.85em];
+  }
+  .sheet-editor .ProseMirror pre {
+    @apply my-3 overflow-x-auto rounded-lg bg-surface-2 p-3 font-mono text-sm;
+  }
+  .sheet-editor .ProseMirror pre code {
+    @apply bg-transparent p-0;
+  }
+  .sheet-editor .ProseMirror hr {
+    @apply my-6 border-border;
+  }
+  .sheet-editor .ProseMirror a {
+    @apply text-accent underline underline-offset-2;
+  }
 }

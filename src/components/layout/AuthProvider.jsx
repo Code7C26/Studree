@@ -1,0 +1,136 @@
+import { useEffect, useMemo, useState } from 'react'
+import { AuthContext } from '../../hooks/useAuth.js'
+import { supabase, isSupabaseConfigured } from '../../services/supabase.client.js'
+import { clearAllCache } from '../../services/cache.service.js'
+
+/**
+ * Traduce los errores de Supabase Auth a mensajes accionables.
+ * @param {{message?: string}|null} error
+ * @returns {string|null}
+ */
+function translateAuthError(error) {
+  if (!error) return null
+  const message = error.message ?? ''
+
+  if (/Invalid login credentials/i.test(message)) return 'Email o contraseña incorrectos.'
+  if (/Email not confirmed/i.test(message)) {
+    return 'Falta confirmar el email. Revisá tu casilla (o desactivá la confirmación en Supabase → Authentication → Providers).'
+  }
+  if (/User already registered/i.test(message)) return 'Ese email ya tiene cuenta. Iniciá sesión.'
+  if (/Password should be at least/i.test(message)) {
+    return 'La contraseña debe tener al menos 6 caracteres.'
+  }
+  if (/rate limit|too many/i.test(message)) return 'Demasiados intentos. Esperá un momento.'
+  return message || 'No se pudo completar la operación.'
+}
+
+/**
+ * Provee la sesión a toda la app.
+ *
+ * Se eligió email + contraseña (no magic link) porque en desarrollo el SMTP por
+ * defecto de Supabase está limitado a pocos mails por hora, lo que haría muy
+ * incómodo entrar y salir mientras se programa. Cambiar a magic link más
+ * adelante solo toca este archivo y LoginPage.
+ *
+ * @param {{children: React.ReactNode}} props
+ */
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return undefined
+    }
+
+    /**
+     * Si no hay sesión, se intenta una ANÓNIMA antes de mandar al login.
+     *
+     * Una sesión anónima es una sesión real: `auth.uid()` devuelve un ID válido y
+     * el rol es `authenticated`, así que las políticas RLS existentes funcionan
+     * sin cambiarles nada. El usuario entra sin email ni contraseña.
+     *
+     * Si el proyecto tiene desactivado "Anonymous sign-ins", esto falla en
+     * silencio y se cae al login normal: no rompe nada.
+     */
+    async function bootstrap() {
+      const { data } = await supabase.auth.getSession()
+
+      if (data.session) {
+        setSession(data.session)
+        setLoading(false)
+        return
+      }
+
+      const { data: anon, error } = await supabase.auth.signInAnonymously()
+
+      if (error) {
+        console.info(
+          '[auth] Sesión anónima no disponible (activala en Supabase → Authentication → ' +
+            'Providers → Anonymous sign-ins). Se usa el login con email.',
+        )
+      }
+
+      setSession(anon?.session ?? null)
+      setLoading(false)
+    }
+
+    bootstrap()
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      session,
+      user: session?.user ?? null,
+      loading,
+      configured: isSupabaseConfigured,
+
+      /**
+       * Sesión sin email (anónima). Importa para la UI: cerrar sesión siendo
+       * anónimo deja los datos inaccesibles PARA SIEMPRE, porque no hay ninguna
+       * credencial con la que volver a entrar a ese usuario.
+       */
+      isAnonymous: session?.user?.is_anonymous === true,
+
+      /**
+       * Inicia sesión con email y contraseña.
+       * @param {string} email
+       * @param {string} password
+       */
+      async signIn(email, password) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        return { error: translateAuthError(error) }
+      },
+
+      /**
+       * Crea una cuenta nueva.
+       * @param {string} email
+       * @param {string} password
+       */
+      async signUp(email, password) {
+        const { data, error } = await supabase.auth.signUp({ email, password })
+        return {
+          error: translateAuthError(error),
+          // Si Supabase no devuelve sesión, la cuenta quedó pendiente de confirmar.
+          needsConfirmation: !error && !data.session,
+        }
+      },
+
+      /** Cierra sesión y limpia la cache local (no puede quedar visible para otro usuario). */
+      async signOut() {
+        await supabase.auth.signOut()
+        clearAllCache()
+      },
+    }),
+    [session, loading],
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}

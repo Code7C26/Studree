@@ -1,14 +1,31 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 
-/** Layout principal: header de navegación + área de contenido (Outlet). */
+/** Rutas que viven dentro del shell (WorkspaceLayout: explorador + tabs + palette). */
+const WORKSPACE_PREFIXES = ['/carreras', '/materias', '/hojas']
+
+/**
+ * Layout raíz: header de navegación + área de contenido.
+ *
+ * Las rutas del workspace (ver docs/features/navigation-shell.md) necesitan
+ * ocupar el alto completo debajo del header, sin el `max-w-6xl` centrado ni el
+ * padding que usan las páginas simples — por eso acá se decide, según la
+ * ruta, si el `<Outlet/>` va suelto (lo maneja `WorkspaceLayout`) o envuelto.
+ */
 export function AppLayout() {
+  const location = useLocation()
+  const isWorkspace = WORKSPACE_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))
+
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-text">
+    <div className="flex h-screen flex-col bg-bg text-text">
       <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      {isWorkspace ? (
         <Outlet />
-      </main>
+      ) : (
+        <main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-4 py-8">
+          <Outlet />
+        </main>
+      )}
     </div>
   )
 }

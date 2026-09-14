@@ -16,11 +16,11 @@ export function HomePage() {
       <div className="card mt-6">
         <h2 className="text-lg font-semibold">Empezá a organizar</h2>
         <p className="mt-1 text-sm text-text-muted">
-          Creá una carpeta por cada carrera o curso y, dentro, tus materias. Cada materia
-          tiene su mapa conceptual interactivo.
+          Creá una carrera y, dentro, tus materias con sus correlativas. Cada materia se
+          divide en unidades, temas y hojas de apuntes.
         </p>
-        <Link to={ROUTES.folders} className="mt-4 inline-block">
-          <Button>Ir a mis carpetas</Button>
+        <Link to={ROUTES.careers} className="mt-4 inline-block">
+          <Button>Ir a mis carreras</Button>
         </Link>
       </div>
     </section>

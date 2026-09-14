@@ -1,162 +1,168 @@
-import { useCallback, useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ReactFlowProvider } from '@xyflow/react'
-import { useConceptMap } from '../hooks/useConceptMap'
-import { getSubject } from '../services/subjects.service'
-import { getAllResources } from '../services/resources.service'
-import { ConceptMap } from '../components/features/conceptMap/ConceptMap'
-import { TopicFormModal } from '../components/features/conceptMap/TopicFormModal'
-import { ResourcePanel } from '../components/features/resources/ResourcePanel'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import { useSubjectMap } from '../hooks/useSubjectMap.js'
+import { subjectsService } from '../services/subjects.service.js'
+import { SubjectMap } from '../components/features/subjectMap/SubjectMap'
+import { SheetListPanel } from '../components/features/sheets/SheetListPanel'
 import { Button } from '../components/ui/Button'
+import { TextField } from '../components/ui/TextField'
 import { EmptyState } from '../components/ui/EmptyState'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { ROUTES, folderPath } from '../constants/routes'
+import { careerPath, sheetPath } from '../constants/routes'
 
-/** Mapa conceptual (estilo Obsidian / híbrido) de una materia, con recursos por tema. */
+/**
+ * Canvas de materia: Unidades → Temas, con panel lateral de hojas por tema.
+ * Ver docs/features/subject-map.md. El canvas corta en Tema a propósito: las
+ * hojas viven en el panel, no como nodos (una materia real puede tener
+ * cientos).
+ */
 export function SubjectMapPage() {
   const { subjectId } = useParams()
-  const subject = getSubject(subjectId)
-  const {
-    nodes,
-    layout,
-    loading,
-    progress,
-    addTopic,
-    toggleComplete,
-    moveNode,
-    removeTopic,
-  } = useConceptMap(subjectId)
+  const navigate = useNavigate()
+  const { openTab } = useOutletContext()
+  const [subject, setSubject] = useState(null)
+  const [subjectError, setSubjectError] = useState(null)
+  const { units, loading, error, createUnit, deleteUnit, createTopic, deleteTopic } = useSubjectMap(subjectId)
+  const [unitName, setUnitName] = useState('')
+  const [creatingUnit, setCreatingUnit] = useState(false)
+  const [topicUnitId, setTopicUnitId] = useState('')
+  const [topicName, setTopicName] = useState('')
+  const [creatingTopic, setCreatingTopic] = useState(false)
+  const [openTopic, setOpenTopic] = useState(null)
 
-  const [formOpen, setFormOpen] = useState(false)
-  const [defaultParent, setDefaultParent] = useState(null)
-  const [deleting, setDeleting] = useState(null)
-  const [selectedNode, setSelectedNode] = useState(null)
-  const [resourceVersion, setResourceVersion] = useState(0)
-
-  // Cantidad de recursos por nodo (para el badge). Recalcula al cambiar nodos/recursos.
-  const resourceCounts = useMemo(() => {
-    const all = getAllResources()
-    /** @type {Record<string, number>} */
-    const counts = {}
-    for (const node of nodes) {
-      counts[node.id] = all.filter((resource) => resource.nodeId === node.id).length
+  useEffect(() => {
+    let cancelled = false
+    subjectsService.get(subjectId).then(({ data, error: getError }) => {
+      if (cancelled) return
+      setSubject(data)
+      setSubjectError(data ? null : (getError ?? 'No se encontró la materia.'))
+    })
+    return () => {
+      cancelled = true
     }
-    return counts
-    // resourceVersion fuerza el recálculo cuando cambian los recursos desde el panel.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, resourceVersion])
+  }, [subjectId])
 
-  const openAdd = useCallback((parentId = null) => {
-    setDefaultParent(parentId)
-    setFormOpen(true)
-  }, [])
-
-  const handleAddChild = useCallback((parentId) => openAdd(parentId), [openAdd])
-  const handleDelete = useCallback((id) => setDeleting(id), [])
-  const handleOpenResources = useCallback((node) => setSelectedNode(node), [])
-  const handleResourcesChanged = useCallback(
-    () => setResourceVersion((version) => version + 1),
-    [],
-  )
-
-  const handleSubmit = (data) => {
-    addTopic(data)
-    setFormOpen(false)
+  /** @param {React.FormEvent} event */
+  async function handleCreateUnit(event) {
+    event.preventDefault()
+    if (!unitName.trim()) return
+    setCreatingUnit(true)
+    const failure = await createUnit({ name: unitName })
+    if (!failure) setUnitName('')
+    setCreatingUnit(false)
   }
 
-  const confirmDelete = () => {
-    removeTopic(deleting)
-    if (selectedNode?.id === deleting) setSelectedNode(null)
-    setDeleting(null)
+  /** @param {React.FormEvent} event */
+  async function handleCreateTopic(event) {
+    event.preventDefault()
+    if (!topicUnitId || !topicName.trim()) return
+    setCreatingTopic(true)
+    const failure = await createTopic(topicUnitId, { name: topicName })
+    if (!failure) setTopicName('')
+    setCreatingTopic(false)
   }
 
-  if (!subject) {
-    return (
-      <p className="text-text-muted">
-        Materia no encontrada.{' '}
-        <Link to={ROUTES.folders} className="text-accent hover:underline">
-          Volver a mis carpetas
-        </Link>
-      </p>
-    )
+  function openSheet(sheet) {
+    openTab(sheet.id, sheet.title)
+    navigate(sheetPath(sheet.id))
+  }
+
+  if (subjectError) {
+    return <EmptyState title="Materia no encontrada" message={subjectError} />
   }
 
   return (
-    <section className="flex h-[calc(100vh-9rem)] flex-col">
-      <nav className="mb-2 text-sm text-text-muted">
-        <Link to={ROUTES.folders} className="hover:text-text">
-          Carpetas
+    <div>
+      {subject && (
+        <Link to={careerPath(subject.career_id)} className="text-sm text-text-muted hover:text-text">
+          ← Volver a la carrera
         </Link>
-        <span className="px-1">›</span>
-        <Link to={folderPath(subject.folderId)} className="hover:text-text">
-          Materias
-        </Link>
-        <span className="px-1">›</span>
-        <span className="text-text">{subject.name}</span>
-      </nav>
+      )}
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{subject.name}</h1>
-          {nodes.length > 0 && (
-            <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-text-muted">
-              {progress}% completado
-            </span>
-          )}
-        </div>
-        {nodes.length > 0 && <Button onClick={() => openAdd(null)}>＋ Agregar tema</Button>}
+      <div className="mt-2">
+        <h1 className="text-2xl font-bold">{subject?.name ?? 'Cargando…'}</h1>
+        <p className="text-sm text-text-muted">Unidades y temas de esta materia.</p>
       </div>
 
-      <div className="card flex-1 overflow-hidden p-0">
-        {loading ? (
-          <div className="flex h-full items-center justify-center text-text-muted">
-            Cargando…
-          </div>
-        ) : nodes.length === 0 ? (
-          <div className="flex h-full items-center justify-center p-6">
-            <EmptyState
-              icon="🌱"
-              title="Empezá tu árbol de conocimiento"
-              message="Agregá el primer tema de esta materia. Después podés colgar subtemas y conectarlos."
-              action={<Button onClick={() => openAdd(null)}>＋ Agregar primer tema</Button>}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <form onSubmit={handleCreateUnit} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
+          <TextField
+            id="unit-name"
+            label="Nueva unidad"
+            value={unitName}
+            onChange={(event) => setUnitName(event.target.value)}
+            placeholder="Ej. Unidad 1"
+            className="flex-1"
+          />
+          <Button type="submit" disabled={creatingUnit || !unitName.trim()}>
+            {creatingUnit ? 'Creando…' : 'Agregar'}
+          </Button>
+        </form>
+
+        {units.length > 0 && (
+          <form onSubmit={handleCreateTopic} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="topic-unit" className="mb-1 block text-sm text-text-muted">
+                Unidad
+              </label>
+              <select
+                id="topic-unit"
+                value={topicUnitId}
+                onChange={(event) => setTopicUnitId(event.target.value)}
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-text outline-none transition-colors focus:border-accent"
+              >
+                <option value="">Elegir unidad…</option>
+                {units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <TextField
+              id="topic-name"
+              label="Nuevo tema"
+              value={topicName}
+              onChange={(event) => setTopicName(event.target.value)}
+              placeholder="Ej. Tema 1"
+              className="flex-1"
             />
-          </div>
-        ) : (
-          <ReactFlowProvider>
-            <ConceptMap
-              nodes={nodes}
-              layout={layout}
-              resourceCounts={resourceCounts}
-              onToggle={toggleComplete}
-              onOpenResources={handleOpenResources}
-              onAddChild={handleAddChild}
-              onDelete={handleDelete}
-              onMove={moveNode}
-            />
-          </ReactFlowProvider>
+            <Button type="submit" variant="ghost" disabled={creatingTopic || !topicUnitId || !topicName.trim()}>
+              {creatingTopic ? 'Creando…' : 'Agregar'}
+            </Button>
+          </form>
         )}
       </div>
 
-      <TopicFormModal
-        open={formOpen}
-        nodes={nodes}
-        defaultParentId={defaultParent}
-        onSubmit={handleSubmit}
-        onClose={() => setFormOpen(false)}
-      />
-      <ConfirmDialog
-        open={Boolean(deleting)}
-        title="Eliminar tema"
-        message="¿Seguro que querés eliminar este tema? Se borrarán también sus subtemas y recursos."
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleting(null)}
-      />
-      <ResourcePanel
-        node={selectedNode}
-        open={Boolean(selectedNode)}
-        onClose={() => setSelectedNode(null)}
-        onChanged={handleResourcesChanged}
-      />
-    </section>
+      {error && (
+        <p role="alert" className="mt-4 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
+      {loading && <p className="mt-8 text-center text-text-muted">Cargando…</p>}
+
+      {!loading && units.length === 0 && (
+        <div className="mt-8">
+          <EmptyState
+            icon="📁"
+            title="Todavía no hay unidades"
+            message="Agregá tu primera unidad para empezar a organizar los temas."
+          />
+        </div>
+      )}
+
+      {units.length > 0 && (
+        <div className="mt-8">
+          <SubjectMap
+            units={units}
+            onOpenTopic={(topic) => setOpenTopic(topic)}
+            onDeleteUnit={deleteUnit}
+            onDeleteTopic={deleteTopic}
+          />
+        </div>
+      )}
+
+      <SheetListPanel topic={openTopic} onClose={() => setOpenTopic(null)} onOpenSheet={openSheet} />
+    </div>
   )
 }
