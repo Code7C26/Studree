@@ -6,6 +6,49 @@
 
 ---
 
+## [0.8.0] — 2026-09-14
+
+### Changed — Refactor: hook `useEntityById` + limpieza
+
+- `src/hooks/useEntityById.js` (**nuevo**) — extrae el patrón (`useState` +
+  `useEffect` + guarda de `cancelled`) que `CareerMapPage` y `SubjectMapPage`
+  repetían línea por línea para traer la carrera/materia dueña de la página.
+- `src/pages/CareerMapPage.jsx`, `src/pages/SubjectMapPage.jsx` — usan el hook
+  nuevo en vez de su propia carga manual.
+- Se borra `tmp-smoke.mjs`, script de prueba manual contra Supabase que ya
+  había cumplido su función (nunca estuvo trackeado en git).
+
+### Added — Renombrar desde el explorador
+
+- `src/hooks/useExplorerTree.js` — nueva acción `renameEntity(type, id, name, node)`:
+  elige el service correcto por tipo (careers/subjects/units/topics/sheets),
+  usa `title` para hojas y `name` para el resto, y recarga el árbol al
+  terminar.
+- `src/components/features/explorer/ExplorerItem.jsx` — modo edición in-line
+  por botón ✏️ (visible al hover). `Enter`/blur confirma, `Escape` cancela.
+- `docs/features/navigation-shell.md` — se tilda el pendiente "Renombrar en
+  línea desde el explorador".
+
+### Changed — Documentación: README actualizado
+
+- `README.md` — se conserva la visión/problemática/filosofía; se reemplaza el
+  stack (decía HTML/CSS/JS/Python, no mencionaba React ni Supabase) y el
+  estado del proyecto (decía "en fase de diseño"). Se agrega una sección de
+  instalación real (clonar, `npm install`, variables de entorno, migración
+  SQL, `npm run dev`) y un resumen del estado técnico actual (qué funciona
+  hoy vs. qué queda pendiente).
+
+### Verificación (Mandamiento X)
+- `npm run lint` — sin errores ni warnings.
+- `npm run build` — compila sin errores.
+
+### Request original
+> Bloque 1 Refactorización [...] Bloque 2 Desarrollo [...] Bloque 3 Documentación.
+> Actualizar el archivo README.md del repositorio indicando los pasos para usar el
+> proyecto y su estado técnico actual.
+
+---
+
 ## [0.7.3] — 2026-09-09
 
 ### Added — Editor de hojas: TipTap con Markdown como fuente de verdad (Método AInnovate · FASE 7.5)
