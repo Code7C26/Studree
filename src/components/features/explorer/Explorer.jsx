@@ -48,6 +48,7 @@ const ALWAYS_EXPANDED = { has: () => true }
  * @param {(careerId: string) => void} props.onNavigateCareer
  * @param {(subjectId: string) => void} props.onNavigateSubject
  * @param {(sheet: {id: string, title: string}) => void} props.onOpenSheet
+ * @param {(type: 'career'|'subject'|'unit'|'topic'|'sheet', id: string, name: string, node: Object) => void} props.onRenameEntity
  * @param {string} [props.activeCareerId]
  * @param {string} [props.activeSubjectId]
  * @param {string} [props.activeSheetId]
@@ -58,6 +59,7 @@ export function Explorer({
   onNavigateCareer,
   onNavigateSubject,
   onOpenSheet,
+  onRenameEntity,
   activeCareerId,
   activeSubjectId,
   activeSheetId,
@@ -137,6 +139,7 @@ export function Explorer({
             onNavigateCareer={onNavigateCareer}
             onNavigateSubject={onNavigateSubject}
             onOpenSheet={onOpenSheet}
+            onRenameEntity={onRenameEntity}
             activeCareerId={activeCareerId}
             activeSubjectId={activeSubjectId}
             activeSheetId={activeSheetId}

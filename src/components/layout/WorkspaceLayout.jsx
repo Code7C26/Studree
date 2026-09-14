@@ -47,7 +47,7 @@ function findAncestryForSheet(careers, sheetId) {
 export function WorkspaceLayout() {
   const navigate = useNavigate()
   const params = useParams()
-  const { careers, searchIndex, loading } = useExplorerTree()
+  const { careers, searchIndex, loading, renameEntity } = useExplorerTree()
 
   // En desktop el explorador arranca visible (panel fijo); en mobile arranca
   // colapsado (se abre como drawer), porque ahí es el único reemplazo real
@@ -106,6 +106,7 @@ export function WorkspaceLayout() {
     onNavigateCareer: (id) => navigate(careerPath(id)),
     onNavigateSubject: (id) => navigate(subjectMapPath(id)),
     onOpenSheet: handleOpenSheet,
+    onRenameEntity: renameEntity,
     activeCareerId,
     activeSubjectId,
     activeSheetId: params.sheetId,

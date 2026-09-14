@@ -21,6 +21,7 @@ const ICONS = {
  * @param {(careerId: string) => void} props.onNavigateCareer
  * @param {(subjectId: string) => void} props.onNavigateSubject
  * @param {(sheet: {id: string, title: string}) => void} props.onOpenSheet
+ * @param {(type: 'career'|'subject'|'unit'|'topic'|'sheet', id: string, name: string, node: Object) => void} props.onRenameEntity
  * @param {string} [props.activeCareerId]
  * @param {string} [props.activeSubjectId]
  * @param {string} [props.activeSheetId]
@@ -32,6 +33,7 @@ export function ExplorerTree({
   onNavigateCareer,
   onNavigateSubject,
   onOpenSheet,
+  onRenameEntity,
   activeCareerId,
   activeSubjectId,
   activeSheetId,
@@ -56,6 +58,7 @@ export function ExplorerTree({
                 onToggle(careerKey, true)
                 onNavigateCareer(career.id)
               }}
+              onRename={(name) => onRenameEntity('career', career.id, name, career)}
             />
 
             {careerExpanded &&
@@ -77,6 +80,7 @@ export function ExplorerTree({
                         onToggle(subjectKey, true)
                         onNavigateSubject(subject.id)
                       }}
+                      onRename={(name) => onRenameEntity('subject', subject.id, name, subject)}
                     />
 
                     {subjectExpanded &&
@@ -97,6 +101,7 @@ export function ExplorerTree({
                                 onToggle(unitKey, true)
                                 onNavigateSubject(subject.id)
                               }}
+                              onRename={(name) => onRenameEntity('unit', unit.id, name, unit)}
                             />
 
                             {unitExpanded &&
@@ -117,6 +122,7 @@ export function ExplorerTree({
                                         onToggle(topicKey, true)
                                         onNavigateSubject(subject.id)
                                       }}
+                                      onRename={(name) => onRenameEntity('topic', topic.id, name, topic)}
                                     />
 
                                     {topicExpanded &&
@@ -128,6 +134,7 @@ export function ExplorerTree({
                                           depth={4}
                                           active={sheet.id === activeSheetId}
                                           onSelect={() => onOpenSheet(sheet)}
+                                          onRename={(name) => onRenameEntity('sheet', sheet.id, name, sheet)}
                                         />
                                       ))}
                                   </div>

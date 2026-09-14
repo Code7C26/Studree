@@ -50,6 +50,10 @@ nombre en dos teclas.
 - El nodo correspondiente a la ruta actual queda **resaltado y auto-expandido**.
 - El estado de expandido persiste en `studree:ui:explorer` (preferencia de UI).
 - En mobile: colapsado por defecto, se abre como drawer sobre el contenido.
+- Cada fila tiene un botón ✏️ (visible al hover) para renombrar in-line, en
+  cualquiera de los 5 niveles: `Enter`/blur confirma, `Escape` cancela. La
+  acción vive en `useExplorerTree.js` (`renameEntity`), que elige el service
+  correcto por tipo y usa `title` para hojas, `name` para el resto.
 
 ## Command Palette (`Ctrl+K`)
 
@@ -102,4 +106,4 @@ desde la raíz del sitio). Reglas para no repetir el bug que tenía el header:
 
 - [ ] Reordenar tabs arrastrando.
 - [ ] Acciones del palette además de navegar (crear hoja, exportar).
-- [ ] Renombrar en línea desde el explorador.
+- [x] Renombrar en línea desde el explorador (2026-09-14).

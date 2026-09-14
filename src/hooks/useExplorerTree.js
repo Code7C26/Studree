@@ -15,6 +15,24 @@ import { unitsService } from '../services/units.service.js'
 import { topicsService } from '../services/topics.service.js'
 import { sheetsService } from '../services/sheets.service.js'
 
+/** Service correcto por nivel, para el rename desde el explorador. */
+const SERVICES_BY_TYPE = {
+  career: careersService,
+  subject: subjectsService,
+  unit: unitsService,
+  topic: topicsService,
+  sheet: sheetsService,
+}
+
+/** Columna de FK al padre por nivel (`null` para carrera: no tiene padre). */
+const PARENT_FIELD_BY_TYPE = {
+  career: null,
+  subject: 'career_id',
+  unit: 'subject_id',
+  topic: 'unit_id',
+  sheet: 'topic_id',
+}
+
 /**
  * @typedef {Object} SearchEntry
  * @property {'subject'|'unit'|'topic'|'sheet'} type
@@ -133,5 +151,34 @@ export function useExplorerTree() {
     load()
   }, [load])
 
-  return { careers, searchIndex, loading, error, reload: load }
+  /**
+   * Renombra una carrera, materia, unidad, tema u hoja desde el explorador.
+   * Las hojas usan `title`, el resto usa `name` (ver docs/DB_SCHEMA.md).
+   *
+   * @param {'career'|'subject'|'unit'|'topic'|'sheet'} type
+   * @param {string} id
+   * @param {string} name
+   * @param {Object} node - El nodo del árbol (de ahí sale el `parentId`, sin recorrerlo de nuevo).
+   * @returns {Promise<string|null>} Mensaje de error, o `null` si salió bien.
+   */
+  const renameEntity = useCallback(
+    async (type, id, name, node) => {
+      const trimmed = name.trim()
+      if (!trimmed) return 'El nombre no puede estar vacío.'
+
+      const service = SERVICES_BY_TYPE[type]
+      const parentField = PARENT_FIELD_BY_TYPE[type]
+      const parentId = parentField ? node[parentField] : undefined
+      const values = type === 'sheet' ? { title: trimmed } : { name: trimmed }
+
+      const { error: renameError } = await service.update(id, values, parentId)
+      if (renameError) return renameError
+
+      await load()
+      return null
+    },
+    [load],
+  )
+
+  return { careers, searchIndex, loading, error, reload: load, renameEntity }
 }
