@@ -1,8 +1,9 @@
 # Feature: Export a Markdown (para IA / segundo cerebro)
 
-> **Estado:** 📋 Documentado — implementación en Fase 6
-> **Archivos clave:** `src/lib/export/`, `src/components/features/export/ExportDialog.jsx`
-> **Dependencias nuevas:** `jszip` (solo para el export `.zip`)
+> **Estado:** ✅ Implementado (2026-09-28) — `.md` único y `.zip` con carpetas
+> **Archivos clave:** `src/lib/export/`, `src/hooks/useExportTree.js`,
+> `src/components/features/export/ExportDialog.jsx`
+> **Dependencias nuevas:** `jszip` (cargada con `import()` dinámico, no va en el bundle inicial)
 
 ---
 
@@ -93,16 +94,31 @@ Contenido de la hoja…
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/lib/export/toSingleMarkdown.js` | Árbol → string Markdown único |
-| `src/lib/export/toZip.js` | Árbol → blob `.zip` (usa `jszip`) |
-| `src/lib/export/frontmatter.js` | Genera el bloque YAML de cada hoja |
-| `src/components/features/export/ExportDialog.jsx` | Elegir alcance y formato |
+| `src/hooks/useExportTree.js` | Trae la jerarquía completa (con `content_md` y `updated_at` de cada hoja) desde los services: `loadSubjectTree(subjectId)` / `loadCareerTree(careerId)` |
+| `src/lib/export/toSingleMarkdown.js` | Árbol → string Markdown único (funciones puras: `subjectTreeToMarkdown`, `careerTreeToMarkdown`) |
+| `src/lib/export/toZip.js` | Árbol → `Blob` `.zip` (funciones puras salvo el constructor de `jszip`, que recibe como parámetro: `subjectTreeToZip(JSZip, subject)`, `careerTreeToZip(JSZip, career)`) |
+| `src/lib/export/frontmatter.js` | `buildFrontmatter({ subjectName, unitName, topicName, date })` — arma el bloque YAML de cada hoja del `.zip` |
+| `src/lib/export/download.js` | `buildExportFilename(name, extension)` + `downloadBlob(filename, blob)` / `downloadTextFile(filename, content)` |
+| `src/components/features/export/ExportDialog.jsx` | Modal: elegir **formato** (`.md` / `.zip`) y, si se abre desde una materia, **alcance** (esta materia / toda la carrera); dispara la descarga |
 
-## Flujo de uso
+## Flujo de uso (implementado)
 
-1. El usuario abre "Exportar" desde una carrera o una materia.
-2. Elige **alcance** (esta materia / toda la carrera) y **formato** (`.md` / `.zip`).
-3. Se genera en el cliente y se descarga con un `Blob` + `URL.createObjectURL`.
+1. El usuario abre "Exportar" desde el header de `CareerMapPage` o `SubjectMapPage`.
+2. Elige **formato** (`.md` único / `.zip` con carpetas) y, si viene de una materia,
+   **alcance** (esta materia / toda la carrera); desde una carrera el alcance es siempre
+   "toda la carrera".
+3. `useExportTree` trae el árbol completo con `content_md` de cada hoja.
+4. Según el formato:
+   - `.md`: `toSingleMarkdown.js` arma el string; `download.js` lo descarga.
+   - `.zip`: se importa `jszip` con `import()` dinámico, `toZip.js` arma el `Blob` con la
+     estructura de carpetas y el frontmatter de cada hoja; `download.js` lo descarga.
+
+**Numeración de las unidades:** el prefijo `01 - `, `02 - `… sale del **índice en la lista
+ya ordenada** (posición 1, 2, 3…), no del campo `position` crudo de la base — así no
+importa si `position` tiene huecos por materias/unidades borradas.
+
+**Campo `fecha` del frontmatter:** se usa `sheets.updated_at` (última edición de la hoja),
+recortado a `AAAA-MM-DD`.
 
 ## Restricciones
 

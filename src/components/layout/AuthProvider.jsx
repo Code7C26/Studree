@@ -128,6 +128,25 @@ export function AuthProvider({ children }) {
         await supabase.auth.signOut()
         clearAllCache()
       },
+
+      /**
+       * Convierte la sesión anónima actual en una cuenta permanente (email +
+       * contraseña), sin perder los datos ya creados: la fila sigue siendo la
+       * misma en `auth.users`, solo deja de ser anónima. Es la respuesta a lo
+       * que advierte `isAnonymous`: sin esto, cerrar sesión pierde los datos
+       * para siempre porque no hay credencial con la que volver a entrar.
+       * @param {string} email
+       * @param {string} password
+       */
+      async linkIdentity(email, password) {
+        const { data, error } = await supabase.auth.updateUser({ email, password })
+        return {
+          error: translateAuthError(error),
+          // Con confirmación de email activada, el email nuevo queda pendiente
+          // en `new_email` hasta que el usuario abre el link del mail.
+          needsConfirmation: !error && Boolean(data.user?.new_email),
+        }
+      },
     }),
     [session, loading],
   )

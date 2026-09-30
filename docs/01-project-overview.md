@@ -52,7 +52,7 @@ enlaces y recursos relacionados.
 | 2 | Carpetas (carrera/curso) + materias (CRUD) | ✅ Completada |
 | 3 | Mapa conceptual interactivo por materia (React Flow, híbrido) | ✅ Completada (base) |
 | 4 | Apuntes, enlaces y recursos en los nodos (sin subir binarios) | ✅ Completada (base) |
-| 5 | Buscador de contenido + perfil + responsive (mobile) | 🟡 En progreso (responsive ✅; buscador y perfil pendientes) |
+| 5 | Buscador de contenido + perfil + responsive (mobile) | ✅ Completada (responsive, buscador de contenido en el Command Palette y perfil) |
 | 6 | Backend + autenticación + persistencia remota | 🟡 En progreso (env + RLS documentados; ver Fase 7.1) |
 
 ### Fase 7 — Shell de navegación (rediseño, 2026-08-24)
@@ -69,7 +69,7 @@ Ver ADR-007 a ADR-011 en `docs/02-architecture.md`.
 | 7.3 | Canvas de carrera (React Flow + dagre + correlativas) | `features/career-map.md` | ✅ Completada |
 | 7.4 | Canvas de materia (unidades/temas) + panel de hojas | `features/subject-map.md` | ✅ Completada |
 | 7.5 | Editor TipTap con Markdown como fuente de verdad | `features/sheet-editor.md` | ✅ Completada |
-| 7.6 | Export a `.md` único y luego a `.zip` | `features/markdown-export.md` | ⬜ Pendiente |
+| 7.6 | Export a `.md` único y a `.zip` | `features/markdown-export.md` | ✅ Completada |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

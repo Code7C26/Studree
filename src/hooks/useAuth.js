@@ -25,7 +25,8 @@ export const AuthContext = createContext(null)
  *   isAnonymous: boolean,
  *   signIn: (email: string, password: string) => Promise<{error: string|null}>,
  *   signUp: (email: string, password: string) => Promise<{error: string|null, needsConfirmation: boolean}>,
- *   signOut: () => Promise<void>
+ *   signOut: () => Promise<void>,
+ *   linkIdentity: (email: string, password: string) => Promise<{error: string|null, needsConfirmation: boolean}>,
  * }}
  */
 export function useAuth() {

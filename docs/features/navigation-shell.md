@@ -64,6 +64,29 @@ nombre en dos teclas.
 - Navegación con flechas ↑/↓, `Enter` abre en una tab nueva.
 - El matching es *subsecuencia* (tipo fuzzy) implementado a mano, sin dependencias.
 
+### Buscador de contenido (Fase 5, 2026-09-28)
+
+El palette no busca solo por nombre: si el texto escrito no matchea el nombre de ninguna
+entrada, también se prueba contra el **contenido** (`content_md`) de cada hoja. Es el mismo
+Ctrl+K, no una pantalla nueva — se decidió así para no duplicar el punto de entrada que ya
+documenta esta sección.
+
+- `src/hooks/useExplorerTree.js` agrega `content: sheet.content_md` a cada `SearchEntry` de
+  tipo `sheet` (el árbol ya se carga entero, no hay red extra).
+- `src/lib/search/snippet.js` (`buildContentSnippet`) — función pura: busca la query
+  (case-insensitive, substring simple, **no** fuzzy) dentro del contenido, limpia la
+  sintaxis Markdown más obvia (`#`, `*`, `` ` ``, links) y devuelve un fragmento de ~100
+  caracteres alrededor del match, o `null` si no hay coincidencia.
+- `CommandPalette.jsx` — un match por **nombre** siempre rankea mejor que uno por
+  **contenido** (`CONTENT_MATCH_SCORE = 4`, peor que cualquier score de nombre). Cuando el
+  resultado viene por contenido, la fila muestra el fragmento en vez de la ruta jerárquica.
+- Solo las **hojas** buscan por contenido (materias/unidades/temas no tienen `content_md`).
+
+**Restricción deliberada:** es búsqueda de texto plano en cliente, no full-text search de
+Postgres ni semántica/RAG — `docs/DB_SCHEMA.md` § "Preparado para IA" dice explícitamente
+que la vectorización queda fuera de alcance en esta etapa. Con el volumen de una app de
+estudio personal, recorrer `content_md` en memoria en cada tecla alcanza.
+
 ## Atajos
 
 | Atajo | Acción |

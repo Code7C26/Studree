@@ -78,12 +78,13 @@
 | `features/folders/**` · `features/subjects/**` · `useFolders` · `useSubjects` | `docs/features/folders-and-subjects.md` |
 | `features/conceptMap/**` · `useConceptMap` · `lib/treeLayout.js` | ⚠️ Reemplazado → `docs/features/subject-map.md` |
 | `features/resources/**` · `useResources` · `resources.service.js` · `constants/resourceTypes.js` | `docs/features/resources.md` |
-| `layout/WorkspaceLayout` · `layout/TabBar` · `layout/Header` · `features/explorer/**` · `features/commandPalette/**` · `useExplorerTree` · `useHotkeys` | `docs/features/navigation-shell.md` |
+| `layout/WorkspaceLayout` · `layout/TabBar` · `layout/Header` · `features/explorer/**` · `features/commandPalette/**` · `useExplorerTree` · `useHotkeys` · `lib/search/**` | `docs/features/navigation-shell.md` |
 | `public/**` · `index.html` (favicon, assets estáticos) | `docs/features/navigation-shell.md` (sección Logo) |
 | `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` | `docs/features/career-map.md` |
 | `features/subjectMap/**` · `features/sheets/**` · `useSubjectMap` · `useSheets` · `units/topics.service.js` | `docs/features/subject-map.md` |
 | `features/sheetEditor/**` · `lib/markdown/**` · `useSheet` · `sheets.service.js` | `docs/features/sheet-editor.md` |
 | `features/export/**` · `lib/export/**` | `docs/features/markdown-export.md` |
+| `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |

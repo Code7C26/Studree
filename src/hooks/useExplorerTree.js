@@ -41,6 +41,7 @@ const PARENT_FIELD_BY_TYPE = {
  * @property {string[]} path - Nombres de los ancestros, del más alto al más cercano.
  * @property {string} careerId
  * @property {string} subjectId
+ * @property {string} [content] - Solo en hojas: `content_md`, para el buscador de contenido (Fase 5).
  */
 
 /**
@@ -123,6 +124,7 @@ export function useExplorerTree() {
                         path: [career.name, subject.name, unit.name, topic.name],
                         careerId: career.id,
                         subjectId: subject.id,
+                        content: sheet.content_md ?? '',
                       })
                     }
 

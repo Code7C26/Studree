@@ -5,6 +5,7 @@ import { useEntityById } from '../hooks/useEntityById.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { SubjectMap } from '../components/features/subjectMap/SubjectMap'
 import { SheetListPanel } from '../components/features/sheets/SheetListPanel'
+import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Button } from '../components/ui/Button'
 import { TextField } from '../components/ui/TextField'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -32,6 +33,7 @@ export function SubjectMapPage() {
   const [topicName, setTopicName] = useState('')
   const [creatingTopic, setCreatingTopic] = useState(false)
   const [openTopic, setOpenTopic] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   /** @param {React.FormEvent} event */
   async function handleCreateUnit(event) {
@@ -70,9 +72,14 @@ export function SubjectMapPage() {
         </Link>
       )}
 
-      <div className="mt-2">
-        <h1 className="text-2xl font-bold">{subject?.name ?? 'Cargando…'}</h1>
-        <p className="text-sm text-text-muted">Unidades y temas de esta materia.</p>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{subject?.name ?? 'Cargando…'}</h1>
+          <p className="text-sm text-text-muted">Unidades y temas de esta materia.</p>
+        </div>
+        <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={!subject}>
+          Exportar
+        </Button>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -155,6 +162,15 @@ export function SubjectMapPage() {
       )}
 
       <SheetListPanel topic={openTopic} onClose={() => setOpenTopic(null)} onOpenSheet={openSheet} />
+
+      {subject && (
+        <ExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          careerId={subject.career_id}
+          subjectId={subjectId}
+        />
+      )}
     </div>
   )
 }

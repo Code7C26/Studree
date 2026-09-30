@@ -6,6 +6,173 @@
 
 ---
 
+## [0.9.3] — 2026-09-28
+
+### Added — Export `.zip` con estructura de carpetas (Método AInnovate · FASE 7.6, cierre)
+
+Completa lo que había quedado pendiente a propósito en la v0.9.0: la prioridad 2 de
+`docs/features/markdown-export.md`, un `.zip` con la jerarquía como carpetas y frontmatter
+YAML por hoja, para importar a Obsidian o similar.
+
+- `npm install jszip` — se carga con **`import()` dinámico** desde `ExportDialog`, así que
+  no entra en el bundle inicial de quien nunca exporta a `.zip` (queda en su propio chunk,
+  verificado en el build: `jszip.min-*.js`, ~30 KB gzip).
+- `src/lib/export/frontmatter.js` (**nuevo**) — `buildFrontmatter({ subjectName, unitName,
+  topicName, date })`, a mano (4 campos, no justifica sumar `js-yaml`).
+- `src/lib/export/toZip.js` (**nuevo**) — `subjectTreeToZip(JSZip, subject)` /
+  `careerTreeToZip(JSZip, career)`. Nombres de carpeta/archivo sanitizados
+  (`/ \ : * ? " < > |` → `-`); las unidades se prefijan `01 - `, `02 - `… según su posición
+  en la lista ya ordenada (no el `position` crudo de la base, así no importa si tiene
+  huecos).
+- `src/lib/export/download.js` — `buildExportFilename` ahora recibe la extensión
+  (`md`/`zip`); se separó `downloadBlob` de `downloadTextFile` para reutilizar la descarga
+  con el `Blob` que arma `jszip`.
+- `src/hooks/useExportTree.js` — cada hoja trae también `updated_at`, que es el campo
+  `fecha` del frontmatter.
+- `src/components/features/export/ExportDialog.jsx` — nuevo selector de **formato**
+  (`.md` / `.zip`) además del de alcance.
+
+### Verificación (Mandamiento X)
+- `npm run lint` — sin errores ni warnings.
+- `npm run build` — compila (442 módulos, ~7,2 s); `jszip` aparece como chunk separado, no
+  en el bundle principal.
+- ⚠️ Sin verificación visual en navegador: no se probó en runtime que el `.zip` generado
+  abra bien en Obsidian ni que el frontmatter se lea correcto.
+
+### Documentación
+- `docs/features/markdown-export.md` — estado a "✅ Implementado", tabla de componentes y
+  flujo de uso actualizados, pendiente de `.zip` tildado.
+- `docs/01-project-overview.md` — Fase 7.6 marcada como ✅ Completada.
+
+### Request original
+> seguimos con el .zip
+
+---
+
+## [0.9.2] — 2026-09-28
+
+### Added — Perfil de usuario (Método AInnovate · FASE 5, cierre)
+
+Cierra la Fase 5: `/perfil` deja de ser un placeholder. Dos bloques: la cuenta actual y un
+resumen del contenido cargado.
+
+- `src/components/layout/AuthProvider.jsx` — nuevo `linkIdentity(email, password)`: usa
+  `supabase.auth.updateUser({ email, password })` para convertir la sesión **anónima**
+  actual en una cuenta permanente sin perder nada (`user_id` no cambia). Responde
+  `needsConfirmation` cuando el proyecto de Supabase exige confirmar el email antes de que
+  el cambio quede firme.
+- `src/hooks/useAuth.js` — `linkIdentity` documentado en el contrato de `useAuth()`.
+- `src/pages/ProfilePage.jsx` (reescrito) — card de cuenta: email si la sesión es normal,
+  o aviso + formulario de vinculación si es anónima (con el riesgo de perder los datos
+  explicado, ver `docs/features/profile.md`); card de resumen: cantidad de carreras,
+  materias y hojas, calculada a partir del árbol de `useExplorerTree` (se reutiliza el
+  mismo hook del explorador, sin services ni consultas nuevas).
+- `docs/features/profile.md` (**nuevo**).
+
+**Deliberadamente fuera de esta entrega:** cambiar contraseña, borrar cuenta, preferencias
+visuales — no hay pedido ni caso de uso todavía (Mandamiento I), quedan anotados como
+pendiente en el doc de la feature.
+
+### Verificación (Mandamiento X)
+- `npm run lint` — sin errores ni warnings.
+- `npm run build` — compila (436 módulos, ~6,5 s).
+- ⚠️ Sin verificación visual en navegador: en particular, el flujo de vincular una cuenta
+  anónima (con y sin confirmación de email activada en el proyecto de Supabase) no se
+  probó en runtime.
+
+### Documentación
+- `docs/features/profile.md` (**nuevo**).
+- `docs/01-project-overview.md` — Fase 5 marcada como ✅ Completada.
+- `CLAUDE.md` — nueva fila en la tabla de lookup para `ProfilePage`/`AuthProvider`/`useAuth`.
+
+### Request original
+> dale crea el prefil de usuario.
+
+---
+
+## [0.9.1] — 2026-09-28
+
+### Added — Buscador de contenido en el Command Palette (Método AInnovate · FASE 5)
+
+El Command Palette (`Ctrl+K`) ya buscaba por nombre; ahora también busca **dentro del
+texto de las hojas** (`content_md`), completando el pendiente "buscador de contenido" de
+la Fase 5. Se extendió el palette existente en vez de crear una pantalla nueva, para no
+duplicar el punto de entrada de navegación (decisión tomada con el usuario).
+
+- `src/hooks/useExplorerTree.js` — cada `SearchEntry` de tipo `sheet` ahora incluye
+  `content: sheet.content_md`. El árbol ya se cargaba entero de una sola vez, así que no
+  agrega ninguna consulta nueva.
+- `src/lib/search/snippet.js` (**nuevo**, `buildContentSnippet`) — función pura: busca la
+  query (substring simple, case-insensitive, no fuzzy) dentro del contenido, limpia la
+  sintaxis Markdown más obvia y devuelve ~100 caracteres de contexto alrededor del match.
+- `src/components/features/commandPalette/CommandPalette.jsx` — si la query no matchea
+  ningún nombre, se prueba contra el contenido de las hojas. Un match por nombre siempre
+  rankea mejor que uno por contenido; cuando el resultado viene por contenido, la fila
+  muestra el fragmento encontrado en vez de la ruta jerárquica.
+
+Sigue siendo búsqueda de texto plano en cliente — sin full-text search de Postgres ni
+RAG/semántica (fuera de alcance, ver `docs/DB_SCHEMA.md` § "Preparado para IA").
+
+### Verificación (Mandamiento X)
+- `npm run lint` — sin errores ni warnings.
+- `npm run build` — compila (436 módulos, ~23,5 s).
+- ⚠️ Sin verificación visual en navegador: no se probó en runtime que el snippet se vea
+  bien con hojas reales (Markdown con listas, código, etc.).
+
+### Documentación
+- `docs/features/navigation-shell.md` — nueva sección "Buscador de contenido (Fase 5)".
+- `docs/01-project-overview.md` — Fase 5: buscador de contenido marcado como hecho.
+- `CLAUDE.md` — tabla de lookup: `lib/search/**` apunta a `navigation-shell.md`.
+
+### Request original
+> continua con la siguiente fase
+> (aclarado por el usuario: extender el Command Palette existente para que busque también
+> dentro del contenido de las hojas, en vez de armar una pantalla de búsqueda dedicada)
+
+---
+
+## [0.9.0] — 2026-09-23
+
+### Added — Export a Markdown único (Método AInnovate · FASE 7.6, parcial)
+
+Implementa la prioridad 1 de `docs/features/markdown-export.md`: exportar una materia o
+una carrera completa a un solo `.md` con la jerarquía como headings. El `.zip` (prioridad
+2) queda para después, según lo pedido.
+
+- `src/hooks/useExportTree.js` (**nuevo**) — trae el árbol con `content_md` de cada hoja
+  vía los services existentes (`loadSubjectTree(subjectId)` / `loadCareerTree(careerId)`).
+  Vive aparte de `useSubjectMap`/`useExplorerTree` porque necesita el contenido completo,
+  no solo nombres o conteos.
+- `src/lib/export/toSingleMarkdown.js` (**nuevo**) — funciones puras
+  `subjectTreeToMarkdown` / `careerTreeToMarkdown`: arman el string con los headings por
+  nivel (`#`/`##`/`###`/`####`) tal como define el doc de la feature. No convierten nada:
+  `content_md` ya es Markdown (ADR-011).
+- `src/lib/export/download.js` (**nuevo**) — `buildExportFilename(name)` (formato
+  `studree-<nombre>-<AAAA-MM-DD>.md`) y `downloadTextFile(filename, content)` (Blob +
+  `URL.createObjectURL`, sin endpoint).
+- `src/components/features/export/ExportDialog.jsx` (**nuevo**) — modal de export. Si se
+  abre desde una materia, deja elegir alcance (esta materia / toda la carrera); desde una
+  carrera el alcance es siempre "toda la carrera". Por ahora solo ofrece `.md`.
+- `src/pages/CareerMapPage.jsx`, `src/pages/SubjectMapPage.jsx` — botón "Exportar" en el
+  header que abre el diálogo.
+
+### Verificación (Mandamiento X)
+- `npm run lint` — sin errores ni warnings.
+- `npm run build` — compila (435 módulos, ~12,8 s).
+- ⚠️ Sin verificación visual en navegador (misma limitación de fases anteriores del
+  rediseño): el flujo completo (abrir diálogo, elegir alcance, descargar y abrir el
+  `.md` generado) no se probó en runtime.
+
+### Documentación
+- `docs/features/markdown-export.md` — estado a "🟡 Parcialmente implementado", tabla de
+  componentes actualizada con lo que existe vs. lo pendiente (`.zip`, `frontmatter.js`).
+- `docs/01-project-overview.md` — Fase 7.6 marcada como parcial (`.md` ✅, `.zip` pendiente).
+
+### Request original
+> deja el .zip para despues y arranca de inmediato con la fase 7.6
+
+---
+
 ## [0.8.0] — 2026-09-14
 
 ### Changed — Refactor: hook `useEntityById` + limpieza

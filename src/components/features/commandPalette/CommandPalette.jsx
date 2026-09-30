@@ -1,12 +1,19 @@
 /**
  * Overlay `Ctrl+K`: busca hojas (objetivo principal), materias, unidades y
- * temas por nombre, con matching de subsecuencia (fuzzy) hecho a mano.
- * Ver docs/features/navigation-shell.md.
+ * temas por nombre, con matching de subsecuencia (fuzzy) hecho a mano. Además
+ * busca DENTRO del contenido de las hojas (buscador de contenido, Fase 5):
+ * si el texto no matchea por nombre, se prueba contra `content_md` y se
+ * muestra el fragmento encontrado en vez de la ruta. Ver
+ * docs/features/navigation-shell.md.
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { buildContentSnippet } from '../../../lib/search/snippet.js'
 
 const ICONS = { subject: '📚', unit: '📁', topic: '🔖', sheet: '📝' }
+
+/** Coincidencia por contenido: siempre peor rankeada que cualquier match por nombre. */
+const CONTENT_MATCH_SCORE = 4
 
 /** @param {string} text @param {string} query */
 function fuzzyMatch(text, query) {
@@ -49,10 +56,23 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return searchIndex
-      .filter((entry) => fuzzyMatch(entry.name.toLowerCase(), q))
-      .sort((a, b) => score(a.name.toLowerCase(), q) - score(b.name.toLowerCase(), q))
-      .slice(0, 30)
+
+    const matches = searchIndex
+      .map((entry) => {
+        const nameMatches = fuzzyMatch(entry.name.toLowerCase(), q)
+        if (nameMatches) return { entry, rank: score(entry.name.toLowerCase(), q), snippet: null }
+
+        if (q && entry.type === 'sheet') {
+          const snippet = buildContentSnippet(entry.content, q)
+          if (snippet) return { entry, rank: CONTENT_MATCH_SCORE, snippet }
+        }
+
+        return null
+      })
+      .filter(Boolean)
+
+    matches.sort((a, b) => a.rank - b.rank)
+    return matches.slice(0, 30)
   }, [searchIndex, query])
 
   if (!open) return null
@@ -80,7 +100,7 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
       setSelected((current) => Math.max(current - 1, 0))
     } else if (event.key === 'Enter' && results[selected]) {
       event.preventDefault()
-      select(results[selected])
+      select(results[selected].entry)
     }
   }
 
@@ -106,7 +126,7 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
             setSelected(0)
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Buscar una hoja, materia, unidad o tema…"
+          placeholder="Buscar por nombre o por texto dentro de una hoja…"
           aria-label="Buscar"
           className="w-full border-b border-border bg-transparent px-4 py-3 text-text outline-none placeholder:text-text-muted"
         />
@@ -115,21 +135,24 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
           {results.length === 0 && (
             <li className="px-3 py-6 text-center text-sm text-text-muted">Sin resultados.</li>
           )}
-          {results.map((entry, index) => (
+          {results.map(({ entry, snippet }, index) => (
             <li key={`${entry.type}:${entry.id}`}>
               <button
                 type="button"
                 onClick={() => select(entry)}
                 onMouseEnter={() => setSelected(index)}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                className={`flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   index === selected ? 'bg-accent/15 text-accent' : 'text-text hover:bg-surface-2'
                 }`}
               >
-                <span aria-hidden="true">{ICONS[entry.type]}</span>
-                <span className="min-w-0 flex-1 truncate">{entry.name}</span>
-                {entry.path.length > 0 && (
-                  <span className="shrink-0 truncate text-xs text-text-muted">{entry.path.join(' › ')}</span>
-                )}
+                <span className="flex w-full items-center gap-2">
+                  <span aria-hidden="true">{ICONS[entry.type]}</span>
+                  <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+                  {!snippet && entry.path.length > 0 && (
+                    <span className="shrink-0 truncate text-xs text-text-muted">{entry.path.join(' › ')}</span>
+                  )}
+                </span>
+                {snippet && <span className="truncate pl-6 text-xs text-text-muted">{snippet}</span>}
               </button>
             </li>
           ))}

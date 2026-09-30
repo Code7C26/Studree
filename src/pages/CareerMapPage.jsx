@@ -5,6 +5,7 @@ import { useEntityById } from '../hooks/useEntityById.js'
 import { careersService } from '../services/careers.service.js'
 import { CareerMap } from '../components/features/careerMap/CareerMap'
 import { PrerequisiteEditor } from '../components/features/careerMap/PrerequisiteEditor'
+import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Button } from '../components/ui/Button'
 import { TextField } from '../components/ui/TextField'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -36,6 +37,7 @@ export function CareerMapPage() {
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
   const [editingSubject, setEditingSubject] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   /** @param {React.FormEvent} event */
   async function handleCreate(event) {
@@ -75,6 +77,9 @@ export function CareerMapPage() {
               : 'Materias de esta carrera.'}
           </p>
         </div>
+        <Button variant="ghost" onClick={() => setExportOpen(true)}>
+          Exportar
+        </Button>
       </div>
 
       <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -137,6 +142,8 @@ export function CareerMapPage() {
         onAdd={addPrerequisite}
         onRemove={removePrerequisite}
       />
+
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} careerId={careerId} />
     </div>
   )
 }
