@@ -35,9 +35,15 @@ function withDuplicateMessage(result) {
   return result
 }
 
-/** Escapa los comodines de `ilike` (`%`, `_`) y la barra invertida. */
+/**
+ * Neutraliza los comodines de `ilike` para que el texto se busque literal.
+ * PostgREST no respeta el escape con barra (`\%`), así que `%` y `\` se cambian
+ * por `_` (un carácter cualquiera): nunca se pierde un resultado, y los falsos
+ * positivos los descarta el cliente, que solo muestra hojas donde
+ * `buildContentSnippet` encuentra el texto exacto.
+ */
 function escapeLike(text) {
-  return text.replace(/[\\%_]/g, (char) => `\\${char}`)
+  return text.replace(/[\\%]/g, '_')
 }
 
 export const sheetsService = {

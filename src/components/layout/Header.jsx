@@ -17,11 +17,11 @@ export function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 sm:px-4">
         <span className="flex items-center gap-2 text-base font-bold sm:text-lg">
           <img
-            src="/logo.jpg"
+            src="/logo.svg"
             alt=""
             width="32"
             height="32"
-            className="h-7 w-7 rounded-lg sm:h-8 sm:w-8"
+            className="h-7 w-7 sm:h-8 sm:w-8"
           />
           <span className="text-accent">Studree</span>
         </span>
