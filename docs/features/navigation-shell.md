@@ -125,6 +125,14 @@ desde la raíz del sitio). Reglas para no repetir el bug que tenía el header:
   Si algún día se necesita transparencia, hay que rehacerlo como SVG o PNG.
 - Siempre con `width`/`height` explícitos, para que no haya *layout shift* al cargar.
 
+## Refresco del explorador (2026-10-14)
+
+El explorador arma su propio árbol (`useExplorerTree`), separado del estado de cada
+página. Antes, crear o borrar algo en un canvas no aparecía hasta recargar. Ahora los
+services emiten `studree:data-changed` (`services/dataEvents.js`) después de cada
+crear / renombrar / borrar exitoso, y `useExplorerTree` se recarga con debounce de 300 ms.
+La carga también pasó de N+1 consultas a **5** (una por tabla), armando el árbol en memoria.
+
 ## Pendiente
 
 - [ ] Reordenar tabs arrastrando.

@@ -1,63 +1,76 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { useSubjectMap } from '../hooks/useSubjectMap.js'
-import { useEntityById } from '../hooks/useEntityById.js'
-import { subjectsService } from '../services/subjects.service.js'
 import { SubjectMap } from '../components/features/subjectMap/SubjectMap'
 import { SheetListPanel } from '../components/features/sheets/SheetListPanel'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Button } from '../components/ui/Button'
-import { TextField } from '../components/ui/TextField'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { PromptDialog } from '../components/ui/PromptDialog'
 import { careerPath, sheetPath } from '../constants/routes'
 
 /**
- * Canvas de materia: Unidades → Temas, con panel lateral de hojas por tema.
- * Ver docs/features/subject-map.md. El canvas corta en Tema a propósito: las
- * hojas viven en el panel, no como nodos (una materia real puede tener
- * cientos).
+ * Canvas de materia: Materia → Unidades → Temas, con panel lateral de hojas
+ * por tema. Ver docs/features/subject-map.md. El canvas corta en Tema a
+ * propósito: las hojas viven en el panel, no como nodos (una materia real
+ * puede tener cientos).
  */
 export function SubjectMapPage() {
   const { subjectId } = useParams()
   const navigate = useNavigate()
   const { openTab } = useOutletContext()
-  const { entity: subject, error: subjectError } = useEntityById(
-    subjectsService,
-    subjectId,
-    'No se encontró la materia.',
-  )
-  const { units, loading, error, createUnit, deleteUnit, createTopic, deleteTopic } = useSubjectMap(subjectId)
-  const [unitName, setUnitName] = useState('')
-  const [creatingUnit, setCreatingUnit] = useState(false)
-  const [topicUnitId, setTopicUnitId] = useState('')
-  const [topicName, setTopicName] = useState('')
-  const [creatingTopic, setCreatingTopic] = useState(false)
+  const {
+    subject,
+    subjectError,
+    units,
+    loading,
+    error,
+    clearError,
+    createUnit,
+    deleteUnit,
+    createTopic,
+    deleteTopic,
+    moveNodes,
+    resetLayout,
+  } = useSubjectMap(subjectId)
+
   const [openTopic, setOpenTopic] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
+  /** @type {[{kind: 'unit'|'topic', unit?: Object, position: {x: number, y: number}|null}|null, Function]} */
+  const [createRequest, setCreateRequest] = useState(null)
+  /** Lo que se está por borrar: `{type: 'unit'|'topic', unit, topic?}`. */
+  const [pendingDelete, setPendingDelete] = useState(null)
 
-  /** @param {React.FormEvent} event */
-  async function handleCreateUnit(event) {
-    event.preventDefault()
-    if (!unitName.trim()) return
-    setCreatingUnit(true)
-    const failure = await createUnit({ name: unitName })
-    if (!failure) setUnitName('')
-    setCreatingUnit(false)
-  }
-
-  /** @param {React.FormEvent} event */
-  async function handleCreateTopic(event) {
-    event.preventDefault()
-    if (!topicUnitId || !topicName.trim()) return
-    setCreatingTopic(true)
-    const failure = await createTopic(topicUnitId, { name: topicName })
-    if (!failure) setTopicName('')
-    setCreatingTopic(false)
-  }
+  const handleOpenTopic = useCallback((topic) => setOpenTopic(topic), [])
+  const handleDeleteUnit = useCallback((unit) => setPendingDelete({ type: 'unit', unit }), [])
+  const handleDeleteTopic = useCallback((unit, topic) => setPendingDelete({ type: 'topic', unit, topic }), [])
+  const handleMoveNodes = useCallback(
+    (moves) => moveNodes(moves.map(({ id, x, y }) => ({ nodeId: id, x, y }))),
+    [moveNodes],
+  )
 
   function openSheet(sheet) {
     openTab(sheet.id, sheet.title)
     navigate(sheetPath(sheet.id))
+  }
+
+  async function handleCreate(name) {
+    if (!createRequest) return null
+    if (createRequest.kind === 'unit') return createUnit({ name, position: createRequest.position })
+    return createTopic(createRequest.unit.id, { name, position: createRequest.position })
+  }
+
+  async function handleConfirmDelete() {
+    const target = pendingDelete
+    setPendingDelete(null)
+    if (!target) return
+    if (target.type === 'unit') {
+      await deleteUnit(target.unit.id)
+    } else {
+      await deleteTopic(target.unit.id, target.topic.id)
+      if (openTopic?.id === target.topic.id) setOpenTopic(null)
+    }
   }
 
   if (subjectError) {
@@ -65,101 +78,70 @@ export function SubjectMapPage() {
   }
 
   return (
-    <div>
-      {subject && (
-        <Link to={careerPath(subject.career_id)} className="text-sm text-text-muted hover:text-text">
-          ← Volver a la carrera
-        </Link>
-      )}
-
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{subject?.name ?? 'Cargando…'}</h1>
-          <p className="text-sm text-text-muted">Unidades y temas de esta materia.</p>
+    <div className="flex h-full flex-col">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          {subject && (
+            <Link to={careerPath(subject.career_id)} className="text-sm text-text-muted hover:text-text">
+              ← Volver a la carrera
+            </Link>
+          )}
+          <h1 className="mt-1 truncate text-2xl font-bold">{subject?.name ?? 'Cargando…'}</h1>
+          <p className="mt-0.5 text-sm text-text-muted">Unidades y temas de esta materia.</p>
         </div>
         <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={!subject}>
           Exportar
         </Button>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <form onSubmit={handleCreateUnit} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
-          <TextField
-            id="unit-name"
-            label="Nueva unidad"
-            value={unitName}
-            onChange={(event) => setUnitName(event.target.value)}
-            placeholder="Ej. Unidad 1"
-            className="flex-1"
-          />
-          <Button type="submit" disabled={creatingUnit || !unitName.trim()}>
-            {creatingUnit ? 'Creando…' : 'Agregar'}
-          </Button>
-        </form>
-
-        {units.length > 0 && (
-          <form onSubmit={handleCreateTopic} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="topic-unit" className="mb-1 block text-sm text-text-muted">
-                Unidad
-              </label>
-              <select
-                id="topic-unit"
-                value={topicUnitId}
-                onChange={(event) => setTopicUnitId(event.target.value)}
-                className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-text outline-none transition-colors focus:border-accent"
-              >
-                <option value="">Elegir unidad…</option>
-                {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <TextField
-              id="topic-name"
-              label="Nuevo tema"
-              value={topicName}
-              onChange={(event) => setTopicName(event.target.value)}
-              placeholder="Ej. Tema 1"
-              className="flex-1"
-            />
-            <Button type="submit" variant="ghost" disabled={creatingTopic || !topicUnitId || !topicName.trim()}>
-              {creatingTopic ? 'Creando…' : 'Agregar'}
-            </Button>
-          </form>
-        )}
-      </div>
-
       {error && (
-        <p role="alert" className="mt-4 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
-          {error}
+        <p role="alert" className="mt-3 flex items-start justify-between gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <span>{error}</span>
+          <button type="button" onClick={clearError} aria-label="Cerrar aviso" className="shrink-0">
+            ✕
+          </button>
         </p>
       )}
 
-      {loading && <p className="mt-8 text-center text-text-muted">Cargando…</p>}
-
-      {!loading && units.length === 0 && (
-        <div className="mt-8">
-          <EmptyState
-            icon="📁"
-            title="Todavía no hay unidades"
-            message="Agregá tu primera unidad para empezar a organizar los temas."
-          />
-        </div>
-      )}
-
-      {units.length > 0 && (
-        <div className="mt-8">
+      <div className="mt-4 min-h-0 flex-1">
+        {loading || !subject ? (
+          <p className="mt-8 text-center text-text-muted">Cargando…</p>
+        ) : (
           <SubjectMap
+            subject={subject}
             units={units}
-            onOpenTopic={(topic) => setOpenTopic(topic)}
-            onDeleteUnit={deleteUnit}
-            onDeleteTopic={deleteTopic}
+            onOpenTopic={handleOpenTopic}
+            onDeleteUnit={handleDeleteUnit}
+            onDeleteTopic={handleDeleteTopic}
+            onRequestCreate={setCreateRequest}
+            onMoveNodes={handleMoveNodes}
+            onResetLayout={resetLayout}
           />
-        </div>
-      )}
+        )}
+      </div>
+
+      <PromptDialog
+        open={createRequest != null}
+        title={createRequest?.kind === 'topic' ? `Nuevo tema en ${createRequest.unit.name}` : 'Nueva unidad'}
+        label="Nombre"
+        placeholder={createRequest?.kind === 'topic' ? 'Ej. Derivadas' : 'Ej. Unidad 1'}
+        onClose={() => setCreateRequest(null)}
+        onSubmit={handleCreate}
+      />
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title={pendingDelete?.type === 'topic' ? 'Eliminar tema' : 'Eliminar unidad'}
+        message={
+          pendingDelete?.type === 'topic'
+            ? `Se va a eliminar el tema "${pendingDelete.topic.name}" con todas sus hojas. No se puede deshacer.`
+            : pendingDelete
+              ? `Se va a eliminar la unidad "${pendingDelete.unit.name}" con todos sus temas y hojas. No se puede deshacer.`
+              : ''
+        }
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       <SheetListPanel topic={openTopic} onClose={() => setOpenTopic(null)} onOpenSheet={openSheet} />
 

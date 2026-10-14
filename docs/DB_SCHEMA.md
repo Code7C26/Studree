@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** **Supabase (PostgreSQL)** — ver ADR-007.
 **Cache:** `localStorage` (optimista, descartable).
-**Última actualización:** 2026-08-24
+**Última actualización:** 2026-10-14 (migración 0002: posiciones manuales + correlativas opcionales)
 
 > **Cambio de modelo (2026-08-24).** Este documento describe el modelo **nuevo**, de
 > jerarquía fija de 5 niveles con entidades explícitas (ADR-010). Reemplaza al modelo
@@ -41,6 +41,7 @@ erDiagram
         uuid user_id FK
         string name
         string color
+        boolean uses_prerequisites "ADR-013, default true"
         timestamp created_at
         timestamp updated_at
     }
@@ -52,6 +53,10 @@ erDiagram
         string color
         string status "aprobada|cursando|pendiente"
         int position "orden manual en listas"
+        float pos_x "canvas de carrera, nullable (ADR-012)"
+        float pos_y "canvas de carrera, nullable"
+        float map_x "nodo raíz del canvas de materia, nullable"
+        float map_y "nodo raíz del canvas de materia, nullable"
         timestamp created_at
         timestamp updated_at
     }
@@ -68,6 +73,8 @@ erDiagram
         uuid user_id FK
         string name
         int position
+        float pos_x "nullable (ADR-012)"
+        float pos_y "nullable"
         timestamp created_at
     }
     TOPIC {
@@ -76,6 +83,8 @@ erDiagram
         uuid user_id FK
         string name
         int position
+        float pos_x "nullable (ADR-012)"
+        float pos_y "nullable"
         timestamp created_at
     }
     SHEET {
@@ -90,9 +99,15 @@ erDiagram
     }
 ```
 
-> **No existe columna de posición `x`/`y`.** El layout del canvas se calcula siempre con
-> dagre a partir de la estructura (ADR-008). `position` es un **entero de orden** dentro
-> de una lista (para el explorador y el export), no una coordenada del lienzo.
+> **Posiciones del canvas (ADR-012, reemplaza a ADR-008).** `pos_x`/`pos_y` (y
+> `map_x`/`map_y` para el nodo raíz de la materia) son coordenadas **opcionales** del
+> lienzo de React Flow. `NULL` = el nodo lo ubica dagre; con valor = el usuario lo acomodó
+> a mano. "Reordenar" las vuelve a `NULL`. `position` sigue siendo otra cosa: un **entero
+> de orden** dentro de una lista (explorador y export), no una coordenada.
+>
+> **Correlativas opcionales (ADR-013).** `careers.uses_prerequisites = false` oculta toda
+> la UI de correlativas de esa carrera (curso / organizador). Las filas de
+> `prerequisites` no se borran: solo se ignoran mientras esté en `false`.
 
 ---
 
@@ -141,8 +156,9 @@ B requiere A, ninguna de las dos sería cursable nunca, y dagre entraría en buc
 
 ## Esquema SQL (Supabase)
 
-> **La implementación de referencia es `supabase/migrations/0001_init.sql`** — ese archivo
-> es la fuente de verdad del DDL. Lo de abajo es el resumen conceptual; si difieren, manda
+> **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**
+> (`0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`) — son la fuente de verdad
+> del DDL. Lo de abajo es el resumen conceptual; si difieren, manda
 > el `.sql`.
 
 Además de las tablas, la migración real incluye tres cosas que el resumen no muestra:
@@ -158,8 +174,16 @@ Además de las tablas, la migración real incluye tres cosas que el resumen no m
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → pegar `supabase/migrations/0001_init.sql` → **Run**.
+Supabase Dashboard → **SQL Editor** → pegar `supabase/migrations/0001_init.sql` → **Run**,
+y después `0002_manual_layout_and_prereq_toggle.sql` → **Run** (es idempotente).
 (O `supabase db push` con la CLI.)
+
+> **Estado (2026-10-14):** `0002` aplicada en el proyecto vía Management API, con columnas
+> verificadas en `information_schema` y RLS activo en las 6 tablas. Para aplicar futuras
+> migraciones así, ver `docs/03-security.md` § "Token de acceso personal".
+>
+> Sin la 0002 la app sigue andando para crear y navegar, pero mover nodos, "Reordenar" y
+> marcar una carrera como "curso" fallan con el aviso *"Falta aplicar una migración"*.
 
 ### Resumen de las tablas
 
@@ -287,7 +311,8 @@ ni embeddings, ni búsqueda semántica): solo se deja el dato en el formato corr
 | 2026-06-28 | Modelo inicial (Subject, TreeNode, Resource, Settings) | Obsoleto |
 | 2026-06-28 | Añadido `Folder`; `Subject.folderId`; `TreeNode.completed` y `position` | Obsoleto |
 | 2026-06-28 | `Resource` implementado + cascada por nodo | Obsoleto |
-| 2026-08-24 | **Modelo nuevo**: 5 niveles explícitos (Career/Subject/Unit/Topic/Sheet) + `prerequisites` con `kind`; fuente de verdad en Supabase; se elimina la posición `x`/`y` | 📋 Documentado (implementación: Fase 1) |
+| 2026-08-24 | **Modelo nuevo**: 5 niveles explícitos (Career/Subject/Unit/Topic/Sheet) + `prerequisites` con `kind`; fuente de verdad en Supabase; se elimina la posición `x`/`y` | ✅ Implementado (`0001_init.sql`) |
+| 2026-10-14 | `careers.uses_prerequisites`; `pos_x`/`pos_y` en subjects/units/topics; `map_x`/`map_y` en subjects (ADR-012, ADR-013) | ✅ Implementado (`0002_manual_layout_and_prereq_toggle.sql`) |
 
 ### Modelo anterior (histórico)
 

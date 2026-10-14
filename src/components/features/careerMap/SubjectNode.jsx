@@ -1,10 +1,19 @@
 /**
  * Nodo del canvas de carrera: una materia. Ver docs/features/career-map.md.
+ *
+ * Estilo n8n: se arrastra libremente, tiene un punto de salida (derecha) para
+ * conectar correlativas y un "+" para crear la siguiente materia ya conectada.
+ * Los controles internos llevan `nodrag` para que hacer click no arrastre el nodo.
  */
 
 import { Handle, Position } from '@xyflow/react'
-import { STATUS_STYLES } from '../../../constants/subjectStatus.js'
-import { SUBJECT_STATUS_VALUES } from '../../../constants/subjectStatus.js'
+import { STATUS_STYLES, SUBJECT_STATUS_VALUES } from '../../../constants/subjectStatus.js'
+
+/** Clases de los puntos de conexión: visibles solo si la carrera usa correlativas. */
+const handleClass = (connectable) =>
+  connectable
+    ? '!h-3 !w-3 !border-2 !border-accent !bg-bg transition-transform hover:!scale-125'
+    : '!h-2 !w-2 !border-none !bg-transparent'
 
 /**
  * @param {Object} props
@@ -12,45 +21,61 @@ import { SUBJECT_STATUS_VALUES } from '../../../constants/subjectStatus.js'
  * @param {import('../../../types/models.js').Subject} props.data.subject
  * @param {import('../../../types/models.js').EffectiveStatus} props.data.status
  * @param {string|null} props.data.blockReason
+ * @param {boolean} props.data.usesPrerequisites
  * @param {() => void} props.data.onNavigate
  * @param {(status: import('../../../types/models.js').SubjectStatus) => void} props.data.onChangeStatus
  * @param {() => void} props.data.onEditPrerequisites
  * @param {() => void} props.data.onDelete
+ * @param {() => void} props.data.onAddNext
+ * @param {boolean} [props.selected]
  */
-export function SubjectNode({ data }) {
-  const { subject, status, blockReason, onNavigate, onChangeStatus, onEditPrerequisites, onDelete } = data
+export function SubjectNode({ data, selected }) {
+  const { subject, status, blockReason, usesPrerequisites, onNavigate, onChangeStatus, onEditPrerequisites, onDelete, onAddNext } =
+    data
   const style = STATUS_STYLES[status]
 
   return (
-    <div className={`w-[200px] rounded-xl border bg-surface p-3 shadow-sm ${style.border}`}>
-      <Handle type="target" position={Position.Left} isConnectable={false} className="!border-none !bg-border" />
-      <Handle type="source" position={Position.Right} isConnectable={false} className="!border-none !bg-border" />
+    <div
+      className={`group relative w-[220px] rounded-xl border-2 bg-surface p-3 shadow-md transition-shadow hover:shadow-xl ${style.border} ${
+        selected ? 'ring-2 ring-accent/60' : ''
+      }`}
+      title={blockReason ?? undefined}
+    >
+      <Handle type="target" position={Position.Left} isConnectable={usesPrerequisites} className={handleClass(usesPrerequisites)} />
+      <Handle type="source" position={Position.Right} isConnectable={usesPrerequisites} className={handleClass(usesPrerequisites)} />
 
-      <div className="flex items-start justify-between gap-1">
+      <div className="flex items-start gap-2">
+        <span
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
+          style={{ backgroundColor: `${subject.color}26`, color: subject.color }}
+          aria-hidden="true"
+        >
+          {status === 'bloqueada' ? '🔒' : subject.name.trim().charAt(0).toUpperCase()}
+        </span>
         <button
           type="button"
           onClick={onNavigate}
-          className="min-w-0 flex-1 text-left text-sm font-medium hover:underline"
-          title={subject.name}
+          className="nodrag min-w-0 flex-1 text-left text-sm font-semibold leading-snug hover:text-accent"
+          title={`Abrir ${subject.name}`}
         >
-          <span className="block truncate">{subject.name}</span>
+          <span className="line-clamp-2">{subject.name}</span>
         </button>
         <button
           type="button"
           onClick={onDelete}
           aria-label={`Eliminar ${subject.name}`}
-          className="shrink-0 p-0.5 text-text-muted transition-colors hover:text-red-400"
+          className="nodrag shrink-0 rounded p-0.5 text-text-muted opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100 focus:opacity-100"
         >
           ✕
         </button>
       </div>
 
       <div className="mt-2 flex items-center gap-1.5">
-        {status === 'bloqueada' && <span aria-hidden="true">🔒</span>}
         <select
           value={subject.status}
           onChange={(event) => onChangeStatus(event.target.value)}
-          className={`min-w-0 flex-1 rounded border border-border bg-bg px-1 py-0.5 text-[11px] outline-none transition-colors focus:border-accent ${style.text}`}
+          aria-label="Estado"
+          className={`nodrag min-w-0 flex-1 rounded border border-border bg-bg px-1 py-0.5 text-[11px] outline-none transition-colors focus:border-accent ${style.text}`}
         >
           {SUBJECT_STATUS_VALUES.map((value) => (
             <option key={value} value={value}>
@@ -58,21 +83,30 @@ export function SubjectNode({ data }) {
             </option>
           ))}
         </select>
+        {usesPrerequisites && (
+          <button
+            type="button"
+            onClick={onEditPrerequisites}
+            className="nodrag shrink-0 rounded px-1.5 py-0.5 text-[11px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+            title="Editar correlativas"
+          >
+            🔗
+          </button>
+        )}
       </div>
 
+      {blockReason && <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-text-muted">{blockReason}</p>}
+
+      {/* "+" estilo n8n: crea la siguiente materia (conectada, si hay correlativas). */}
       <button
         type="button"
-        onClick={onEditPrerequisites}
-        className="mt-2 w-full rounded px-1.5 py-1 text-left text-[11px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+        onClick={onAddNext}
+        aria-label={`Agregar materia después de ${subject.name}`}
+        title={usesPrerequisites ? 'Nueva materia que requiere esta' : 'Nueva materia'}
+        className="nodrag absolute -right-11 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface-2 text-text-muted opacity-0 shadow transition-all hover:border-accent hover:text-accent group-hover:opacity-100 focus:opacity-100"
       >
-        🔗 Correlativas
+        +
       </button>
-
-      {blockReason && (
-        <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-text-muted" title={blockReason}>
-          {blockReason}
-        </p>
-      )}
     </div>
   )
 }

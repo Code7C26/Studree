@@ -13,10 +13,17 @@ export const careersService = {
 
   /**
    * Crea una carrera.
-   * @param {{name: string, color?: string}} values
+   * @param {{name: string, color?: string, uses_prerequisites?: boolean}} values
+   *   `uses_prerequisites`: false para un curso / organizador sin correlativas (ADR-013).
    * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Career>>}
    */
-  create({ name, color }) {
-    return crud.create({ name: name.trim(), color: color ?? DEFAULT_COLOR })
+  create({ name, color, uses_prerequisites = true }) {
+    // `true` es el default de la columna: solo se manda si es `false`, así crear
+    // una carrera común no depende de que ya esté aplicada la migración 0002.
+    return crud.create({
+      name: name.trim(),
+      color: color ?? DEFAULT_COLOR,
+      ...(uses_prerequisites ? {} : { uses_prerequisites: false }),
+    })
   },
 }

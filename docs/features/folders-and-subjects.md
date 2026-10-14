@@ -1,5 +1,7 @@
 # Feature: Carpetas (Carreras/Cursos) y Materias
 
+> ⚠️ **OBSOLETO** — describe el modelo viejo (localStorage, ADR-003/006/010). Reemplazado por `docs/features/careers.md` (panel de carreras) y `docs/features/career-map.md`. Se conserva solo como registro histórico; **no** refleja el código actual.
+
 > **Estado:** ✅ Completo (Fase 2)
 > **Archivos clave:** `src/pages/FoldersPage.jsx`, `src/pages/FolderPage.jsx`,
 > `src/services/folders.service.js`, `src/services/subjects.service.js`,

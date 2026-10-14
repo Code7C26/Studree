@@ -1,53 +1,68 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useCareers } from '../hooks/useCareers'
-import { Button } from '../components/ui/Button'
-import { TextField } from '../components/ui/TextField'
-import { EmptyState } from '../components/ui/EmptyState'
-import { careerPath } from '../constants/routes'
+import { CareerCard } from '../components/features/careers/CareerCard'
+import { CareerFormModal } from '../components/features/careers/CareerFormModal'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 /**
- * Workspace: panel de inicio con las carreras del usuario.
- * Versión base de la Fase 7.1 — el explorador lateral, las tabs y el command
- * palette llegan en la Fase 7.2 (ver docs/features/navigation-shell.md).
+ * Workspace: panel de inicio con las carreras / cursos del usuario como
+ * tarjetas grandes (no es un canvas: los nodos empiezan en las materias).
+ * Ver docs/features/careers.md.
  */
 export function CareersPage() {
-  const { careers, loading, error, createCareer, deleteCareer } = useCareers()
-  const [name, setName] = useState('')
-  const [creating, setCreating] = useState(false)
+  const { careers, stats, totals, loading, error, createCareer, updateCareer, deleteCareer } = useCareers()
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [deleting, setDeleting] = useState(null)
 
-  /** @param {React.FormEvent} event */
-  async function handleCreate(event) {
-    event.preventDefault()
-    if (!name.trim()) return
-    setCreating(true)
-    const failure = await createCareer({ name })
-    if (!failure) setName('')
-    setCreating(false)
+  function openCreate() {
+    setEditing(null)
+    setFormOpen(true)
   }
 
+  function openEdit(career) {
+    setEditing(career)
+    setFormOpen(true)
+  }
+
+  async function handleSubmit(values) {
+    return editing ? updateCareer(editing.id, values) : createCareer(values)
+  }
+
+  async function handleConfirmDelete() {
+    const career = deleting
+    setDeleting(null)
+    if (career) await deleteCareer(career.id)
+  }
+
+  const metrics = [
+    { label: 'Carreras y cursos', value: totals.careers, icon: '🎓' },
+    { label: 'Materias', value: totals.subjects, icon: '📘' },
+    { label: 'Aprobadas', value: totals.approved, icon: '✅' },
+  ]
+
   return (
-    <div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-6xl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Mis carreras</h1>
-          <p className="text-sm text-text-muted">Elegí una para ver sus materias.</p>
+          <h1 className="text-3xl font-bold">Mis carreras</h1>
+          <p className="mt-1 text-sm text-text-muted">Elegí una carrera o curso para ver y organizar sus materias.</p>
         </div>
+        <button type="button" onClick={openCreate} className="btn-accent gap-2">
+          <span aria-hidden="true">＋</span> Nueva carrera
+        </button>
       </div>
 
-      <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-end">
-        <TextField
-          id="career-name"
-          label="Nueva carrera"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Ej. Licenciatura en Biología"
-          className="flex-1"
-        />
-        <Button type="submit" disabled={creating || !name.trim()}>
-          {creating ? 'Creando…' : 'Agregar'}
-        </Button>
-      </form>
+      <dl className="mt-6 grid grid-cols-3 gap-3">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="rounded-xl border border-border bg-surface px-4 py-3">
+            <dt className="flex items-center gap-1.5 text-xs text-text-muted">
+              <span aria-hidden="true">{metric.icon}</span> {metric.label}
+            </dt>
+            <dd className="mt-1 text-2xl font-bold">{metric.value}</dd>
+          </div>
+        ))}
+      </dl>
 
       {error && (
         <p role="alert" className="mt-4 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
@@ -55,44 +70,49 @@ export function CareersPage() {
         </p>
       )}
 
-      {loading && <p className="mt-8 text-center text-text-muted">Cargando…</p>}
-
-      {!loading && careers.length === 0 && (
-        <div className="mt-8">
-          <EmptyState
-            title="Todavía no tenés carreras"
-            message="Creá tu primera carrera para empezar a organizar tus materias."
-          />
-        </div>
-      )}
-
-      {careers.length > 0 && (
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {loading && careers.length === 0 ? (
+        <p className="mt-10 text-center text-text-muted">Cargando…</p>
+      ) : (
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {careers.map((career) => (
-            <li
+            <CareerCard
               key={career.id}
-              className="group flex items-center justify-between rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent"
-            >
-              <Link to={careerPath(career.id)} className="flex flex-1 items-center gap-3">
-                <span
-                  className="h-8 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: career.color }}
-                  aria-hidden="true"
-                />
-                <span className="font-medium">{career.name}</span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => deleteCareer(career.id)}
-                aria-label={`Eliminar ${career.name}`}
-                className="p-1.5 text-text-muted transition-colors hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100"
-              >
-                ✕
-              </button>
-            </li>
+              career={career}
+              stats={stats.get(career.id) ?? { approved: 0, total: 0, percent: 0 }}
+              onEdit={() => openEdit(career)}
+              onDelete={() => setDeleting(career)}
+            />
           ))}
+          <li>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="flex h-full min-h-[200px] w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border text-text-muted transition-colors hover:border-accent hover:text-accent"
+            >
+              <span className="text-3xl" aria-hidden="true">
+                ＋
+              </span>
+              <span className="text-sm font-medium">
+                {careers.length === 0 ? 'Creá tu primera carrera o curso' : 'Nueva carrera o curso'}
+              </span>
+            </button>
+          </li>
         </ul>
       )}
+
+      <CareerFormModal open={formOpen} onClose={() => setFormOpen(false)} career={editing} onSubmit={handleSubmit} />
+
+      <ConfirmDialog
+        open={deleting != null}
+        title="Eliminar carrera"
+        message={
+          deleting
+            ? `Se va a eliminar "${deleting.name}" con TODAS sus materias, unidades, temas y hojas. No se puede deshacer.`
+            : ''
+        }
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   )
 }

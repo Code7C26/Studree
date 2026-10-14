@@ -54,27 +54,29 @@ Studree/
 │   │   └── ProfilePage.jsx
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
-│   │   │                          #       ConfirmDialog, EmptyState, ColorPicker
+│   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker
 │   │   ├── layout/                # AppLayout, Header, AuthProvider, RequireAuth,
 │   │   │                          # WorkspaceLayout, TabBar
 │   │   └── features/
 │   │       ├── explorer/          # Explorer, ExplorerTree, ExplorerItem
 │   │       ├── commandPalette/    # CommandPalette
-│   │       ├── careers/           # CareerCard, CareerFormModal
-│   │       ├── careerMap/         # CareerMap, SubjectNode, PrerequisiteEditor
-│   │       ├── subjectMap/        # SubjectMap, UnitNode, TopicNode
+│   │       ├── careers/           # CareerCard, CareerFormModal (panel de inicio)
+│   │       ├── careerMap/         # CareerMap, SubjectNode, PrerequisiteEditor,
+│   │       │                      # PrerequisiteKindDialog
+│   │       ├── subjectMap/        # SubjectMap, SubjectRootNode, UnitNode, TopicNode
 │   │       ├── sheets/            # SheetListPanel, SheetListItem
 │   │       ├── sheetEditor/       # SheetEditor, EditorToolbar
 │   │       └── export/            # ExportDialog
 │   ├── hooks/                     # useAuth, useCareers, useSubjects, useCareerMap,
 │   │                              # useSubjectMap, useSheets, useSheet,
-│   │                              # useExplorerTree, useHotkeys
+│   │                              # useExplorerTree, useHotkeys, useFlowCanvas
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
-│   │                              # careers, subjects, units, topics, sheets,
-│   │                              # prerequisites
+│   │                              # dataEvents, careers, subjects, units, topics,
+│   │                              # sheets, prerequisites
 │   ├── lib/
 │   │   ├── id.js
-│   │   ├── graph/                 # validateDag.js, dagreLayout.js, subjectStatus.js
+│   │   ├── graph/                 # validateDag.js, dagreLayout.js, subjectStatus.js,
+│   │   │                          # canvasPositions.js
 │   │   ├── markdown/              # serialize.js, parse.js
 │   │   └── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js,
@@ -294,6 +296,8 @@ conflicto, **gana Supabase**. La cache es descartable: borrarla no debe perder d
 
 ### ADR-008: Auto-layout con dagre; las coordenadas no se persisten
 **Fecha:** 2026-08-24
+**Estado:** ⚠️ **REEMPLAZADO por ADR-012** (2026-10-14). dagre sigue siendo el layout
+por defecto, pero ahora las posiciones manuales **sí** se guardan.
 **Reemplaza a:** ADR-006
 **Contexto:** ADR-006 persistía la posición manual de cada nodo y la hacía prevalecer
 sobre el layout. Con la jerarquía nueva (y decenas de materias por carrera) eso produce
@@ -357,6 +361,42 @@ se **parsea** de Markdown al abrir y se **serializa** a Markdown al guardar.
 - La conversión vive aislada en `src/lib/markdown/` para poder cambiar de editor sin
   tocar los datos.
 
+### ADR-012: Layout híbrido — dagre por defecto, posiciones manuales persistidas
+**Fecha:** 2026-10-14
+**Reemplaza a:** ADR-008
+**Contexto:** Al probar la app, el usuario no sentía los canvas "estilo n8n": los nodos
+no se podían mover y todo se creaba con formularios fuera del lienzo. Pidió
+explícitamente **mover los nodos a mano y que la posición quede guardada**.
+**Decisión:** Layout **híbrido**:
+- Columnas nullable `pos_x`/`pos_y` en `subjects` (canvas de carrera), `units` y `topics`
+  (canvas de materia), y `map_x`/`map_y` en `subjects` (nodo raíz del canvas de materia).
+  Migración `0002_manual_layout_and_prereq_toggle.sql`.
+- `NULL` = el nodo lo ubica dagre. Con valor = se dibuja ahí.
+- **Modo automático** (ningún nodo guardado) vs **modo manual**: al primer arrastre (o al
+  crear un nodo en un punto concreto del lienzo) se guardan las posiciones de **todos**
+  los nodos visibles, para que dagre no reacomode los demás alrededor del movido.
+- Botón **"⟲ Reordenar"**: pone todo en `NULL` y vuelve al modo automático.
+- La lógica compartida vive en `src/hooks/useFlowCanvas.js` y
+  `src/lib/graph/canvasPositions.js`.
+**Consecuencias:**
+- ADR-009 sigue vigente: dagre se sigue usando (modo automático y nodos sin posición),
+  así que el grafo de correlativas tiene que seguir siendo un DAG.
+- Mover un nodo es un `UPDATE` silencioso (no recarga el explorador).
+- En mobile arrastrar sigue siendo incómodo: la navegación sigue resolviéndose con
+  explorador + palette.
+
+### ADR-013: Correlativas opcionales por carrera (`careers.uses_prerequisites`)
+**Fecha:** 2026-10-14
+**Contexto:** No todo lo que el usuario organiza es una carrera universitaria: cursos,
+capacitaciones o notas personales no tienen correlativas, y mostrar candados, flechas y
+botones de correlativas ahí es ruido.
+**Decisión:** Columna `careers.uses_prerequisites boolean not null default true`. Se elige
+al crear la carrera ("Carrera con correlativas" / "Curso u organizador") y se puede
+cambiar desde el canvas ("Usa correlativas"). Con `false`: sin aristas, sin estado
+`bloqueada`, sin botón 🔗, sin conectar nodos, y layout automático en grilla.
+**Consecuencias:** Desactivar **no borra** las correlativas: solo se ocultan (vuelven si se
+reactiva). Default `true` = las carreras existentes no cambian de comportamiento.
+
 ## Rutas
 
 | Ruta | Página | Descripción |
@@ -364,10 +404,13 @@ se **parsea** de Markdown al abrir y se **serializa** a Markdown al guardar.
 | `/` | `HomePage` | Inicio / bienvenida |
 | `/entrar` | `LoginPage` | Acceso (email + contraseña). Pública |
 | `/carreras` | `CareersPage` | **Workspace**: panel de inicio con las carreras (estilo VSCode) |
-| `/carreras/:careerId` | `CareerMapPage` | Canvas de materias + correlativas (React Flow + dagre) |
-| `/materias/:subjectId` | `SubjectMapPage` | Canvas de unidades → temas + panel de hojas |
+| `/carreras/:careerId` | `CareerMapPage` | Canvas de materias (+ correlativas si la carrera las usa) — lazy |
+| `/materias/:subjectId` | `SubjectMapPage` | Canvas materia → unidades → temas + panel de hojas — lazy |
 | `/hojas/:sheetId` | `SheetPage` | Editor de la hoja (TipTap) |
 | `/perfil` | `ProfilePage` | Perfil (placeholder) |
+
+> Las páginas con canvas, el editor y el perfil se cargan con `React.lazy` (chunks
+> aparte) para no meter React Flow, dagre y TipTap en el bundle inicial.
 
 > Las rutas y sus helpers (`careerPath`, `subjectMapPath`, `sheetPath`) están en
 > `src/constants/routes.js`.

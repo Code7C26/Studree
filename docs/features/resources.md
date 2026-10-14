@@ -1,5 +1,7 @@
 # Feature: Recursos por Tema (apuntes, enlaces, videos)
 
+> ⚠️ **OBSOLETO** — describe el modelo viejo (localStorage, ADR-003/006/010). Reemplazado por las hojas Markdown (`docs/features/sheet-editor.md`). Se conserva solo como registro histórico; **no** refleja el código actual.
+
 > **Estado:** ✅ Completo (Fase 4 — versión base)
 > **Archivos clave:** `src/components/features/resources/ResourcePanel.jsx`,
 > `src/components/features/resources/ResourceItem.jsx`,

@@ -1,6 +1,8 @@
 /**
- * Auto-layout del canvas de carrera con dagre (ADR-008): las posiciones de los
- * nodos se calculan SIEMPRE a partir de las correlativas, nunca se persisten.
+ * Auto-layout de los canvas con dagre. Desde ADR-012 el layout es HÍBRIDO:
+ * esto calcula la posición PROPUESTA de cada nodo, que se usa solo para los
+ * nodos que el usuario todavía no acomodó a mano (ver canvasPositions.js).
+ * "Reordenar" borra las posiciones guardadas y todo vuelve a lo de acá.
  *
  * Solo las correlativas de tipo `cursar` entran al grafo de layout: son las
  * que definen la progresión temporal ("cada nivel del layout equivale, en la
@@ -14,11 +16,11 @@
 
 import dagre from '@dagrejs/dagre'
 
-export const CAREER_NODE_WIDTH = 200
-export const CAREER_NODE_HEIGHT = 88
+export const CAREER_NODE_WIDTH = 220
+export const CAREER_NODE_HEIGHT = 110
 
-export const SUBJECT_MAP_NODE_WIDTH = 180
-export const SUBJECT_MAP_NODE_HEIGHT = 64
+export const SUBJECT_MAP_NODE_WIDTH = 190
+export const SUBJECT_MAP_NODE_HEIGHT = 72
 
 /**
  * @param {import('../../types/models.js').Subject[]} subjects
@@ -57,25 +59,31 @@ export function computeCareerLayout(subjects, prerequisites) {
 }
 
 /**
- * Layout del canvas de materia: Unidad → Tema. Es un árbol (cada tema cuelga
- * de una sola unidad), así que ya es un DAG por construcción — no hace falta
- * validar ciclos acá (a diferencia del canvas de carrera).
+ * Layout del canvas de materia: Materia (raíz) → Unidad → Tema. Es un árbol
+ * (cada tema cuelga de una sola unidad), así que ya es un DAG por
+ * construcción — no hace falta validar ciclos acá (a diferencia del canvas de
+ * carrera).
  *
- * Los ids de nodo llevan prefijo (`unit:`/`topic:`) porque unidades y temas
- * son tablas distintas: sin el prefijo, un id de unidad y uno de tema podrían
- * (en teoría) pisarse en el mismo grafo.
+ * Los ids de nodo llevan prefijo (`subject:`/`unit:`/`topic:`) porque son
+ * tablas distintas: sin el prefijo, dos ids podrían (en teoría) pisarse en el
+ * mismo grafo.
  *
+ * @param {string} subjectId - Materia dueña del canvas (nodo raíz).
  * @param {Array<import('../../types/models.js').Unit & {topics: import('../../types/models.js').Topic[]}>} units
- * @returns {Map<string, {x: number, y: number}>} `"unit:<id>"`/`"topic:<id>"` → posición.
+ * @returns {Map<string, {x: number, y: number}>} `"subject:<id>"`/`"unit:<id>"`/`"topic:<id>"` → posición.
  */
-export function computeSubjectMapLayout(units) {
+export function computeSubjectMapLayout(subjectId, units) {
   const graph = new dagre.graphlib.Graph()
-  graph.setGraph({ rankdir: 'TB', nodesep: 24, ranksep: 64 })
+  graph.setGraph({ rankdir: 'TB', nodesep: 32, ranksep: 80 })
   graph.setDefaultEdgeLabel(() => ({}))
+
+  const rootNodeId = `subject:${subjectId}`
+  graph.setNode(rootNodeId, { width: SUBJECT_MAP_NODE_WIDTH, height: SUBJECT_MAP_NODE_HEIGHT })
 
   for (const unit of units) {
     const unitNodeId = `unit:${unit.id}`
     graph.setNode(unitNodeId, { width: SUBJECT_MAP_NODE_WIDTH, height: SUBJECT_MAP_NODE_HEIGHT })
+    graph.setEdge(rootNodeId, unitNodeId)
 
     for (const topic of unit.topics) {
       const topicNodeId = `topic:${topic.id}`

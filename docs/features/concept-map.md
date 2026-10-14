@@ -1,5 +1,7 @@
 # Feature: Mapa Conceptual de la Materia (estilo Obsidian / híbrido)
 
+> ⚠️ **OBSOLETO** — describe el modelo viejo (localStorage, ADR-003/006/010). Reemplazado por `docs/features/subject-map.md`. Se conserva solo como registro histórico; **no** refleja el código actual.
+
 > ## ⚠️ REEMPLAZADO (2026-08-24)
 >
 > Esta feature queda sustituida por **`docs/features/subject-map.md`** (canvas de

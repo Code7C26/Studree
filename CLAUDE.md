@@ -75,12 +75,14 @@
 | `supabase/migrations/*.sql` | `docs/DB_SCHEMA.md` + `docs/03-security.md` (RLS) |
 | `src/constants/*` (claves de storage) | `docs/DB_SCHEMA.md` |
 | `tailwind.config.js` / `src/index.css` / `constants/palette.js` | `docs/02-architecture.md` (sistema de estilos) |
-| `features/folders/**` · `features/subjects/**` · `useFolders` · `useSubjects` | `docs/features/folders-and-subjects.md` |
+| `features/folders/**` · `features/subjects/**` · `useFolders` · `useSubjects` | ⚠️ Obsoleto → `docs/features/careers.md` |
 | `features/conceptMap/**` · `useConceptMap` · `lib/treeLayout.js` | ⚠️ Reemplazado → `docs/features/subject-map.md` |
 | `features/resources/**` · `useResources` · `resources.service.js` · `constants/resourceTypes.js` | `docs/features/resources.md` |
 | `layout/WorkspaceLayout` · `layout/TabBar` · `layout/Header` · `features/explorer/**` · `features/commandPalette/**` · `useExplorerTree` · `useHotkeys` · `lib/search/**` | `docs/features/navigation-shell.md` |
 | `public/**` · `index.html` (favicon, assets estáticos) | `docs/features/navigation-shell.md` (sección Logo) |
-| `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` | `docs/features/career-map.md` |
+| `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` · `useFlowCanvas` | `docs/features/career-map.md` |
+| `pages/CareersPage.jsx` · `features/careers/**` · `useCareers` | `docs/features/careers.md` |
+| `services/dataEvents.js` · `services/crudService.js` | `docs/API_DOCS.md` |
 | `features/subjectMap/**` · `features/sheets/**` · `useSubjectMap` · `useSheets` · `units/topics.service.js` | `docs/features/subject-map.md` |
 | `features/sheetEditor/**` · `lib/markdown/**` · `useSheet` · `sheets.service.js` | `docs/features/sheet-editor.md` |
 | `features/export/**` · `lib/export/**` | `docs/features/markdown-export.md` |
@@ -91,10 +93,13 @@
 
 ## Reglas del rediseño (Fase 7 — ADR-007 a ADR-011)
 
-> Vigentes desde 2026-08-24. Reemplazan a ADR-003 y ADR-006.
+> Vigentes desde 2026-08-24 (actualizadas 2026-10-14). Reemplazan a ADR-003, ADR-006 y ADR-008.
 
 - **Supabase es la fuente de verdad**; `localStorage` es SOLO cache optimista descartable.
-- **NUNCA persistir coordenadas `x`/`y`.** El layout lo calcula dagre desde la estructura.
+- **Layout híbrido (ADR-012, reemplaza a ADR-008):** dagre por defecto; las posiciones
+  manuales (`pos_x`/`pos_y`, `map_x`/`map_y`) se guardan SOLO por arrastre o creación en el
+  lienzo, y "Reordenar" las vuelve a `NULL`.
+- **Correlativas opcionales por carrera (ADR-013):** respetar `careers.uses_prerequisites`.
 - **Validar el DAG de correlativas al GUARDAR**, nunca al renderizar.
 - **Markdown es la fuente de verdad del contenido**; el HTML de TipTap es solo de memoria.
 - La jerarquía es **fija**: Carrera → Materia → Unidad → Tema → Hoja (una tabla por nivel).

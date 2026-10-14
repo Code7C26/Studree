@@ -6,6 +6,95 @@
 
 ---
 
+## [0.10.0] — 2026-10-14
+
+### Changed — Canvas estilo n8n, correlativas opcionales y panel de carreras (FASE 8)
+
+Al probar la app, los canvas no se sentían "estilo n8n": nodos fijos, todo se creaba con
+formularios fuera del lienzo y las carreras se veían poco. Decisiones del usuario: mover
+nodos a mano **con posición guardada**, carreras **sin** canvas pero más visibles, y poder
+elegir si una carrera usa correlativas.
+
+**Migración `0002_manual_layout_and_prereq_toggle.sql` aplicada** (2026-10-14) con la
+Management API de Supabase, usando `SUPABASE_ACCESS_TOKEN` de `.env.local` (sin prefijo
+`VITE_`, ver `docs/03-security.md`). Se verificó: las 9 columnas nuevas existen, RLS sigue
+activo en las 6 tablas y la API REST ya expone `uses_prerequisites` (se recargó la caché
+de esquema con `notify pgrst`).
+
+#### Datos (ADR-012, ADR-013)
+- `supabase/migrations/0002_manual_layout_and_prereq_toggle.sql` (**nuevo**):
+  `careers.uses_prerequisites` (default `true`); `pos_x`/`pos_y` en `subjects`, `units`,
+  `topics`; `map_x`/`map_y` en `subjects` (nodo raíz del canvas de materia).
+- `services/crudService.js`: `listByParents` (consulta con `IN`), `savePosition`
+  (update silencioso), `clearPositions` ("Reordenar"), `update(..., { silent })`.
+  Ahora emite el aviso de cambios después de crear / actualizar / borrar.
+- `services/dataEvents.js` (**nuevo**): aviso global `studree:data-changed`.
+- `careers/subjects/units/topics.service.js`: aceptan `uses_prerequisites` / posición
+  inicial. Solo mandan esas columnas cuando hace falta, así crear sigue funcionando sin la 0002.
+
+#### Canvas de carrera (`career-map.md`)
+- Nodos arrastrables con posición guardada. Al primer arrastre se "congela" el layout
+  entero; **⟲ Reordenar** vuelve al automático.
+- Crear materias desde el lienzo: **＋ Materia**, doble click o click derecho en el fondo,
+  y **＋** al costado de cada nodo (si hay correlativas, la nueva nace requiriendo a esa).
+- Correlativas: unir los puntos de dos nodos → elegir "para cursar / para rendir"
+  (`PrerequisiteKindDialog.jsx`, **nuevo**). Click en una flecha → quitarla.
+- Interruptor **"Usa correlativas"** en el header. Apagado: sin flechas, sin bloqueos, sin
+  🔗, layout en grilla.
+- Canvas de alto completo, visible aunque esté vacío ("Agregar primera materia").
+- `SubjectNode.jsx` rediseñado: ícono con color, puntos de conexión visibles, acciones al hover.
+
+#### Canvas de materia (`subject-map.md`)
+- La **materia es el nodo raíz**, con unidades y temas colgando (como el diseño de referencia).
+- Sin formularios: **＋** en la raíz → unidad, **＋** en una unidad → tema, doble click /
+  click derecho → unidad en ese punto. Arrastrable + Reordenar.
+- Nuevos: `SubjectRootNode.jsx`, `hooks/useFlowCanvas.js`, `lib/graph/canvasPositions.js`,
+  `components/ui/PromptDialog.jsx`.
+
+#### Panel de carreras (`careers.md`, **nuevo doc**)
+- Tarjetas grandes con color, inicial, tipo (con correlativas / curso), cantidad de materias
+  y barra de progreso; métricas arriba; tarjeta "+ Nueva carrera".
+- `CareerCard.jsx` y `CareerFormModal.jsx` (**nuevos**): crear / editar nombre, color y tipo.
+- `useCareers`: estadísticas por carrera con una sola consulta de materias; `updateCareer`.
+
+### Fixed
+- **Borrados sin confirmación**: carreras, materias, unidades, temas, hojas y correlativas
+  ahora piden confirmación (`ConfirmDialog` existía pero no se usaba). `Supr` ya no "borra"
+  nodos solo en pantalla.
+- **El explorador no se refrescaba** al crear o borrar desde un canvas: ahora escucha
+  `studree:data-changed`.
+- **Consultas N+1**: el explorador pasó a 5 consultas en total; el canvas de materia y el
+  export, a 3. Antes era una consulta por cada carrera / materia / unidad / tema.
+- **Bundle de 1,2 MB**: las páginas con canvas, el editor y el perfil se cargan con
+  `React.lazy`. Bundle inicial: **432 KB** (126 KB gzip). El editor TipTap queda en su propio
+  chunk de 520 KB, que solo se descarga al abrir una hoja.
+- Mensaje de "falta migración" genérico (antes nombraba solo la 0001).
+- Se eliminó la carpeta vacía `scr/` de la raíz.
+
+### Documentación
+- `docs/02-architecture.md`: ADR-012 (reemplaza a ADR-008) y ADR-013; estructura y rutas.
+- `docs/DB_SCHEMA.md`, `docs/API_DOCS.md`, `docs/01-project-overview.md` (Fase 8),
+  `docs/features/career-map.md`, `subject-map.md`, `navigation-shell.md`, `careers.md` (**nuevo**).
+- `folders-and-subjects.md`, `concept-map.md` y `resources.md` marcados como **OBSOLETOS**.
+- `CLAUDE.md`: reglas de la Fase 7 actualizadas (layout híbrido, correlativas opcionales) y
+  tabla de lookup.
+
+### Verificación (Mandamiento X)
+- `npm run lint`: sin errores. `npm run build`: compila.
+- Funciones de layout probadas con Node (grilla, lugar libre, dagre con nodo raíz).
+- Vite transforma sin errores todos los módulos nuevos y modificados.
+- ⚠️ **Sin verificación visual en el navegador**: la extensión de Chrome no estaba conectada.
+  Falta probar a mano arrastrar, doble click, conectar nodos y "Reordenar" contra Supabase
+  con la 0002 aplicada.
+
+### Request original
+> Vas a completar el plan y corregir los bugs. si quiero mover los nodos a mano y que la
+> posicion quede guardada y las carreras no tienen que ser un canvas de nodos. pero podrias
+> estar de otra forma mas facil de ver que como estan ahora, no se ven importantes. tambien
+> tienes que poner la opcion de ser o no correlativa la carrera, porq no todas son carreras.
+
+---
+
 ## [0.9.3] — 2026-09-28
 
 ### Added — Export `.zip` con estructura de carpetas (Método AInnovate · FASE 7.6, cierre)

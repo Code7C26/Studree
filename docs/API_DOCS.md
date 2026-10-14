@@ -4,7 +4,7 @@
 cliente (BaaS), usando `@supabase/supabase-js`. No hay servidor propio ni endpoints
 `/api/*`.
 
-**Última actualización:** 2026-08-24
+**Última actualización:** 2026-10-14
 
 > El rol de "capa de API" lo cumplen los **services** de `src/services/`. La seguridad no
 > la da un backend intermedio sino **RLS en Postgres** — ver `docs/03-security.md`.
@@ -21,6 +21,7 @@ Regla de oro: **ningún componente ni hook importa `supabase.client.js` ni toca
 | `supabase.client.js` | Instancia única del cliente (lee `VITE_SUPABASE_*`) |
 | `cache.service.js` | Cache optimista en `localStorage` (leer/escribir/invalidar) |
 | `crudService.js` | **Fábrica** con el CRUD + flujo optimista compartido por las 6 entidades |
+| `dataEvents.js` | Aviso global `studree:data-changed` tras crear/renombrar/borrar (refresca el explorador) |
 | `careers.service.js` | CRUD de carreras |
 | `subjects.service.js` | CRUD de materias + cambio de estado |
 | `prerequisites.service.js` | CRUD de correlativas **+ validación DAG** (ADR-009) |
@@ -38,7 +39,20 @@ get(id)          // → T | null
 create(data)     // → T        optimista: escribe cache y luego Supabase
 update(id, data) // → T        optimista, con reversión si falla
 remove(id)       // → boolean  la cascada la hace Postgres (ON DELETE CASCADE)
+
+// Agregados el 2026-10-14:
+listByParents(parentIds, columns?)          // → T[]  una consulta con IN (evita N+1)
+savePosition(id, {x, y}, parentId, cols?)   // → T    posición manual del canvas (ADR-012), update silencioso
+clearPositions(parentIds, cols?)            // → bool "Reordenar": pone las posiciones en NULL
 ```
+
+`update(id, values, parentId, { silent })`: con `silent: true` no emite el aviso de
+cambio de estructura (se usa para posiciones). `create`, `update` y `remove` exitosos
+emiten `notifyDataChanged()` (`dataEvents.js`), que escucha `useExplorerTree` con
+debounce de 300 ms. El autosave de hojas (`saveContent`) **no** lo emite.
+
+`list()` **sin** `parentId` devuelve todas las filas del usuario (RLS filtra): el
+explorador arma el árbol entero con 5 consultas, una por tabla.
 
 ### Forma de las respuestas
 

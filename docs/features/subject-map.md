@@ -1,6 +1,6 @@
 # Feature: Canvas de Materia (unidades → temas) + panel de hojas
 
-> **Estado:** ✅ Implementado (2026-09-09)
+> **Estado:** ✅ Implementado (2026-09-09) · Rediseño estilo n8n (2026-10-14, ADR-012)
 > **Archivos clave:** `src/pages/SubjectMapPage.jsx`,
 > `src/components/features/subjectMap/`, `src/components/features/sheets/`,
 > `src/hooks/useSubjectMap.js`, `src/hooks/useSheets.js`
@@ -10,8 +10,8 @@
 
 ## Descripción
 
-Canvas de una materia que muestra **dos niveles**: sus **Unidades** y, colgando de cada
-una, sus **Temas**. Al hacer click en un Tema se abre un **panel lateral** con la lista de
+Canvas de una materia con la **materia como nodo raíz**, sus **Unidades** colgando de ella
+y, colgando de cada unidad, sus **Temas** (como el árbol del diseño de referencia). Al hacer click en un Tema se abre un **panel lateral** con la lista de
 hojas de ese tema.
 
 ## Decisión clave: el canvas corta en Tema
@@ -28,25 +28,41 @@ representarlas como nodos vuelve el grafo ilegible y el layout inmanejable.
 El panel es una lista simple y densa — el patrón correcto cuando el contenido es
 homogéneo, ordenado y potencialmente largo.
 
+## Interacción estilo n8n (2026-10-14)
+
+| Acción | Resultado |
+|--------|-----------|
+| **＋** debajo de la materia (raíz) | Nueva unidad |
+| **＋** debajo de una unidad (hover) | Nuevo tema en esa unidad |
+| Botón **＋ Unidad** | Nueva unidad |
+| Doble click / click derecho en el fondo | Nueva unidad en ese punto |
+| Click / doble click en un tema | Panel de hojas |
+| Arrastrar cualquier nodo (incluida la raíz) | Se mueve y la posición se guarda |
+| ✕ en unidad / tema (hover) | Eliminar con confirmación (cascada) |
+| **⟲ Reordenar** | Vuelve al acomodo automático |
+
+Ya no hay formularios arriba del canvas: todo se crea desde el lienzo.
+
 ## Layout
 
-Igual que el canvas de carrera: **dagre siempre, sin coordenadas guardadas** (ADR-008).
-Acá la relación es la jerarquía `Unit → Topic`, que es un árbol y por lo tanto ya es un DAG
-por construcción (no hace falta validar ciclos).
-
-- Dirección `TB` (arriba → abajo): la unidad arriba, sus temas debajo.
+Híbrido, igual que el canvas de carrera (**ADR-012**): dagre `TB` (materia → unidades →
+temas) para lo que no tiene posición guardada; `map_x`/`map_y` (raíz) y `pos_x`/`pos_y`
+(unidades y temas) para lo acomodado a mano. Es un árbol, así que ya es un DAG por
+construcción (no hace falta validar ciclos).
 
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
 | `src/pages/SubjectMapPage.jsx` | Página: breadcrumb + canvas + panel |
-| `src/components/features/subjectMap/SubjectMap.jsx` | Lienzo React Flow |
-| `src/components/features/subjectMap/UnitNode.jsx` | Nodo de unidad (nombre + nº de temas) |
+| `src/components/features/subjectMap/SubjectMap.jsx` | Lienzo React Flow (toolbar, creación en el lienzo) |
+| `src/components/features/subjectMap/SubjectRootNode.jsx` | Nodo raíz: la materia + "+" para unidades |
+| `src/components/features/subjectMap/UnitNode.jsx` | Nodo de unidad (nombre + nº de temas + "+" para temas) |
 | `src/components/features/subjectMap/TopicNode.jsx` | Nodo de tema (nombre + nº de hojas) |
 | `src/components/features/sheets/SheetListPanel.jsx` | Panel lateral con las hojas del tema |
 | `src/components/features/sheets/SheetListItem.jsx` | Fila: título, fecha, acciones |
-| `src/hooks/useSubjectMap.js` | Unidades + temas de la materia |
+| `src/hooks/useSubjectMap.js` | Materia + unidades + temas (3 consultas, sin N+1) + posiciones |
+| `src/hooks/useFlowCanvas.js` | Arrastrar/guardar, modo auto/manual, crear en el lienzo |
 | `src/hooks/useSheets.js` | Hojas de un tema (listar / crear / borrar / renombrar) |
 | `src/services/units.service.js`, `topics.service.js`, `sheets.service.js` | Datos |
 
@@ -67,7 +83,8 @@ El panel usa `src/components/ui/Drawer.jsx`, que ya existe (se creó en la Fase 
 
 - El canvas **no baja al nivel de hoja**, por legibilidad. No es una limitación temporal:
   es la decisión de diseño.
-- Nunca persistir `x`/`y` (ADR-008).
+- Las posiciones se guardan solo por arrastre / creación en el lienzo (ADR-012).
+- Borrar unidades, temas y hojas siempre con confirmación.
 - El conteo de hojas por tema se resuelve con un `count` agregado, **no** trayendo todas
   las hojas de la materia.
 

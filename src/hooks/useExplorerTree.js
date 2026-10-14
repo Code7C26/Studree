@@ -14,6 +14,7 @@ import { subjectsService } from '../services/subjects.service.js'
 import { unitsService } from '../services/units.service.js'
 import { topicsService } from '../services/topics.service.js'
 import { sheetsService } from '../services/sheets.service.js'
+import { onDataChanged } from '../services/dataEvents.js'
 
 /** Service correcto por nivel, para el rename desde el explorador. */
 const SERVICES_BY_TYPE = {
@@ -62,87 +63,76 @@ export function useExplorerTree() {
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const index = []
 
-    const { data: careerRows, error: careersError } = await careersService.list()
-    if (careersError) {
-      setError(careersError)
+    // 5 consultas en total, una por nivel (RLS ya filtra por usuario), y el
+    // árbol se arma en memoria. Antes era una consulta por cada carrera,
+    // materia, unidad y tema (N+1), que con datos reales se volvía lento.
+    const [careersResult, subjectsResult, unitsResult, topicsResult, sheetsResult] = await Promise.all([
+      careersService.list(),
+      subjectsService.list(),
+      unitsService.list(),
+      topicsService.list(),
+      sheetsService.list(),
+    ])
+
+    if (careersResult.error) {
+      setError(careersResult.error)
       setCareers([])
       setSearchIndex([])
       setLoading(false)
       return
     }
 
-    const tree = await Promise.all(
-      (careerRows ?? []).map(async (career) => {
-        const { data: subjectRows } = await subjectsService.list(career.id)
+    /** Agrupa filas por su columna de FK al padre. */
+    const groupBy = (rows, field) => {
+      const groups = new Map()
+      for (const row of rows ?? []) {
+        if (!groups.has(row[field])) groups.set(row[field], [])
+        groups.get(row[field]).push(row)
+      }
+      return groups
+    }
+    const subjectsByCareer = groupBy(subjectsResult.data, 'career_id')
+    const unitsBySubject = groupBy(unitsResult.data, 'subject_id')
+    const topicsByUnit = groupBy(topicsResult.data, 'unit_id')
+    const sheetsByTopic = groupBy(sheetsResult.data, 'topic_id')
 
-        const subjects = await Promise.all(
-          (subjectRows ?? []).map(async (subject) => {
-            index.push({
-              type: 'subject',
-              id: subject.id,
-              name: subject.name,
-              path: [career.name],
-              careerId: career.id,
-              subjectId: subject.id,
-            })
+    const index = []
+    const tree = (careersResult.data ?? []).map((career) => ({
+      ...career,
+      subjects: (subjectsByCareer.get(career.id) ?? []).map((subject) => {
+        const base = { careerId: career.id, subjectId: subject.id }
+        index.push({ type: 'subject', id: subject.id, name: subject.name, path: [career.name], ...base })
 
-            const { data: unitRows } = await unitsService.list(subject.id)
+        return {
+          ...subject,
+          units: (unitsBySubject.get(subject.id) ?? []).map((unit) => {
+            index.push({ type: 'unit', id: unit.id, name: unit.name, path: [career.name, subject.name], ...base })
 
-            const units = await Promise.all(
-              (unitRows ?? []).map(async (unit) => {
-                index.push({
-                  type: 'unit',
-                  id: unit.id,
-                  name: unit.name,
-                  path: [career.name, subject.name],
-                  careerId: career.id,
-                  subjectId: subject.id,
-                })
+            return {
+              ...unit,
+              topics: (topicsByUnit.get(unit.id) ?? []).map((topic) => {
+                const topicPath = [career.name, subject.name, unit.name]
+                index.push({ type: 'topic', id: topic.id, name: topic.name, path: topicPath, ...base })
 
-                const { data: topicRows } = await topicsService.list(unit.id)
-
-                const topics = await Promise.all(
-                  (topicRows ?? []).map(async (topic) => {
-                    index.push({
-                      type: 'topic',
-                      id: topic.id,
-                      name: topic.name,
-                      path: [career.name, subject.name, unit.name],
-                      careerId: career.id,
-                      subjectId: subject.id,
-                    })
-
-                    const { data: sheetRows } = await sheetsService.list(topic.id)
-
-                    for (const sheet of sheetRows ?? []) {
-                      index.push({
-                        type: 'sheet',
-                        id: sheet.id,
-                        name: sheet.title,
-                        path: [career.name, subject.name, unit.name, topic.name],
-                        careerId: career.id,
-                        subjectId: subject.id,
-                        content: sheet.content_md ?? '',
-                      })
-                    }
-
-                    return { ...topic, sheets: sheetRows ?? [] }
-                  }),
-                )
-
-                return { ...unit, topics }
+                const sheets = sheetsByTopic.get(topic.id) ?? []
+                for (const sheet of sheets) {
+                  index.push({
+                    type: 'sheet',
+                    id: sheet.id,
+                    name: sheet.title,
+                    path: [...topicPath, topic.name],
+                    content: sheet.content_md ?? '',
+                    ...base,
+                  })
+                }
+                return { ...topic, sheets }
               }),
-            )
-
-            return { ...subject, units }
+            }
           }),
-        )
-
-        return { ...career, subjects }
+        }
       }),
-    )
+    }))
 
     setCareers(tree)
     setSearchIndex(index)
@@ -151,6 +141,21 @@ export function useExplorerTree() {
 
   useEffect(() => {
     load()
+  }, [load])
+
+  // Se re-arma cuando cualquier pantalla crea / renombra / borra algo
+  // (services/dataEvents.js). Con debounce: crear una materia con su
+  // correlativa, o borrar varias cosas seguidas, dispara una sola recarga.
+  useEffect(() => {
+    let timer = null
+    const unsubscribe = onDataChanged(() => {
+      clearTimeout(timer)
+      timer = setTimeout(load, 300)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
   }, [load])
 
   /**

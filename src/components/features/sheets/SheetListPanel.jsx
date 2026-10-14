@@ -9,6 +9,7 @@ import { SheetListItem } from './SheetListItem'
 import { Button } from '../../ui/Button'
 import { TextField } from '../../ui/TextField'
 import { EmptyState } from '../../ui/EmptyState'
+import { ConfirmDialog } from '../../ui/ConfirmDialog'
 import { useSheets } from '../../../hooks/useSheets.js'
 
 /**
@@ -31,6 +32,7 @@ function SheetListPanelContent({ topic, onOpenSheet }) {
   const { sheets, loading, error, createSheet, deleteSheet } = useSheets(topic.id)
   const [title, setTitle] = useState('')
   const [creating, setCreating] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   /** @param {React.FormEvent} event */
   async function handleCreate(event) {
@@ -82,11 +84,23 @@ function SheetListPanelContent({ topic, onOpenSheet }) {
               key={sheet.id}
               sheet={sheet}
               onOpen={() => onOpenSheet(sheet)}
-              onDelete={() => deleteSheet(sheet.id)}
+              onDelete={() => setPendingDelete(sheet)}
             />
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title="Eliminar hoja"
+        message={pendingDelete ? `Se va a eliminar "${pendingDelete.title}" y todo su contenido. No se puede deshacer.` : ''}
+        onConfirm={() => {
+          const sheet = pendingDelete
+          setPendingDelete(null)
+          if (sheet) deleteSheet(sheet.id)
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

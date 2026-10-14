@@ -34,7 +34,7 @@ enlaces y recursos relacionados.
 | Lenguaje | JavaScript (ES2022) + JSDoc | - | Sin TypeScript (ver ADR-002) |
 | Estilos | TailwindCSS | 3.4 | Design system en `tailwind.config.js` |
 | Mapas conceptuales | React Flow (`@xyflow/react`) | 12 | Árboles/nodos interactivos |
-| Auto-layout | `@dagrejs/dagre` | - | Posiciones de nodos; no se guardan coordenadas (ADR-008) |
+| Auto-layout | `@dagrejs/dagre` | - | Layout por defecto; las posiciones manuales sí se guardan (ADR-012) |
 | Editor de hojas | TipTap (ProseMirror) | 3 | Markdown como fuente de verdad (ADR-011) |
 | Routing | React Router (`react-router-dom`) | 6 | Navegación SPA |
 | Persistencia | **Supabase (Postgres)** | - | Fuente de verdad (ADR-007) |
@@ -70,6 +70,18 @@ Ver ADR-007 a ADR-011 en `docs/02-architecture.md`.
 | 7.4 | Canvas de materia (unidades/temas) + panel de hojas | `features/subject-map.md` | ✅ Completada |
 | 7.5 | Editor TipTap con Markdown como fuente de verdad | `features/sheet-editor.md` | ✅ Completada |
 | 7.6 | Export a `.md` único y a `.zip` | `features/markdown-export.md` | ✅ Completada |
+
+### Fase 8 — Canvas estilo n8n + correlativas opcionales (2026-10-14)
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Nodos arrastrables con posición guardada + "Reordenar" (ADR-012) | `features/career-map.md`, `features/subject-map.md` | ✅ |
+| Crear desde el lienzo: "+" en nodos, doble click / click derecho, conectar para correlativas | idem | ✅ |
+| Carrera o curso: `uses_prerequisites` (ADR-013) | `features/careers.md` | ✅ |
+| Panel de carreras con tarjetas grandes, métricas y progreso | `features/careers.md` | ✅ |
+| Bugs: confirmación al borrar, explorador sin refresco, consultas N+1, bundle de 1,2 MB | `CHANGELOG.md` 0.10.0 | ✅ |
+
+> Migración `0002_manual_layout_and_prereq_toggle.sql` aplicada el 2026-10-14.
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

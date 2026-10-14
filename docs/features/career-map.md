@@ -1,6 +1,6 @@
 # Feature: Canvas de Carrera (materias + correlativas)
 
-> **Estado:** ✅ Implementado (2026-09-09)
+> **Estado:** ✅ Implementado (2026-09-09) · Rediseño estilo n8n (2026-10-14, ADR-012/013)
 > **Archivos clave:** `src/pages/CareerMapPage.jsx`,
 > `src/components/features/careerMap/`, `src/hooks/useCareerMap.js`,
 > `src/lib/graph/dagreLayout.js`, `src/lib/graph/validateDag.js`,
@@ -13,6 +13,32 @@
 
 Canvas estilo n8n donde **cada nodo es una materia** de la carrera y **cada arista es una
 correlativa real**. Muestra de un vistazo qué se puede cursar, qué está bloqueado y por qué.
+
+## Interacción estilo n8n (2026-10-14)
+
+| Acción | Resultado |
+|--------|-----------|
+| Arrastrar un nodo | Se mueve y **la posición se guarda** (ADR-012) |
+| Doble click / click derecho en el fondo | Nueva materia **en ese punto** |
+| Botón **＋ Materia** (arriba a la izquierda) | Nueva materia (centro de la vista o lugar libre) |
+| **＋** a la derecha de un nodo (hover) | Nueva materia a continuación; si la carrera usa correlativas, nace requiriendo a esa (para cursar) |
+| Unir el punto derecho de A con el izquierdo de B | Correlativa "B requiere A" → se elige *para cursar* / *para rendir* |
+| Click en una flecha | Quitar esa correlativa (con confirmación) |
+| Doble click en un nodo / click en su nombre | Abrir la materia |
+| ✕ en el nodo (hover) | Eliminar materia (con confirmación: cascada) |
+| **⟲ Reordenar** | Borra las posiciones manuales → vuelve el acomodo automático |
+
+- El canvas ocupa todo el alto disponible y **se muestra aunque esté vacío** (con un
+  botón "Agregar primera materia").
+- Supr / Backspace **no** borran nodos (`deleteKeyCode={null}`): borrar siempre pasa por
+  la confirmación.
+
+## Carrera vs curso: `uses_prerequisites` (ADR-013)
+
+El header del canvas tiene el interruptor **"Usa correlativas"** (también se elige al crear
+la carrera, ver `careers.md`). Con `false`: no se dibujan aristas, nada queda `bloqueada`,
+no hay botón 🔗 ni puntos de conexión, y el layout automático es una **grilla** (dagre sin
+aristas apilaría todo en una columna). Las correlativas ya cargadas no se borran.
 
 ## Las correlativas son opcionales, no un requisito
 
@@ -42,15 +68,14 @@ Las correlativas son un **grafo real, no una jerarquía decorativa**: una materi
 tener varias correlativas y ser requisito de varias otras. Esa relación
 muchos-a-muchos es exactamente lo que un diagrama de nodos comunica mejor que una lista.
 
-## Layout: dagre, sin coordenadas guardadas
+## Layout: híbrido (ADR-012, reemplaza a ADR-008)
 
-Las posiciones se **calculan siempre** con dagre a partir del grafo de correlativas
-(**ADR-008**). **No se guarda ningún `x`/`y`**: la estructura es la única fuente de verdad.
-
-- Dirección `LR` (izquierda → derecha): las correlativas se leen como progresión temporal.
-- Cada nivel del layout equivale, en la práctica, a un cuatrimestre alcanzable.
-- Consecuencia de UX aceptada: el usuario **no puede** reacomodar nodos de forma
-  permanente.
+- **Modo automático** (ningún nodo guardado): dagre `LR` si hay correlativas de cursar
+  (cada nivel ≈ un cuatrimestre alcanzable); grilla si no hay.
+- **Modo manual**: al primer arrastre se guardan `pos_x`/`pos_y` de **todas** las materias
+  visibles; desde ahí cada nodo queda donde el usuario lo deja. Las materias nuevas nacen
+  en un lugar libre (o en el punto del doble click).
+- **⟲ Reordenar** vuelve al modo automático.
 
 > **El grafo debe ser un DAG.** Un ciclo haría que dagre no termine. Se garantiza
 > validando **al guardar** la correlativa (ADR-009), nunca al renderizar.
@@ -88,11 +113,15 @@ Solo las de `cursar` participan del cálculo de `bloqueada`.
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/pages/CareerMapPage.jsx` | Página: toolbar + canvas |
-| `src/components/features/careerMap/CareerMap.jsx` | Lienzo React Flow (nodos + aristas) |
-| `src/components/features/careerMap/SubjectNode.jsx` | Nodo: nombre, estado, candado, progreso |
+| `src/pages/CareerMapPage.jsx` | Página: header (interruptor de correlativas, exportar) + canvas + diálogos |
+| `src/components/features/careerMap/CareerMap.jsx` | Lienzo React Flow (nodos, aristas, toolbar, creación en el lienzo) |
+| `src/components/features/careerMap/SubjectNode.jsx` | Nodo: nombre, estado, candado, puntos de conexión, "+" |
 | `src/components/features/careerMap/PrerequisiteEditor.jsx` | Modal para editar correlativas |
-| `src/hooks/useCareerMap.js` | Estado del grafo + acciones |
+| `src/components/features/careerMap/PrerequisiteKindDialog.jsx` | Al conectar dos nodos: ¿para cursar o para rendir? |
+| `src/components/ui/PromptDialog.jsx` | Diálogo de nombre para crear materias |
+| `src/hooks/useCareerMap.js` | Carrera + materias + correlativas + posiciones |
+| `src/hooks/useFlowCanvas.js` | Arrastrar/guardar, modo auto/manual, crear en el lienzo |
+| `src/lib/graph/canvasPositions.js` | Posición guardada vs automática, grilla, lugar libre |
 | `src/lib/graph/dagreLayout.js` | Cálculo de posiciones con dagre |
 | `src/lib/graph/validateDag.js` | Detección de ciclos (DFS 3 colores) |
 | `src/lib/graph/subjectStatus.js` | Deriva `bloqueada` |
@@ -109,13 +138,14 @@ Solo las de `cursar` participan del cálculo de `bloqueada`.
 
 ## Restricciones
 
-- **Nunca** persistir `x`/`y` (ADR-008).
+- Las posiciones se guardan solo por arrastre / creación en el lienzo (ADR-012).
 - **Nunca** llamar a dagre sin haber validado el DAG (ADR-009).
+- Borrar materias y correlativas siempre con confirmación.
 - Colores solo del design system de `tailwind.config.js` (Mandamiento VII).
 - El bloqueo es informativo: **no impide** abrir la materia ni cargar contenido.
 
 ## Pendiente
 
-- [ ] Crear correlativas arrastrando una arista entre nodos.
+- [x] Crear correlativas arrastrando una arista entre nodos (2026-10-14).
 - [ ] Filtrar por cuatrimestre / año.
 - [ ] Resaltar el camino crítico de la carrera.

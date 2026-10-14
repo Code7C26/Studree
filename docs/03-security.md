@@ -97,6 +97,19 @@ de clave y confundirlas es el error de seguridad más grave posible en este proy
 - Si una clave se filtra por error (commit, captura, chat), **rotarla** desde
   Supabase Dashboard → Settings → API Keys.
 
+### Token de acceso personal (`SUPABASE_ACCESS_TOKEN`) — solo para migraciones
+
+Para aplicar migraciones (`ALTER TABLE`, etc.) sin pasar por el SQL Editor se usa la
+**Management API** de Supabase (`POST /v1/projects/{ref}/database/query`) con un
+*personal access token* (`sbp_…`, se genera en supabase.com/dashboard/account/tokens).
+La anon key **no puede** cambiar el esquema, y está bien que sea así.
+
+- Va en `.env.local` como `SUPABASE_ACCESS_TOKEN`, **SIN prefijo `VITE_`**: así Vite no
+  lo incluye en el bundle. `.env.local` está en `.gitignore`.
+- **Nunca** se usa desde `src/`: lo lee solo el proceso que aplica la migración, en local.
+- Da acceso total a la **cuenta** de Supabase (todos los proyectos): revocarlo cuando no
+  se use, y rotarlo ante cualquier sospecha de filtración.
+
 ## Reglas INVIOLABLES
 
 - NUNCA hardcodear credenciales, tokens o claves en el código.

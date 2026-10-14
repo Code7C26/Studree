@@ -14,48 +14,67 @@ import { unitsService } from '../services/units.service.js'
 import { topicsService } from '../services/topics.service.js'
 import { sheetsService } from '../services/sheets.service.js'
 
-/**
- * @param {string} subjectId
- * @param {import('../types/models.js').Subject} [subjectRow] - Si ya se tiene la fila, evita un `get` extra.
- */
-async function fetchSubjectTree(subjectId, subjectRow) {
-  let subject = subjectRow
-  if (!subject) {
-    const { data, error } = await subjectsService.get(subjectId)
-    if (error) throw new Error(error)
-    if (!data) throw new Error('No se encontró la materia.')
-    subject = data
+/** Lanza el error de un ServiceResult como excepción (lo atrapa `run`). */
+function unwrap({ data, error }) {
+  if (error) throw new Error(error)
+  return data ?? []
+}
+
+/** @param {Object[]} rows @param {string} field */
+function groupBy(rows, field) {
+  const groups = new Map()
+  for (const row of rows) {
+    if (!groups.has(row[field])) groups.set(row[field], [])
+    groups.get(row[field]).push(row)
   }
+  return groups
+}
 
-  const { data: unitRows, error: unitsError } = await unitsService.list(subjectId)
-  if (unitsError) throw new Error(unitsError)
-
-  const units = await Promise.all(
-    (unitRows ?? []).map(async (unit) => {
-      const { data: topicRows, error: topicsError } = await topicsService.list(unit.id)
-      if (topicsError) throw new Error(topicsError)
-
-      const topics = await Promise.all(
-        (topicRows ?? []).map(async (topic) => {
-          const { data: sheetRows, error: sheetsError } = await sheetsService.list(topic.id)
-          if (sheetsError) throw new Error(sheetsError)
-
-          return {
-            name: topic.name,
-            sheets: (sheetRows ?? []).map((sheet) => ({
-              title: sheet.title,
-              content_md: sheet.content_md,
-              updated_at: sheet.updated_at,
-            })),
-          }
-        }),
-      )
-
-      return { name: unit.name, topics }
-    }),
+/**
+ * Arma el árbol de export de varias materias con 3 consultas en total
+ * (unidades, temas y hojas, cada una con `IN`), no una por unidad/tema.
+ *
+ * @param {import('../types/models.js').Subject[]} subjectRows
+ * @returns {Promise<Array<{name: string, units: Array<Object>}>>}
+ */
+async function buildSubjectTrees(subjectRows) {
+  const units = unwrap(await unitsService.listByParents(subjectRows.map((subject) => subject.id)))
+  const topics = unwrap(await topicsService.listByParents(units.map((unit) => unit.id)))
+  const sheets = unwrap(
+    await sheetsService.listByParents(
+      topics.map((topic) => topic.id),
+      'id, topic_id, title, content_md, updated_at, position',
+    ),
   )
 
-  return { name: subject.name, units }
+  const unitsBySubject = groupBy(units, 'subject_id')
+  const topicsByUnit = groupBy(topics, 'unit_id')
+  const sheetsByTopic = groupBy(sheets, 'topic_id')
+
+  return subjectRows.map((subject) => ({
+    name: subject.name,
+    units: (unitsBySubject.get(subject.id) ?? []).map((unit) => ({
+      name: unit.name,
+      topics: (topicsByUnit.get(unit.id) ?? []).map((topic) => ({
+        name: topic.name,
+        sheets: (sheetsByTopic.get(topic.id) ?? []).map((sheet) => ({
+          title: sheet.title,
+          content_md: sheet.content_md,
+          updated_at: sheet.updated_at,
+        })),
+      })),
+    })),
+  }))
+}
+
+/** @param {string} subjectId */
+async function fetchSubjectTree(subjectId) {
+  const { data: subject, error } = await subjectsService.get(subjectId)
+  if (error) throw new Error(error)
+  if (!subject) throw new Error('No se encontró la materia.')
+
+  const [tree] = await buildSubjectTrees([subject])
+  return tree
 }
 
 /** @param {string} careerId */
@@ -64,12 +83,8 @@ async function fetchCareerTree(careerId) {
   if (careerError) throw new Error(careerError)
   if (!career) throw new Error('No se encontró la carrera.')
 
-  const { data: subjectRows, error: subjectsError } = await subjectsService.list(careerId)
-  if (subjectsError) throw new Error(subjectsError)
-
-  const subjects = await Promise.all((subjectRows ?? []).map((subject) => fetchSubjectTree(subject.id, subject)))
-
-  return { name: career.name, subjects }
+  const subjectRows = unwrap(await subjectsService.list(careerId))
+  return { name: career.name, subjects: await buildSubjectTrees(subjectRows) }
 }
 
 /**
