@@ -47,7 +47,7 @@ activar, reaparecen.
 2. "+ Nueva carrera" → modal: nombre, color y tipo.
 3. Click en una tarjeta → `/carreras/:careerId` (canvas de materias, ver `career-map.md`).
 4. Menú ⋯ → Editar (nombre, color, tipo) o Eliminar (con confirmación: borra en cascada
-   todas sus materias, unidades, temas y hojas).
+   todas sus materias y hojas).
 
 ## Restricciones
 

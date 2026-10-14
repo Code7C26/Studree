@@ -52,7 +52,7 @@ ningún requisito entre materias (ver "Público objetivo" en
 - Cargar correlativas es una acción **opcional y secundaria** ("Editar
   correlativas" en el nodo), nunca un paso obligatorio al crear una materia.
 - Una materia **sin ninguna correlativa cargada** es un nodo suelto, normal,
-  con todas sus funciones (unidades, temas, hojas) disponibles igual. Nunca
+  con todas sus funciones (hojas y enlaces) disponibles igual. Nunca
   queda `bloqueada` (ver fórmula de derivación en `docs/DB_SCHEMA.md`).
 - Una carrera entera sin ninguna correlativa cargada es un caso de uso válido:
   el canvas se ve como una lista de materias sueltas ordenadas por dagre, sin
@@ -119,7 +119,7 @@ Solo las de `cursar` participan del cálculo de `bloqueada`.
 | `src/components/features/careerMap/PrerequisiteEditor.jsx` | Modal para editar correlativas |
 | `src/components/features/careerMap/PrerequisiteKindDialog.jsx` | Al conectar dos nodos: ¿para cursar o para rendir? |
 | `src/components/ui/PromptDialog.jsx` | Diálogo de nombre para crear materias |
-| `src/hooks/useCareerMap.js` | Carrera + materias + correlativas + posiciones |
+| `src/hooks/useCareerMap.js` | Carrera + materias + correlativas + posiciones (en lote, ADR-016) + recarga silenciosa ante `studree:data-changed` |
 | `src/hooks/useFlowCanvas.js` | Arrastrar/guardar, modo auto/manual, crear en el lienzo |
 | `src/lib/graph/canvasPositions.js` | Posición guardada vs automática, grilla, lugar libre |
 | `src/lib/graph/dagreLayout.js` | Cálculo de posiciones con dagre |
@@ -138,7 +138,11 @@ Solo las de `cursar` participan del cálculo de `bloqueada`.
 
 ## Restricciones
 
-- Las posiciones se guardan solo por arrastre / creación en el lienzo (ADR-012).
+- Las posiciones se guardan solo por arrastre / creación en el lienzo (ADR-012), en **un
+  solo request** para todos los nodos (`subjectsService.savePositions` → RPC
+  `save_node_positions`, ADR-016).
+- Si otra vista cambia datos (ej. renombrar una materia en el explorador), el canvas se
+  recarga en silencio (debounce 300 ms).
 - **Nunca** llamar a dagre sin haber validado el DAG (ADR-009).
 - Borrar materias y correlativas siempre con confirmación.
 - Colores solo del design system de `tailwind.config.js` (Mandamiento VII).

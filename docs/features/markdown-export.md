@@ -1,137 +1,113 @@
 # Feature: Export a Markdown (para IA / segundo cerebro)
 
-> **Estado:** ✅ Implementado (2026-09-28) — `.md` único y `.zip` con carpetas
+> **Estado:** ✅ Implementado (2026-09-28) · 3 niveles, "todo", "Copiar para IA" (2026-10-14)
 > **Archivos clave:** `src/lib/export/`, `src/hooks/useExportTree.js`,
 > `src/components/features/export/ExportDialog.jsx`
-> **Dependencias nuevas:** `jszip` (cargada con `import()` dinámico, no va en el bundle inicial)
+> **Dependencias:** `jszip` (cargada con `import()` dinámico, no va en el bundle inicial)
 
 ---
 
 ## Descripción
 
-Exporta el contenido de una materia o de una carrera completa a Markdown, para subirlo a
-un proyecto de Claude/ChatGPT o importarlo a Obsidian.
+Exporta el contenido de una materia, una carrera o **todas las carreras** a Markdown, para
+pegarlo en una IA (Claude, ChatGPT, Gemini) o importarlo a Obsidian.
 
-Gracias al ADR-011 (Markdown como fuente de verdad) el export **no convierte nada**: lee
-`sheets.content_md` y lo concatena.
+Gracias al ADR-011 (Markdown como fuente de verdad) el export no convierte formatos: lee
+`sheets.content_md` y lo arma.
 
-## Prioridad de implementación
+## Dónde se abre y qué alcance ofrece
 
-| # | Formato | Para qué | Prioridad |
-|---|---------|----------|-----------|
-| 1 | **`.md` único concatenado** | Subir directo a un proyecto de IA | **Primero** |
-| 2 | **`.zip` con estructura de carpetas** | Importar a Obsidian o similar | Después |
+| Desde | Alcances |
+|-------|----------|
+| Panel de carreras (`/carreras`) → **Exportar todo** | Todas mis carreras |
+| Canvas de carrera → **Exportar** | Toda la carrera · Todas mis carreras |
+| Canvas de materia → **Exportar** | Esta materia · Toda la carrera · Todas mis carreras |
 
----
+## Salidas
 
-## 1. Export `.md` único
+| Botón | Qué hace |
+|-------|----------|
+| **📋 Copiar para IA** | Copia el `.md` único al portapapeles con un **preámbulo** que explica qué es, la estructura de headings y que `[[Título]]` es un link a otra hoja. Es lo más rápido para pegar en un chat. |
+| **Descargar `.md`** | Un solo archivo (`studree-<nombre>-<AAAA-MM-DD>.md`) |
+| **Descargar `.zip`** | Carpetas con un `.md` por hoja y frontmatter (`studree-<nombre>-<fecha>.zip`) |
 
-Un solo archivo con la jerarquía expresada como **headings**:
+## 1. `.md` único
 
-| Nivel | Heading |
-|-------|---------|
-| Carrera | `#` |
-| Materia | `##` |
-| Unidad | `###` |
-| Tema | `####` |
-| Hoja | Título en negrita + su contenido debajo |
+La jerarquía va como **headings**:
+
+| Alcance | `#` | `##` | `###` | `####` |
+|---------|-----|------|-------|--------|
+| Materia | materia | hoja | contenido | |
+| Carrera | carrera | materia | hoja | contenido |
+| Todo | "Mis apuntes" | carrera | materia | hoja |
 
 ```markdown
 # Licenciatura en Biología
 
 ## Genética
 
-### Unidad 1 — Herencia mendeliana
+### Leyes de Mendel
 
-#### Leyes de Mendel
-
-**Apunte de clase 12/03**
-
-Contenido de la hoja en Markdown, tal cual está guardado…
-
-**Resumen del capítulo 4**
-
-Otro contenido…
+#### Primera ley        ← en la hoja era "# Primera ley"
+Contenido… ver [[Herencia ligada al sexo]]
 ```
 
-> Los headings **dentro** del contenido de una hoja se preservan tal cual. Puede haber un
-> `#` de la hoja bajo un `####` de tema: es Markdown válido y las IAs lo interpretan bien.
-> Reescalar los headings del usuario sería alterar su contenido.
+**Headings de las hojas corridos de nivel (2026-10-14).** Un `# Intro` dentro de una hoja
+quedaba al mismo nivel que la carrera, y una IA leía mal la estructura. Ahora
+`shiftHeadings` los corre para que queden **debajo** del heading de la hoja, con tope
+`######`, y **sin tocar los bloques de código** (```` ``` ```` y `~~~`). Solo afecta al
+export: el dato guardado no cambia.
 
-**Nombre del archivo:** `studree-<carrera-o-materia>-<AAAA-MM-DD>.md`
-
-## 2. Export `.zip`
-
-Estructura de carpetas espejo del árbol, con **frontmatter YAML** por hoja:
+## 2. `.zip`
 
 ```
 Licenciatura en Biología/
 └── Genética/
-    └── 01 - Herencia mendeliana/
-        └── Leyes de Mendel/
-            ├── Apunte de clase 12-03.md
-            └── Resumen del capítulo 4.md
+    ├── Leyes de Mendel.md
+    └── Resumen.md
 ```
+
+Con "todo", todo va dentro de una carpeta `Studree/`.
 
 ```markdown
 ---
-materia: Genética
-unidad: Herencia mendeliana
-tema: Leyes de Mendel
+carrera: "Licenciatura en Biología"
+materia: "Genética"
 fecha: 2026-08-24
 ---
 
 Contenido de la hoja…
 ```
 
-- Los nombres se **sanitizan** para el sistema de archivos (se quitan `/ \ : * ? " < > |`).
-- Las unidades se prefijan con su `position` (`01 - `, `02 - `) para que el orden se
-  respete al listarlas alfabéticamente.
-- El frontmatter se genera a mano (`frontmatter.js`): son 5 campos, **no justifica sumar
-  `js-yaml`** como dependencia.
+- Los nombres se **sanitizan** (se quitan `/ \ : * ? " < > |`; vacío → "Sin título").
+- Los nombres se **deduplican sin distinguir mayúsculas** dentro de cada carpeta
+  (`Resumen.md`, `resumen (2).md`). Antes dos hojas o temas con el mismo nombre se
+  pisaban (Windows y macOS no distinguen mayúsculas en los paths).
+- `fecha` = `sheets.updated_at` (última edición). Si no hay, el campo se omite.
+- El frontmatter se arma a mano (`frontmatter.js`): 3 campos, no justifica `js-yaml`.
 
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/hooks/useExportTree.js` | Trae la jerarquía completa (con `content_md` y `updated_at` de cada hoja) desde los services: `loadSubjectTree(subjectId)` / `loadCareerTree(careerId)` |
-| `src/lib/export/toSingleMarkdown.js` | Árbol → string Markdown único (funciones puras: `subjectTreeToMarkdown`, `careerTreeToMarkdown`) |
-| `src/lib/export/toZip.js` | Árbol → `Blob` `.zip` (funciones puras salvo el constructor de `jszip`, que recibe como parámetro: `subjectTreeToZip(JSZip, subject)`, `careerTreeToZip(JSZip, career)`) |
-| `src/lib/export/frontmatter.js` | `buildFrontmatter({ subjectName, unitName, topicName, date })` — arma el bloque YAML de cada hoja del `.zip` |
-| `src/lib/export/download.js` | `buildExportFilename(name, extension)` + `downloadBlob(filename, blob)` / `downloadTextFile(filename, content)` |
-| `src/components/features/export/ExportDialog.jsx` | Modal: elegir **formato** (`.md` / `.zip`) y, si se abre desde una materia, **alcance** (esta materia / toda la carrera); dispara la descarga |
-
-## Flujo de uso (implementado)
-
-1. El usuario abre "Exportar" desde el header de `CareerMapPage` o `SubjectMapPage`.
-2. Elige **formato** (`.md` único / `.zip` con carpetas) y, si viene de una materia,
-   **alcance** (esta materia / toda la carrera); desde una carrera el alcance es siempre
-   "toda la carrera".
-3. `useExportTree` trae el árbol completo con `content_md` de cada hoja.
-4. Según el formato:
-   - `.md`: `toSingleMarkdown.js` arma el string; `download.js` lo descarga.
-   - `.zip`: se importa `jszip` con `import()` dinámico, `toZip.js` arma el `Blob` con la
-     estructura de carpetas y el frontmatter de cada hoja; `download.js` lo descarga.
-
-**Numeración de las unidades:** el prefijo `01 - `, `02 - `… sale del **índice en la lista
-ya ordenada** (posición 1, 2, 3…), no del campo `position` crudo de la base — así no
-importa si `position` tiene huecos por materias/unidades borradas.
-
-**Campo `fecha` del frontmatter:** se usa `sheets.updated_at` (última edición de la hoja),
-recortado a `AAAA-MM-DD`.
+| `src/hooks/useExportTree.js` | Trae el árbol con `content_md`: `loadSubjectTree(id)`, `loadCareerTree(id)`, `loadAllTree()` (consultas con `IN`, paginadas) |
+| `src/lib/export/toSingleMarkdown.js` | `shiftHeadings`, `subjectTreeToMarkdown`, `careerTreeToMarkdown`, `allTreeToMarkdown`, `withAiPreamble` (puras) |
+| `src/lib/export/toZip.js` | `uniqueName`, `subjectTreeToZip`, `careerTreeToZip`, `allTreeToZip` (reciben el constructor de JSZip) |
+| `src/lib/export/frontmatter.js` | `buildFrontmatter({ careerName, subjectName, date })` |
+| `src/lib/export/download.js` | `buildExportFilename`, `downloadBlob`, `downloadTextFile` |
+| `src/components/features/export/ExportDialog.jsx` | Modal: alcance, formato, descargar / copiar para IA |
 
 ## Restricciones
 
 - El export es **solo lectura**: nunca modifica datos.
 - Se genera **en el cliente**; no hay endpoint de export.
 - Se libera la URL del blob (`revokeObjectURL`) después de descargar.
-- `jszip` se importa con **`import()` dinámico**, para no cargarlo en el bundle inicial de
-  quien nunca exporta.
+- `jszip` se importa con **`import()` dinámico**.
+- Si el navegador no deja escribir en el portapapeles, se avisa y se sugiere descargar.
 
 ## RAG / embeddings
 
-**Fuera de alcance en esta etapa.** El terreno queda preparado (contenido en Markdown,
-chunkeable por hoja), pero **no se implementa vectorización**.
+**Fuera de alcance en esta etapa.** El contenido queda chunkeable por hoja.
 
 ## Pendiente
 

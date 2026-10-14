@@ -6,6 +6,99 @@
 
 ---
 
+## [0.12.0] — 2026-10-14
+
+### Changed — Jerarquía de 3 niveles + canvas de hojas con `[[links]]` (FASE 10 / Fase 1)
+
+**Request original:** analizar a fondo el proyecto contra la visión, y después
+"completá la fase 0 y fase 1". Decisiones del usuario en el brainstorming: pasar a
+**Carrera → Materia → Hoja** ("es tedioso ir abriendo y abriendo") y que el canvas de
+materia muestre **las hojas como nodos conectadas por links** (opción A). Spec:
+`docs/superpowers/specs/2026-10-14-diagnostico-fases-0-1-design.md`; plan:
+`docs/superpowers/plans/2026-10-14-fases-0-1.md`.
+
+**Migración `0003_three_levels_and_sheet_links.sql` aplicada** (2026-10-14) vía
+Management API. Antes se probó dentro de una transacción con `rollback` (asserts de links,
+rename, títulos con caracteres especiales, autoenlace, duplicados, whitelist, posiciones),
+y después con un E2E como usuario autenticado (RLS de `sheet_links` y de la RPC; otro
+usuario no puede mover nodos ajenos). Datos migrados: 0 hojas sin `subject_id`.
+
+#### Datos (ADR-014, ADR-015, ADR-016)
+- `sheets.subject_id` (backfill desde tema → unidad), `sheets.pos_x/pos_y`, títulos únicos
+  por materia, `topic_id` legado (`on delete set null`). `units`/`topics` deprecadas.
+- `sheet_links` + RLS, **derivada del Markdown** por triggers (`refresh_sheet_links`); el
+  rename de una hoja reescribe los `[[título viejo]]` que la apuntaban.
+- RPC `save_node_positions` (security invoker + whitelist).
+- `updated_at` de hojas solo cambia con título o contenido.
+
+#### Canvas de materia (`subject-map.md`, reescrito)
+- Hojas como nodos (`SheetNode.jsx`, **nuevo**); conectar dos nodos agrega `[[destino]]` al
+  origen; click en la flecha lo quita; ＋ crea una hoja ya enlazada; vista **Lista**
+  (`SheetList.jsx`, **nuevo**). Layout `computeSheetLayout`: dagre para las conectadas,
+  grilla debajo para las sueltas.
+- `useSubjectMap` reescrito (materia + hojas sin contenido + links).
+- **Eliminados:** `UnitNode`, `TopicNode`, `SubjectRootNode`, `SheetListPanel`, `useSheets`,
+  `units.service.js`, `topics.service.js`.
+
+#### Editor (`sheet-editor.md`)
+- Panel **Enlaces** (`SheetLinksPanel.jsx`, `useSheetLinks.js`, **nuevos**): salientes,
+  backlinks y `[[títulos]]` sin hoja con botón para crearla.
+- `lib/markdown/wikiLinks.js` (**nuevo**); `editorToMarkdown` desescapa `\[\[ \]\]`.
+- "← Volver a la materia"; error claro si el título ya existe (y vuelve al anterior).
+
+#### Explorador, palette y export
+- Explorador y palette a 3 niveles; el rename muestra el error debajo de la fila.
+- Export: alcance **todas mis carreras** (botón "Exportar todo" en `/carreras`),
+  **📋 Copiar para IA** (portapapeles + preámbulo), headings de las hojas corridos de nivel
+  (sin tocar bloques de código), nombres del `.zip` deduplicados, frontmatter
+  `carrera/materia/fecha`.
+
+#### Archivos
+`supabase/migrations/0003_three_levels_and_sheet_links.sql`, `src/services/{crudService,
+cache.service,sheets.service,sheetLinks.service}.js`, `src/hooks/{useSubjectMap,useSheet,
+useSheetLinks,useExplorerTree,useExportTree,useCareerMap}.js`, `src/lib/markdown/
+{wikiLinks,serialize}.js`, `src/lib/graph/dagreLayout.js`, `src/lib/export/*`,
+`src/components/features/{subjectMap,sheetEditor,explorer,commandPalette,export}/*`,
+`src/components/layout/{WorkspaceLayout,AuthProvider,Header,TabBar}.jsx`,
+`src/pages/{SubjectMapPage,SheetPage,CareersPage,CareerMapPage,HomePage}.jsx`,
+`src/types/models.js`, docs.
+
+---
+
+## [0.11.0] — 2026-10-14
+
+### Fixed — Estabilización (FASE 9 / Fase 0 del diagnóstico)
+
+- **Borrador del editor pisaba cambios de otro dispositivo** (`useSheet.js`): el borrador
+  ahora es `{ content, baseUpdatedAt }`, solo gana si el servidor no cambió desde entonces,
+  y se borra después de guardar bien.
+- **Autosave perdido al salir** de la hoja antes de los 800 ms: se manda enseguida al
+  desmontar y en `pagehide`.
+- **Truncado silencioso a 1000 filas**: `crudService.list` y `listByParents` paginan.
+- **El explorador bajaba el contenido de todas las hojas**: ahora trae columnas sin
+  `content_md`; la búsqueda por contenido del palette va al servidor
+  (`sheetsService.searchContent`, debounce 250 ms, desde 3 letras).
+- **Tabs huérfanas** de hojas borradas y títulos viejos: se podan y sincronizan con el
+  árbol del explorador.
+- **Fuga entre usuarios**: `clearAllCache` borra todo `studree:` (también tabs y
+  explorador), al cerrar sesión y al entrar con otra cuenta.
+- **Un `UPDATE` por nodo** al acomodar un canvas: ahora un solo request
+  (`savePositions` → RPC, ADR-016).
+- **Canvas desactualizado** al renombrar desde el explorador: los canvas se recargan en
+  silencio con `studree:data-changed`.
+- **Logo**: SVG nuevo (`public/logo.svg`) con los colores del design system. El JPEG
+  anterior parecía un placeholder y decía "STUIDREE". Se eliminó `public/logo.jpg`.
+
+### Removed
+- Código muerto: `hooks/useSubjects.js`, `hooks/useEntityById.js`.
+
+### Changed
+- `.cursorrules`, `.windsurfrules`, `.clinerules` y `.github/copilot-instructions.md` pasan
+  a ser copias de `CLAUDE.md` (estaban desactualizados y describían el modelo viejo).
+- Trabajo pendiente de la Fase 8 commiteado (`facab6a`).
+
+---
+
 ## [0.10.0] — 2026-10-14
 
 ### Changed — Canvas estilo n8n, correlativas opcionales y panel de carreras (FASE 8)

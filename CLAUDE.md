@@ -10,7 +10,9 @@
   conceptuales interactivos** (Study + Tree).
 - **Stack:** React 18 + Vite + **JavaScript (JSDoc, NO TypeScript)** + TailwindCSS +
   React Flow (`@xyflow/react`) + React Router DOM.
-- **Persistencia:** `localStorage` (sin backend ni base de datos remota aún).
+- **Persistencia:** **Supabase** (Postgres + Auth + RLS) es la fuente de verdad;
+  `localStorage` es solo cache optimista (ADR-007).
+- **Jerarquía:** Carrera → Materia → Hoja (ADR-014); las hojas se enlazan con `[[Título]]`.
 - **Diseño:** modo oscuro principal, **acento verde**, minimalista.
 
 ## Protocolo Obligatorio (antes de cada cambio)
@@ -83,17 +85,19 @@
 | `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` · `useFlowCanvas` | `docs/features/career-map.md` |
 | `pages/CareersPage.jsx` · `features/careers/**` · `useCareers` | `docs/features/careers.md` |
 | `services/dataEvents.js` · `services/crudService.js` | `docs/API_DOCS.md` |
-| `features/subjectMap/**` · `features/sheets/**` · `useSubjectMap` · `useSheets` · `units/topics.service.js` | `docs/features/subject-map.md` |
-| `features/sheetEditor/**` · `lib/markdown/**` · `useSheet` · `sheets.service.js` | `docs/features/sheet-editor.md` |
-| `features/export/**` · `lib/export/**` | `docs/features/markdown-export.md` |
+| `features/subjectMap/**` · `features/sheets/**` · `useSubjectMap` · `sheetLinks.service.js` · `lib/graph/dagreLayout.js` (`computeSheetLayout`) | `docs/features/subject-map.md` |
+| `features/sheetEditor/**` · `lib/markdown/**` · `useSheet` · `useSheetLinks` · `sheets.service.js` | `docs/features/sheet-editor.md` |
+| `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
+| `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
 
-## Reglas del rediseño (Fase 7 — ADR-007 a ADR-011)
+## Reglas del rediseño (ADR-007 a ADR-016)
 
-> Vigentes desde 2026-08-24 (actualizadas 2026-10-14). Reemplazan a ADR-003, ADR-006 y ADR-008.
+> Vigentes desde 2026-08-24 (actualizadas 2026-10-14). Reemplazan a ADR-003, ADR-006,
+> ADR-008 y, en la profundidad, ADR-010.
 
 - **Supabase es la fuente de verdad**; `localStorage` es SOLO cache optimista descartable.
 - **Layout híbrido (ADR-012, reemplaza a ADR-008):** dagre por defecto; las posiciones
@@ -102,5 +106,16 @@
 - **Correlativas opcionales por carrera (ADR-013):** respetar `careers.uses_prerequisites`.
 - **Validar el DAG de correlativas al GUARDAR**, nunca al renderizar.
 - **Markdown es la fuente de verdad del contenido**; el HTML de TipTap es solo de memoria.
-- La jerarquía es **fija**: Carrera → Materia → Unidad → Tema → Hoja (una tabla por nivel).
-- El canvas de materia **corta en Tema**: las hojas van en un panel lateral, no en nodos.
+- La jerarquía es **fija de 3 niveles** (ADR-014): Carrera → Materia → Hoja (una tabla por
+  nivel). `units`/`topics` están **deprecadas**: no usarlas en código nuevo.
+- El canvas de materia muestra **hojas como nodos** y los `[[links]]` como aristas.
+- **Los links viven en el Markdown** (ADR-015): `sheet_links` la deriva la base con
+  triggers. Nunca insertar/borrar filas de `sheet_links` desde el cliente: conectar =
+  agregar `[[Título]]` al contenido del origen.
+- Títulos de hoja **únicos por materia**.
+- Posiciones del canvas: siempre en lote con `savePositions` (RPC `save_node_positions`,
+  ADR-016). Un canvas nuevo exige sumar su tabla a la whitelist de la función.
+- Las listas paginan (PostgREST corta en 1000 filas): usar `crudService.list`/`listByParents`.
+- Funciones SQL nuevas: `security invoker`, nunca `security definer` sin revisión.
+- Los archivos `.cursorrules`, `.windsurfrules`, `.clinerules` y
+  `.github/copilot-instructions.md` son **copias** de este archivo: al editarlo, copiarlo.

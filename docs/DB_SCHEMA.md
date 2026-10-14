@@ -2,39 +2,37 @@
 
 **Fuente de verdad:** **Supabase (PostgreSQL)** — ver ADR-007.
 **Cache:** `localStorage` (optimista, descartable).
-**Última actualización:** 2026-10-14 (migración 0002: posiciones manuales + correlativas opcionales)
+**Última actualización:** 2026-10-14 (migración 0003: 3 niveles + links entre hojas + posiciones en lote)
 
-> **Cambio de modelo (2026-08-24).** Este documento describe el modelo **nuevo**, de
-> jerarquía fija de 5 niveles con entidades explícitas (ADR-010). Reemplaza al modelo
-> anterior (`Folder → Subject → TreeNode → Resource`), que queda al final como registro
-> histórico. Por decisión del usuario **no hay migración de datos**: el esquema arranca
-> vacío.
+> **Cambio de modelo (2026-10-14, ADR-014).** La jerarquía pasa de 5 niveles a **3**:
+> Carrera → Materia → Hoja. Las hojas cuelgan directo de la materia y se conectan entre
+> sí con `[[links]]` (ADR-015). `units` y `topics` quedan **deprecadas**: siguen en la
+> base (sin UI ni services) y se eliminan en una migración posterior. La 0003 migró los
+> datos existentes (cada hoja heredó la materia de su tema → unidad).
 
 ---
 
 ## Jerarquía
 
 ```
-Career (Carrera)
+Career (Carrera / curso)
 └── Subject (Materia)        ←→ Prerequisite (correlativas entre materias)
-    └── Unit (Unidad)
-        └── Topic (Tema)
-            └── Sheet (Hoja — documento Markdown)
+    └── Sheet (Hoja — documento Markdown)   ←→ SheetLink ([[links]] entre hojas)
 ```
 
-Cada nivel es una **tabla propia**. La profundidad está garantizada por el esquema: no es
-posible colgar una Hoja de una Unidad, ni anidar Temas dentro de Temas.
+Cada nivel es una **tabla propia** con FK real al padre. `sheet_links` no es jerarquía:
+es un grafo entre hojas de la misma materia, **derivado del Markdown** (ver abajo).
 
 ## Diagrama de Entidades
 
 ```mermaid
 erDiagram
     CAREER ||--o{ SUBJECT : agrupa
-    SUBJECT ||--o{ UNIT : contiene
-    UNIT ||--o{ TOPIC : contiene
-    TOPIC ||--o{ SHEET : contiene
+    SUBJECT ||--o{ SHEET : contiene
     SUBJECT ||--o{ PREREQUISITE : "requiere (subject_id)"
     SUBJECT ||--o{ PREREQUISITE : "es requisito de (requires_id)"
+    SHEET ||--o{ SHEET_LINK : "enlaza (source_id)"
+    SHEET ||--o{ SHEET_LINK : "es enlazada (target_id)"
 
     CAREER {
         uuid id PK
@@ -55,8 +53,8 @@ erDiagram
         int position "orden manual en listas"
         float pos_x "canvas de carrera, nullable (ADR-012)"
         float pos_y "canvas de carrera, nullable"
-        float map_x "nodo raíz del canvas de materia, nullable"
-        float map_y "nodo raíz del canvas de materia, nullable"
+        float map_x "LEGADO: nodo raíz del canvas viejo, sin uso"
+        float map_y "LEGADO"
         timestamp created_at
         timestamp updated_at
     }
@@ -67,43 +65,34 @@ erDiagram
         string kind "cursar|rendir"
         uuid user_id FK
     }
-    UNIT {
-        uuid id PK
-        uuid subject_id FK
-        uuid user_id FK
-        string name
-        int position
-        float pos_x "nullable (ADR-012)"
-        float pos_y "nullable"
-        timestamp created_at
-    }
-    TOPIC {
-        uuid id PK
-        uuid unit_id FK
-        uuid user_id FK
-        string name
-        int position
-        float pos_x "nullable (ADR-012)"
-        float pos_y "nullable"
-        timestamp created_at
-    }
     SHEET {
         uuid id PK
-        uuid topic_id FK
+        uuid subject_id FK "ADR-014"
         uuid user_id FK
-        string title
+        string title "único por materia (lower/trim)"
         text content_md "Markdown — fuente de verdad"
         int position
+        float pos_x "canvas de materia, nullable (ADR-012)"
+        float pos_y "nullable"
+        uuid topic_id "LEGADO, nullable, on delete set null"
         timestamp created_at
-        timestamp updated_at
+        timestamp updated_at "solo cambia con title o content_md"
+    }
+    SHEET_LINK {
+        uuid id PK
+        uuid user_id FK
+        uuid source_id FK "hoja que escribe [[...]]"
+        uuid target_id FK "hoja enlazada"
+        timestamp created_at
     }
 ```
 
-> **Posiciones del canvas (ADR-012, reemplaza a ADR-008).** `pos_x`/`pos_y` (y
-> `map_x`/`map_y` para el nodo raíz de la materia) son coordenadas **opcionales** del
-> lienzo de React Flow. `NULL` = el nodo lo ubica dagre; con valor = el usuario lo acomodó
-> a mano. "Reordenar" las vuelve a `NULL`. `position` sigue siendo otra cosa: un **entero
-> de orden** dentro de una lista (explorador y export), no una coordenada.
+> **Posiciones del canvas (ADR-012).** `pos_x`/`pos_y` (en `subjects` para el canvas de
+> carrera y en `sheets` para el canvas de materia) son coordenadas **opcionales** del
+> lienzo de React Flow. `NULL` = el nodo lo ubica el auto-layout; con valor = el usuario lo
+> acomodó a mano. "Reordenar" las vuelve a `NULL`. `position` es otra cosa: un **entero
+> de orden** dentro de una lista (explorador y export), no una coordenada. Las posiciones
+> se guardan en lote con la RPC `save_node_positions` (ADR-016).
 >
 > **Correlativas opcionales (ADR-013).** `careers.uses_prerequisites = false` oculta toda
 > la UI de correlativas de esa carrera (curso / organizador). Las filas de
@@ -115,12 +104,8 @@ erDiagram
 
 > **Son opcionales.** `prerequisites` es una tabla aparte, sin ninguna restricción que
 > obligue a una materia a tener correlativas. Una materia sin filas en `prerequisites`
-> es un caso normal, no un estado incompleto — así es como funciona un curso o una
-> capacitación sin requisitos entre materias. Ver
-> `docs/features/career-map.md` § "Las correlativas son opcionales".
-
-En la facultad son requisitos diferentes y por eso se distinguen explícitamente en la
-columna `kind` de `prerequisites`:
+> es un caso normal — así funciona un curso o una capacitación sin requisitos entre
+> materias. Ver `docs/features/career-map.md` § "Las correlativas son opcionales".
 
 | `kind` | Significado | Bloquea |
 |--------|-------------|---------|
@@ -139,62 +124,100 @@ cursar **y** para rendir *Análisis II*): son dos filas con distinto `kind`.
 bloqueada  ⟺  ∃ correlativa de kind='cursar' cuya materia requerida NO está 'aprobada'
 ```
 
-Se calcula en `src/lib/graph/subjectStatus.js`. Guardarlo sería redundante y quedaría
-desincronizado apenas el usuario aprueba una materia.
+Se calcula en `src/lib/graph/subjectStatus.js`.
 
-### Regla de integridad: el grafo debe ser un DAG
-
-Las correlativas forman un grafo dirigido que **no puede tener ciclos** (si A requiere B y
-B requiere A, ninguna de las dos sería cursable nunca, y dagre entraría en bucle).
+### Regla de integridad: las correlativas deben ser un DAG
 
 - Se valida **al guardar** una correlativa, no al renderizar (**ADR-009**).
 - Si el alta cerraría un ciclo → se **rechaza** y se muestra el ciclo concreto.
 - Implementación: `src/lib/graph/validateDag.js` (DFS de 3 colores).
 - Además la base rechaza el caso trivial con un `CHECK (subject_id <> requires_id)`.
 
+> Los **links entre hojas** NO son un DAG ni se validan como tal: que dos apuntes se
+> enlacen mutuamente es normal (ver abajo).
+
+---
+
+## Links entre hojas (ADR-015)
+
+Una hoja enlaza a otra escribiendo **`[[Título de la otra hoja]]`** en su Markdown. La
+tabla `sheet_links` es un **índice derivado** de ese texto: el cliente nunca la escribe.
+
+| Trigger (migración 0003) | Cuándo | Qué hace |
+|---|---|---|
+| `sheets_refresh_links` | `insert` o `update of content_md` | `refresh_sheet_links(id)`: parsea los `[[ ]]` (también la forma escapada `\[\[ \]\]`), los resuelve por título **dentro de la misma materia** sin distinguir mayúsculas y reemplaza las filas salientes de esa hoja |
+| `sheets_title_links` | `insert` o `update of title` | Si es un rename, **reescribe** `[[título viejo]]` → `[[título nuevo]]` en las hojas que la enlazaban; y refresca las hojas que ya mencionaban el título nuevo (resuelve links "colgados") |
+
+Reglas:
+
+- Un `[[link]]` a un título que no existe no genera fila (queda "colgado" hasta que se
+  crea esa hoja). El editor los muestra como "Todavía no existen".
+- Una hoja no puede enlazarse a sí misma (`check (source_id <> target_id)`).
+- El título **no puede contener corchetes** para ser enlazable.
+- Los títulos son **únicos por materia** (índice `sheets_subject_title_unique` sobre
+  `lower(trim(title))`), así un `[[link]]` nunca es ambiguo.
+- Conectar/desconectar desde el canvas **edita el Markdown** del origen
+  (`sheetLinks.service.js`); la base deriva el resto.
+- Las funciones son `security invoker`: corren con los permisos (y el RLS) de quien edita.
+
+## Posiciones en lote (ADR-016)
+
+`save_node_positions(p_table, p_x_column, p_y_column, p_moves jsonb)`: un único `UPDATE`
+para todos los nodos movidos (`p_moves = [{id, x, y}]`). **`security invoker`** (RLS
+aplica: nadie mueve filas ajenas) y **whitelist** estricta de tabla/columnas
+(`subjects.pos_*`, `subjects.map_*`, `sheets.pos_*`), porque el nombre de tabla se interpola
+en SQL dinámico. Solo `authenticated` puede ejecutarla.
+
+## `updated_at` de las hojas
+
+El trigger `sheets_set_updated_at` solo se dispara si cambia `title` o `content_md`. Mover
+un nodo **no** es editar la hoja: si no, el borrador local del editor (que se valida contra
+`updated_at`, ver `docs/features/sheet-editor.md`) se descartaría sin motivo.
+
 ---
 
 ## Esquema SQL (Supabase)
 
 > **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**
-> (`0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`) — son la fuente de verdad
-> del DDL. Lo de abajo es el resumen conceptual; si difieren, manda
-> el `.sql`.
+> (`0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
+> `0003_three_levels_and_sheet_links.sql`) — son la fuente de verdad del DDL. Lo de abajo
+> es el resumen conceptual; si difieren, manda el `.sql`.
 
-Además de las tablas, la migración real incluye tres cosas que el resumen no muestra:
+Además de las tablas, las migraciones incluyen:
 
 1. **`user_id ... default auth.uid()`** — el cliente **nunca manda `user_id`**: lo pone
-   Postgres a partir de la sesión. Elimina toda una clase de bugs y de agujeros de
-   seguridad.
-2. **Trigger `set_updated_at()`** en `careers`, `subjects` y `sheets` — mantiene
-   `updated_at` sin depender de que el cliente se acuerde.
+   Postgres a partir de la sesión.
+2. **Trigger `set_updated_at()`** en `careers`, `subjects` y `sheets` (en `sheets`, solo
+   por título o contenido).
 3. **RLS activado + política `_owner` por tabla** (`for all to authenticated`, con `using`
-   y `with check` sobre `auth.uid() = user_id`). Sin sesión, `auth.uid()` es `NULL` y no
-   se devuelve ni se inserta ninguna fila.
+   y `with check` sobre `auth.uid() = user_id`) — incluida `sheet_links`.
+4. **Triggers de links** y **RPC de posiciones** (secciones de arriba).
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → pegar `supabase/migrations/0001_init.sql` → **Run**,
-y después `0002_manual_layout_and_prereq_toggle.sql` → **Run** (es idempotente).
+Supabase Dashboard → **SQL Editor** → pegar `0001_init.sql` → **Run**, después
+`0002_manual_layout_and_prereq_toggle.sql` → **Run**, y después
+`0003_three_levels_and_sheet_links.sql` → **Run** (0002 y 0003 son idempotentes).
 (O `supabase db push` con la CLI.)
 
-> **Estado (2026-10-14):** `0002` aplicada en el proyecto vía Management API, con columnas
-> verificadas en `information_schema` y RLS activo en las 6 tablas. Para aplicar futuras
-> migraciones así, ver `docs/03-security.md` § "Token de acceso personal".
->
-> Sin la 0002 la app sigue andando para crear y navegar, pero mover nodos, "Reordenar" y
-> marcar una carrera como "curso" fallan con el aviso *"Falta aplicar una migración"*.
+> **Estado (2026-10-14):** `0002` y `0003` aplicadas en el proyecto vía Management API.
+> La 0003 se probó primero dentro de una transacción con `rollback` (asserts de links,
+> rename, títulos con caracteres especiales, duplicados, whitelist y posiciones) y después
+> con un E2E como usuario autenticado (RLS de `sheet_links` y de la RPC). 0 hojas sin
+> `subject_id`. Para aplicar migraciones así, ver `docs/03-security.md` § "Token de
+> acceso personal".
 
 ### Resumen de las tablas
 
 ```sql
 create table careers (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null references auth.users(id) on delete cascade,
-  name       text not null check (length(trim(name)) between 1 and 120),
-  color      text not null default '#22c55e',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id                 uuid primary key default gen_random_uuid(),
+  user_id            uuid not null references auth.users(id) on delete cascade,
+  name               text not null check (length(trim(name)) between 1 and 120),
+  color              text not null default '#22c55e',
+  uses_prerequisites boolean not null default true,   -- 0002, ADR-013
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
 );
 
 create table subjects (
@@ -206,6 +229,10 @@ create table subjects (
   status     text not null default 'pendiente'
              check (status in ('pendiente', 'cursando', 'aprobada')),
   position   int  not null default 0,
+  pos_x      double precision,   -- 0002, ADR-012
+  pos_y      double precision,
+  map_x      double precision,   -- 0002, LEGADO desde la 0003
+  map_y      double precision,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -221,52 +248,52 @@ create table prerequisites (
   unique (subject_id, requires_id, kind)
 );
 
-create table units (
-  id         uuid primary key default gen_random_uuid(),
-  subject_id uuid not null references subjects(id) on delete cascade,
-  user_id    uuid not null references auth.users(id) on delete cascade,
-  name       text not null check (length(trim(name)) between 1 and 200),
-  position   int  not null default 0,
-  created_at timestamptz not null default now()
-);
-
-create table topics (
-  id         uuid primary key default gen_random_uuid(),
-  unit_id    uuid not null references units(id) on delete cascade,
-  user_id    uuid not null references auth.users(id) on delete cascade,
-  name       text not null check (length(trim(name)) between 1 and 200),
-  position   int  not null default 0,
-  created_at timestamptz not null default now()
-);
+-- units / topics: DEPRECADAS desde la 0003 (sin UI ni services). Se conservan hasta
+-- una migración futura; borrar una no borra hojas (topic_id es on delete set null).
 
 create table sheets (
   id         uuid primary key default gen_random_uuid(),
-  topic_id   uuid not null references topics(id) on delete cascade,
+  subject_id uuid not null references subjects(id) on delete cascade,   -- 0003
   user_id    uuid not null references auth.users(id) on delete cascade,
   title      text not null check (length(trim(title)) between 1 and 200),
   content_md text not null default '',   -- Markdown: fuente de verdad (ADR-011)
   position   int  not null default 0,
+  pos_x      double precision,           -- 0003, ADR-012
+  pos_y      double precision,
+  topic_id   uuid references topics(id) on delete set null,             -- LEGADO
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+create unique index sheets_subject_title_unique on sheets (subject_id, lower(trim(title)));
 
--- Índices para las consultas del explorador y del canvas
+create table sheet_links (                                              -- 0003, ADR-015
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  source_id  uuid not null references sheets(id) on delete cascade,
+  target_id  uuid not null references sheets(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  constraint no_self_link check (source_id <> target_id),
+  unique (source_id, target_id)
+);
+
+-- Índices para las consultas del explorador y de los canvas
 create index on subjects (career_id);
 create index on prerequisites (subject_id);
 create index on prerequisites (requires_id);
-create index on units (subject_id);
-create index on topics (unit_id);
-create index on sheets (topic_id);
+create index on sheets (subject_id);
+create index on sheet_links (source_id);
+create index on sheet_links (target_id);
 ```
 
 ### Reglas de integridad (cascada)
 
-A diferencia del modelo anterior, **la cascada la hace Postgres** (`ON DELETE CASCADE`),
-no los services:
+**La cascada la hace Postgres** (`ON DELETE CASCADE`), no los services:
 
-- Borrar una **Career** → borra sus Subjects → Units → Topics → Sheets.
-- Borrar un **Subject** → borra sus Units (y todo lo que cuelga) **y** las filas de
+- Borrar una **Career** → borra sus Subjects → Sheets → SheetLinks.
+- Borrar un **Subject** → borra sus Sheets (y sus links) **y** las filas de
   `prerequisites` donde aparezca, sea como `subject_id` o como `requires_id`.
+- Borrar una **Sheet** → borra sus filas de `sheet_links` (entrantes y salientes). El texto
+  `[[título]]` en otras hojas queda, como link colgado.
 - Borrar el usuario → borra todo lo suyo.
 
 ---
@@ -279,28 +306,32 @@ no los services:
 | Clave | Contenido |
 |-------|-----------|
 | `studree:cache:<tabla>` | Colección global (ej. `studree:cache:careers`) |
-| `studree:cache:<tabla>:<parentId>` | Colección acotada a un padre (ej. `studree:cache:units:<subjectId>`) |
-| `studree:cache:sheet:<id>` | Borrador local de una hoja (autosave del editor) |
+| `studree:cache:<tabla>:<parentId>` | Colección acotada a un padre (ej. `studree:cache:sheets:<subjectId>`) |
+| `studree:cache:<tabla>[<columnas>]:<parentId>` | Lista con columnas parciales (ej. hojas sin `content_md`) |
+| `studree:cache:sheet:<id>` | Borrador local de una hoja: `{ content, baseUpdatedAt }` (ver `sheet-editor.md`) |
 | `studree:ui:tabs` | Tabs abiertas (preferencia de UI, no dato de negocio) |
 | `studree:ui:explorer` | Nodos expandidos del explorador |
 
-Las claves de cache se arman con `cacheKey(coleccion, parentId)` de
-`cache.service.js`. **Todas empiezan con el prefijo `studree:cache:`**, porque
-`clearAllCache()` borra por ese prefijo al cerrar sesión — si una clave de cache no lo
-lleva, los datos de un usuario quedarían visibles para el siguiente que entre en el mismo
-navegador.
+Las claves de cache se arman con `cacheKey(coleccion, parentId)` de `cache.service.js`.
+**Todas las claves de Studree empiezan con `studree:`**, y `clearAllCache()` borra por ese
+prefijo (cache **y** UI) al cerrar sesión o al entrar con otra cuenta — si no, las tabs
+(con títulos de hojas) de un usuario quedarían visibles para el siguiente que entre en el
+mismo navegador.
 
-> Las claves se centralizan en `src/constants/storageKeys.js`. Las claves del modelo
-> anterior (`studree:folders`, `studree:subjects`, `studree:nodes`, `studree:resources`)
-> quedan **obsoletas** y se eliminan.
+> Las claves se centralizan en `src/constants/storageKeys.js`.
+
+### Límite de filas
+
+PostgREST devuelve **como máximo 1000 filas por consulta**. `crudService.list` y
+`listByParents` **paginan** con `.range()` hasta traer todo; una consulta global sin
+paginar se cortaría en silencio.
 
 ---
 
 ## Preparado para IA (sin implementar todavía)
 
 `sheets.content_md` guarda Markdown plano, lo que deja el contenido **chunkeable por
-hoja** para un futuro RAG. **En esta etapa NO se implementa vectorización** (ni `pgvector`,
-ni embeddings, ni búsqueda semántica): solo se deja el dato en el formato correcto.
+hoja** para un futuro RAG. **En esta etapa NO se implementa vectorización.**
 
 ---
 
@@ -311,11 +342,13 @@ ni embeddings, ni búsqueda semántica): solo se deja el dato en el formato corr
 | 2026-06-28 | Modelo inicial (Subject, TreeNode, Resource, Settings) | Obsoleto |
 | 2026-06-28 | Añadido `Folder`; `Subject.folderId`; `TreeNode.completed` y `position` | Obsoleto |
 | 2026-06-28 | `Resource` implementado + cascada por nodo | Obsoleto |
-| 2026-08-24 | **Modelo nuevo**: 5 niveles explícitos (Career/Subject/Unit/Topic/Sheet) + `prerequisites` con `kind`; fuente de verdad en Supabase; se elimina la posición `x`/`y` | ✅ Implementado (`0001_init.sql`) |
+| 2026-08-24 | 5 niveles explícitos (Career/Subject/Unit/Topic/Sheet) + `prerequisites` con `kind`; fuente de verdad en Supabase | Reemplazado por la 0003 (`0001_init.sql`) |
 | 2026-10-14 | `careers.uses_prerequisites`; `pos_x`/`pos_y` en subjects/units/topics; `map_x`/`map_y` en subjects (ADR-012, ADR-013) | ✅ Implementado (`0002_manual_layout_and_prereq_toggle.sql`) |
+| 2026-10-14 | **3 niveles** (ADR-014): `sheets.subject_id` + backfill, `sheets.pos_x/pos_y`, títulos únicos por materia, `units`/`topics` deprecadas; `sheet_links` derivada por triggers (ADR-015); RPC `save_node_positions` (ADR-016); `updated_at` de hojas solo por título/contenido | ✅ Implementado (`0003_three_levels_and_sheet_links.sql`) |
 
-### Modelo anterior (histórico)
+### Modelos anteriores (histórico)
 
-`Folder (carrera) → Subject → TreeNode (recursivo con parentId) → Resource`, persistido en
-`localStorage`. Reemplazado por los ADR-007 y ADR-010. Los typedefs viejos se conservan en
-el historial de git (`src/types/models.js` antes del 2026-08-24).
+- `Folder (carrera) → Subject → TreeNode (recursivo) → Resource`, en `localStorage`.
+  Reemplazado por ADR-007 y ADR-010.
+- `Career → Subject → Unit → Topic → Sheet` (ADR-010). Reemplazado por ADR-014: abrir
+  Unidad → Tema antes de llegar a una hoja era tedioso.

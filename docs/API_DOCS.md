@@ -4,7 +4,7 @@
 cliente (BaaS), usando `@supabase/supabase-js`. No hay servidor propio ni endpoints
 `/api/*`.
 
-**Última actualización:** 2026-10-14
+**Última actualización:** 2026-10-14 (3 niveles, sheet_links, paginación)
 
 > El rol de "capa de API" lo cumplen los **services** de `src/services/`. La seguridad no
 > la da un backend intermedio sino **RLS en Postgres** — ver `docs/03-security.md`.
@@ -20,31 +20,55 @@ Regla de oro: **ningún componente ni hook importa `supabase.client.js` ni toca
 |---------|-----------------|
 | `supabase.client.js` | Instancia única del cliente (lee `VITE_SUPABASE_*`) |
 | `cache.service.js` | Cache optimista en `localStorage` (leer/escribir/invalidar) |
-| `crudService.js` | **Fábrica** con el CRUD + flujo optimista compartido por las 6 entidades |
+| `crudService.js` | **Fábrica** con el CRUD + flujo optimista compartido por las entidades (paginado) |
 | `dataEvents.js` | Aviso global `studree:data-changed` tras crear/renombrar/borrar (refresca el explorador) |
 | `careers.service.js` | CRUD de carreras |
 | `subjects.service.js` | CRUD de materias + cambio de estado |
 | `prerequisites.service.js` | CRUD de correlativas **+ validación DAG** (ADR-009) |
-| `units.service.js` | CRUD de unidades |
-| `topics.service.js` | CRUD de temas |
-| `sheets.service.js` | CRUD de hojas + guardado del Markdown |
+| `sheets.service.js` | CRUD de hojas (por materia) + guardado del Markdown + búsqueda de contenido en el servidor |
+| `sheetLinks.service.js` | Leer `sheet_links` (aristas del canvas, panel de enlaces) + conectar/desconectar editando el Markdown (ADR-015) |
+
+> `units.service.js` y `topics.service.js` se eliminaron con la jerarquía de 3 niveles
+> (ADR-014).
 
 ### Contrato común
 
 Cada service expone, para su entidad:
 
 ```js
-list(parentId)   // → T[]      lee cache primero, refresca desde Supabase
+list(parentId, onCached?, { columns }?) // → T[]  lee cache primero, refresca desde Supabase; pagina de a 1000
 get(id)          // → T | null
 create(data)     // → T        optimista: escribe cache y luego Supabase
 update(id, data) // → T        optimista, con reversión si falla
 remove(id)       // → boolean  la cascada la hace Postgres (ON DELETE CASCADE)
 
 // Agregados el 2026-10-14:
-listByParents(parentIds, columns?)          // → T[]  una consulta con IN (evita N+1)
-savePosition(id, {x, y}, parentId, cols?)   // → T    posición manual del canvas (ADR-012), update silencioso
+listByParents(parentIds, columns?)          // → T[]  una consulta con IN (evita N+1), paginada
+savePositions(moves, parentId?, cols?)      // → bool posiciones manuales en lote (RPC save_node_positions, ADR-016), silencioso
 clearPositions(parentIds, cols?)            // → bool "Reordenar": pone las posiciones en NULL
 ```
+
+**Paginación:** PostgREST corta cada consulta en 1000 filas. `list` y `listByParents`
+piden páginas con `.range()` (ordenadas por `orderBy` + `id`) hasta recibir una página
+incompleta. `columns` permite no traer `content_md` (`SHEET_SUMMARY_COLUMNS`); con columnas
+parciales la cache usa otra clave.
+
+### Hojas y links
+
+```js
+sheetsService.create({ subject_id, title, content_md?, position?, pos_x?, pos_y? })
+sheetsService.saveContent(id, markdown)   // → Sheet (con updated_at, para el borrador de useSheet)
+sheetsService.searchContent(query)        // → [{id, title, subject_id, content_md}] (ilike, máx. 20)
+
+sheetLinksService.listForSheets(sheetIds) // → [{id, source_id, target_id}]
+sheetLinksService.listForSheet(sheetId)   // → { outgoing: [{id,title}], incoming: [{id,title}] }
+sheetLinksService.connect(source, target)    // agrega [[target.title]] al Markdown de source
+sheetLinksService.disconnect(source, target) // quita [[target.title]] (queda texto plano)
+```
+
+- Título repetido en la misma materia → `"Ya existe una hoja con ese título en esta materia."`
+- `searchContent` neutraliza `%` y `\` (PostgREST no respeta el escape con barra); el
+  palette descarta los falsos positivos con `buildContentSnippet`.
 
 `update(id, values, parentId, { silent })`: con `silent: true` no emite el aviso de
 cambio de estructura (se usa para posiciones). `create`, `update` y `remove` exitosos
@@ -52,7 +76,7 @@ emiten `notifyDataChanged()` (`dataEvents.js`), que escucha `useExplorerTree` co
 debounce de 300 ms. El autosave de hojas (`saveContent`) **no** lo emite.
 
 `list()` **sin** `parentId` devuelve todas las filas del usuario (RLS filtra): el
-explorador arma el árbol entero con 5 consultas, una por tabla.
+explorador arma el árbol entero con 3 consultas (carreras, materias, hojas sin contenido).
 
 ### Forma de las respuestas
 

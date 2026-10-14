@@ -27,6 +27,7 @@
 ```
 Studree/
 ├── docs/                          # Documentación (Método AInnovate)
+│   ├── superpowers/               # specs/ y plans/ de las sesiones de diseño (brainstorming)
 │   ├── 01-project-overview.md     # Visión, stack, estado  (LEER SIEMPRE)
 │   ├── 02-architecture.md         # Este archivo            (LEER SIEMPRE)
 │   ├── 03-security.md             # Seguridad, env, datos
@@ -39,7 +40,7 @@ Studree/
 │   └── Investigacion #2.md        # Investigación previa (estructura visual)
 ├── assets/                        # Material FUENTE (alta resolución) — Vite NO lo sirve
 ├── public/                        # Assets estáticos servidos tal cual (raíz del sitio)
-│   └── logo.jpg                   # Logo optimizado 256px → se referencia como /logo.jpg
+│   └── logo.svg                   # Logo (SVG, colores del design system) → /logo.svg
 ├── src/
 │   ├── main.jsx                   # Punto de entrada (monta React)
 │   ├── App.jsx                    # Componente raíz + rutas
@@ -63,28 +64,28 @@ Studree/
 │   │       ├── careers/           # CareerCard, CareerFormModal (panel de inicio)
 │   │       ├── careerMap/         # CareerMap, SubjectNode, PrerequisiteEditor,
 │   │       │                      # PrerequisiteKindDialog
-│   │       ├── subjectMap/        # SubjectMap, SubjectRootNode, UnitNode, TopicNode
-│   │       ├── sheets/            # SheetListPanel, SheetListItem
-│   │       ├── sheetEditor/       # SheetEditor, EditorToolbar
+│   │       ├── subjectMap/        # SubjectMap, SheetNode, SheetList (canvas de hojas)
+│   │       ├── sheets/            # SheetListItem
+│   │       ├── sheetEditor/       # SheetEditor, EditorToolbar, SheetLinksPanel
 │   │       └── export/            # ExportDialog
-│   ├── hooks/                     # useAuth, useCareers, useSubjects, useCareerMap,
-│   │                              # useSubjectMap, useSheets, useSheet,
-│   │                              # useExplorerTree, useHotkeys, useFlowCanvas
+│   ├── hooks/                     # useAuth, useCareers, useCareerMap, useSubjectMap,
+│   │                              # useSheet, useSheetLinks, useExplorerTree,
+│   │                              # useExportTree, useHotkeys, useFlowCanvas
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
-│   │                              # dataEvents, careers, subjects, units, topics,
-│   │                              # sheets, prerequisites
+│   │                              # dataEvents, careers, subjects, sheets,
+│   │                              # sheetLinks, prerequisites
 │   ├── lib/
 │   │   ├── id.js
-│   │   ├── graph/                 # validateDag.js, dagreLayout.js, subjectStatus.js,
+│   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera + hojas), subjectStatus.js,
 │   │   │                          # canvasPositions.js
-│   │   ├── markdown/              # serialize.js, parse.js
+│   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js
 │   │   └── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js,
 │   │                              # subjectStatus.js, prerequisiteKinds.js
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
 ├── supabase/
-│   └── migrations/                # SQL versionado del esquema + RLS
+│   └── migrations/                # SQL versionado del esquema + RLS (0001, 0002, 0003)
 ├── index.html                     # HTML raíz de la SPA
 ├── vite.config.js                 # Configuración de Vite
 ├── tailwind.config.js             # Design system (colores, fuentes, spacing)
@@ -329,6 +330,8 @@ constraint en la base (no confiar solo en el cliente — `docs/03-security.md`).
 
 ### ADR-010: Jerarquía de 5 niveles con entidades explícitas
 **Fecha:** 2026-08-24
+**Estado:** ⚠️ **REEMPLAZADO por ADR-014** (2026-10-14) en cuanto a la profundidad (5 → 3
+niveles). Sigue vigente la idea central: un nivel = una tabla con FK real.
 **Contexto:** El modelo actual (`TreeNode` recursivo con `parentId`) permite profundidad
 arbitraria. El modelo objetivo es de **profundidad fija**: Carrera → Materia → Unidad →
 Tema → Hoja. Con un árbol recursivo nada impide una jerarquía inválida y el export a
@@ -397,6 +400,55 @@ cambiar desde el canvas ("Usa correlativas"). Con `false`: sin aristas, sin esta
 **Consecuencias:** Desactivar **no borra** las correlativas: solo se ocultan (vuelven si se
 reactiva). Default `true` = las carreras existentes no cambian de comportamiento.
 
+### ADR-014: Jerarquía de 3 niveles — Carrera → Materia → Hoja
+**Fecha:** 2026-10-14
+**Reemplaza a:** ADR-010 (en la profundidad)
+**Contexto:** Con 5 niveles, llegar a una hoja exigía crear y abrir Unidad → Tema: el
+usuario lo describió como "tedioso". El público incluye secundarios y cursos cortos, para
+quienes Unidad/Tema es fricción pura. La visión original era "carpeta = carrera → nodos =
+materias → hojas".
+**Decisión:** Las hojas cuelgan **directo de la materia** (`sheets.subject_id`, migración
+0003). La organización interna de una materia la dan los **links entre hojas** (ADR-015),
+no carpetas intermedias. `units`/`topics` quedan deprecadas en la base (sin UI ni
+services) y se eliminan en una migración futura; la 0003 migró los datos.
+**Consecuencias:**
+- El canvas de materia muestra **hojas como nodos** (antes cortaba en Tema y las hojas iban
+  en un panel lateral). Para materias con muchas hojas hay una vista **Lista**.
+- Explorador, palette y export pasan a 3 niveles (el export ya no tiene `###` de unidad).
+- Títulos únicos por materia (si no, un `[[link]]` sería ambiguo).
+
+### ADR-015: Links entre hojas con `[[Título]]`, derivados del Markdown en la base
+**Fecha:** 2026-10-14
+**Contexto:** Sin Unidad/Tema, lo que estructura una materia son las relaciones entre
+apuntes. Guardar las conexiones del canvas en una tabla editable por el cliente crearía dos
+fuentes de verdad (el texto y la tabla) que se desincronizan, y el export para IA no
+llevaría las relaciones.
+**Decisión:** La relación vive **en el Markdown** (`[[Título]]`, ADR-011 sigue mandando).
+`sheet_links` es un **índice derivado** que mantiene la base con triggers
+(`refresh_sheet_links`): al guardar el contenido se recalculan los links salientes, y al
+renombrar una hoja se reescriben los `[[título viejo]]` que la apuntaban. Conectar dos
+nodos en el canvas = agregar `[[destino]]` al final del origen; quitar una arista = quitar
+ese texto.
+**Consecuencias:**
+- Imposible que el grafo y el texto difieran; el export para IA incluye las relaciones.
+- Los triggers son `security invoker` (RLS aplica). La resolución es por título dentro de
+  la misma materia y sin mayúsculas; títulos con corchetes no son enlazables.
+- `prosemirror-markdown` escapa corchetes: `editorToMarkdown` los desescapa
+  (`unescapeWikiLinks`) y el parser SQL acepta las dos formas.
+- Los links pueden formar ciclos: el layout usa `acyclicer: 'greedy'` de dagre y no se
+  valida DAG (a diferencia de las correlativas, ADR-009).
+
+### ADR-016: Posiciones del canvas en lote vía RPC
+**Fecha:** 2026-10-14
+**Contexto:** "Congelar" el layout (ADR-012) mandaba un `UPDATE` por nodo, y cada uno
+reescribía la lista entera en `localStorage`: con 40 materias, 40 requests.
+**Decisión:** Función `save_node_positions(p_table, p_x_column, p_y_column, p_moves)`
+(migración 0003): un único `UPDATE ... FROM jsonb_to_recordset`, `security invoker` y con
+**whitelist** de tabla/columnas (el nombre de tabla va en SQL dinámico).
+`crudService.savePositions` la usa y actualiza la cache una sola vez.
+**Consecuencias:** Un request por arrastre. Agregar un canvas nuevo exige sumar su tabla a
+la whitelist de la función (migración).
+
 ## Rutas
 
 | Ruta | Página | Descripción |
@@ -405,7 +457,7 @@ reactiva). Default `true` = las carreras existentes no cambian de comportamiento
 | `/entrar` | `LoginPage` | Acceso (email + contraseña). Pública |
 | `/carreras` | `CareersPage` | **Workspace**: panel de inicio con las carreras (estilo VSCode) |
 | `/carreras/:careerId` | `CareerMapPage` | Canvas de materias (+ correlativas si la carrera las usa) — lazy |
-| `/materias/:subjectId` | `SubjectMapPage` | Canvas materia → unidades → temas + panel de hojas — lazy |
+| `/materias/:subjectId` | `SubjectMapPage` | Canvas de hojas conectadas por `[[links]]` + vista Lista — lazy |
 | `/hojas/:sheetId` | `SheetPage` | Editor de la hoja (TipTap) |
 | `/perfil` | `ProfilePage` | Perfil (placeholder) |
 
@@ -431,9 +483,9 @@ login. `/` y `/entrar` son las únicas rutas públicas.
 A partir de `/carreras`, todas las vistas se renderizan dentro de `WorkspaceLayout`, que
 aporta de forma persistente:
 
-- **Explorador** lateral (árbol colapsable con los 5 niveles), siempre visible en desktop.
+- **Explorador** lateral (árbol colapsable con los 3 niveles), siempre visible en desktop.
 - **Barra de tabs** con las hojas abiertas.
-- **Command Palette** (`Ctrl+K`) para saltar a cualquier hoja por nombre.
+- **Command Palette** (`Ctrl+K`) para saltar a cualquier hoja por nombre o por contenido.
 
 > El canvas es un **modo de exploración**, no el único camino: toda la navegación debe ser
 > posible solo con explorador + palette (requisito de mobile, donde arrastrar nodos no

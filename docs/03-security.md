@@ -57,6 +57,9 @@ Postgres**. Si RLS está mal, la base queda abierta.
 - **En `localStorage` (cache):** copia descartable para pintar rápido. Vale lo mismo que
   antes: es accesible por cualquier script de la página, así que **NUNCA** guardar ahí
   contraseñas, tokens de servicios externos ni datos personales sensibles.
+- **Al cerrar sesión o entrar con otra cuenta** se borra todo lo de Studree en
+  `localStorage` (prefijo `studree:`: cache, borradores, tabs y explorador). Antes las
+  tabs y el explorador quedaban y mostraban títulos de hojas del usuario anterior.
 - Validar y sanitizar todo input antes de renderizarlo para evitar **XSS** (React ya
   escapa por defecto; tener especial cuidado con `dangerouslySetInnerHTML`). Atención con
   el **editor de hojas**: el contenido es Markdown del usuario y se renderiza como HTML.
@@ -94,6 +97,15 @@ de clave y confundirlas es el error de seguridad más grave posible en este proy
   - **RLS activado (`ENABLE ROW LEVEL SECURITY`) en TODAS las tablas.** Una tabla sin
     RLS con la anon key publicada = base de datos abierta a cualquiera que abra la web.
   - Cada política debe filtrar por el usuario dueño del dato (`auth.uid() = user_id`).
+    Incluye `sheet_links` (migración 0003).
+- **Funciones de la base (migración 0003)** — `refresh_sheet_links`, los triggers de
+  links y `save_node_positions` son **`security invoker`**: corren con los permisos y el
+  RLS de quien llama, nunca como dueño de la base. `save_node_positions` interpola el
+  nombre de tabla en SQL dinámico, así que valida una **whitelist estricta** de
+  tabla/columnas antes de ejecutar (y usa `format('%I')`). Solo `authenticated` tiene
+  `execute`. Verificado con un E2E: otro usuario no puede mover nodos ajenos por la RPC.
+  Regla para funciones futuras: **nunca `security definer`** sin una revisión de seguridad
+  explícita.
 - Si una clave se filtra por error (commit, captura, chat), **rotarla** desde
   Supabase Dashboard → Settings → API Keys.
 

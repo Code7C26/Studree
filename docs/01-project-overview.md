@@ -6,9 +6,9 @@
 
 Studree es una plataforma web que ayuda a estudiantes a organizar sus materias y
 recursos de estudio de forma visual, mediante **árboles conceptuales interactivos**.
-Su nombre une *Study + Tree*: cada materia crece como un árbol, donde el tronco es la
-materia, las ramas son las unidades/temas y las hojas son los apuntes, archivos,
-enlaces y recursos relacionados.
+Su nombre une *Study + Tree*: cada carrera o curso es un árbol, las materias son sus
+ramas y las **hojas** son los apuntes, conectados entre sí con `[[links]]` para formar
+un mapa conceptual (Carrera → Materia → Hoja, ADR-014).
 
 ## Objetivos
 
@@ -82,6 +82,39 @@ Ver ADR-007 a ADR-011 en `docs/02-architecture.md`.
 | Bugs: confirmación al borrar, explorador sin refresco, consultas N+1, bundle de 1,2 MB | `CHANGELOG.md` 0.10.0 | ✅ |
 
 > Migración `0002_manual_layout_and_prereq_toggle.sql` aplicada el 2026-10-14.
+
+### Fase 9 — Estabilizar (Fase 0 del diagnóstico, 2026-10-14)
+
+Diagnóstico completo en `docs/superpowers/specs/2026-10-14-diagnostico-fases-0-1-design.md`.
+
+| Cambio | Estado |
+|--------|--------|
+| Borrador del editor que pisaba cambios de otro dispositivo + autosave perdido al salir | ✅ |
+| Listas paginadas (no se cortan en 1000 filas); explorador sin bajar el contenido; búsqueda de contenido en el servidor | ✅ |
+| Tabs de hojas borradas / títulos viejos; tabs visibles para el siguiente usuario | ✅ |
+| Posiciones del canvas en un solo request (ADR-016); canvas que se actualiza si otra vista cambia datos | ✅ |
+| Logo SVG nuevo (el JPEG parecía un placeholder y decía "STUIDREE") | ✅ |
+| Código muerto (`useSubjects`, `useEntityById`) y reglas de IA desactualizadas | ✅ |
+
+### Fase 10 — 3 niveles + canvas de hojas (Fase 1 del diagnóstico, 2026-10-14)
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Carrera → Materia → **Hoja** (ADR-014), migración 0003 con datos migrados | `DB_SCHEMA.md` | ✅ |
+| Canvas de materia con hojas como nodos y `[[links]]` como aristas (ADR-015) + vista Lista | `features/subject-map.md` | ✅ |
+| Panel "Enlaces" en el editor (salientes, backlinks, no resueltos) | `features/sheet-editor.md` | ✅ |
+| Export a 3 niveles + **Exportar todo** + **Copiar para IA** + headings corridos + nombres sin pisarse | `features/markdown-export.md` | ✅ |
+
+> Migración `0003_three_levels_and_sheet_links.sql` aplicada el 2026-10-14.
+
+### Próximas fases (hoja de ruta)
+
+| Fase | Contenido |
+|------|-----------|
+| 11 | Inicio útil: seguí donde dejaste, recientes/fijadas, tareas, calendario de fechas, notas rápidas |
+| 12 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja |
+| 13 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) |
+| 14 | Compartir por link, PWA/offline, flashcards |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

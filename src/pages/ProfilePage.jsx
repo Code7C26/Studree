@@ -15,11 +15,7 @@ function countContent(careers) {
   for (const career of careers) {
     subjects += career.subjects.length
     for (const subject of career.subjects) {
-      for (const unit of subject.units) {
-        for (const topic of unit.topics) {
-          sheets += topic.sheets.length
-        }
-      }
+      sheets += subject.sheets.length
     }
   }
 
