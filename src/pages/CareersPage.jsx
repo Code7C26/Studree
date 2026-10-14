@@ -3,6 +3,8 @@ import { useCareers } from '../hooks/useCareers'
 import { CareerCard } from '../components/features/careers/CareerCard'
 import { CareerFormModal } from '../components/features/careers/CareerFormModal'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { Button } from '../components/ui/Button'
+import { ExportDialog } from '../components/features/export/ExportDialog'
 
 /**
  * Workspace: panel de inicio con las carreras / cursos del usuario como
@@ -14,6 +16,7 @@ export function CareersPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   function openCreate() {
     setEditing(null)
@@ -48,9 +51,14 @@ export function CareersPage() {
           <h1 className="text-3xl font-bold">Mis carreras</h1>
           <p className="mt-1 text-sm text-text-muted">Elegí una carrera o curso para ver y organizar sus materias.</p>
         </div>
-        <button type="button" onClick={openCreate} className="btn-accent gap-2">
-          <span aria-hidden="true">＋</span> Nueva carrera
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={careers.length === 0}>
+            Exportar todo
+          </Button>
+          <button type="button" onClick={openCreate} className="btn-accent gap-2">
+            <span aria-hidden="true">＋</span> Nueva carrera
+          </button>
+        </div>
       </div>
 
       <dl className="mt-6 grid grid-cols-3 gap-3">
@@ -102,12 +110,14 @@ export function CareersPage() {
 
       <CareerFormModal open={formOpen} onClose={() => setFormOpen(false)} career={editing} onSubmit={handleSubmit} />
 
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
+
       <ConfirmDialog
         open={deleting != null}
         title="Eliminar carrera"
         message={
           deleting
-            ? `Se va a eliminar "${deleting.name}" con TODAS sus materias, unidades, temas y hojas. No se puede deshacer.`
+            ? `Se va a eliminar "${deleting.name}" con TODAS sus materias y hojas. No se puede deshacer.`
             : ''
         }
         onConfirm={handleConfirmDelete}

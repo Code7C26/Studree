@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AuthContext } from '../../hooks/useAuth.js'
 import { supabase, isSupabaseConfigured } from '../../services/supabase.client.js'
 import { clearAllCache } from '../../services/cache.service.js'
@@ -37,6 +37,8 @@ function translateAuthError(error) {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  /** Último usuario con sesión en este navegador, para detectar cambios de cuenta. */
+  const lastUserIdRef = useRef(null)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -79,6 +81,11 @@ export function AuthProvider({ children }) {
     bootstrap()
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      // Entrar con OTRA cuenta sin pasar por "Salir" (ej. de invitado a una
+      // cuenta existente): lo que quedó en cache/tabs es del usuario anterior.
+      const nextUserId = nextSession?.user?.id ?? null
+      if (lastUserIdRef.current && nextUserId && nextUserId !== lastUserIdRef.current) clearAllCache()
+      if (nextUserId) lastUserIdRef.current = nextUserId
       setSession(nextSession)
     })
 

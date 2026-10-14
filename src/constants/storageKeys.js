@@ -7,6 +7,12 @@
  */
 export const STORAGE_KEYS = Object.freeze({
   /**
+   * Prefijo de TODO lo de Studree en localStorage (cache + UI). `clearAllCache()`
+   * borra por este prefijo al cerrar sesión.
+   */
+  appPrefix: 'studree:',
+
+  /**
    * Prefijo de TODA la cache de datos. `clearAllCache()` borra por este prefijo,
    * así que cualquier clave de cache nueva tiene que empezar con esto.
    */

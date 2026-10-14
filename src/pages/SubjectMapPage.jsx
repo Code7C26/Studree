@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { useSubjectMap } from '../hooks/useSubjectMap.js'
 import { SubjectMap } from '../components/features/subjectMap/SubjectMap'
-import { SheetListPanel } from '../components/features/sheets/SheetListPanel'
+import { SheetList } from '../components/features/subjectMap/SheetList'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -10,11 +10,15 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PromptDialog } from '../components/ui/PromptDialog'
 import { careerPath, sheetPath } from '../constants/routes'
 
+const VIEWS = [
+  { id: 'canvas', label: 'Canvas' },
+  { id: 'list', label: 'Lista' },
+]
+
 /**
- * Canvas de materia: Materia → Unidades → Temas, con panel lateral de hojas
- * por tema. Ver docs/features/subject-map.md. El canvas corta en Tema a
- * propósito: las hojas viven en el panel, no como nodos (una materia real
- * puede tener cientos).
+ * Canvas de materia (ADR-014): las HOJAS como nodos, conectadas por sus
+ * `[[links]]` (ADR-015), con una vista Lista alternativa. Ver
+ * docs/features/subject-map.md.
  */
 export function SubjectMapPage() {
   const { subjectId } = useParams()
@@ -23,54 +27,54 @@ export function SubjectMapPage() {
   const {
     subject,
     subjectError,
-    units,
+    sheets,
+    links,
     loading,
     error,
     clearError,
-    createUnit,
-    deleteUnit,
-    createTopic,
-    deleteTopic,
+    createSheet,
+    deleteSheet,
+    connect,
+    disconnect,
     moveNodes,
     resetLayout,
   } = useSubjectMap(subjectId)
 
-  const [openTopic, setOpenTopic] = useState(null)
+  const [view, setView] = useState('canvas')
   const [exportOpen, setExportOpen] = useState(false)
-  /** @type {[{kind: 'unit'|'topic', unit?: Object, position: {x: number, y: number}|null}|null, Function]} */
+  /** @type {[{position: {x: number, y: number}|null, linkFrom: Object|null}|null, Function]} */
   const [createRequest, setCreateRequest] = useState(null)
-  /** Lo que se está por borrar: `{type: 'unit'|'topic', unit, topic?}`. */
+  /** Lo que se está por borrar: `{type: 'sheet'|'link', item}`. */
   const [pendingDelete, setPendingDelete] = useState(null)
 
-  const handleOpenTopic = useCallback((topic) => setOpenTopic(topic), [])
-  const handleDeleteUnit = useCallback((unit) => setPendingDelete({ type: 'unit', unit }), [])
-  const handleDeleteTopic = useCallback((unit, topic) => setPendingDelete({ type: 'topic', unit, topic }), [])
-  const handleMoveNodes = useCallback(
-    (moves) => moveNodes(moves.map(({ id, x, y }) => ({ nodeId: id, x, y }))),
-    [moveNodes],
+  const sheetsById = new Map(sheets.map((sheet) => [sheet.id, sheet]))
+
+  const openSheet = useCallback(
+    (sheet) => {
+      openTab(sheet.id, sheet.title)
+      navigate(sheetPath(sheet.id))
+    },
+    [openTab, navigate],
   )
-
-  function openSheet(sheet) {
-    openTab(sheet.id, sheet.title)
-    navigate(sheetPath(sheet.id))
-  }
-
-  async function handleCreate(name) {
-    if (!createRequest) return null
-    if (createRequest.kind === 'unit') return createUnit({ name, position: createRequest.position })
-    return createTopic(createRequest.unit.id, { name, position: createRequest.position })
-  }
+  const handleDeleteSheet = useCallback((sheet) => setPendingDelete({ type: 'sheet', item: sheet }), [])
+  const handleRemoveLink = useCallback((link) => setPendingDelete({ type: 'link', item: link }), [])
 
   async function handleConfirmDelete() {
     const target = pendingDelete
     setPendingDelete(null)
     if (!target) return
-    if (target.type === 'unit') {
-      await deleteUnit(target.unit.id)
-    } else {
-      await deleteTopic(target.unit.id, target.topic.id)
-      if (openTopic?.id === target.topic.id) setOpenTopic(null)
+    if (target.type === 'sheet') await deleteSheet(target.item.id)
+    else await disconnect(target.item)
+  }
+
+  function describePendingDelete() {
+    if (!pendingDelete) return ''
+    if (pendingDelete.type === 'sheet') {
+      return `Se va a eliminar "${pendingDelete.item.title}" y todo su contenido. Los [[enlaces]] que apuntaban a ella quedan como texto. No se puede deshacer.`
     }
+    const source = sheetsById.get(pendingDelete.item.source_id)?.title ?? '¿?'
+    const target = sheetsById.get(pendingDelete.item.target_id)?.title ?? '¿?'
+    return `Se quita el enlace [[${target}]] del contenido de "${source}". El texto queda, sin link.`
   }
 
   if (subjectError) {
@@ -87,11 +91,39 @@ export function SubjectMapPage() {
             </Link>
           )}
           <h1 className="mt-1 truncate text-2xl font-bold">{subject?.name ?? 'Cargando…'}</h1>
-          <p className="mt-0.5 text-sm text-text-muted">Unidades y temas de esta materia.</p>
+          <p className="mt-0.5 text-sm text-text-muted">
+            {sheets.length === 0
+              ? 'Todavía no hay hojas.'
+              : `${sheets.length} hoja${sheets.length === 1 ? '' : 's'} · ${links.length} enlace${links.length === 1 ? '' : 's'}`}
+          </p>
         </div>
-        <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={!subject}>
-          Exportar
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div role="tablist" aria-label="Vista" className="flex rounded-lg border border-border p-0.5">
+            {VIEWS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="tab"
+                aria-selected={view === option.id}
+                onClick={() => setView(option.id)}
+                className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                  view === option.id ? 'bg-surface-2 text-text' : 'text-text-muted hover:text-text'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {view === 'list' && (
+            <Button onClick={() => setCreateRequest({ position: null, linkFrom: null })} disabled={!subject}>
+              ＋ Hoja
+            </Button>
+          )}
+          <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={!subject}>
+            Exportar
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -106,44 +138,49 @@ export function SubjectMapPage() {
       <div className="mt-4 min-h-0 flex-1">
         {loading || !subject ? (
           <p className="mt-8 text-center text-text-muted">Cargando…</p>
-        ) : (
+        ) : view === 'canvas' ? (
           <SubjectMap
-            subject={subject}
-            units={units}
-            onOpenTopic={handleOpenTopic}
-            onDeleteUnit={handleDeleteUnit}
-            onDeleteTopic={handleDeleteTopic}
+            sheets={sheets}
+            links={links}
+            onOpenSheet={openSheet}
+            onDeleteSheet={handleDeleteSheet}
             onRequestCreate={setCreateRequest}
-            onMoveNodes={handleMoveNodes}
+            onConnect={connect}
+            onRemoveLink={handleRemoveLink}
+            onMoveNodes={moveNodes}
             onResetLayout={resetLayout}
           />
+        ) : (
+          <SheetList sheets={sheets} onOpenSheet={openSheet} onDeleteSheet={handleDeleteSheet} />
         )}
       </div>
 
       <PromptDialog
         open={createRequest != null}
-        title={createRequest?.kind === 'topic' ? `Nuevo tema en ${createRequest.unit.name}` : 'Nueva unidad'}
-        label="Nombre"
-        placeholder={createRequest?.kind === 'topic' ? 'Ej. Derivadas' : 'Ej. Unidad 1'}
+        title={createRequest?.linkFrom ? `Nueva hoja enlazada desde ${createRequest.linkFrom.title}` : 'Nueva hoja'}
+        label="Título"
+        placeholder="Ej. Resumen clase 1"
         onClose={() => setCreateRequest(null)}
-        onSubmit={handleCreate}
-      />
+        onSubmit={(title) =>
+          createSheet({ title, position: createRequest?.position ?? null, linkFrom: createRequest?.linkFrom ?? null })
+        }
+      >
+        {createRequest?.linkFrom && (
+          <p className="text-xs text-text-muted">
+            Se agrega <span className="text-text">[[título]]</span> al final de{' '}
+            <span className="text-text">{createRequest.linkFrom.title}</span>.
+          </p>
+        )}
+      </PromptDialog>
 
       <ConfirmDialog
         open={pendingDelete != null}
-        title={pendingDelete?.type === 'topic' ? 'Eliminar tema' : 'Eliminar unidad'}
-        message={
-          pendingDelete?.type === 'topic'
-            ? `Se va a eliminar el tema "${pendingDelete.topic.name}" con todas sus hojas. No se puede deshacer.`
-            : pendingDelete
-              ? `Se va a eliminar la unidad "${pendingDelete.unit.name}" con todos sus temas y hojas. No se puede deshacer.`
-              : ''
-        }
+        title={pendingDelete?.type === 'link' ? 'Quitar enlace' : 'Eliminar hoja'}
+        message={describePendingDelete()}
+        confirmLabel={pendingDelete?.type === 'link' ? 'Quitar' : 'Eliminar'}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
-
-      <SheetListPanel topic={openTopic} onClose={() => setOpenTopic(null)} onOpenSheet={openSheet} />
 
       {subject && (
         <ExportDialog

@@ -1,119 +1,164 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import { useExportTree } from '../../../hooks/useExportTree.js'
-import { subjectTreeToMarkdown, careerTreeToMarkdown } from '../../../lib/export/toSingleMarkdown.js'
-import { subjectTreeToZip, careerTreeToZip } from '../../../lib/export/toZip.js'
+import {
+  subjectTreeToMarkdown,
+  careerTreeToMarkdown,
+  allTreeToMarkdown,
+  withAiPreamble,
+} from '../../../lib/export/toSingleMarkdown.js'
+import { subjectTreeToZip, careerTreeToZip, allTreeToZip } from '../../../lib/export/toZip.js'
 import { downloadTextFile, downloadBlob, buildExportFilename } from '../../../lib/export/download.js'
 
 /**
- * Diálogo de export a Markdown (Fase 7.6): `.md` único concatenado o `.zip`
- * con estructura de carpetas y frontmatter, ver docs/features/markdown-export.md.
+ * Diálogo de export a Markdown: `.md` único, `.zip` con carpetas, o "Copiar
+ * para IA" (el `.md` al portapapeles con un preámbulo). Ver
+ * docs/features/markdown-export.md.
+ *
+ * Alcance según desde dónde se abre:
+ * - sin `careerId` (panel de carreras) → todo;
+ * - con `careerId` → la carrera;
+ * - con `subjectId` además → se puede elegir esta materia o toda la carrera.
  *
  * @param {Object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
- * @param {string} props.careerId
- * @param {string} [props.subjectId] - Si se pasa, se puede elegir alcance (materia o carrera).
+ * @param {string} [props.careerId]
+ * @param {string} [props.subjectId]
  */
 export function ExportDialog({ open, onClose, careerId, subjectId }) {
-  const [scope, setScope] = useState(subjectId ? 'subject' : 'career')
+  const defaultScope = subjectId ? 'subject' : careerId ? 'career' : 'all'
+  const [scope, setScope] = useState(defaultScope)
   const [format, setFormat] = useState('md')
-  const [zipping, setZipping] = useState(false)
-  const { loading, error, loadSubjectTree, loadCareerTree } = useExportTree()
+  const [working, setWorking] = useState(false)
+  const [notice, setNotice] = useState(null)
+  const { loading, error, loadSubjectTree, loadCareerTree, loadAllTree } = useExportTree()
 
-  const busy = loading || zipping
+  useEffect(() => {
+    if (open) {
+      setScope(defaultScope)
+      setNotice(null)
+    }
+  }, [open, defaultScope])
 
-  async function handleExport() {
-    const exportSubject = scope === 'subject' && subjectId
+  const busy = loading || working
 
-    const tree = exportSubject ? await loadSubjectTree(subjectId) : await loadCareerTree(careerId)
-    if (!tree) return
+  /** Trae el árbol del alcance elegido y arma el Markdown único. */
+  async function buildMarkdown() {
+    if (scope === 'subject') {
+      const tree = await loadSubjectTree(subjectId)
+      return tree && { name: tree.name, markdown: subjectTreeToMarkdown(tree), label: `la materia "${tree.name}"` }
+    }
+    if (scope === 'career') {
+      const tree = await loadCareerTree(careerId)
+      return tree && { name: tree.name, markdown: careerTreeToMarkdown(tree), label: `la carrera "${tree.name}"` }
+    }
+    const careers = await loadAllTree()
+    return careers && { name: 'todo', markdown: allTreeToMarkdown(careers), label: 'todas las carreras' }
+  }
 
-    if (format === 'zip') {
-      setZipping(true)
-      // Dinámico: quien nunca exporta a .zip no paga el peso de jszip en el bundle inicial.
-      const { default: JSZip } = await import('jszip')
-      const blob = exportSubject ? await subjectTreeToZip(JSZip, tree) : await careerTreeToZip(JSZip, tree)
-      setZipping(false)
-      downloadBlob(buildExportFilename(tree.name, 'zip'), blob)
-    } else {
-      const markdown = exportSubject ? subjectTreeToMarkdown(tree) : careerTreeToMarkdown(tree)
-      downloadTextFile(buildExportFilename(tree.name), markdown)
+  async function handleDownload() {
+    setNotice(null)
+    if (format === 'md') {
+      const result = await buildMarkdown()
+      if (!result) return
+      downloadTextFile(buildExportFilename(result.name), result.markdown)
+      onClose()
+      return
     }
 
+    const tree =
+      scope === 'subject' ? await loadSubjectTree(subjectId) : scope === 'career' ? await loadCareerTree(careerId) : await loadAllTree()
+    if (!tree) return
+
+    setWorking(true)
+    // Dinámico: quien nunca exporta a .zip no paga el peso de jszip en el bundle inicial.
+    const { default: JSZip } = await import('jszip')
+    const blob =
+      scope === 'subject'
+        ? await subjectTreeToZip(JSZip, tree)
+        : scope === 'career'
+          ? await careerTreeToZip(JSZip, tree)
+          : await allTreeToZip(JSZip, tree)
+    setWorking(false)
+    downloadBlob(buildExportFilename(scope === 'all' ? 'todo' : tree.name, 'zip'), blob)
     onClose()
   }
+
+  async function handleCopyForAi() {
+    setNotice(null)
+    const result = await buildMarkdown()
+    if (!result) return
+    try {
+      await navigator.clipboard.writeText(withAiPreamble(result.markdown, result.label))
+      setNotice('Copiado. Pegalo en el chat de tu IA.')
+    } catch {
+      setNotice('El navegador no dejó copiar al portapapeles. Usá "Descargar .md".')
+    }
+  }
+
+  const scopes = [
+    ...(subjectId ? [{ id: 'subject', label: 'Esta materia' }] : []),
+    ...(careerId ? [{ id: 'career', label: 'Toda la carrera' }] : []),
+    { id: 'all', label: 'Todas mis carreras' },
+  ]
 
   return (
     <Modal open={open} onClose={onClose} title="Exportar a Markdown">
       <div className="flex flex-col gap-4">
         <p className="text-sm text-text-muted">
-          Descargá el contenido en Markdown: un único archivo para subir a un proyecto de
-          IA, o un <code>.zip</code> con estructura de carpetas para importar a Obsidian.
+          Copiá tus apuntes para pegarlos en una IA, descargá un único <code>.md</code>, o un <code>.zip</code> con
+          carpetas para Obsidian.
         </p>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm text-text-muted">Formato</legend>
+          <legend className="mb-1 text-sm text-text-muted">Alcance</legend>
+          {scopes.map((option) => (
+            <label key={option.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="export-scope"
+                value={option.id}
+                checked={scope === option.id}
+                onChange={() => setScope(option.id)}
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm text-text-muted">Formato de descarga</legend>
           <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="export-format"
-              value="md"
-              checked={format === 'md'}
-              onChange={() => setFormat('md')}
-            />
+            <input type="radio" name="export-format" value="md" checked={format === 'md'} onChange={() => setFormat('md')} />
             <code>.md</code> único (para IA)
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="export-format"
-              value="zip"
-              checked={format === 'zip'}
-              onChange={() => setFormat('zip')}
-            />
+            <input type="radio" name="export-format" value="zip" checked={format === 'zip'} onChange={() => setFormat('zip')} />
             <code>.zip</code> con carpetas (para Obsidian)
           </label>
         </fieldset>
-
-        {subjectId && (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm text-text-muted">Alcance</legend>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="export-scope"
-                value="subject"
-                checked={scope === 'subject'}
-                onChange={() => setScope('subject')}
-              />
-              Esta materia
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="export-scope"
-                value="career"
-                checked={scope === 'career'}
-                onChange={() => setScope('career')}
-              />
-              Toda la carrera
-            </label>
-          </fieldset>
-        )}
 
         {error && (
           <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
             {error}
           </p>
         )}
+        {notice && (
+          <p role="status" className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-accent-soft">
+            {notice}
+          </p>
+        )}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Cancelar
+            Cerrar
           </Button>
-          <Button onClick={handleExport} disabled={busy}>
+          <Button variant="ghost" onClick={handleCopyForAi} disabled={busy}>
+            📋 Copiar para IA
+          </Button>
+          <Button onClick={handleDownload} disabled={busy}>
             {busy ? 'Generando…' : `Descargar .${format}`}
           </Button>
         </div>

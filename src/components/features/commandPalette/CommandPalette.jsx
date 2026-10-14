@@ -1,19 +1,25 @@
 /**
- * Overlay `Ctrl+K`: busca hojas (objetivo principal), materias, unidades y
- * temas por nombre, con matching de subsecuencia (fuzzy) hecho a mano. Además
- * busca DENTRO del contenido de las hojas (buscador de contenido, Fase 5):
- * si el texto no matchea por nombre, se prueba contra `content_md` y se
- * muestra el fragmento encontrado en vez de la ruta. Ver
+ * Overlay `Ctrl+K`: busca hojas (objetivo principal) y materias por nombre, con
+ * matching de subsecuencia (fuzzy) hecho a mano. Además busca DENTRO del
+ * contenido de las hojas: esa búsqueda corre en el SERVIDOR
+ * (`sheetsService.searchContent`, desde 3 letras y con debounce) — el
+ * explorador ya no baja el contenido de todas las hojas. Los resultados por
+ * contenido muestran el fragmento encontrado en vez de la ruta. Ver
  * docs/features/navigation-shell.md.
  */
 
 import { useEffect, useMemo, useState } from 'react'
 import { buildContentSnippet } from '../../../lib/search/snippet.js'
+import { sheetsService } from '../../../services/sheets.service.js'
 
-const ICONS = { subject: '📚', unit: '📁', topic: '🔖', sheet: '📝' }
+const ICONS = { subject: '📚', sheet: '📝' }
 
 /** Coincidencia por contenido: siempre peor rankeada que cualquier match por nombre. */
 const CONTENT_MATCH_SCORE = 4
+/** Desde cuántas letras se busca dentro del contenido (menos es ruido y carga al servidor). */
+const CONTENT_MIN_LENGTH = 3
+const CONTENT_DEBOUNCE_MS = 250
+const MAX_RESULTS = 30
 
 /** @param {string} text @param {string} query */
 function fuzzyMatch(text, query) {
@@ -46,34 +52,56 @@ function score(text, query) {
 export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, onOpenSheet }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
+  /** Hojas cuyo contenido contiene el texto (respuesta del servidor). */
+  const [contentHits, setContentHits] = useState([])
 
   useEffect(() => {
     if (open) {
       setQuery('')
       setSelected(0)
+      setContentHits([])
     }
   }, [open])
+
+  // Búsqueda por contenido en el servidor, con debounce. `cancelled` descarta
+  // respuestas viejas que lleguen tarde (el usuario siguió escribiendo).
+  useEffect(() => {
+    const q = query.trim()
+    if (!open || q.length < CONTENT_MIN_LENGTH) {
+      setContentHits([])
+      return undefined
+    }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const { data } = await sheetsService.searchContent(q)
+      if (!cancelled) setContentHits(data ?? [])
+    }, CONTENT_DEBOUNCE_MS)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [open, query])
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
 
     const matches = searchIndex
-      .map((entry) => {
-        const nameMatches = fuzzyMatch(entry.name.toLowerCase(), q)
-        if (nameMatches) return { entry, rank: score(entry.name.toLowerCase(), q), snippet: null }
-
-        if (q && entry.type === 'sheet') {
-          const snippet = buildContentSnippet(entry.content, q)
-          if (snippet) return { entry, rank: CONTENT_MATCH_SCORE, snippet }
-        }
-
-        return null
-      })
-      .filter(Boolean)
-
+      .filter((entry) => fuzzyMatch(entry.name.toLowerCase(), q))
+      .map((entry) => ({ entry, rank: score(entry.name.toLowerCase(), q), snippet: null }))
     matches.sort((a, b) => a.rank - b.rank)
-    return matches.slice(0, 30)
-  }, [searchIndex, query])
+
+    // Las hojas que ya aparecieron por nombre no se repiten por contenido.
+    const shown = new Set(matches.map(({ entry }) => `${entry.type}:${entry.id}`))
+    const entriesById = new Map(searchIndex.filter((entry) => entry.type === 'sheet').map((entry) => [entry.id, entry]))
+    for (const hit of contentHits) {
+      const entry = entriesById.get(hit.id)
+      if (!entry || shown.has(`sheet:${hit.id}`)) continue
+      const snippet = buildContentSnippet(hit.content_md, q)
+      if (snippet) matches.push({ entry, rank: CONTENT_MATCH_SCORE, snippet })
+    }
+
+    return matches.slice(0, MAX_RESULTS)
+  }, [searchIndex, query, contentHits])
 
   if (!open) return null
 

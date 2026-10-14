@@ -1,6 +1,6 @@
 /**
  * Barra de tabs de las hojas abiertas. Ver docs/features/navigation-shell.md.
- * Solo las hojas ocupan tab (materias/unidades/temas navegan sin abrir una).
+ * Solo las hojas ocupan tab (carreras y materias navegan sin abrir una).
  */
 
 /**

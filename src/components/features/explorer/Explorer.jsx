@@ -1,5 +1,5 @@
 /**
- * Panel lateral: buscador local + árbol de los 5 niveles.
+ * Panel lateral: buscador local + árbol de los 3 niveles (ADR-014).
  * Ver docs/features/navigation-shell.md.
  */
 
@@ -12,8 +12,6 @@ import { STORAGE_KEYS } from '../../../constants/storageKeys.js'
 /** Niveles hijos en orden, para el filtro recursivo por nombre. */
 const CHILD_LEVELS = [
   { key: 'subjects', nameField: 'name' },
-  { key: 'units', nameField: 'name' },
-  { key: 'topics', nameField: 'name' },
   { key: 'sheets', nameField: 'title' },
 ]
 
@@ -48,7 +46,7 @@ const ALWAYS_EXPANDED = { has: () => true }
  * @param {(careerId: string) => void} props.onNavigateCareer
  * @param {(subjectId: string) => void} props.onNavigateSubject
  * @param {(sheet: {id: string, title: string}) => void} props.onOpenSheet
- * @param {(type: 'career'|'subject'|'unit'|'topic'|'sheet', id: string, name: string, node: Object) => void} props.onRenameEntity
+ * @param {(type: 'career'|'subject'|'sheet', id: string, name: string, node: Object) => Promise<string|null>} props.onRenameEntity
  * @param {string} [props.activeCareerId]
  * @param {string} [props.activeSubjectId]
  * @param {string} [props.activeSheetId]

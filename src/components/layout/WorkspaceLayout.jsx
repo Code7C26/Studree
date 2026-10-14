@@ -32,22 +32,29 @@ function findCareerIdForSubject(careers, subjectId) {
 function findAncestryForSheet(careers, sheetId) {
   for (const career of careers) {
     for (const subject of career.subjects) {
-      for (const unit of subject.units) {
-        for (const topic of unit.topics) {
-          if (topic.sheets.some((sheet) => sheet.id === sheetId)) {
-            return { careerId: career.id, subjectId: subject.id }
-          }
-        }
+      if (subject.sheets.some((sheet) => sheet.id === sheetId)) {
+        return { careerId: career.id, subjectId: subject.id }
       }
     }
   }
   return {}
 }
 
+/** id → título de todas las hojas del árbol. */
+function collectSheetTitles(careers) {
+  const titles = new Map()
+  for (const career of careers) {
+    for (const subject of career.subjects) {
+      for (const sheet of subject.sheets) titles.set(sheet.id, sheet.title)
+    }
+  }
+  return titles
+}
+
 export function WorkspaceLayout() {
   const navigate = useNavigate()
   const params = useParams()
-  const { careers, searchIndex, loading, renameEntity } = useExplorerTree()
+  const { careers, searchIndex, loading, error: treeError, renameEntity } = useExplorerTree()
 
   // En desktop el explorador arranca visible (panel fijo); en mobile arranca
   // colapsado (se abre como drawer), porque ahí es el único reemplazo real
@@ -61,6 +68,19 @@ export function WorkspaceLayout() {
   useEffect(() => {
     writeCache(STORAGE_KEYS.uiTabs, tabs)
   }, [tabs])
+
+  // Cada vez que el árbol termina de cargar (incluida la recarga después de
+  // borrar o renombrar): se cierran las tabs de hojas que ya no existen y se
+  // actualizan los títulos. Si el árbol falló, no se toca nada.
+  useEffect(() => {
+    if (loading || treeError) return
+    const titles = collectSheetTitles(careers)
+    setTabs((current) => {
+      const next = current.filter((tab) => titles.has(tab.id)).map((tab) => ({ ...tab, title: titles.get(tab.id) }))
+      const changed = next.length !== current.length || next.some((tab, index) => tab.title !== current[index].title)
+      return changed ? next : current
+    })
+  }, [careers, loading, treeError])
 
   /** Abre una hoja en una tab. Si ya está abierta, no duplica (solo activa). */
   const openTab = useCallback((id, title) => {

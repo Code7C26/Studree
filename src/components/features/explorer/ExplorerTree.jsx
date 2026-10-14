@@ -1,6 +1,6 @@
 /**
- * Render recursivo (de profundidad fija, ADR-010) de los 5 niveles:
- * Carrera → Materia → Unidad → Tema → Hoja. Ver docs/features/navigation-shell.md.
+ * Render (de profundidad fija, ADR-014) de los 3 niveles:
+ * Carrera → Materia → Hoja. Ver docs/features/navigation-shell.md.
  */
 
 import { ExplorerItem } from './ExplorerItem'
@@ -8,20 +8,18 @@ import { ExplorerItem } from './ExplorerItem'
 const ICONS = {
   career: '🎓',
   subject: '📚',
-  unit: '📁',
-  topic: '🔖',
   sheet: '📝',
 }
 
 /**
  * @param {Object} props
  * @param {Array<Object>} props.careers - Árbol completo (ver useExplorerTree).
- * @param {Set<string>} props.expandedKeys - Claves `"tipo:id"` expandidas.
- * @param {(key: string) => void} props.onToggle
+ * @param {{has: (key: string) => boolean}} props.expandedKeys - Claves `"tipo:id"` expandidas.
+ * @param {(key: string, forceOpen?: boolean) => void} props.onToggle
  * @param {(careerId: string) => void} props.onNavigateCareer
  * @param {(subjectId: string) => void} props.onNavigateSubject
  * @param {(sheet: {id: string, title: string}) => void} props.onOpenSheet
- * @param {(type: 'career'|'subject'|'unit'|'topic'|'sheet', id: string, name: string, node: Object) => void} props.onRenameEntity
+ * @param {(type: 'career'|'subject'|'sheet', id: string, name: string, node: Object) => Promise<string|null>} props.onRenameEntity
  * @param {string} [props.activeCareerId]
  * @param {string} [props.activeSubjectId]
  * @param {string} [props.activeSheetId]
@@ -72,10 +70,10 @@ export function ExplorerTree({
                       icon={ICONS.subject}
                       label={subject.name}
                       depth={1}
-                      hasChildren={subject.units.length > 0}
+                      hasChildren={subject.sheets.length > 0}
                       expanded={subjectExpanded}
                       onToggle={() => onToggle(subjectKey)}
-                      active={subject.id === activeSubjectId}
+                      active={subject.id === activeSubjectId && !activeSheetId}
                       onSelect={() => {
                         onToggle(subjectKey, true)
                         onNavigateSubject(subject.id)
@@ -84,65 +82,17 @@ export function ExplorerTree({
                     />
 
                     {subjectExpanded &&
-                      subject.units.map((unit) => {
-                        const unitKey = `unit:${unit.id}`
-                        const unitExpanded = expandedKeys.has(unitKey)
-
-                        return (
-                          <div key={unit.id}>
-                            <ExplorerItem
-                              icon={ICONS.unit}
-                              label={unit.name}
-                              depth={2}
-                              hasChildren={unit.topics.length > 0}
-                              expanded={unitExpanded}
-                              onToggle={() => onToggle(unitKey)}
-                              onSelect={() => {
-                                onToggle(unitKey, true)
-                                onNavigateSubject(subject.id)
-                              }}
-                              onRename={(name) => onRenameEntity('unit', unit.id, name, unit)}
-                            />
-
-                            {unitExpanded &&
-                              unit.topics.map((topic) => {
-                                const topicKey = `topic:${topic.id}`
-                                const topicExpanded = expandedKeys.has(topicKey)
-
-                                return (
-                                  <div key={topic.id}>
-                                    <ExplorerItem
-                                      icon={ICONS.topic}
-                                      label={topic.name}
-                                      depth={3}
-                                      hasChildren={topic.sheets.length > 0}
-                                      expanded={topicExpanded}
-                                      onToggle={() => onToggle(topicKey)}
-                                      onSelect={() => {
-                                        onToggle(topicKey, true)
-                                        onNavigateSubject(subject.id)
-                                      }}
-                                      onRename={(name) => onRenameEntity('topic', topic.id, name, topic)}
-                                    />
-
-                                    {topicExpanded &&
-                                      topic.sheets.map((sheet) => (
-                                        <ExplorerItem
-                                          key={sheet.id}
-                                          icon={ICONS.sheet}
-                                          label={sheet.title}
-                                          depth={4}
-                                          active={sheet.id === activeSheetId}
-                                          onSelect={() => onOpenSheet(sheet)}
-                                          onRename={(name) => onRenameEntity('sheet', sheet.id, name, sheet)}
-                                        />
-                                      ))}
-                                  </div>
-                                )
-                              })}
-                          </div>
-                        )
-                      })}
+                      subject.sheets.map((sheet) => (
+                        <ExplorerItem
+                          key={sheet.id}
+                          icon={ICONS.sheet}
+                          label={sheet.title}
+                          depth={2}
+                          active={sheet.id === activeSheetId}
+                          onSelect={() => onOpenSheet(sheet)}
+                          onRename={(name) => onRenameEntity('sheet', sheet.id, name, sheet)}
+                        />
+                      ))}
                   </div>
                 )
               })}

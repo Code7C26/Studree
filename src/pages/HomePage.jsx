@@ -17,7 +17,7 @@ export function HomePage() {
         <h2 className="text-lg font-semibold">Empezá a organizar</h2>
         <p className="mt-1 text-sm text-text-muted">
           Creá una carrera y, dentro, tus materias con sus correlativas. Cada materia se
-          divide en unidades, temas y hojas de apuntes.
+          llena de hojas de apuntes que podés enlazar entre sí.
         </p>
         <Link to={ROUTES.careers} className="mt-4 inline-block">
           <Button>Ir a mis carreras</Button>

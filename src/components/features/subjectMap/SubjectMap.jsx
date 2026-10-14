@@ -1,11 +1,14 @@
 /**
- * Lienzo React Flow del canvas de materia (Materia → Unidad → Tema), estilo n8n.
+ * Lienzo React Flow del canvas de materia (ADR-014), estilo n8n: las HOJAS son
+ * los nodos y los `[[links]]` entre ellas, las aristas (ADR-015).
  * Ver docs/features/subject-map.md.
  *
  * - Los nodos se arrastran y su posición se guarda (layout híbrido, ADR-012).
- * - "+" en la materia → unidad nueva; "+" en una unidad → tema nuevo.
- * - Doble click o click derecho en el fondo → unidad nueva en ese punto.
- * - Click en un tema → panel de hojas (el canvas corta en Tema).
+ * - Unir el punto derecho de una hoja con el izquierdo de otra las enlaza;
+ *   click en una flecha pide quitar el enlace.
+ * - "+" en una hoja → hoja nueva enlazada desde esa.
+ * - Doble click o click derecho en el fondo → hoja nueva en ese punto.
+ * - Click / doble click en una hoja → se abre en el editor.
  */
 
 import { useEffect, useMemo, useRef } from 'react'
@@ -14,34 +17,32 @@ import {
   ReactFlowProvider,
   Background,
   Controls,
+  MiniMap,
   Panel,
   MarkerType,
   useNodesState,
   useEdgesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { SubjectRootNode } from './SubjectRootNode'
-import { UnitNode } from './UnitNode'
-import { TopicNode } from './TopicNode'
-import { computeSubjectMapLayout, SUBJECT_MAP_NODE_WIDTH, SUBJECT_MAP_NODE_HEIGHT } from '../../../lib/graph/dagreLayout.js'
+import { SheetNode } from './SheetNode'
+import { computeSheetLayout, SHEET_NODE_WIDTH, SHEET_NODE_HEIGHT } from '../../../lib/graph/dagreLayout.js'
 import { findFreeSpot, resolvePosition } from '../../../lib/graph/canvasPositions.js'
 import { useFlowCanvas } from '../../../hooks/useFlowCanvas.js'
 
 // Referencia estable: React Flow recrea todos los nodos si `nodeTypes` cambia de identidad.
-const nodeTypes = { subject: SubjectRootNode, unit: UnitNode, topic: TopicNode }
-const NODE_SIZE = { width: SUBJECT_MAP_NODE_WIDTH, height: SUBJECT_MAP_NODE_HEIGHT }
-/** Distancia vertical entre un padre y sus hijos nuevos, y horizontal entre hermanos. */
-const CHILD_OFFSET = { x: SUBJECT_MAP_NODE_WIDTH + 32, y: SUBJECT_MAP_NODE_HEIGHT + 80 }
+const nodeTypes = { sheet: SheetNode }
+const NODE_SIZE = { width: SHEET_NODE_WIDTH, height: SHEET_NODE_HEIGHT }
 
 /**
  * @typedef {Object} SubjectMapProps
- * @property {import('../../../types/models.js').Subject} subject
- * @property {import('../../../hooks/useSubjectMap.js').UnitWithTopics[]} units
- * @property {(topic: import('../../../types/models.js').Topic) => void} onOpenTopic
- * @property {(unit: import('../../../types/models.js').Unit) => void} onDeleteUnit
- * @property {(unit: import('../../../types/models.js').Unit, topic: import('../../../types/models.js').Topic) => void} onDeleteTopic
- * @property {(request: {kind: 'unit'|'topic', unit?: import('../../../types/models.js').Unit, position: {x: number, y: number}|null}) => void} onRequestCreate
- * @property {(moves: Array<{id: string, x: number, y: number}>) => void} onMoveNodes - `id` = id de nodo con prefijo.
+ * @property {import('../../../types/models.js').Sheet[]} sheets
+ * @property {import('../../../types/models.js').SheetLink[]} links
+ * @property {(sheet: import('../../../types/models.js').Sheet) => void} onOpenSheet
+ * @property {(sheet: import('../../../types/models.js').Sheet) => void} onDeleteSheet
+ * @property {(request: {position: {x: number, y: number}|null, linkFrom: import('../../../types/models.js').Sheet|null}) => void} onRequestCreate
+ * @property {(sourceId: string, targetId: string) => void} onConnect
+ * @property {(link: import('../../../types/models.js').SheetLink) => void} onRemoveLink
+ * @property {(moves: Array<{id: string, x: number, y: number}>) => void} onMoveNodes
  * @property {() => void} onResetLayout
  */
 
@@ -55,79 +56,66 @@ export function SubjectMap(props) {
 }
 
 /** @param {SubjectMapProps} props */
-function SubjectMapCanvas({ subject, units, onOpenTopic, onDeleteUnit, onDeleteTopic, onRequestCreate, onMoveNodes, onResetLayout }) {
+function SubjectMapCanvas({
+  sheets,
+  links,
+  onOpenSheet,
+  onDeleteSheet,
+  onRequestCreate,
+  onConnect,
+  onRemoveLink,
+  onMoveNodes,
+  onResetLayout,
+}) {
   const wrapperRef = useRef(null)
   const canvas = useFlowCanvas({ wrapperRef, onMove: onMoveNodes })
-  // Los "+" leen posiciones vivas de React Flow: van por ref (asignado abajo)
-  // para no recrear todos los nodos en cada render.
-  const requestChildRef = useRef(() => {})
+  // El "+" de cada nodo lee posiciones vivas de React Flow: va por ref (asignado
+  // más abajo) para no recrear todos los nodos en cada render.
+  const requestLinkedRef = useRef(() => {})
 
-  const rootId = `subject:${subject.id}`
-  const autoPositions = useMemo(() => computeSubjectMapLayout(subject.id, units), [subject.id, units])
+  const autoPositions = useMemo(() => computeSheetLayout(sheets, links), [sheets, links])
+  const hasManualLayout = sheets.some((sheet) => sheet.pos_x != null)
 
-  const hasManualLayout =
-    subject.map_x != null || units.some((unit) => unit.pos_x != null || unit.topics.some((topic) => topic.pos_x != null))
-
-  const computedNodes = useMemo(() => {
-    const nodes = [
-      {
-        id: rootId,
-        type: 'subject',
-        position: resolvePosition(subject.map_x, subject.map_y, autoPositions.get(rootId)),
-        data: {
-          subject,
-          saved: subject.map_x != null && subject.map_y != null,
-          unitCount: units.length,
-          onAddChild: () => requestChildRef.current(rootId, units.length, { kind: 'unit' }),
-        },
-      },
-    ]
-    for (const unit of units) {
-      const unitId = `unit:${unit.id}`
-      nodes.push({
-        id: unitId,
-        type: 'unit',
-        position: resolvePosition(unit.pos_x, unit.pos_y, autoPositions.get(unitId)),
-        data: {
-          unit,
-          saved: unit.pos_x != null && unit.pos_y != null,
-          topicCount: unit.topics.length,
-          onAddChild: () => requestChildRef.current(unitId, unit.topics.length, { kind: 'topic', unit }),
-          onDelete: () => onDeleteUnit(unit),
-        },
-      })
-      for (const topic of unit.topics) {
-        const topicId = `topic:${topic.id}`
-        nodes.push({
-          id: topicId,
-          type: 'topic',
-          position: resolvePosition(topic.pos_x, topic.pos_y, autoPositions.get(topicId)),
-          data: {
-            topic,
-            saved: topic.pos_x != null && topic.pos_y != null,
-            sheetCount: topic.sheetCount,
-            onOpen: () => onOpenTopic(topic),
-            onDelete: () => onDeleteTopic(unit, topic),
-          },
-        })
-      }
+  const linkCounts = useMemo(() => {
+    const counts = new Map()
+    for (const link of links) {
+      counts.set(link.source_id, (counts.get(link.source_id) ?? 0) + 1)
+      counts.set(link.target_id, (counts.get(link.target_id) ?? 0) + 1)
     }
-    return nodes
-  }, [rootId, subject, units, autoPositions, onOpenTopic, onDeleteUnit, onDeleteTopic])
+    return counts
+  }, [links])
+
+  const computedNodes = useMemo(
+    () =>
+      sheets.map((sheet) => ({
+        id: sheet.id,
+        type: 'sheet',
+        position: resolvePosition(sheet.pos_x, sheet.pos_y, autoPositions.get(sheet.id)),
+        data: {
+          sheet,
+          saved: sheet.pos_x != null && sheet.pos_y != null,
+          linkCount: linkCounts.get(sheet.id) ?? 0,
+          onOpen: () => onOpenSheet(sheet),
+          onDelete: () => onDeleteSheet(sheet),
+          onAddLinked: () => requestLinkedRef.current(sheet),
+        },
+      })),
+    [sheets, autoPositions, linkCounts, onOpenSheet, onDeleteSheet],
+  )
 
   const computedEdges = useMemo(() => {
-    const edge = (source, target) => ({
-      id: `${source}->${target}`,
-      source,
-      target,
-      style: { strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed },
-    })
-    return units.flatMap((unit) => [
-      edge(rootId, `unit:${unit.id}`),
-      ...unit.topics.map((topic) => edge(`unit:${unit.id}`, `topic:${topic.id}`)),
-    ])
-  }, [rootId, units])
+    const ids = new Set(sheets.map((sheet) => sheet.id))
+    return links
+      .filter((link) => ids.has(link.source_id) && ids.has(link.target_id))
+      .map((link) => ({
+        id: link.id,
+        source: link.source_id,
+        target: link.target_id,
+        data: { link },
+        style: { strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed },
+      }))
+  }, [links, sheets])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(computedNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(computedEdges)
@@ -137,37 +125,36 @@ function SubjectMapCanvas({ subject, units, onOpenTopic, onDeleteUnit, onDeleteT
   useEffect(() => setNodes(computedNodes), [computedNodes, setNodes])
   useEffect(() => setEdges(computedEdges), [computedEdges, setEdges])
 
-  /**
-   * "+" de un nodo: en modo manual el hijo nace debajo del padre, en el
-   * primer lugar libre; en modo automático lo ubica dagre.
-   */
-  requestChildRef.current = (parentNodeId, siblingCount, request) => {
-    const origin = canvas.positionOf(parentNodeId)
+  requestLinkedRef.current = (sheet) => {
+    const origin = canvas.positionOf(sheet.id)
     const position =
       canvas.isManual() && origin
         ? findFreeSpot(
-            { x: origin.x + (siblingCount > 0 ? CHILD_OFFSET.x * 0.5 : 0), y: origin.y + CHILD_OFFSET.y },
+            { x: origin.x + SHEET_NODE_WIDTH + 80, y: origin.y },
             canvas.occupiedPositions(),
-            { x: CHILD_OFFSET.x, y: 0 },
+            { x: 0, y: SHEET_NODE_HEIGHT + 30 },
             NODE_SIZE,
           )
         : null
-    onRequestCreate({ ...request, position })
+    onRequestCreate({ position, linkFrom: sheet })
   }
 
-  function requestUnitAtCenter() {
-    requestChildRef.current(rootId, units.length, { kind: 'unit' })
+  function requestCreateAtCenter() {
+    const position = canvas.isManual()
+      ? findFreeSpot(canvas.viewportCenter(), canvas.occupiedPositions(), { x: 0, y: SHEET_NODE_HEIGHT + 30 }, NODE_SIZE)
+      : null
+    onRequestCreate({ position, linkFrom: null })
   }
 
-  /** Doble click / click derecho en el fondo: la unidad nace en ese punto. */
-  function requestUnitAtPointer(event) {
+  /** Doble click / click derecho en el fondo: la hoja nace en ese punto. */
+  function requestCreateAtPointer(event) {
     if (!canvas.isPaneTarget(event)) return
     event.preventDefault()
     const point = canvas.pointFromEvent(event)
     canvas.freezeLayout()
     onRequestCreate({
-      kind: 'unit',
-      position: { x: point.x - SUBJECT_MAP_NODE_WIDTH / 2, y: point.y - SUBJECT_MAP_NODE_HEIGHT / 2 },
+      position: { x: point.x - SHEET_NODE_WIDTH / 2, y: point.y - SHEET_NODE_HEIGHT / 2 },
+      linkFrom: null,
     })
   }
 
@@ -175,7 +162,7 @@ function SubjectMapCanvas({ subject, units, onOpenTopic, onDeleteUnit, onDeleteT
     <div
       ref={wrapperRef}
       className="relative h-full min-h-[420px] w-full overflow-hidden rounded-xl border border-border bg-bg"
-      onDoubleClick={requestUnitAtPointer}
+      onDoubleClick={requestCreateAtPointer}
     >
       <ReactFlow
         nodes={nodes}
@@ -184,12 +171,13 @@ function SubjectMapCanvas({ subject, units, onOpenTopic, onDeleteUnit, onDeleteT
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         nodesDraggable
-        nodesConnectable={false}
+        nodesConnectable
         onNodeDragStop={canvas.handleDragStop}
-        onNodeDoubleClick={(_event, node) => {
-          if (node.type === 'topic') onOpenTopic(node.data.topic)
-        }}
-        onPaneContextMenu={requestUnitAtPointer}
+        onNodeDoubleClick={(_event, node) => onOpenSheet(node.data.sheet)}
+        onConnect={({ source, target }) => onConnect(source, target)}
+        isValidConnection={({ source, target }) => source !== target}
+        onEdgeClick={(_event, edge) => onRemoveLink(edge.data.link)}
+        onPaneContextMenu={requestCreateAtPointer}
         zoomOnDoubleClick={false}
         deleteKeyCode={null}
         proOptions={{ hideAttribution: true }}
@@ -198,10 +186,11 @@ function SubjectMapCanvas({ subject, units, onOpenTopic, onDeleteUnit, onDeleteT
       >
         <Background gap={20} />
         <Controls showInteractive={false} />
+        <MiniMap pannable zoomable className="!hidden sm:!block" />
 
         <Panel position="top-left" className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={requestUnitAtCenter} className="btn-accent px-3 py-1.5 text-sm shadow">
-            ＋ Unidad
+          <button type="button" onClick={requestCreateAtCenter} className="btn-accent px-3 py-1.5 text-sm shadow">
+            ＋ Hoja
           </button>
           {hasManualLayout && (
             <button
@@ -216,10 +205,26 @@ function SubjectMapCanvas({ subject, units, onOpenTopic, onDeleteUnit, onDeleteT
         </Panel>
 
         <Panel position="bottom-center" className="!mb-3 hidden rounded-lg bg-surface/90 px-3 py-1.5 text-[11px] text-text-muted shadow md:block">
-          ＋ en la materia: nueva unidad · ＋ en una unidad: nuevo tema · Click en un tema: sus hojas · Doble click en el
-          lienzo: unidad ahí
+          Doble click en el lienzo: nueva hoja · Uní los puntos para enlazar dos hojas · Click en una flecha para quitar el
+          enlace · Escribí [[Título]] en una hoja para enlazarla
         </Panel>
       </ReactFlow>
+
+      {sheets.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={requestCreateAtCenter}
+            className="pointer-events-auto flex w-56 flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface/80 px-6 py-8 text-text-muted transition-colors hover:border-accent hover:text-accent"
+          >
+            <span className="text-3xl" aria-hidden="true">
+              ＋
+            </span>
+            <span className="text-sm font-medium">Crear la primera hoja</span>
+            <span className="text-[11px]">o hacé doble click en el lienzo</span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }

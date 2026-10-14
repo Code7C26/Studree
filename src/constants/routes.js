@@ -10,7 +10,7 @@ export const ROUTES = Object.freeze({
   login: '/entrar',
   careers: '/carreras', // workspace: panel de inicio con las carreras
   careerMap: '/carreras/:careerId', // canvas de materias + correlativas
-  subjectMap: '/materias/:subjectId', // canvas de unidades → temas
+  subjectMap: '/materias/:subjectId', // canvas de hojas + links (ADR-014)
   sheet: '/hojas/:sheetId', // editor de la hoja
   profile: '/perfil',
 })

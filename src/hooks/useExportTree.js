@@ -1,18 +1,20 @@
 /**
- * Trae el árbol completo (con `content_md`) que necesita el export a
- * Markdown (Fase 7.6, ver docs/features/markdown-export.md).
+ * Trae el árbol (con `content_md`) que necesita el export a Markdown.
+ * Ver docs/features/markdown-export.md.
  *
  * Vive aparte de `useSubjectMap`/`useExplorerTree` porque necesita el
- * contenido completo de cada hoja, no solo el conteo o el nombre — traerlo
- * siempre sería desperdiciar red en el resto de la app.
+ * contenido completo de cada hoja, no solo el título — traerlo siempre sería
+ * desperdiciar red en el resto de la app.
+ *
+ * Jerarquía de 3 niveles (ADR-014): carrera → materia → hoja.
  */
 
 import { useCallback, useState } from 'react'
 import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
-import { unitsService } from '../services/units.service.js'
-import { topicsService } from '../services/topics.service.js'
 import { sheetsService } from '../services/sheets.service.js'
+
+const EXPORT_SHEET_COLUMNS = 'id, subject_id, title, content_md, updated_at, position'
 
 /** Lanza el error de un ServiceResult como excepción (lo atrapa `run`). */
 function unwrap({ data, error }) {
@@ -30,40 +32,25 @@ function groupBy(rows, field) {
   return groups
 }
 
+/** @param {Object} sheet */
+const toExportSheet = (sheet) => ({ title: sheet.title, content_md: sheet.content_md, updated_at: sheet.updated_at })
+
 /**
- * Arma el árbol de export de varias materias con 3 consultas en total
- * (unidades, temas y hojas, cada una con `IN`), no una por unidad/tema.
- *
+ * Materias con sus hojas, con UNA consulta de hojas (`IN`) para todas.
  * @param {import('../types/models.js').Subject[]} subjectRows
- * @returns {Promise<Array<{name: string, units: Array<Object>}>>}
+ * @returns {Promise<Array<{name: string, sheets: Array}>>}
  */
 async function buildSubjectTrees(subjectRows) {
-  const units = unwrap(await unitsService.listByParents(subjectRows.map((subject) => subject.id)))
-  const topics = unwrap(await topicsService.listByParents(units.map((unit) => unit.id)))
   const sheets = unwrap(
     await sheetsService.listByParents(
-      topics.map((topic) => topic.id),
-      'id, topic_id, title, content_md, updated_at, position',
+      subjectRows.map((subject) => subject.id),
+      EXPORT_SHEET_COLUMNS,
     ),
   )
-
-  const unitsBySubject = groupBy(units, 'subject_id')
-  const topicsByUnit = groupBy(topics, 'unit_id')
-  const sheetsByTopic = groupBy(sheets, 'topic_id')
-
+  const sheetsBySubject = groupBy(sheets, 'subject_id')
   return subjectRows.map((subject) => ({
     name: subject.name,
-    units: (unitsBySubject.get(subject.id) ?? []).map((unit) => ({
-      name: unit.name,
-      topics: (topicsByUnit.get(unit.id) ?? []).map((topic) => ({
-        name: topic.name,
-        sheets: (sheetsByTopic.get(topic.id) ?? []).map((sheet) => ({
-          title: sheet.title,
-          content_md: sheet.content_md,
-          updated_at: sheet.updated_at,
-        })),
-      })),
-    })),
+    sheets: (sheetsBySubject.get(subject.id) ?? []).map(toExportSheet),
   }))
 }
 
@@ -73,8 +60,9 @@ async function fetchSubjectTree(subjectId) {
   if (error) throw new Error(error)
   if (!subject) throw new Error('No se encontró la materia.')
 
+  const { data: career } = await careersService.get(subject.career_id)
   const [tree] = await buildSubjectTrees([subject])
-  return tree
+  return { ...tree, careerName: career?.name ?? '' }
 }
 
 /** @param {string} careerId */
@@ -87,12 +75,30 @@ async function fetchCareerTree(careerId) {
   return { name: career.name, subjects: await buildSubjectTrees(subjectRows) }
 }
 
+/** Todas las carreras del usuario (RLS filtra), con 3 consultas en total. */
+async function fetchAllTree() {
+  const [careers, subjects] = await Promise.all([
+    careersService.list().then(unwrap),
+    subjectsService.list().then(unwrap),
+  ])
+  const subjectTrees = await buildSubjectTrees(subjects)
+  const treesByCareer = groupBy(
+    subjects.map((subject, index) => ({ career_id: subject.career_id, tree: subjectTrees[index] })),
+    'career_id',
+  )
+  return careers.map((career) => ({
+    name: career.name,
+    subjects: (treesByCareer.get(career.id) ?? []).map((entry) => entry.tree),
+  }))
+}
+
 /**
  * @returns {{
  *   loading: boolean,
  *   error: string|null,
- *   loadSubjectTree: (subjectId: string) => Promise<Object|null>,
- *   loadCareerTree: (careerId: string) => Promise<Object|null>,
+ *   loadSubjectTree: (subjectId: string) => Promise<{name: string, careerName: string, sheets: Array}|null>,
+ *   loadCareerTree: (careerId: string) => Promise<{name: string, subjects: Array}|null>,
+ *   loadAllTree: () => Promise<Array<{name: string, subjects: Array}>|null>,
  * }}
  */
 export function useExportTree() {
@@ -114,6 +120,7 @@ export function useExportTree() {
 
   const loadSubjectTree = useCallback((subjectId) => run(() => fetchSubjectTree(subjectId)), [run])
   const loadCareerTree = useCallback((careerId) => run(() => fetchCareerTree(careerId)), [run])
+  const loadAllTree = useCallback(() => run(fetchAllTree), [run])
 
-  return { loading, error, loadSubjectTree, loadCareerTree }
+  return { loading, error, loadSubjectTree, loadCareerTree, loadAllTree }
 }

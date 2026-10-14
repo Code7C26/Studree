@@ -47,6 +47,28 @@ export function translateError(error, fallback) {
 }
 
 /**
+ * Máximo de filas que PostgREST devuelve por consulta (config por defecto de
+ * Supabase). Una consulta sin paginar se CORTA acá sin avisar: con muchas
+ * hojas, el explorador quedaba incompleto. Por eso las listas paginan.
+ */
+const PAGE_SIZE = 1000
+
+/**
+ * Ejecuta una consulta paginando con `.range()` hasta traer todas las filas.
+ * @param {(from: number, to: number) => PromiseLike<{data: Object[]|null, error: Object|null}>} runPage
+ * @returns {Promise<{data: Object[], error: Object|null}>}
+ */
+async function fetchAllPages(runPage) {
+  const rows = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await runPage(from, from + PAGE_SIZE - 1)
+    if (error) return { data: rows, error }
+    rows.push(...(data ?? []))
+    if (!data || data.length < PAGE_SIZE) return { data: rows, error: null }
+  }
+}
+
+/**
  * Crea un service CRUD para una tabla.
  *
  * @param {Object} config
@@ -65,12 +87,17 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
      * Devuelve lo que haya en cache de inmediato vía `onCached` (para pintar sin
      * esperar la red) y resuelve con lo que responda Supabase.
      *
+     * Pagina de a 1000 filas (límite de PostgREST) hasta traer todo.
+     *
      * @param {string} [parentId]
      * @param {(cached: Object[]) => void} [onCached] - Se llama con la cache antes de la red.
+     * @param {{columns?: string}} [options] - `columns`: columnas a traer (ej. sin
+     *   `content_md`). Con columnas parciales la cache usa otra clave, para no
+     *   mezclar filas incompletas con las completas.
      * @returns {Promise<import('../types/models.js').ServiceResult<Object[]>>}
      */
-    async list(parentId, onCached) {
-      const key = keyFor(parentId)
+    async list(parentId, onCached, { columns = '*' } = {}) {
+      const key = columns === '*' ? keyFor(parentId) : cacheKey(`${table}[${columns.replace(/\s/g, '')}]`, parentId)
 
       if (onCached) {
         const cached = readCache(key, null)
@@ -78,10 +105,11 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
       }
 
       try {
-        let query = getSupabase().from(table).select('*')
-        if (parentColumn && parentId) query = query.eq(parentColumn, parentId)
-
-        const { data, error } = await query.order(orderBy, { ascending: true })
+        const { data, error } = await fetchAllPages((from, to) => {
+          let query = getSupabase().from(table).select(columns)
+          if (parentColumn && parentId) query = query.eq(parentColumn, parentId)
+          return query.order(orderBy, { ascending: true }).order('id', { ascending: true }).range(from, to)
+        })
         if (error) return { data: readCache(key, []), error: translateError(error, 'No se pudo cargar la lista.') }
 
         writeCache(key, data)
@@ -174,18 +202,44 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
     },
 
     /**
-     * Guarda la posición manual de un nodo del canvas (ADR-012). Es `update`
-     * silencioso: mover un nodo no cambia la estructura del árbol, así que no
-     * dispara la recarga del explorador.
+     * Guarda las posiciones manuales de VARIOS nodos del canvas en un solo
+     * request (RPC `save_node_positions`, ADR-016). Antes era un UPDATE por
+     * nodo: "congelar" un canvas de 40 materias eran 40 requests.
      *
-     * @param {string} id
-     * @param {{x: number, y: number}} position
-     * @param {string} [parentId]
+     * Es silencioso: mover nodos no cambia la estructura del árbol, así que no
+     * dispara la recarga del explorador. La RPC solo acepta tablas/columnas de
+     * una whitelist y corre con RLS (security invoker).
+     *
+     * @param {Array<{id: string, x: number, y: number}>} moves
+     * @param {string} [parentId] - Para actualizar la cache de ese padre.
      * @param {[string, string]} [columns=['pos_x','pos_y']]
-     * @returns {Promise<import('../types/models.js').ServiceResult<Object>>}
+     * @returns {Promise<import('../types/models.js').ServiceResult<boolean>>}
      */
-    savePosition(id, { x, y }, parentId, columns = ['pos_x', 'pos_y']) {
-      return service.update(id, { [columns[0]]: x, [columns[1]]: y }, parentId, { silent: true })
+    async savePositions(moves, parentId, columns = ['pos_x', 'pos_y']) {
+      if (moves.length === 0) return { data: true, error: null }
+      const [xColumn, yColumn] = columns
+
+      try {
+        const { error } = await getSupabase().rpc('save_node_positions', {
+          p_table: table,
+          p_x_column: xColumn,
+          p_y_column: yColumn,
+          p_moves: moves.map(({ id, x, y }) => ({ id, x, y })),
+        })
+        if (error) return { data: null, error: translateError(error, 'No se pudo guardar la posición.') }
+
+        const key = keyFor(parentId)
+        const byId = new Map(moves.map((move) => [move.id, move]))
+        writeCache(
+          key,
+          readCache(key, []).map((row) =>
+            byId.has(row.id) ? { ...row, [xColumn]: byId.get(row.id).x, [yColumn]: byId.get(row.id).y } : row,
+          ),
+        )
+        return { data: true, error: null }
+      } catch (error) {
+        return { data: null, error: translateError(error, 'No se pudo guardar la posición.') }
+      }
     },
 
     /**
@@ -231,11 +285,15 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
       if (parentIds.length === 0) return { data: [], error: null }
 
       try {
-        const { data, error } = await getSupabase()
-          .from(table)
-          .select(columns)
-          .in(parentColumn, parentIds)
-          .order(orderBy, { ascending: true })
+        const { data, error } = await fetchAllPages((from, to) =>
+          getSupabase()
+            .from(table)
+            .select(columns)
+            .in(parentColumn, parentIds)
+            .order(orderBy, { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
         if (error) return { data: [], error: translateError(error, 'No se pudo cargar la lista.') }
         return { data, error: null }
       } catch (error) {

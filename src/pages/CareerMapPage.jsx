@@ -74,7 +74,7 @@ export function CareerMapPage() {
   function describePendingDelete() {
     if (!pendingDelete) return ''
     if (pendingDelete.type === 'subject') {
-      return `Se va a eliminar "${pendingDelete.item.name}" con todas sus unidades, temas y hojas, y sus correlativas. No se puede deshacer.`
+      return `Se va a eliminar "${pendingDelete.item.name}" con todas sus hojas y sus correlativas. No se puede deshacer.`
     }
     const p = pendingDelete.item
     const subjectName = subjectsById.get(p.subject_id)?.name ?? '¿?'

@@ -9,6 +9,7 @@ import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { prerequisitesService } from '../services/prerequisites.service.js'
 import { PREREQUISITE_KINDS } from '../constants/prerequisiteKinds.js'
+import { onDataChanged } from '../services/dataEvents.js'
 
 /**
  * @typedef {Object} CreateSubjectValues
@@ -47,9 +48,10 @@ export function useCareerMap(careerId) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const load = useCallback(async () => {
+  /** @param {{silent?: boolean}} [options] - `silent`: recargar sin mostrar "Cargando…". */
+  const load = useCallback(async ({ silent = false } = {}) => {
     if (!careerId) return
-    setLoading(true)
+    if (!silent) setLoading(true)
 
     const [{ data: careerRow, error: getError }, { data: subjectRows, error: subjectsError }] = await Promise.all([
       careersService.get(careerId),
@@ -68,6 +70,20 @@ export function useCareerMap(careerId) {
 
   useEffect(() => {
     load()
+  }, [load])
+
+  // Otra vista (ej. renombrar en el explorador) cambió datos: recargar en
+  // silencio para que el canvas abierto no muestre nombres viejos.
+  useEffect(() => {
+    let timer = null
+    const unsubscribe = onDataChanged(() => {
+      clearTimeout(timer)
+      timer = setTimeout(() => load({ silent: true }), 300)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
   }, [load])
 
   // Carreras previas a la migración 0002 no traen la columna: se comportan como antes (con correlativas).
@@ -175,8 +191,9 @@ export function useCareerMap(careerId) {
   )
 
   /**
-   * Guarda posiciones manuales (ADR-012). Optimista: el nodo queda donde se
-   * soltó al instante; si Supabase falla, se recarga lo que hay en la base.
+   * Guarda posiciones manuales (ADR-012) en un solo request (ADR-016).
+   * Optimista: el nodo queda donde se soltó al instante; si Supabase falla, se
+   * recarga lo que hay en la base.
    */
   const moveSubjects = useCallback(
     async (moves) => {
@@ -188,13 +205,11 @@ export function useCareerMap(careerId) {
         ),
       )
 
-      const results = await Promise.all(
-        moves.map((move) => subjectsService.savePosition(move.id, { x: move.x, y: move.y }, careerId)),
-      )
-      const failed = results.find((result) => result.error)
-      if (failed) {
-        await load()
-        return fail(failed.error)
+      // Un solo request para todos los nodos (ADR-016), no uno por materia.
+      const { error: saveError } = await subjectsService.savePositions(moves, careerId)
+      if (saveError) {
+        await load({ silent: true })
+        return fail(saveError)
       }
       return null
     },

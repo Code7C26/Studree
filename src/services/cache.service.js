@@ -71,16 +71,18 @@ export function cacheKey(collection, parentId) {
 }
 
 /**
- * Borra TODAS las entradas de cache de Studree.
- * Se usa al cerrar sesión: la cache de un usuario no puede quedar visible para
- * el siguiente que inicie sesión en el mismo navegador.
+ * Borra TODO lo que Studree guardó en este navegador: cache de datos Y
+ * preferencias de UI (tabs, explorador).
+ * Se usa al cerrar sesión: nada de un usuario puede quedar visible para el
+ * siguiente que inicie sesión en el mismo navegador — las tabs, por ejemplo,
+ * guardan títulos de hojas.
  */
 export function clearAllCache() {
   try {
     const toRemove = []
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i)
-      if (key && key.startsWith(STORAGE_KEYS.cachePrefix)) toRemove.push(key)
+      if (key && key.startsWith(STORAGE_KEYS.appPrefix)) toRemove.push(key)
     }
     for (const key of toRemove) localStorage.removeItem(key)
   } catch (error) {
