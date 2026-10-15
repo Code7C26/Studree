@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { Icon } from '../../ui/Icon'
 
 /**
  * @param {Object} props
@@ -42,10 +43,8 @@ export function FolderSearchBar({ term, onTermChange, total, current, onNext, on
   const counter = term.trim() ? (total === 0 ? 'Sin resultados' : `${(current ?? 0) + 1} de ${total}`) : ''
 
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-border bg-bg px-2 focus-within:border-accent">
-      <span aria-hidden="true" className="text-sm">
-        🔍
-      </span>
+    <div className="flex items-center gap-1 rounded-lg bg-bg/60 px-2 focus-within:ring-1 focus-within:ring-accent-soft">
+      <Icon name="search" className="text-text-muted" />
       <input
         ref={inputRef}
         type="search"
@@ -56,24 +55,24 @@ export function FolderSearchBar({ term, onTermChange, total, current, onNext, on
         aria-label="Buscar en la materia"
         className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-text-muted"
       />
-      {counter && <span className="shrink-0 text-xs text-text-muted">{counter}</span>}
+      {counter && <span className="shrink-0 text-xs tabular-nums text-text-muted">{counter}</span>}
       <button
         type="button"
         onClick={onPrevious}
         disabled={total === 0}
         aria-label="Coincidencia anterior"
-        className="rounded px-1 text-text-muted hover:text-text disabled:opacity-40"
+        className="rounded p-1 text-text-muted hover:text-text disabled:opacity-40"
       >
-        ↑
+        <Icon name="arrow-up" size={14} />
       </button>
       <button
         type="button"
         onClick={onNext}
         disabled={total === 0}
         aria-label="Coincidencia siguiente"
-        className="rounded px-1 text-text-muted hover:text-text disabled:opacity-40"
+        className="rounded p-1 text-text-muted hover:text-text disabled:opacity-40"
       >
-        ↓
+        <Icon name="arrow-down" size={14} />
       </button>
     </div>
   )

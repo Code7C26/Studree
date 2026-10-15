@@ -8,10 +8,11 @@ import { TopicIndex } from '../components/features/folder/TopicIndex'
 import { FolderSearchBar } from '../components/features/folder/FolderSearchBar'
 import { EditorToolbar } from '../components/features/sheetEditor/EditorToolbar'
 import { ExportDialog } from '../components/features/export/ExportDialog'
-import { Button } from '../components/ui/Button'
+import { Icon } from '../components/ui/Icon'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { careerPath } from '../constants/routes'
+import { subjectCssVars } from '../constants/subjectTones.js'
 import { extractHeadings } from '../lib/markdown/headings.js'
 import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
 import { formatSheetDate } from '../lib/format/sheetDate.js'
@@ -20,6 +21,10 @@ import { isLocalSheet } from '../lib/editor/folderSheets.js'
 /** Distancia desde el borde superior del scroll a partir de la cual un tema cuenta como "el que estás leyendo". */
 const ACTIVE_TOPIC_OFFSET = 140
 const NOTICE_MS = 3000
+
+/** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
+const TOOL =
+  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-40'
 
 /** Headings de primer nivel del editor, en el mismo orden que `extractHeadings`. */
 const topLevelHeadings = (editor) =>
@@ -37,7 +42,7 @@ export function SubjectFolderPage() {
 
 /**
  * La Carpeta de una materia (ADR-017): todas sus hojas seguidas, en orden
- * cronológico, sobre papel blanco; índice de temas, buscador y modo lectura.
+ * cronológico, sobre papel crema con el color de la materia (ADR-018); índice de temas, buscador y modo lectura.
  * Ver docs/features/folder.md.
  *
  * `?hoja=:id` posiciona en esa hoja (contrato con el Inicio); sin parámetro,
@@ -282,29 +287,44 @@ function SubjectFolder({ subjectId }) {
   }
 
   return (
-    <div ref={containerRef} className={`flex gap-6 ${reading ? 'justify-center' : ''}`}>
+    <div
+      ref={containerRef}
+      style={subjectCssVars(subject?.color)}
+      className={
+        reading
+          ? 'flex justify-center'
+          : 'grid justify-center gap-8 md:grid-cols-[13rem_minmax(0,52rem)] lg:grid-cols-[15rem_minmax(0,52rem)_15rem]'
+      }
+    >
       {!reading && (
-        <aside className="sticky top-0 hidden max-h-[calc(100vh-7rem)] w-60 shrink-0 self-start overflow-y-auto md:block">
+        <aside className="sticky top-0 hidden max-h-[calc(100vh-8rem)] self-start overflow-y-auto md:block">
           {subject && (
-            <Link to={careerPath(subject.career_id)} className="block px-2 text-xs text-text-muted hover:text-text">
-              ← Volver a la carrera
+            <Link
+              to={careerPath(subject.career_id)}
+              className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text"
+            >
+              <Icon name="chevron-left" size={14} /> Volver a la carrera
             </Link>
           )}
-          <h1 className="mt-1 truncate px-2 text-lg font-bold" title={subject?.name}>
-            {subject?.name ?? 'Cargando…'}
+          <h1 className="mt-2 flex items-center gap-2 font-display text-xl font-bold" title={subject?.name}>
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--subject)] shadow-[0_0_10px_var(--subject)]"
+              aria-hidden="true"
+            />
+            <span className="truncate">{subject?.name ?? 'Cargando…'}</span>
           </h1>
-          <p className="mb-3 px-2 text-xs text-text-muted">
-            {sheets.length} hoja{sheets.length === 1 ? '' : 's'} · {topics.length} tema{topics.length === 1 ? '' : 's'}
+          <p className="mb-4 mt-1 text-xs text-text-muted">
+            {sheets.length} hoja{sheets.length === 1 ? '' : 's'}, {topics.length} tema{topics.length === 1 ? '' : 's'}
           </p>
-          <h2 className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Temas</h2>
+          <h2 className="mb-2 text-xs font-medium text-text-muted">Temas</h2>
           <TopicIndex topics={topics} activeId={activeTopicId} onGo={goToTopic} />
         </aside>
       )}
 
-      <div className="min-w-0 flex-1">
+      <div className={reading ? 'w-full max-w-[52rem]' : 'min-w-0'}>
         {!reading && (
-          <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 bg-bg/95 px-1 py-2 backdrop-blur">
-            <div className="min-w-[14rem] flex-1">
+          <div className="glass sticky top-0 z-10 mb-5 flex w-full flex-wrap items-center gap-2 px-2 py-1.5">
+            <div className="min-w-[12rem] flex-1">
               <FolderSearchBar
                 term={term}
                 onTermChange={(value) => {
@@ -323,15 +343,19 @@ function SubjectFolder({ subjectId }) {
                 focusSignal={focusSignal}
               />
             </div>
-            <Button variant="ghost" onClick={() => setReading(true)} title="Ocultar todo menos las hojas (Esc para salir)">
-              📖 Modo lectura
-            </Button>
-            <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={!subject}>
+            <EditorToolbar editor={activeEditor} />
+            <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => setReading(true)}
+              title="Ocultar todo menos las hojas (Esc para salir)"
+              className={TOOL}
+            >
+              <Icon name="book-open" /> Leer
+            </button>
+            <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft`}>
               Exportar
-            </Button>
-            <div className="w-full">
-              <EditorToolbar editor={activeEditor} />
-            </div>
+            </button>
           </div>
         )}
 
@@ -348,20 +372,19 @@ function SubjectFolder({ subjectId }) {
                 Reintentar
               </button>
               <button type="button" onClick={clearError} aria-label="Cerrar aviso">
-                ✕
+                <Icon name="close" size={14} />
               </button>
             </span>
           </p>
         )}
 
-        <div className="mx-auto max-w-3xl space-y-6 pb-24">
+        <div className="space-y-8 pb-24">
           {loading && sheets.length === 0 ? (
             <p className="mt-8 text-center text-text-muted">Cargando…</p>
           ) : (
             <>
               {sheets.length === 0 && !error && (
                 <EmptyState
-                  icon="📝"
                   title="La carpeta está vacía"
                   message="Agregá la primera hoja y empezá a escribir. Usá # Título para marcar los temas."
                 />
@@ -387,9 +410,9 @@ function SubjectFolder({ subjectId }) {
                 <button
                   type="button"
                   onClick={handleAddSheet}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-4 text-sm text-text-muted transition-colors hover:border-accent hover:text-accent"
+                  className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-border py-4 text-sm text-text-muted transition-colors hover:border-[var(--subject)] hover:text-[var(--subject-light)]"
                 >
-                  ＋ Nueva hoja
+                  <Icon name="plus" /> Nueva hoja
                 </button>
               )}
             </>
@@ -401,7 +424,7 @@ function SubjectFolder({ subjectId }) {
         <button
           type="button"
           onClick={() => setReading(false)}
-          className="fixed right-4 top-4 z-50 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-muted shadow-lg hover:text-text"
+          className="glass fixed right-4 top-4 z-50 px-3 py-1.5 text-sm text-text-muted hover:text-text"
         >
           Salir del modo lectura (Esc)
         </button>

@@ -1,6 +1,6 @@
 /**
  * Una hoja de la carpeta (ADR-017): barra con fecha y hora + editor sobre
- * papel blanco. Ver docs/features/folder.md.
+ * papel crema, con el margen del color de la materia (ADR-018). Ver docs/features/folder.md.
  *
  * Cada hoja guarda sola (`useSheetAutosave`). Al borrar, primero se cancela lo
  * pendiente: si no, el guardado del desmontaje volvería a crear o guardar la
@@ -10,7 +10,8 @@
 import { useEffect, useRef } from 'react'
 import { SheetEditor } from '../sheetEditor/SheetEditor'
 import { useSheetAutosave } from '../../../hooks/useSheetAutosave.js'
-import { formatSheetDate } from '../../../lib/format/sheetDate.js'
+import { formatSheetDate, formatSheetDateLong } from '../../../lib/format/sheetDate.js'
+import { Icon } from '../../ui/Icon'
 
 const STATUS_LABELS = { idle: '', saving: 'Guardando…', saved: 'Guardado', error: 'Error al guardar' }
 
@@ -69,22 +70,26 @@ export function FolderSheet({
   const status = STATUS_LABELS[syncStatus]
 
   return (
-    <article id={`hoja-${sheet.id}`} data-sheet-key={sheet.key} className="scroll-mt-24 rounded-lg bg-paper text-ink shadow-lg">
-      <header className="group flex items-center justify-between gap-3 border-b border-paper-border px-6 py-2 text-xs text-ink-muted">
-        <span className="font-medium">{formatSheetDate(sheet.created_at)}</span>
+    <article
+      id={`hoja-${sheet.id}`}
+      data-sheet-key={sheet.key}
+      className="paper-sheet scroll-mt-28 rounded-md border-l-[6px] border-[var(--subject)]"
+    >
+      <header className="group flex items-center justify-between gap-3 border-b border-paper-border px-7 py-2 text-xs text-ink-muted">
+        <span className="font-medium">{formatSheetDateLong(sheet.created_at)}</span>
         <span className="flex items-center gap-2">
-          {status && <span className={syncStatus === 'error' ? 'text-red-600' : ''} title={error ?? undefined}>{status}</span>}
+          {status && <span className={syncStatus === 'error' ? 'text-red-700' : ''} title={error ?? undefined}>{status}</span>}
           <button
             type="button"
             onClick={() => onRequestDelete(sheet)}
             aria-label={`Eliminar la hoja del ${formatSheetDate(sheet.created_at)}`}
-            className="rounded p-0.5 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 group-hover:opacity-100"
+            className="rounded p-1 opacity-0 transition-opacity hover:text-red-700 focus-visible:opacity-100 group-hover:opacity-100"
           >
-            ✕
+            <Icon name="close" size={14} />
           </button>
         </span>
       </header>
-      <div className="px-6 py-4">
+      <div className="px-7 py-5">
         <SheetEditor
           content={initialContent}
           onChange={handleChange}

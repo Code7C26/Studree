@@ -1,6 +1,7 @@
 /**
  * Índice de temas de la carpeta (ADR-017): los headings `#`–`####` de todas
- * las hojas de la materia, en orden. Un click lleva al inicio del tema.
+ * las hojas de la materia, en orden. Un click lleva al inicio del tema. El
+ * tema activo va en el color de la materia (variables `--subject*`, ADR-018).
  * Es presentacional: los temas y el activo los calcula la página.
  * Ver docs/features/folder.md.
  */
@@ -14,7 +15,7 @@
  * @property {string} text
  */
 
-const INDENT = { 1: 'pl-2', 2: 'pl-5', 3: 'pl-8', 4: 'pl-11' }
+const INDENT = { 1: 'pl-3', 2: 'pl-6', 3: 'pl-9', 4: 'pl-12' }
 
 /**
  * @param {Object} props
@@ -25,7 +26,7 @@ const INDENT = { 1: 'pl-2', 2: 'pl-5', 3: 'pl-8', 4: 'pl-11' }
 export function TopicIndex({ topics, activeId, onGo }) {
   if (topics.length === 0) {
     return (
-      <p className="px-2 text-xs leading-relaxed text-text-muted">
+      <p className="text-xs leading-relaxed text-text-muted">
         Todavía no hay temas. Escribí un título con <code className="rounded bg-surface-2 px-1"># Tema</code> en una hoja
         y aparece acá.
       </p>
@@ -34,7 +35,7 @@ export function TopicIndex({ topics, activeId, onGo }) {
 
   return (
     <nav aria-label="Temas de la materia">
-      <ul className="space-y-0.5">
+      <ul className="border-l border-border">
         {topics.map((topic) => {
           const active = topic.id === activeId
           return (
@@ -43,10 +44,12 @@ export function TopicIndex({ topics, activeId, onGo }) {
                 type="button"
                 onClick={() => onGo(topic)}
                 aria-current={active ? 'location' : undefined}
-                className={`w-full truncate rounded-md py-1 pr-2 text-left text-sm transition-colors ${INDENT[topic.level]} ${
-                  topic.level === 1 ? 'font-medium' : ''
-                } ${active ? 'bg-accent/15 text-accent' : 'text-text-muted hover:bg-surface-2 hover:text-text'}`}
                 title={topic.text}
+                className={`-ml-px block w-full truncate border-l-2 py-1 pr-2 text-left text-sm transition-colors ${INDENT[topic.level]} ${
+                  active
+                    ? 'border-[var(--subject)] font-semibold text-[var(--subject-light)]'
+                    : `border-transparent hover:text-text ${topic.level === 1 ? 'text-text' : 'text-text-muted'}`
+                }`}
               >
                 {topic.text}
               </button>
