@@ -22,6 +22,8 @@ const SIGNED_URL_SECONDS = 60 * 60
 const SIGNED_URL_TTL_MS = 55 * 60 * 1000
 
 const crud = createCrudService({ table: 'attachments', parentColumn: 'sheet_id', orderBy: 'created_at', notifies: false })
+/** La cache `attachments:<hoja>` no la lee nadie (la carpeta usa `listBySheets`): altas y bajas no la tocan. */
+const NO_CACHE = { cache: false }
 
 /** id → { url, expiresAt } */
 const signedUrls = new Map()
@@ -61,6 +63,7 @@ export const attachmentsService = {
         const { data, error } = await crud.create(
           { id, sheet_id: sheetId, name, mime_type: contentType, size_bytes: file.size, storage_path: path },
           sheetId,
+          NO_CACHE,
         )
         if (error) {
           await getSupabase().storage.from(BUCKET).remove([path])
@@ -121,7 +124,7 @@ export const attachmentsService = {
       const { error: filesError } = await getSupabase().storage.from(BUCKET).remove([attachment.storage_path])
       if (filesError) return { data: null, error: translateError(filesError, fallback) }
       signedUrls.delete(attachment.id)
-      return crud.remove(attachment.id, attachment.sheet_id)
+      return crud.remove(attachment.id, attachment.sheet_id, NO_CACHE)
     } catch (error) {
       return { data: null, error: translateError(error, fallback) }
     }

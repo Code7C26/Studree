@@ -151,28 +151,33 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
      *
      * @param {Object} values - Campos de la fila (sin id ni user_id).
      * @param {string} [parentId] - Para saber qué entrada de cache actualizar.
+     * @param {{cache?: boolean}} [options] - `cache: false`: no tocar la cache
+     *   (importación masiva, o tablas cuya cache nadie lee). Sin esto, cada alta
+     *   reescribe la lista entera del padre en localStorage: con cientos de hojas
+     *   importadas el costo crece al cuadrado.
      * @returns {Promise<import('../types/models.js').ServiceResult<Object>>}
      */
-    async create(values, parentId) {
+    async create(values, parentId, { cache = true } = {}) {
       const key = keyFor(parentId)
       const optimistic = { id: generateId(), ...values }
-      const previous = readCache(key, [])
+      const previous = cache ? readCache(key, []) : []
+      const write = cache ? (rows) => writeCache(key, rows) : () => {}
 
-      writeCache(key, [...previous, optimistic])
+      write([...previous, optimistic])
 
       try {
         const { data, error } = await getSupabase().from(table).insert(optimistic).select().single()
 
         if (error) {
-          writeCache(key, previous) // revertir
+          write(previous) // revertir
           return { data: null, error: translateError(error, 'No se pudo crear.') }
         }
 
-        writeCache(key, [...previous, data])
+        write([...previous, data])
         if (notifies) notifyDataChanged()
         return { data, error: null }
       } catch (error) {
-        writeCache(key, previous)
+        write(previous)
         return { data: null, error: translateError(error, 'No se pudo crear.') }
       }
     },
@@ -255,26 +260,28 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
      * (`ON DELETE CASCADE`), no este service.
      * @param {string} id
      * @param {string} [parentId]
+     * @param {{cache?: boolean}} [options] - `cache: false`: no tocar la cache (ver `create`).
      * @returns {Promise<import('../types/models.js').ServiceResult<boolean>>}
      */
-    async remove(id, parentId) {
+    async remove(id, parentId, { cache = true } = {}) {
       const key = keyFor(parentId)
-      const previous = readCache(key, [])
+      const previous = cache ? readCache(key, []) : []
+      const write = cache ? (rows) => writeCache(key, rows) : () => {}
 
-      writeCache(key, previous.filter((row) => row.id !== id))
+      write(previous.filter((row) => row.id !== id))
 
       try {
         const { error } = await getSupabase().from(table).delete().eq('id', id)
 
         if (error) {
-          writeCache(key, previous)
+          write(previous)
           return { data: null, error: translateError(error, 'No se pudo eliminar.') }
         }
 
         if (notifies) notifyDataChanged()
         return { data: true, error: null }
       } catch (error) {
-        writeCache(key, previous)
+        write(previous)
         return { data: null, error: translateError(error, 'No se pudo eliminar.') }
       }
     },

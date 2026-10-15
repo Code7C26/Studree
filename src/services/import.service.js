@@ -69,11 +69,10 @@ export const importService = {
 
       for (const sheet of group.sheets) {
         if (sheet.duplicate) continue
-        const { data: created, error } = await sheetsService.create({
-          subject_id: subjectId,
-          content_md: sheet.content_md,
-          created_at: sheet.created_at,
-        })
+        const { data: created, error } = await sheetsService.create(
+          { subject_id: subjectId, content_md: sheet.content_md, created_at: sheet.created_at },
+          { cache: false },
+        )
         if (error) {
           report.failures.push({ path: sheet.path, reason: error })
           tick()

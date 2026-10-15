@@ -41,10 +41,13 @@ export const sheetsService = {
    * adjuntos e importación.
    * @param {{subject_id: string, content_md?: string, created_at?: string}} values
    *   `created_at`: solo al importar, para conservar la fecha original.
+   * @param {{cache?: boolean}} [options] - `cache: false` al importar: la fila
+   *   (con todo su Markdown) no se suma a la cache `sheets:<materia>`, que la
+   *   carpeta no lee; si no, un import grande la reescribe entera por cada hoja.
    * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Sheet>>}
    */
-  create({ subject_id, content_md = '', created_at }) {
-    return crud.create({ subject_id, content_md, position: 0, ...(created_at ? { created_at } : {}) }, subject_id)
+  create({ subject_id, content_md = '', created_at }, { cache = true } = {}) {
+    return crud.create({ subject_id, content_md, position: 0, ...(created_at ? { created_at } : {}) }, subject_id, { cache })
   },
 
   /**
