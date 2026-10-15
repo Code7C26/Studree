@@ -23,7 +23,7 @@ function parseValue(raw) {
  * @returns {{meta: Record<string, string>, body: string}}
  */
 export function splitFrontmatter(text) {
-  const source = (text ?? '').replace(/^FEFF/, '')
+  const source = (text ?? '').replace(/^\uFEFF/, '')
   const match = source.match(BLOCK)
   if (!match) return { meta: {}, body: source }
   const meta = {}
