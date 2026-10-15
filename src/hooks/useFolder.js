@@ -42,7 +42,7 @@ const LIVE_CONTENT_DELAY_MS = 300
  *   error: string|null,
  *   clearError: () => void,
  *   reload: () => Promise<void>,
- *   addLocalSheet: () => string,
+ *   addLocalSheet: (content?: string) => string,
  *   replaceLocalSheet: (localId: string, created: import('../types/models.js').Sheet) => void,
  *   deleteSheet: (key: string) => Promise<{error: string|null, sheetId: string|null}>,
  *   restoreSheet: (id: string) => Promise<string|null>,
@@ -114,16 +114,23 @@ export function useFolder(subjectId) {
 
   useEffect(() => () => clearTimeout(liveTimerRef.current), [])
 
-  /** ＋ Nueva hoja: solo en pantalla hasta que tenga contenido. Devuelve su id local. */
-  const addLocalSheet = useCallback(() => {
-    const id = `${LOCAL_SHEET_PREFIX}${generateId()}`
-    const now = new Date().toISOString()
-    setSheets((current) => [
-      ...current,
-      { id, key: id, subject_id: subjectId, content_md: '', created_at: now, updated_at: null },
-    ])
-    return id
-  }, [subjectId])
+  /**
+   * ＋ Nueva hoja: solo en pantalla hasta que tenga contenido. Con `content`
+   * (plantilla) se guarda de entrada. Devuelve su id local.
+   * @param {string} [content]
+   */
+  const addLocalSheet = useCallback(
+    (content = '') => {
+      const id = `${LOCAL_SHEET_PREFIX}${generateId()}`
+      const now = new Date().toISOString()
+      setSheets((current) => [
+        ...current,
+        { id, key: id, subject_id: subjectId, content_md: content, created_at: now, updated_at: null, createNow: Boolean(content.trim()) },
+      ])
+      return id
+    },
+    [subjectId],
+  )
 
   /** La hoja local ya existe en Supabase: toma el id real y conserva su `key`. */
   const replaceLocalSheet = useCallback((localId, created) => {

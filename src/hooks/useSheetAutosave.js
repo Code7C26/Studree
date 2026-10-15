@@ -26,6 +26,7 @@ const appCache = { key: cacheKey, read: readCache, write: writeCache, clear: cle
  *   error: string|null,
  *   updateContent: (markdown: string) => void,
  *   cancel: () => void,
+ *   ensureCreated: () => Promise<string|null>,
  * }}
  */
 export function useSheetAutosave({ sheet, onCreated }) {
@@ -55,6 +56,7 @@ export function useSheetAutosave({ sheet, onCreated }) {
 
   const updateContent = useCallback((markdown) => saverRef.current.update(markdown), [])
   const cancel = useCallback(() => saverRef.current.cancel(), [])
+  const ensureCreated = useCallback(() => saverRef.current.ensureCreated(), [])
 
   // Desmontar o cerrar la pestaña: mandar lo pendiente sin esperar el debounce.
   useEffect(() => {
@@ -71,5 +73,5 @@ export function useSheetAutosave({ sheet, onCreated }) {
     }
   }, [])
 
-  return { initialContent: initialRef.current, syncStatus, error, updateContent, cancel }
+  return { initialContent: initialRef.current, syncStatus, error, updateContent, cancel, ensureCreated }
 }

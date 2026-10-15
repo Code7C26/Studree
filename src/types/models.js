@@ -147,6 +147,18 @@
  */
 
 /**
+ * Adjunto de una hoja (migración 0006).
+ * @typedef {Object} Attachment
+ * @property {string} id
+ * @property {string} sheet_id
+ * @property {string} name - Nombre original (con tildes).
+ * @property {string} mime_type
+ * @property {number} size_bytes
+ * @property {string} storage_path - `<user_id>/<id>/<nombre seguro>` en el bucket `attachments`.
+ * @property {string} created_at
+ */
+
+/**
  * Resultado normalizado de cualquier operación de un service.
  * Los services NO propagan el error crudo de supabase-js: lo traducen a string
  * para que la UI no dependa de la forma de error del proveedor (ver API_DOCS.md).

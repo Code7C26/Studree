@@ -92,6 +92,7 @@
 | `pages/SubjectFolderPage.jsx` · `pages/SheetRedirectPage.jsx` · `features/folder/**` · `useFolder` · `useReadingMode` · `useSheetLocation` · `lib/editor/**` · `lib/format/**` · `lib/markdown/headings.js` | `docs/features/folder.md` |
 | `features/sheetEditor/**` · `lib/markdown/**` · `useSheetAutosave` · `sheets.service.js` | `docs/features/sheet-editor.md` |
 | `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
+| `services/attachments.service.js` · `useFolderAttachments` · `lib/attachments/**` · `lib/editor/attachmentNodes.js` · `features/attachments/**` | `docs/features/attachments.md` |
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
 | `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
