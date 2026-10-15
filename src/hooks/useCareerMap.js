@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
+import { livePrerequisites } from '../lib/graph/livePrerequisites.js'
 import { prerequisitesService } from '../services/prerequisites.service.js'
 import { PREREQUISITE_KINDS } from '../constants/prerequisiteKinds.js'
 import { onDataChanged } from '../services/dataEvents.js'
@@ -63,7 +64,7 @@ export function useCareerMap(careerId) {
     setCareer(careerRow)
     setCareerError(careerRow ? null : (getError ?? 'No se encontró la carrera.'))
     setSubjects(subjectRows ?? [])
-    setPrerequisites(prereqRows ?? [])
+    setPrerequisites(livePrerequisites(prereqRows ?? [], subjectRows ?? []))
     setError(subjectsError ?? prereqError)
     setLoading(false)
   }, [careerId])

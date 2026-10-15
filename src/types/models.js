@@ -20,6 +20,7 @@
  * @property {string} name       - Nombre de la carrera.
  * @property {string} color      - Color (hex de la paleta, ver constants/palette.js).
  * @property {boolean} uses_prerequisites - false = curso / organizador sin correlativas (ADR-013).
+ * @property {string|null} [deleted_at] - Papelera (0006): NULL = vivo.
  * @property {string} created_at - Timestamp ISO.
  * @property {string} updated_at - Timestamp ISO.
  */
@@ -36,6 +37,7 @@
  * @property {number} position    - Orden dentro de la carrera (NO es coordenada).
  * @property {number|null} [pos_x] - Posición manual en el canvas de carrera (ADR-012).
  * @property {number|null} [pos_y]
+ * @property {string|null} [deleted_at] - Papelera (0006): NULL = vivo.
  * @property {string} created_at  - Timestamp ISO.
  * @property {string} updated_at  - Timestamp ISO.
  */
@@ -85,6 +87,22 @@
  * @property {number} [position]  - LEGADO: el orden es por `created_at`.
  * @property {string} created_at  - Timestamp ISO: define el orden y lo que se muestra.
  * @property {string|null} updated_at - Timestamp ISO. Solo cambia con el contenido.
+ * @property {string|null} [deleted_at] - Papelera (0006): NULL = vivo.
+ */
+
+/**
+ * Elemento de primer nivel de la papelera (`list_trash`, migración 0006).
+ * @typedef {Object} TrashItem
+ * @property {'career'|'subject'|'sheet'} kind
+ * @property {string} id
+ * @property {string} deleted_at
+ * @property {string} label - Nombre (carrera/materia) o primeros 300 caracteres del Markdown (hoja).
+ * @property {string|null} sheet_created_at - Solo hojas.
+ * @property {string|null} career_name - Materias y hojas.
+ * @property {string|null} subject_name - Solo hojas.
+ * @property {number} subjects_count
+ * @property {number} sheets_count
+ * @property {number} attachments_count
  */
 
 /**

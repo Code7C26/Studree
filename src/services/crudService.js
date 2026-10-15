@@ -79,11 +79,15 @@ async function fetchAllPages(runPage) {
  *   parte del árbol del explorador (ej. tareas del Inicio): sus altas, cambios y
  *   bajas no disparan `notifyDataChanged()`, así tildar una tarea no recarga el
  *   explorador.
+ * @param {boolean} [config.softDelete=false] - Tabla con papelera (0006): las lecturas solo traen filas con `deleted_at` NULL.
  * @returns {Object} Service con list / get / create / update / remove.
  */
-export function createCrudService({ table, parentColumn, orderBy = 'position', notifies = true }) {
+export function createCrudService({ table, parentColumn, orderBy = 'position', notifies = true, softDelete = false }) {
   /** @param {string} [parentId] */
   const keyFor = (parentId) => cacheKey(table, parentId)
+
+  /** Solo filas vivas en tablas con papelera (ver docs/features/trash.md). */
+  const alive = (query) => (softDelete ? query.is('deleted_at', null) : query)
 
   const service = {
     /**
@@ -110,7 +114,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
 
       try {
         const { data, error } = await fetchAllPages((from, to) => {
-          let query = getSupabase().from(table).select(columns)
+          let query = alive(getSupabase().from(table).select(columns))
           if (parentColumn && parentId) query = query.eq(parentColumn, parentId)
           return query.order(orderBy, { ascending: true }).order('id', { ascending: true }).range(from, to)
         })
@@ -130,7 +134,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
      */
     async get(id) {
       try {
-        const { data, error } = await getSupabase().from(table).select('*').eq('id', id).maybeSingle()
+        const { data, error } = await alive(getSupabase().from(table).select('*').eq('id', id)).maybeSingle()
         if (error) return { data: null, error: translateError(error, 'No se pudo cargar el registro.') }
         return { data, error: null }
       } catch (error) {
@@ -290,10 +294,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
 
       try {
         const { data, error } = await fetchAllPages((from, to) =>
-          getSupabase()
-            .from(table)
-            .select(columns)
-            .in(parentColumn, parentIds)
+          alive(getSupabase().from(table).select(columns).in(parentColumn, parentIds))
             .order(orderBy, { ascending: true })
             .order('id', { ascending: true })
             .range(from, to),

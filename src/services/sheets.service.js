@@ -13,7 +13,7 @@
 import { createCrudService, translateError } from './crudService.js'
 import { getSupabase } from './supabase.client.js'
 
-const crud = createCrudService({ table: 'sheets', parentColumn: 'subject_id', orderBy: 'created_at' })
+const crud = createCrudService({ table: 'sheets', parentColumn: 'subject_id', orderBy: 'created_at', softDelete: true })
 
 /** Columnas que necesita la carpeta (sin `title` ni `position`, que ya no se usan). */
 export const FOLDER_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'
@@ -37,12 +37,14 @@ export const sheetsService = {
 
   /**
    * Crea una hoja en una materia. La crea la carpeta recién cuando la hoja
-   * nueva tiene contenido (una hoja vacía nunca se guarda).
-   * @param {{subject_id: string, content_md?: string}} values
+   * nueva tiene contenido (una hoja vacía nunca se guarda), salvo plantillas,
+   * adjuntos e importación.
+   * @param {{subject_id: string, content_md?: string, created_at?: string}} values
+   *   `created_at`: solo al importar, para conservar la fecha original.
    * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Sheet>>}
    */
-  create({ subject_id, content_md = '' }) {
-    return crud.create({ subject_id, content_md, position: 0 }, subject_id)
+  create({ subject_id, content_md = '', created_at }) {
+    return crud.create({ subject_id, content_md, position: 0, ...(created_at ? { created_at } : {}) }, subject_id)
   },
 
   /**
@@ -92,6 +94,7 @@ export const sheetsService = {
         .from('sheets')
         .select('id, subject_id, content_md, created_at')
         .ilike('content_md', `%${escapeLike(text)}%`)
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(SEARCH_LIMIT)
 

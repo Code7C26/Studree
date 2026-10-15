@@ -6,7 +6,7 @@
 import { createCrudService } from './crudService.js'
 import { DEFAULT_COLOR } from '../constants/palette.js'
 
-const crud = createCrudService({ table: 'careers', orderBy: 'created_at' })
+const crud = createCrudService({ table: 'careers', orderBy: 'created_at', softDelete: true })
 
 export const careersService = {
   ...crud,

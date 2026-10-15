@@ -30,6 +30,7 @@ export const homeService = {
       const { data, error } = await getSupabase()
         .from('sheets')
         .select('id, subject_id, updated_at, content_md, subjects(name, color)')
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .order('id', { ascending: true })
         .limit(1)

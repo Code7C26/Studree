@@ -10,7 +10,7 @@ import { createCrudService } from './crudService.js'
 import { DEFAULT_COLOR } from '../constants/palette.js'
 import { SUBJECT_STATUS, SUBJECT_STATUS_VALUES } from '../constants/subjectStatus.js'
 
-const crud = createCrudService({ table: 'subjects', parentColumn: 'career_id' })
+const crud = createCrudService({ table: 'subjects', parentColumn: 'career_id', softDelete: true })
 
 /**
  * Solo manda las columnas de posición si hay valor: así crear sin posición

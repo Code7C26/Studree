@@ -264,8 +264,8 @@ por el usuario el 2026-10-14.
 > `important_dates`, `tasks` y `quick_notes` (idempotente); verificado RLS activo y una
 > política `_owner` por tabla.
 
-> **Estado de la 0006 (2026-10-15):** ⏳ probada en transacción con rollback; pendiente de
-> aplicar. Es aditiva (no borra datos) e idempotente.
+> **Estado de la 0006 (2026-10-15):** ✅ aplicada el 2026-10-15 vía Management API (antes,
+> probada en una transacción `begin … rollback` con asserts). Es aditiva (no borra datos) e idempotente.
 
 ### Estado de las tablas
 
@@ -407,4 +407,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-14 | 3 niveles (ADR-014): `sheets.subject_id`; `sheet_links` por triggers (ADR-015); RPC de posiciones (ADR-016) | ✅ `0003` (links derogados por la 0004) |
 | 2026-10-14 | **La Carpeta** (ADR-017): hojas sin título (título → `# tema`), sin `sheet_links`/`units`/`topics`/posiciones de hojas/`map_*`; whitelist solo `subjects` | ✅ `0004` |
 | 2026-10-14 | **Inicio**: `important_dates`, `tasks`, `quick_notes` + RLS `_owner` + `set_updated_at` | ✅ `0005` (aplicada el 2026-10-15) |
-| 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ⏳ `0006` (probada en rollback; pendiente de aplicar) |
+| 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ✅ `0006` (aplicada 2026-10-15 vía Management API, tras probarla con `begin … rollback`) |
