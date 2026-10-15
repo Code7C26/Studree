@@ -128,7 +128,7 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
 |---------|----------------|
 | `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export |
 | `src/pages/SheetRedirectPage.jsx` | Redirige `/hojas/:id` a la carpeta |
-| `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + ✕ + editor |
+| `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + plantilla + papelera + editor |
 | `src/constants/subjectTones.js` | Tonos del color de la materia (`getSubjectTones`, `subjectCssVars`) |
 | `src/components/features/folder/TopicIndex.jsx` | Índice de temas (presentacional) |
 | `src/components/features/folder/FolderSearchBar.jsx` | Buscador (presentacional) |

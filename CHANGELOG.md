@@ -6,6 +6,23 @@
 
 ---
 
+## [Fase 13] — 2026-10-15 — Plantillas de hoja
+
+### Added
+
+> Request: Fase 13, Tarea 8 (plantillas de hoja).
+
+- "Nueva hoja ▾": botón partido (en blanco, o desde una plantilla de fábrica / propia).
+- 4 plantillas de fábrica (Clase, Resumen, Práctica, Repaso para parcial).
+- "Guardar como plantilla" en cada hoja (sin adjuntos) y administrador (renombrar, editar, borrar).
+- La hoja creada desde una plantilla se guarda al crearse.
+- La hoja usa el ícono de papelera para eliminar (aria-label "Mover a la papelera…").
+- Archivos: `docs/features/sheet-templates.md`, `src/constants/sheetTemplates.js`,
+  `src/services/sheetTemplates.service.js`, `src/hooks/useSheetTemplates.js`,
+  `src/components/features/templates/**`, `FolderSheet.jsx`, `SubjectFolderPage.jsx`, `Icon.jsx`, `models.js`.
+
+---
+
 ## [0.15.0] — 2026-10-15
 
 ### Changed — Rediseño visual (ADR-018)

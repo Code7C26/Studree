@@ -169,6 +169,15 @@
  */
 
 /**
+ * Plantilla de hoja (propia: tabla `sheet_templates`, 0006; o de fábrica, con `factory: true`).
+ * @typedef {Object} SheetTemplate
+ * @property {string} id - `factory:…` en las de fábrica.
+ * @property {string} name
+ * @property {string} content_md
+ * @property {boolean} [factory]
+ */
+
+/**
  * Estado de sincronización que los hooks exponen a la UI (ADR-007).
  * @typedef {'idle'|'saving'|'saved'|'error'} SyncStatus
  */

@@ -26,6 +26,7 @@ const STATUS_LABELS = { idle: '', saving: 'Guardando…', saved: 'Guardado', err
  * @param {boolean} [props.autoFocus] - Hoja recién agregada: el cursor va ahí.
  * @param {(localId: string, created: import('../../../types/models.js').Sheet) => void} props.onCreated
  * @param {(sheet: Object) => void} props.onRequestDelete - Pide confirmación (la hace la página).
+ * @param {(sheet: Object) => void} props.onSaveAsTemplate - Pide el nombre y guarda la hoja como plantilla (la página).
  * @param {(id: string, markdown: string) => void} props.onLiveContent
  * @param {(key: string, editor: import('@tiptap/react').Editor|null) => void} props.onEditor
  * @param {(editor: import('@tiptap/react').Editor) => void} props.onFocusEditor
@@ -44,6 +45,7 @@ export function FolderSheet({
   autoFocus = false,
   onCreated,
   onRequestDelete,
+  onSaveAsTemplate,
   onLiveContent,
   onEditor,
   onFocusEditor,
@@ -141,11 +143,20 @@ export function FolderSheet({
           {status && <span className={syncStatus === 'error' ? 'text-red-700' : ''} title={error ?? undefined}>{status}</span>}
           <button
             type="button"
+            onClick={() => onSaveAsTemplate(sheet)}
+            aria-label={`Guardar la hoja del ${formatSheetDate(sheet.created_at)} como plantilla`}
+            title="Guardar como plantilla"
+            className="rounded p-1 opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+          >
+            <Icon name="template" size={14} />
+          </button>
+          <button
+            type="button"
             onClick={() => onRequestDelete(sheet)}
-            aria-label={`Eliminar la hoja del ${formatSheetDate(sheet.created_at)}`}
+            aria-label={`Mover a la papelera la hoja del ${formatSheetDate(sheet.created_at)}`}
             className="rounded p-1 opacity-0 transition-opacity hover:text-red-700 focus-visible:opacity-100 group-hover:opacity-100"
           >
-            <Icon name="close" size={14} />
+            <Icon name="trash" size={14} />
           </button>
         </span>
       </header>

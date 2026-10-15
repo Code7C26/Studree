@@ -3,19 +3,25 @@ import { Link, useOutletContext, useParams, useSearchParams } from 'react-router
 import { useFolder } from '../hooks/useFolder.js'
 import { useFolderAttachments } from '../hooks/useFolderAttachments.js'
 import { useHotkeys } from '../hooks/useHotkeys.js'
+import { useSheetTemplates } from '../hooks/useSheetTemplates.js'
 import { useReadingMode } from '../hooks/useReadingMode.js'
 import { FolderSheet } from '../components/features/folder/FolderSheet'
 import { TopicIndex } from '../components/features/folder/TopicIndex'
 import { FolderSearchBar } from '../components/features/folder/FolderSearchBar'
 import { EditorToolbar } from '../components/features/sheetEditor/EditorToolbar'
+import { NewSheetButton } from '../components/features/templates/NewSheetButton'
+import { TemplatesManager } from '../components/features/templates/TemplatesManager'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Icon } from '../components/ui/Icon'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { PromptDialog } from '../components/ui/PromptDialog'
 import { UndoToast } from '../components/ui/UndoToast'
 import { careerPath } from '../constants/routes'
 import { subjectCssVars } from '../constants/subjectTones.js'
 import { extractHeadings } from '../lib/markdown/headings.js'
+import { editorToMarkdown } from '../lib/markdown/serialize.js'
+import { stripAttachmentRefs } from '../lib/attachments/refs.js'
 import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
 import { formatSheetDate } from '../lib/format/sheetDate.js'
 import { isLocalSheet } from '../lib/editor/folderSheets.js'
@@ -91,6 +97,9 @@ function SubjectFolder({ subjectId }) {
   const uploadersRef = useRef(new Map())
   const fileInputRef = useRef(null)
   const [pendingAttachment, setPendingAttachment] = useState(null)
+  const [templateSource, setTemplateSource] = useState(null)
+  const [managerOpen, setManagerOpen] = useState(false)
+  const { templates, all: allTemplates, createTemplate, renameTemplate, updateTemplateContent, deleteTemplate } = useSheetTemplates()
 
   const containerRef = useRef(null)
   /** key de hoja → editor TipTap montado. */
@@ -313,8 +322,8 @@ function SubjectFolder({ subjectId }) {
     return () => window.clearInterval(timer)
   }, [loading, sheets.length])
 
-  function handleAddSheet() {
-    const id = addLocalSheet()
+  function handleAddSheet(content = '') {
+    const id = addLocalSheet(content)
     setAutoFocusKey(id)
     window.requestAnimationFrame(() => document.getElementById(`hoja-${id}`)?.scrollIntoView({ block: 'center' }))
   }
@@ -481,6 +490,7 @@ function SubjectFolder({ subjectId }) {
                   autoFocus={sheet.key === autoFocusKey}
                   onCreated={replaceLocalSheet}
                   onRequestDelete={handleRequestDelete}
+                  onSaveAsTemplate={setTemplateSource}
                   onLiveContent={updateLiveContent}
                   onEditor={handleEditor}
                   onFocusEditor={setActiveEditor}
@@ -496,13 +506,12 @@ function SubjectFolder({ subjectId }) {
                 />
               ))}
               {!reading && subject && (
-                <button
-                  type="button"
-                  onClick={handleAddSheet}
-                  className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-border py-4 text-sm text-text-muted transition-colors hover:border-[var(--subject)] hover:text-[var(--subject-light)]"
-                >
-                  <Icon name="plus" /> Nueva hoja
-                </button>
+                <NewSheetButton
+                  templates={allTemplates}
+                  onBlank={() => handleAddSheet()}
+                  onPick={(template) => handleAddSheet(template.content_md)}
+                  onManage={() => setManagerOpen(true)}
+                />
               )}
             </>
           )}
@@ -547,6 +556,31 @@ function SubjectFolder({ subjectId }) {
           if (attachment) await attachmentsState.remove(attachment)
         }}
         onCancel={() => setPendingAttachment(null)}
+      />
+
+      <PromptDialog
+        open={templateSource != null}
+        title="Guardar como plantilla"
+        label="Nombre de la plantilla"
+        placeholder="Ej. Clase de laboratorio"
+        submitLabel="Guardar"
+        onClose={() => setTemplateSource(null)}
+        onSubmit={(name) => {
+          const editor = editorsRef.current.get(templateSource.key)
+          const markdown = editor && !editor.isDestroyed ? editorToMarkdown(editor) : templateSource.content_md
+          return createTemplate(name, stripAttachmentRefs(markdown))
+        }}
+      >
+        <p className="text-xs text-text-muted">Se guarda el contenido actual de la hoja, sin los adjuntos.</p>
+      </PromptDialog>
+
+      <TemplatesManager
+        open={managerOpen}
+        onClose={() => setManagerOpen(false)}
+        templates={templates}
+        onRename={renameTemplate}
+        onUpdateContent={updateTemplateContent}
+        onDelete={deleteTemplate}
       />
 
       {subject && (

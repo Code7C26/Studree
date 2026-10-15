@@ -93,6 +93,7 @@
 | `constants/subjectTones.js` · `components/ui/Icon.jsx` · clases `.lamp`/`.glass`/`.paper-sheet` | `docs/02-architecture.md` (ADR-018, sistema de estilos) |
 | `pages/SubjectFolderPage.jsx` · `pages/SheetRedirectPage.jsx` · `features/folder/**` · `useFolder` · `useReadingMode` · `useSheetLocation` · `lib/editor/**` · `lib/format/**` · `lib/markdown/headings.js` | `docs/features/folder.md` |
 | `features/sheetEditor/**` · `lib/markdown/**` · `useSheetAutosave` · `sheets.service.js` | `docs/features/sheet-editor.md` |
+| `constants/sheetTemplates.js` · `services/sheetTemplates.service.js` · `useSheetTemplates` · `features/templates/**` | `docs/features/sheet-templates.md` |
 | `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
 | `services/attachments.service.js` · `useFolderAttachments` · `lib/attachments/**` · `lib/editor/attachmentNodes.js` · `features/attachments/**` | `docs/features/attachments.md` |
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |

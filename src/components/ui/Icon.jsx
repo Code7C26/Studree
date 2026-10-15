@@ -14,6 +14,8 @@ const PATHS = {
   sidebar: ['M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z', 'M9 3v18'],
   'chevron-left': ['m15 18-6-6 6-6'],
   'chevron-right': ['m9 18 6-6-6-6'],
+  'chevron-down': ['m6 9 6 6 6-6'],
+  template: ['M4 4h16v6H4Z', 'M4 14h7v6H4Z', 'M15 14h5', 'M15 18h5'],
   'arrow-up': ['m5 12 7-7 7 7', 'M12 19V5'],
   'arrow-down': ['M12 5v14', 'm19 12-7 7-7-7'],
   'file-text': ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z', 'M14 2v6h6', 'M8 13h8', 'M8 17h5'],
