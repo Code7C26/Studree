@@ -1,5 +1,5 @@
 /**
- * Panel lateral: buscador local + árbol de los 3 niveles (ADR-014).
+ * Panel lateral: buscador local + árbol Carrera → Materia (ADR-017).
  * Ver docs/features/navigation-shell.md.
  */
 
@@ -10,10 +10,7 @@ import { readCache, writeCache } from '../../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../../constants/storageKeys.js'
 
 /** Niveles hijos en orden, para el filtro recursivo por nombre. */
-const CHILD_LEVELS = [
-  { key: 'subjects', nameField: 'name' },
-  { key: 'sheets', nameField: 'title' },
-]
+const CHILD_LEVELS = [{ key: 'subjects', nameField: 'name' }]
 
 /**
  * Un nodo entra al resultado si su nombre matchea, o si matchea alguno de sus
@@ -45,22 +42,18 @@ const ALWAYS_EXPANDED = { has: () => true }
  * @param {boolean} props.loading
  * @param {(careerId: string) => void} props.onNavigateCareer
  * @param {(subjectId: string) => void} props.onNavigateSubject
- * @param {(sheet: {id: string, title: string}) => void} props.onOpenSheet
- * @param {(type: 'career'|'subject'|'sheet', id: string, name: string, node: Object) => Promise<string|null>} props.onRenameEntity
+ * @param {(type: 'career'|'subject', id: string, name: string, node: Object) => Promise<string|null>} props.onRenameEntity
  * @param {string} [props.activeCareerId]
  * @param {string} [props.activeSubjectId]
- * @param {string} [props.activeSheetId]
  */
 export function Explorer({
   careers,
   loading,
   onNavigateCareer,
   onNavigateSubject,
-  onOpenSheet,
   onRenameEntity,
   activeCareerId,
   activeSubjectId,
-  activeSheetId,
 }) {
   const [query, setQuery] = useState('')
   const [expandedKeys, setExpandedKeys] = useState(
@@ -136,11 +129,9 @@ export function Explorer({
             onToggle={toggle}
             onNavigateCareer={onNavigateCareer}
             onNavigateSubject={onNavigateSubject}
-            onOpenSheet={onOpenSheet}
             onRenameEntity={onRenameEntity}
             activeCareerId={activeCareerId}
             activeSubjectId={activeSubjectId}
-            activeSheetId={activeSheetId}
           />
         )}
       </div>

@@ -14,8 +14,8 @@ import { ROUTES } from './constants/routes'
 /** @param {() => Promise<Record<string, React.ComponentType>>} loader @param {string} name */
 const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })))
 const CareerMapPage = lazyPage(() => import('./pages/CareerMapPage'), 'CareerMapPage')
-const SubjectMapPage = lazyPage(() => import('./pages/SubjectMapPage'), 'SubjectMapPage')
-const SheetPage = lazyPage(() => import('./pages/SheetPage'), 'SheetPage')
+const SubjectFolderPage = lazyPage(() => import('./pages/SubjectFolderPage'), 'SubjectFolderPage')
+const SheetRedirectPage = lazyPage(() => import('./pages/SheetRedirectPage'), 'SheetRedirectPage')
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
 
 /**
@@ -42,8 +42,8 @@ export default function App() {
           <Route element={<WorkspaceLayout />}>
             <Route path={ROUTES.careers} element={<CareersPage />} />
             <Route path={ROUTES.careerMap} element={withSuspense(<CareerMapPage />)} />
-            <Route path={ROUTES.subjectMap} element={withSuspense(<SubjectMapPage />)} />
-            <Route path={ROUTES.sheet} element={withSuspense(<SheetPage />)} />
+            <Route path={ROUTES.subjectFolder} element={withSuspense(<SubjectFolderPage />)} />
+            <Route path={ROUTES.sheet} element={withSuspense(<SheetRedirectPage />)} />
           </Route>
         </Route>
 

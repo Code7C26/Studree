@@ -1,5 +1,6 @@
 /**
- * Árbol completo del workspace: Carrera → Materia → Hoja (ADR-014).
+ * Árbol del workspace: Carrera → Materia (las hojas viven en la carpeta de
+ * cada materia, ADR-017; acá solo se cuentan).
  * Ver docs/features/navigation-shell.md.
  *
  * Se carga entero de una vez (no de a un nivel por click): para uso de estudio
@@ -11,26 +12,24 @@
 import { useCallback, useEffect, useState } from 'react'
 import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
-import { sheetsService, SHEET_SUMMARY_COLUMNS } from '../services/sheets.service.js'
+import { sheetsService } from '../services/sheets.service.js'
 import { onDataChanged } from '../services/dataEvents.js'
 
 /** Service correcto por nivel, para el rename desde el explorador. */
 const SERVICES_BY_TYPE = {
   career: careersService,
   subject: subjectsService,
-  sheet: sheetsService,
 }
 
 /** Columna de FK al padre por nivel (`null` para carrera: no tiene padre). */
 const PARENT_FIELD_BY_TYPE = {
   career: null,
   subject: 'career_id',
-  sheet: 'subject_id',
 }
 
 /**
  * @typedef {Object} SearchEntry
- * @property {'subject'|'sheet'} type
+ * @property {'subject'} type
  * @property {string} id
  * @property {string} name
  * @property {string[]} path - Nombres de los ancestros, del más alto al más cercano.
@@ -55,7 +54,7 @@ function groupBy(rows, field) {
  *   loading: boolean,
  *   error: string|null,
  *   reload: () => void,
- *   renameEntity: (type: 'career'|'subject'|'sheet', id: string, name: string, node: Object) => Promise<string|null>,
+ *   renameEntity: (type: 'career'|'subject', id: string, name: string, node: Object) => Promise<string|null>,
  * }}
  */
 export function useExplorerTree() {
@@ -68,14 +67,14 @@ export function useExplorerTree() {
     setLoading(true)
     setError(null)
 
-    // 3 consultas en total, una por nivel (RLS ya filtra por usuario; cada
-    // una pagina, así que no se corta en 1000 filas). Las hojas vienen SIN
-    // `content_md`: la búsqueda por contenido la hace el servidor
-    // (sheetsService.searchContent), no hace falta bajar todos los apuntes.
+    // 3 consultas en total (RLS ya filtra por usuario; cada una pagina, así
+    // que no se corta en 1000 filas). De las hojas solo se trae `subject_id`,
+    // para contarlas: el contenido lo carga la carpeta y la búsqueda la hace
+    // el servidor (sheetsService.searchContent).
     const [careersResult, subjectsResult, sheetsResult] = await Promise.all([
       careersService.list(),
       subjectsService.list(),
-      sheetsService.list(undefined, undefined, { columns: SHEET_SUMMARY_COLUMNS }),
+      sheetsService.list(undefined, undefined, { columns: 'id, subject_id' }),
     ])
 
     if (careersResult.error) {
@@ -96,11 +95,7 @@ export function useExplorerTree() {
         const base = { careerId: career.id, subjectId: subject.id }
         index.push({ type: 'subject', id: subject.id, name: subject.name, path: [career.name], ...base })
 
-        const sheets = sheetsBySubject.get(subject.id) ?? []
-        for (const sheet of sheets) {
-          index.push({ type: 'sheet', id: sheet.id, name: sheet.title, path: [career.name, subject.name], ...base })
-        }
-        return { ...subject, sheets }
+        return { ...subject, sheetCount: (sheetsBySubject.get(subject.id) ?? []).length }
       }),
     }))
 
@@ -129,10 +124,9 @@ export function useExplorerTree() {
   }, [load])
 
   /**
-   * Renombra una carrera, materia u hoja desde el explorador.
-   * Las hojas usan `title`, el resto usa `name` (ver docs/DB_SCHEMA.md).
+   * Renombra una carrera o una materia desde el explorador.
    *
-   * @param {'career'|'subject'|'sheet'} type
+   * @param {'career'|'subject'} type
    * @param {string} id
    * @param {string} name
    * @param {Object} node - El nodo del árbol (de ahí sale el `parentId`, sin recorrerlo de nuevo).
@@ -146,9 +140,7 @@ export function useExplorerTree() {
       const service = SERVICES_BY_TYPE[type]
       const parentField = PARENT_FIELD_BY_TYPE[type]
       const parentId = parentField ? node[parentField] : undefined
-      const values = type === 'sheet' ? { title: trimmed } : { name: trimmed }
-
-      const { error: renameError } = await service.update(id, values, parentId)
+      const { error: renameError } = await service.update(id, { name: trimmed }, parentId)
       if (renameError) return renameError
 
       await load()

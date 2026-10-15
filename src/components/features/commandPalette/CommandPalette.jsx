@@ -1,16 +1,15 @@
 /**
- * Overlay `Ctrl+K`: busca hojas (objetivo principal) y materias por nombre, con
- * matching de subsecuencia (fuzzy) hecho a mano. Además busca DENTRO del
- * contenido de las hojas: esa búsqueda corre en el SERVIDOR
- * (`sheetsService.searchContent`, desde 3 letras y con debounce) — el
- * explorador ya no baja el contenido de todas las hojas. Los resultados por
- * contenido muestran el fragmento encontrado en vez de la ruta. Ver
- * docs/features/navigation-shell.md.
+ * Overlay `Ctrl+K`: busca materias por nombre (fuzzy hecho a mano) y texto
+ * DENTRO de las hojas. La búsqueda de contenido corre en el SERVIDOR
+ * (`sheetsService.searchContent`, desde 3 letras y con debounce); cada
+ * resultado muestra la materia, la fecha de la hoja y el fragmento, y abre la
+ * carpeta en esa hoja (ADR-017). Ver docs/features/navigation-shell.md.
  */
 
 import { useEffect, useMemo, useState } from 'react'
 import { buildContentSnippet } from '../../../lib/search/snippet.js'
 import { sheetsService } from '../../../services/sheets.service.js'
+import { formatSheetDate } from '../../../lib/format/sheetDate.js'
 
 const ICONS = { subject: '📚', sheet: '📝' }
 
@@ -46,10 +45,9 @@ function score(text, query) {
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  * @param {import('../../../hooks/useExplorerTree.js').SearchEntry[]} props.searchIndex
- * @param {(subjectId: string) => void} props.onNavigateSubject
- * @param {(sheet: {id: string, title: string}) => void} props.onOpenSheet
+ * @param {(subjectId: string, sheetId?: string) => void} props.onOpenSubject - Abre la carpeta (en una hoja, si viene).
  */
-export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, onOpenSheet }) {
+export function CommandPalette({ open, onClose, searchIndex, onOpenSubject }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   /** Hojas cuyo contenido contiene el texto (respuesta del servidor). */
@@ -90,14 +88,17 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
       .map((entry) => ({ entry, rank: score(entry.name.toLowerCase(), q), snippet: null }))
     matches.sort((a, b) => a.rank - b.rank)
 
-    // Las hojas que ya aparecieron por nombre no se repiten por contenido.
-    const shown = new Set(matches.map(({ entry }) => `${entry.type}:${entry.id}`))
-    const entriesById = new Map(searchIndex.filter((entry) => entry.type === 'sheet').map((entry) => [entry.id, entry]))
+    // Coincidencias dentro de las hojas: se muestran con la materia y la fecha de la hoja.
+    const subjectsById = new Map(searchIndex.map((entry) => [entry.id, entry]))
     for (const hit of contentHits) {
-      const entry = entriesById.get(hit.id)
-      if (!entry || shown.has(`sheet:${hit.id}`)) continue
-      const snippet = buildContentSnippet(hit.content_md, q)
-      if (snippet) matches.push({ entry, rank: CONTENT_MATCH_SCORE, snippet })
+      const subject = subjectsById.get(hit.subject_id)
+      const snippet = subject ? buildContentSnippet(hit.content_md, q) : null
+      if (!snippet) continue
+      matches.push({
+        entry: { ...subject, type: 'sheet', id: hit.id, date: formatSheetDate(hit.created_at) },
+        rank: CONTENT_MATCH_SCORE,
+        snippet,
+      })
     }
 
     return matches.slice(0, MAX_RESULTS)
@@ -107,11 +108,8 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
 
   /** @param {import('../../../hooks/useExplorerTree.js').SearchEntry} entry */
   function select(entry) {
-    if (entry.type === 'sheet') {
-      onOpenSheet({ id: entry.id, title: entry.name })
-    } else {
-      onNavigateSubject(entry.subjectId)
-    }
+    if (entry.type === 'sheet') onOpenSubject(entry.subjectId, entry.id)
+    else onOpenSubject(entry.subjectId)
     onClose()
   }
 
@@ -154,7 +152,7 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
             setSelected(0)
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Buscar por nombre o por texto dentro de una hoja…"
+          placeholder="Buscar una materia o un texto dentro de tus hojas…"
           aria-label="Buscar"
           className="w-full border-b border-border bg-transparent px-4 py-3 text-text outline-none placeholder:text-text-muted"
         />
@@ -176,6 +174,7 @@ export function CommandPalette({ open, onClose, searchIndex, onNavigateSubject, 
                 <span className="flex w-full items-center gap-2">
                   <span aria-hidden="true">{ICONS[entry.type]}</span>
                   <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+                  {entry.date && <span className="shrink-0 text-xs text-text-muted">{entry.date}</span>}
                   {!snippet && entry.path.length > 0 && (
                     <span className="shrink-0 truncate text-xs text-text-muted">{entry.path.join(' › ')}</span>
                   )}

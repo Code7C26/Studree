@@ -6,7 +6,7 @@
  *
  * Jerarquía (ADR-014): Career → Subject → Sheet
  *            Subject ←→ Prerequisite (correlativas entre materias)
- *            Sheet   ←→ SheetLink    (`[[links]]` entre hojas, ADR-015)
+ * Las hojas de una materia se ven como una carpeta continua (ADR-017).
  *
  * Nota: los campos usan snake_case porque son las columnas tal cual llegan de
  * Postgres; no se renombran para evitar una capa de mapeo innecesaria.
@@ -73,31 +73,18 @@
  */
 
 /**
- * Hoja: el documento de apuntes. Es la unidad mínima de contenido y el nodo
- * del canvas de materia (ADR-014).
+ * Hoja: una página de la carpeta de una materia (ADR-017). No tiene título: se
+ * identifica por su fecha de creación. Los temas son los headings `#` de su
+ * contenido.
  * @typedef {Object} Sheet
- * @property {string} id          - UUID.
+ * @property {string} id          - UUID (en la carpeta, `local:…` mientras no se guardó).
  * @property {string} subject_id  - Materia a la que pertenece.
- * @property {string} user_id     - Dueño.
- * @property {string} title       - Título, único por materia (sin distinguir mayúsculas).
+ * @property {string} [user_id]   - Dueño.
+ * @property {string|null} [title] - LEGADO: siempre null desde la migración 0004.
  * @property {string} content_md  - Contenido en MARKDOWN (fuente de verdad, ADR-011).
- *   Puede no venir si la consulta usó `SHEET_SUMMARY_COLUMNS`.
- * @property {number} position    - Orden dentro de la materia (NO es coordenada).
- * @property {number|null} pos_x  - Posición manual en el canvas (ADR-012); null = auto-layout.
- * @property {number|null} pos_y
- * @property {string|null} [topic_id] - LEGADO (modelo de 5 niveles). No se usa.
- * @property {string} created_at  - Timestamp ISO.
- * @property {string} updated_at  - Timestamp ISO. Solo cambia con el título o el contenido.
- */
-
-/**
- * Link entre hojas: la hoja `source_id` contiene `[[título de target]]`.
- * Es un ÍNDICE derivado del Markdown por la base (trigger, ADR-015): el
- * cliente nunca lo escribe directo.
- * @typedef {Object} SheetLink
- * @property {string} id
- * @property {string} source_id - Hoja que escribe el `[[link]]`.
- * @property {string} target_id - Hoja enlazada.
+ * @property {number} [position]  - LEGADO: el orden es por `created_at`.
+ * @property {string} created_at  - Timestamp ISO: define el orden y lo que se muestra.
+ * @property {string|null} updated_at - Timestamp ISO. Solo cambia con el contenido.
  */
 
 /**

@@ -1,5 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
+import { ReadingModeProvider } from './ReadingModeProvider'
+import { useReadingMode } from '../../hooks/useReadingMode.js'
 
 /** Rutas que viven dentro del shell (WorkspaceLayout: explorador + tabs + palette). */
 const WORKSPACE_PREFIXES = ['/carreras', '/materias', '/hojas']
@@ -13,12 +15,22 @@ const WORKSPACE_PREFIXES = ['/carreras', '/materias', '/hojas']
  * ruta, si el `<Outlet/>` va suelto (lo maneja `WorkspaceLayout`) o envuelto.
  */
 export function AppLayout() {
+  return (
+    <ReadingModeProvider>
+      <AppShell />
+    </ReadingModeProvider>
+  )
+}
+
+/** El layout en sí; en modo lectura (carpeta) oculta el header. */
+function AppShell() {
   const location = useLocation()
+  const { reading } = useReadingMode()
   const isWorkspace = WORKSPACE_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))
 
   return (
     <div className="flex h-screen flex-col bg-bg text-text">
-      <Header />
+      {!reading && <Header />}
       {isWorkspace ? (
         <Outlet />
       ) : (

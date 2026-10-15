@@ -1,11 +1,10 @@
 /**
- * Armazón persistente del workspace (Fase 7.2). Ver docs/features/navigation-shell.md.
+ * Armazón persistente del workspace. Ver docs/features/navigation-shell.md.
  *
  * A partir de `/carreras`, envuelve todas las vistas y aporta tres piezas
- * siempre disponibles: explorador lateral, barra de tabs y command palette
- * (`Ctrl+K`). El canvas es un modo de exploración más, no el único camino:
- * toda la navegación tiene que poder resolverse solo con explorador + palette
- * (requisito de mobile).
+ * siempre disponibles: explorador lateral (Carrera → Materia), barra de tabs
+ * (una por MATERIA abierta, como carpetas abiertas — ADR-017) y command
+ * palette (`Ctrl+K`). En modo lectura (carpeta) se ocultan explorador y tabs.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -16,9 +15,10 @@ import { CommandPalette } from '../features/commandPalette/CommandPalette'
 import { Drawer } from '../ui/Drawer'
 import { useExplorerTree } from '../../hooks/useExplorerTree.js'
 import { useHotkeys } from '../../hooks/useHotkeys.js'
+import { useReadingMode } from '../../hooks/useReadingMode.js'
 import { readCache, writeCache } from '../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../constants/storageKeys.js'
-import { ROUTES, careerPath, subjectMapPath, sheetPath } from '../../constants/routes.js'
+import { ROUTES, careerPath, subjectFolderPath } from '../../constants/routes.js'
 
 /** Breakpoint `md` de Tailwind (ver tailwind.config.js): desde acá el explorador va fijo. */
 const DESKTOP_QUERY = '(min-width: 768px)'
@@ -28,32 +28,19 @@ function findCareerIdForSubject(careers, subjectId) {
   return careers.find((career) => career.subjects.some((subject) => subject.id === subjectId))?.id
 }
 
-/** Busca la materia (y su carrera) dueña de una hoja, recorriendo el árbol ya cargado. */
-function findAncestryForSheet(careers, sheetId) {
+/** id → nombre de todas las materias del árbol. */
+function collectSubjectNames(careers) {
+  const names = new Map()
   for (const career of careers) {
-    for (const subject of career.subjects) {
-      if (subject.sheets.some((sheet) => sheet.id === sheetId)) {
-        return { careerId: career.id, subjectId: subject.id }
-      }
-    }
+    for (const subject of career.subjects) names.set(subject.id, subject.name)
   }
-  return {}
-}
-
-/** id → título de todas las hojas del árbol. */
-function collectSheetTitles(careers) {
-  const titles = new Map()
-  for (const career of careers) {
-    for (const subject of career.subjects) {
-      for (const sheet of subject.sheets) titles.set(sheet.id, sheet.title)
-    }
-  }
-  return titles
+  return names
 }
 
 export function WorkspaceLayout() {
   const navigate = useNavigate()
   const params = useParams()
+  const { reading } = useReadingMode()
   const { careers, searchIndex, loading, error: treeError, renameEntity } = useExplorerTree()
 
   // En desktop el explorador arranca visible (panel fijo); en mobile arranca
@@ -70,19 +57,20 @@ export function WorkspaceLayout() {
   }, [tabs])
 
   // Cada vez que el árbol termina de cargar (incluida la recarga después de
-  // borrar o renombrar): se cierran las tabs de hojas que ya no existen y se
-  // actualizan los títulos. Si el árbol falló, no se toca nada.
+  // borrar o renombrar): se cierran las tabs de materias que ya no existen y se
+  // actualizan los nombres. Las tabs viejas de hojas (antes de ADR-017) no son
+  // materias, así que también se van. Si el árbol falló, no se toca nada.
   useEffect(() => {
     if (loading || treeError) return
-    const titles = collectSheetTitles(careers)
+    const names = collectSubjectNames(careers)
     setTabs((current) => {
-      const next = current.filter((tab) => titles.has(tab.id)).map((tab) => ({ ...tab, title: titles.get(tab.id) }))
+      const next = current.filter((tab) => names.has(tab.id)).map((tab) => ({ ...tab, title: names.get(tab.id) }))
       const changed = next.length !== current.length || next.some((tab, index) => tab.title !== current[index].title)
       return changed ? next : current
     })
   }, [careers, loading, treeError])
 
-  /** Abre una hoja en una tab. Si ya está abierta, no duplica (solo activa). */
+  /** Abre una materia en una tab. Si ya está abierta, no duplica. */
   const openTab = useCallback((id, title) => {
     setTabs((current) => (current.some((tab) => tab.id === id) ? current : [...current, { id, title }]))
   }, [])
@@ -90,18 +78,13 @@ export function WorkspaceLayout() {
   const closeTab = useCallback(
     (id) => {
       setTabs((current) => current.filter((tab) => tab.id !== id))
-      if (id === params.sheetId) navigate(ROUTES.careers)
+      if (id === params.subjectId) navigate(ROUTES.careers)
     },
-    [params.sheetId, navigate],
+    [params.subjectId, navigate],
   )
 
-  const handleOpenSheet = useCallback(
-    (sheet) => {
-      openTab(sheet.id, sheet.title)
-      navigate(sheetPath(sheet.id))
-    },
-    [openTab, navigate],
-  )
+  /** @param {string} subjectId @param {string} [sheetId] */
+  const openSubject = useCallback((subjectId, sheetId) => navigate(subjectFolderPath(subjectId, sheetId)), [navigate])
 
   const bindings = useMemo(
     () => ({
@@ -110,54 +93,51 @@ export function WorkspaceLayout() {
     }),
     [],
   )
-  useHotkeys(bindings)
+  useHotkeys(bindings, !reading)
 
-  // Los niveles intermedios (materia/unidad/tema) no tienen ruta propia con
-  // careerId en la URL, así que para resaltar/auto-expandir el explorador hay
-  // que deducir la ascendencia recorriendo el árbol ya cargado.
-  const activeSubjectId =
-    params.subjectId ?? (params.sheetId ? findAncestryForSheet(careers, params.sheetId).subjectId : undefined)
-  const activeCareerId =
-    params.careerId ?? (activeSubjectId ? findCareerIdForSubject(careers, activeSubjectId) : undefined)
+  const activeSubjectId = params.subjectId
+  const activeCareerId = params.careerId ?? (activeSubjectId ? findCareerIdForSubject(careers, activeSubjectId) : undefined)
 
   const explorerProps = {
     careers,
     loading,
     onNavigateCareer: (id) => navigate(careerPath(id)),
-    onNavigateSubject: (id) => navigate(subjectMapPath(id)),
-    onOpenSheet: handleOpenSheet,
+    onNavigateSubject: (id) => openSubject(id),
     onRenameEntity: renameEntity,
     activeCareerId,
     activeSubjectId,
-    activeSheetId: params.sheetId,
   }
 
   return (
     <div className="flex min-h-0 flex-1">
-      {explorerOpen && (
+      {explorerOpen && !reading && (
         <aside className="hidden w-64 shrink-0 border-r border-border bg-surface md:block">
           <Explorer {...explorerProps} />
         </aside>
       )}
 
-      {/* Mobile: el explorador no tiene panel fijo, se abre como drawer (ADR de mobile en navigation-shell.md). */}
+      {/* Mobile: el explorador no tiene panel fijo, se abre como drawer. */}
       <div className="md:hidden">
-        <Drawer open={explorerOpen} onClose={() => setExplorerOpen(false)} title="Explorador">
+        <Drawer open={explorerOpen && !reading} onClose={() => setExplorerOpen(false)} title="Explorador">
           <Explorer {...explorerProps} />
         </Drawer>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center border-b border-border px-2 py-1.5 md:hidden">
-          <button
-            type="button"
-            onClick={() => setExplorerOpen(true)}
-            className="rounded-lg px-2 py-1 text-sm text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-          >
-            ☰ Explorador
-          </button>
-        </div>
-        <TabBar tabs={tabs} activeId={params.sheetId} onActivate={(id) => navigate(sheetPath(id))} onClose={closeTab} />
+        {!reading && (
+          <>
+            <div className="flex items-center border-b border-border px-2 py-1.5 md:hidden">
+              <button
+                type="button"
+                onClick={() => setExplorerOpen(true)}
+                className="rounded-lg px-2 py-1 text-sm text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+              >
+                ☰ Explorador
+              </button>
+            </div>
+            <TabBar tabs={tabs} activeId={params.subjectId} onActivate={(id) => openSubject(id)} onClose={closeTab} />
+          </>
+        )}
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
           <Outlet context={{ openTab }} />
         </main>
@@ -167,8 +147,7 @@ export function WorkspaceLayout() {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         searchIndex={searchIndex}
-        onNavigateSubject={(id) => navigate(subjectMapPath(id))}
-        onOpenSheet={handleOpenSheet}
+        onOpenSubject={openSubject}
       />
     </div>
   )

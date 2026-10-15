@@ -1,0 +1,395 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
+import { useFolder } from '../hooks/useFolder.js'
+import { useHotkeys } from '../hooks/useHotkeys.js'
+import { useReadingMode } from '../hooks/useReadingMode.js'
+import { FolderSheet } from '../components/features/folder/FolderSheet'
+import { TopicIndex } from '../components/features/folder/TopicIndex'
+import { FolderSearchBar } from '../components/features/folder/FolderSearchBar'
+import { EditorToolbar } from '../components/features/sheetEditor/EditorToolbar'
+import { ExportDialog } from '../components/features/export/ExportDialog'
+import { Button } from '../components/ui/Button'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { careerPath } from '../constants/routes'
+import { extractHeadings } from '../lib/markdown/headings.js'
+import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
+import { formatSheetDate } from '../lib/format/sheetDate.js'
+import { isLocalSheet } from '../lib/editor/folderSheets.js'
+
+/** Distancia desde el borde superior del scroll a partir de la cual un tema cuenta como "el que estás leyendo". */
+const ACTIVE_TOPIC_OFFSET = 140
+const NOTICE_MS = 3000
+
+/** Headings de primer nivel del editor, en el mismo orden que `extractHeadings`. */
+const topLevelHeadings = (editor) =>
+  editor && !editor.isDestroyed ? editor.view.dom.querySelectorAll(':scope > h1, :scope > h2, :scope > h3, :scope > h4') : []
+
+/**
+ * La Carpeta de una materia (ADR-017): todas sus hojas seguidas, en orden
+ * cronológico, sobre papel blanco; índice de temas, buscador y modo lectura.
+ * Ver docs/features/folder.md.
+ *
+ * `?hoja=:id` posiciona en esa hoja (contrato con el Inicio); sin parámetro,
+ * va a la última hoja (lo normal es seguir escribiendo al final).
+ */
+export function SubjectFolderPage() {
+  const { subjectId } = useParams()
+  const [searchParams] = useSearchParams()
+  const targetSheetId = searchParams.get('hoja')
+  const { openTab } = useOutletContext()
+  const { reading, setReading } = useReadingMode()
+  const {
+    subject,
+    subjectError,
+    sheets,
+    loading,
+    error,
+    clearError,
+    reload,
+    addLocalSheet,
+    replaceLocalSheet,
+    deleteSheet,
+    updateLiveContent,
+  } = useFolder(subjectId)
+
+  const containerRef = useRef(null)
+  /** key de hoja → editor TipTap montado. */
+  const editorsRef = useRef(new Map())
+  /** key de hoja → cancelar autosave pendiente (antes de borrar). */
+  const cancelersRef = useRef(new Map())
+  const [activeEditor, setActiveEditor] = useState(null)
+  const [activeTopicId, setActiveTopicId] = useState(null)
+  const [autoFocusKey, setAutoFocusKey] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [notice, setNotice] = useState(null)
+
+  // Búsqueda: término, coincidencia actual (índice global) y cuántas hay por hoja.
+  const [term, setTerm] = useState('')
+  const [current, setCurrent] = useState(null)
+  const [hitCounts, setHitCounts] = useState({})
+  const [focusSignal, setFocusSignal] = useState(0)
+
+  useEffect(() => {
+    if (subject) openTab(subject.id, subject.name)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subject?.id, subject?.name])
+
+  // Al cambiar de materia, todo lo de la búsqueda y el foco arranca de cero.
+  useEffect(() => {
+    setTerm('')
+    setCurrent(null)
+    setHitCounts({})
+    setActiveTopicId(null)
+    setActiveEditor(null)
+  }, [subjectId])
+
+  // Salir del modo lectura al irse de la carpeta.
+  useEffect(() => () => setReading(false), [setReading])
+
+  /** @type {import('../components/features/folder/TopicIndex').FolderTopic[]} */
+  const topics = useMemo(
+    () =>
+      sheets.flatMap((sheet) =>
+        extractHeadings(sheet.content_md).map((heading) => ({
+          ...heading,
+          id: `${sheet.key}:${heading.index}`,
+          sheetKey: sheet.key,
+        })),
+      ),
+    [sheets],
+  )
+
+  const goToTopic = useCallback((topic) => {
+    const element = topLevelHeadings(editorsRef.current.get(topic.sheetKey))[topic.index]
+    element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  const showNotice = useCallback((message) => {
+    setNotice(message)
+    window.setTimeout(() => setNotice(null), NOTICE_MS)
+  }, [])
+
+  const handleWikiLink = useCallback(
+    (title) => {
+      const wanted = title.trim().toLowerCase()
+      const topic = topics.find((candidate) => candidate.text.toLowerCase() === wanted)
+      if (topic) goToTopic(topic)
+      else showNotice(`No hay un tema «${title}» en esta materia.`)
+    },
+    [topics, goToTopic, showNotice],
+  )
+
+  // Tema activo: el último heading que pasó el borde superior del área de scroll.
+  useEffect(() => {
+    const scroller = containerRef.current?.closest('main')
+    if (!scroller) return undefined
+    let frame = null
+    const update = () => {
+      frame = null
+      const top = scroller.getBoundingClientRect().top + ACTIVE_TOPIC_OFFSET
+      let active = null
+      for (const topic of topics) {
+        const element = topLevelHeadings(editorsRef.current.get(topic.sheetKey))[topic.index]
+        if (element && element.getBoundingClientRect().top <= top) active = topic.id
+      }
+      setActiveTopicId(active ?? topics[0]?.id ?? null)
+    }
+    const onScroll = () => {
+      if (frame == null) frame = window.requestAnimationFrame(update)
+    }
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    update()
+    return () => {
+      scroller.removeEventListener('scroll', onScroll)
+      if (frame != null) window.cancelAnimationFrame(frame)
+    }
+  }, [topics])
+
+  // Posición inicial: la hoja de `?hoja=` o, si no está (o no existe), la última.
+  const positionedRef = useRef(null)
+  useEffect(() => {
+    if (loading || sheets.length === 0 || positionedRef.current === `${subjectId}:${targetSheetId}`) return
+    positionedRef.current = `${subjectId}:${targetSheetId}`
+    const target = sheets.find((sheet) => sheet.id === targetSheetId) ?? sheets[sheets.length - 1]
+    window.requestAnimationFrame(() =>
+      document.getElementById(`hoja-${target.id}`)?.scrollIntoView({ block: 'start' }),
+    )
+  }, [loading, sheets, subjectId, targetSheetId])
+
+  // ---- Búsqueda ----------------------------------------------------------
+
+  /** Hojas con coincidencias, en orden de la carpeta: [{key, count, offset}]. */
+  const hitLayout = useMemo(() => {
+    let offset = 0
+    return sheets.map((sheet) => {
+      const count = term.trim() ? (hitCounts[sheet.key] ?? 0) : 0
+      const entry = { key: sheet.key, count, offset }
+      offset += count
+      return entry
+    })
+  }, [sheets, hitCounts, term])
+  const totalHits = hitLayout.reduce((sum, entry) => sum + entry.count, 0)
+
+  // Si cambian las coincidencias (se escribió o se borró texto), la actual se ajusta al rango.
+  useEffect(() => {
+    if (totalHits === 0) setCurrent(null)
+    else setCurrent((value) => (value == null ? 0 : Math.min(value, totalHits - 1)))
+  }, [totalHits])
+
+  /** key de hoja → índice local de la coincidencia actual (o null). */
+  const currentLocation = useMemo(() => {
+    if (current == null) return null
+    const entry = hitLayout.find((candidate) => current >= candidate.offset && current < candidate.offset + candidate.count)
+    return entry ? { key: entry.key, local: current - entry.offset } : null
+  }, [current, hitLayout])
+
+  useEffect(() => {
+    if (currentLocation) scrollToCurrentHit(editorsRef.current.get(currentLocation.key))
+  }, [currentLocation])
+
+  const handleHitsChange = useCallback((key, count) => {
+    setHitCounts((counts) => (counts[key] === count ? counts : { ...counts, [key]: count }))
+  }, [])
+
+  const goToHit = (step) => {
+    if (totalHits === 0) return
+    setCurrent((value) => ((value ?? -step) + step + totalHits) % totalHits)
+  }
+
+  // ---- Atajos ------------------------------------------------------------
+
+  const bindings = useMemo(
+    () => ({
+      'mod+f': () => setFocusSignal((value) => value + 1),
+      ...(reading ? { escape: () => setReading(false) } : {}),
+    }),
+    [reading, setReading],
+  )
+  useHotkeys(bindings, !loading)
+
+  // ---- Hojas -------------------------------------------------------------
+
+  const handleEditor = useCallback((key, editor) => {
+    if (editor) {
+      editorsRef.current.set(key, editor)
+      return
+    }
+    editorsRef.current.delete(key)
+    // La hoja con foco se borró: la toolbar no puede seguir apuntando a un editor destruido.
+    setActiveEditor((active) => (active && active.isDestroyed ? null : active))
+  }, [])
+
+  function handleAddSheet() {
+    const id = addLocalSheet()
+    setAutoFocusKey(id)
+    window.requestAnimationFrame(() => document.getElementById(`hoja-${id}`)?.scrollIntoView({ block: 'center' }))
+  }
+
+  async function removeSheet(sheet) {
+    cancelersRef.current.get(sheet.key)?.()
+    await deleteSheet(sheet)
+  }
+
+  function handleRequestDelete(sheet) {
+    // Una hoja nueva que todavía no se guardó (y está vacía) no necesita confirmación.
+    if (isLocalSheet(sheet) && !sheet.content_md.trim()) removeSheet(sheet)
+    else setPendingDelete(sheet)
+  }
+
+  async function handleConfirmDelete() {
+    const sheet = pendingDelete
+    setPendingDelete(null)
+    if (sheet) await removeSheet(sheet)
+  }
+
+  // ---- Render ------------------------------------------------------------
+
+  if (subjectError) {
+    return <EmptyState title="Materia no encontrada" message={subjectError} />
+  }
+
+  return (
+    <div ref={containerRef} className={`flex gap-6 ${reading ? 'justify-center' : ''}`}>
+      {!reading && (
+        <aside className="sticky top-0 hidden max-h-[calc(100vh-7rem)] w-60 shrink-0 self-start overflow-y-auto md:block">
+          {subject && (
+            <Link to={careerPath(subject.career_id)} className="block px-2 text-xs text-text-muted hover:text-text">
+              ← Volver a la carrera
+            </Link>
+          )}
+          <h1 className="mt-1 truncate px-2 text-lg font-bold" title={subject?.name}>
+            {subject?.name ?? 'Cargando…'}
+          </h1>
+          <p className="mb-3 px-2 text-xs text-text-muted">
+            {sheets.length} hoja{sheets.length === 1 ? '' : 's'} · {topics.length} tema{topics.length === 1 ? '' : 's'}
+          </p>
+          <h2 className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Temas</h2>
+          <TopicIndex topics={topics} activeId={activeTopicId} onGo={goToTopic} />
+        </aside>
+      )}
+
+      <div className="min-w-0 flex-1">
+        {!reading && (
+          <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 bg-bg/95 px-1 py-2 backdrop-blur">
+            <div className="min-w-[14rem] flex-1">
+              <FolderSearchBar
+                term={term}
+                onTermChange={(value) => {
+                  setTerm(value)
+                  setCurrent(null)
+                }}
+                total={totalHits}
+                current={current}
+                onNext={() => goToHit(1)}
+                onPrevious={() => goToHit(-1)}
+                onClose={() => {
+                  setTerm('')
+                  setCurrent(null)
+                }}
+                focusSignal={focusSignal}
+              />
+            </div>
+            <Button variant="ghost" onClick={() => setReading(true)} title="Ocultar todo menos las hojas (Esc para salir)">
+              📖 Modo lectura
+            </Button>
+            <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={!subject}>
+              Exportar
+            </Button>
+            <div className="w-full">
+              <EditorToolbar editor={activeEditor} />
+            </div>
+          </div>
+        )}
+
+        {notice && (
+          <p role="status" className="mb-3 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
+            {notice}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="mb-3 flex items-start justify-between gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+            <span>{error}</span>
+            <span className="flex shrink-0 gap-2">
+              <button type="button" onClick={reload} className="underline">
+                Reintentar
+              </button>
+              <button type="button" onClick={clearError} aria-label="Cerrar aviso">
+                ✕
+              </button>
+            </span>
+          </p>
+        )}
+
+        <div className="mx-auto max-w-3xl space-y-6 pb-24">
+          {loading && sheets.length === 0 ? (
+            <p className="mt-8 text-center text-text-muted">Cargando…</p>
+          ) : (
+            <>
+              {sheets.length === 0 && (
+                <EmptyState
+                  icon="📝"
+                  title="La carpeta está vacía"
+                  message="Agregá la primera hoja y empezá a escribir. Usá # Título para marcar los temas."
+                />
+              )}
+              {sheets.map((sheet) => (
+                <FolderSheet
+                  key={sheet.key}
+                  sheet={sheet}
+                  autoFocus={sheet.key === autoFocusKey}
+                  onCreated={replaceLocalSheet}
+                  onRequestDelete={handleRequestDelete}
+                  onLiveContent={updateLiveContent}
+                  onEditor={handleEditor}
+                  onFocusEditor={setActiveEditor}
+                  onWikiLink={handleWikiLink}
+                  searchTerm={term}
+                  currentHit={currentLocation?.key === sheet.key ? currentLocation.local : null}
+                  onHitsChange={handleHitsChange}
+                  cancelers={cancelersRef}
+                />
+              ))}
+              {!reading && subject && (
+                <button
+                  type="button"
+                  onClick={handleAddSheet}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-4 text-sm text-text-muted transition-colors hover:border-accent hover:text-accent"
+                >
+                  ＋ Nueva hoja
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {reading && (
+        <button
+          type="button"
+          onClick={() => setReading(false)}
+          className="fixed right-4 top-4 z-50 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-muted shadow-lg hover:text-text"
+        >
+          Salir del modo lectura (Esc)
+        </button>
+      )}
+
+      <ConfirmDialog
+        open={pendingDelete != null}
+        title="Eliminar hoja"
+        message={
+          pendingDelete
+            ? `Se va a eliminar la hoja del ${formatSheetDate(pendingDelete.created_at)} con todo su contenido. No se puede deshacer.`
+            : ''
+        }
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+
+      {subject && (
+        <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} careerId={subject.career_id} subjectId={subjectId} />
+      )}
+    </div>
+  )
+}

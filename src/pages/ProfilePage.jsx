@@ -15,7 +15,7 @@ function countContent(careers) {
   for (const career of careers) {
     subjects += career.subjects.length
     for (const subject of career.subjects) {
-      sheets += subject.sheets.length
+      sheets += subject.sheetCount
     }
   }
 

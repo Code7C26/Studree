@@ -12,6 +12,7 @@ const CHEVRON_WIDTH = 18
  * @param {Object} props
  * @param {string} props.icon - Emoji del nivel (Carrera/Materia/Hoja).
  * @param {string} props.label
+ * @param {string} [props.hint] - Dato chico a la derecha (ej. cantidad de hojas).
  * @param {number} props.depth - 0 = Carrera, 1 = Materia, etc. Define la indentación.
  * @param {boolean} [props.hasChildren]
  * @param {boolean} [props.expanded]
@@ -24,6 +25,7 @@ const CHEVRON_WIDTH = 18
 export function ExplorerItem({
   icon,
   label,
+  hint,
   depth,
   hasChildren = false,
   expanded = false,
@@ -104,6 +106,7 @@ export function ExplorerItem({
           >
             <span aria-hidden="true">{icon}</span>
             <span className="truncate">{label}</span>
+            {hint && <span className="ml-auto shrink-0 text-xs text-text-muted">{hint}</span>}
           </button>
         )}
 

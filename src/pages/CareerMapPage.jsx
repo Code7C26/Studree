@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PromptDialog } from '../components/ui/PromptDialog'
-import { ROUTES, subjectMapPath } from '../constants/routes'
+import { ROUTES, subjectFolderPath } from '../constants/routes'
 import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
 import { PREREQUISITE_KIND_META } from '../constants/prerequisiteKinds.js'
 
@@ -49,7 +49,7 @@ export function CareerMapPage() {
 
   const subjectsById = new Map(subjects.map((subject) => [subject.id, subject]))
 
-  const handleNavigateSubject = useCallback((id) => navigate(subjectMapPath(id)), [navigate])
+  const handleNavigateSubject = useCallback((id) => navigate(subjectFolderPath(id)), [navigate])
   const handleDeleteSubject = useCallback((subject) => setPendingDelete({ type: 'subject', item: subject }), [])
   const handleRemovePrerequisite = useCallback(
     (prerequisite) => setPendingDelete({ type: 'prerequisite', item: prerequisite }),

@@ -10,16 +10,19 @@ export const ROUTES = Object.freeze({
   login: '/entrar',
   careers: '/carreras', // workspace: panel de inicio con las carreras
   careerMap: '/carreras/:careerId', // canvas de materias + correlativas
-  subjectMap: '/materias/:subjectId', // canvas de hojas + links (ADR-014)
-  sheet: '/hojas/:sheetId', // editor de la hoja
+  subjectFolder: '/materias/:subjectId', // la carpeta de la materia (ADR-017); acepta ?hoja=:sheetId
+  sheet: '/hojas/:sheetId', // links viejos: redirige a la carpeta en esa hoja
   profile: '/perfil',
 })
 
 /** @param {string} careerId */
 export const careerPath = (careerId) => `/carreras/${careerId}`
 
-/** @param {string} subjectId */
-export const subjectMapPath = (subjectId) => `/materias/${subjectId}`
-
-/** @param {string} sheetId */
-export const sheetPath = (sheetId) => `/hojas/${sheetId}`
+/**
+ * Carpeta de una materia, opcionalmente posicionada en una hoja (contrato con
+ * el Inicio: "Seguí donde dejaste" navega a esto).
+ * @param {string} subjectId
+ * @param {string} [sheetId]
+ */
+export const subjectFolderPath = (subjectId, sheetId) =>
+  sheetId ? `/materias/${subjectId}?hoja=${encodeURIComponent(sheetId)}` : `/materias/${subjectId}`
