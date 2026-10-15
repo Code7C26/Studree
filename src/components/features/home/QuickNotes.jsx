@@ -2,9 +2,10 @@ import { useRef, useState } from 'react'
 import { HomePanel } from './HomePanel'
 import { Button } from '../../ui/Button'
 import { HOME_LIMITS } from '../../../constants/homeLimits.js'
+import { Icon } from '../../ui/Icon'
 
 const TEXTAREA =
-  'w-full resize-y rounded-lg border bg-bg px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent'
+  'w-full resize-y rounded-lg border bg-bg/60 px-3 py-2 text-sm text-text transition-colors focus-visible:border-accent'
 
 /**
  * Una nota: click en el texto = editar en el lugar; se guarda al salir del campo.
@@ -12,8 +13,9 @@ const TEXTAREA =
  * @param {import('../../../types/models.js').QuickNote} props.note
  * @param {(id: string, body: string) => void} props.onUpdate
  * @param {(id: string) => void} props.onRemove
+ * @param {number} props.index - Para alternar la inclinación del post-it.
  */
-function NoteCard({ note, onUpdate, onRemove }) {
+function NoteCard({ note, onUpdate, onRemove, index }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.body)
   // Esc cancela: si el navegador dispara `blur` al sacar el textarea del DOM,
@@ -32,7 +34,11 @@ function NoteCard({ note, onUpdate, onRemove }) {
   }
 
   return (
-    <li className="flex gap-1 rounded-lg border border-border bg-bg p-2">
+    <li
+      className={`flex gap-1 rounded-sm bg-postit p-2 text-postit-ink shadow-[0_8px_18px_rgb(0_0_0/0.45)] motion-reduce:rotate-0 ${
+        index % 2 === 0 ? 'rotate-[1.5deg]' : '-rotate-[1.5deg]'
+      }`}
+    >
       {editing ? (
         <textarea
           value={draft}
@@ -49,7 +55,7 @@ function NoteCard({ note, onUpdate, onRemove }) {
           rows={3}
           autoFocus
           aria-label="Editar nota"
-          className={`${TEXTAREA} border-accent`}
+          className="w-full resize-y rounded-sm border border-postit-ink/30 bg-postit px-2 py-1 text-sm text-postit-ink"
         />
       ) : (
         <button
@@ -58,7 +64,7 @@ function NoteCard({ note, onUpdate, onRemove }) {
             setDraft(note.body)
             setEditing(true)
           }}
-          className="min-w-0 flex-1 whitespace-pre-wrap break-words px-1 py-1 text-left text-sm text-text"
+          className="min-w-0 flex-1 whitespace-pre-wrap break-words px-1 py-1 text-left text-sm text-postit-ink"
         >
           {note.body}
         </button>
@@ -67,9 +73,9 @@ function NoteCard({ note, onUpdate, onRemove }) {
         type="button"
         onClick={() => onRemove(note.id)}
         aria-label="Borrar nota"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-postit-ink/70 transition-colors hover:bg-black/5 hover:text-postit-ink"
       >
-        ✕
+        <Icon name="close" size={14} />
       </button>
     </li>
   )
@@ -148,9 +154,9 @@ export function QuickNotes({ notes, pendingRemoval, loading, error, onCreate, on
       ) : notes.length === 0 ? (
         <p className="mt-3 text-sm text-text-muted">Sin notas por ahora.</p>
       ) : (
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {notes.map((note) => (
-            <NoteCard key={note.id} note={note} onUpdate={onUpdate} onRemove={onRemove} />
+        <ul className="mt-4 grid gap-3">
+          {notes.map((note, index) => (
+            <NoteCard key={note.id} note={note} index={index} onUpdate={onUpdate} onRemove={onRemove} />
           ))}
         </ul>
       )}

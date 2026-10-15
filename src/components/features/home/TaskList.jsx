@@ -4,12 +4,13 @@ import { Button } from '../../ui/Button'
 import { isOverdue } from '../../../lib/home/summary.js'
 import { formatDayMonth } from '../../../lib/home/dates.js'
 import { HOME_LIMITS } from '../../../constants/homeLimits.js'
+import { Icon } from '../../ui/Icon'
 
 const ICON_BUTTON =
   'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-2 hover:text-text'
 
 /**
- * Una tarea: checkbox, texto editable en el lugar (doble click o ✎) y fecha.
+ * Una tarea: checkbox, texto editable en el lugar (doble click o el lápiz) y fecha.
  * @param {Object} props
  * @param {import('../../../types/models.js').Task} props.task
  * @param {string} props.todayKey
@@ -69,7 +70,7 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
           maxLength={HOME_LIMITS.taskText}
           autoFocus
           aria-label="Editar tarea"
-          className="min-w-0 flex-1 rounded-md border border-accent bg-bg px-2 py-1 text-sm text-text outline-none"
+          className="min-w-0 flex-1 rounded-md border border-accent bg-bg px-2 py-1 text-sm text-text"
         />
       ) : (
         <span
@@ -86,12 +87,12 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
       )}
       {!done && !editing && (
         <button type="button" onClick={startEditing} className={ICON_BUTTON} aria-label={`Editar «${task.text}»`}>
-          ✎
+          <Icon name="edit" size={14} />
         </button>
       )}
       {done && (
         <button type="button" onClick={() => onDelete(task.id)} className={ICON_BUTTON} aria-label={`Borrar «${task.text}»`}>
-          ✕
+          <Icon name="close" size={14} />
         </button>
       )}
     </li>
@@ -141,14 +142,14 @@ export function TaskList({ pending, done, todayKey, loading, error, onCreate, on
           placeholder="Nueva tarea…"
           maxLength={HOME_LIMITS.taskText}
           aria-label="Nueva tarea"
-          className="min-h-10 min-w-0 flex-1 basis-48 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
+          className="min-h-10 min-w-0 flex-1 basis-48 rounded-lg border border-border bg-bg/60 px-3 py-2 text-sm text-text transition-colors focus-visible:border-accent"
         />
         <input
           type="date"
           value={dueDate}
           onChange={(event) => setDueDate(event.target.value)}
           aria-label="Fecha límite (opcional)"
-          className="min-h-10 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
+          className="min-h-10 rounded-lg border border-border bg-bg/60 px-3 py-2 text-sm text-text transition-colors focus-visible:border-accent"
         />
         <Button type="submit" disabled={saving || !text.trim()}>
           Agregar

@@ -19,6 +19,7 @@ export default {
         bg: '#0d1117', // fondo principal
         surface: '#161b22', // tarjetas / paneles
         'surface-2': '#21262d', // paneles elevados
+        'surface-lit': '#14201a', // superficie bajo la lámpara (bloque protagonista, ADR-018)
         border: '#30363d', // bordes
         text: {
           DEFAULT: '#e6edf3', // texto principal

@@ -1,35 +1,36 @@
 import { describeWeekSummary } from '../../../lib/home/summary.js'
 
 /**
- * Línea de resumen: "Esta semana: 2 fechas · 3 tareas · 1 vencida".
+ * Bloque "Esta semana": tareas que vencen en los próximos 7 días en grande,
+ * y debajo fechas y vencidas (ADR-018).
  * @param {Object} props
  * @param {{dates: number, tasks: number, overdue: number}} props.summary
  * @param {boolean} props.loading
  * @param {boolean} props.failed - No cargaron las fechas o las tareas: no se
  *   afirma "semana tranquila" (sería falso).
+ * @param {string} [props.className]
  */
-export function WeekSummary({ summary, loading, failed }) {
+export function WeekSummary({ summary, loading, failed, className = '' }) {
   const { calm, parts } = describeWeekSummary(summary)
 
   return (
-    <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text" aria-live="polite">
+    <section className={`glass p-4 ${className}`} aria-label="Esta semana" aria-live="polite">
+      <h2 className="flex min-h-8 items-center text-sm font-medium text-text-muted">Esta semana</h2>
       {loading ? (
-        <span className="text-text-muted">Cargando la semana…</span>
+        <p className="mt-1 text-sm text-text-muted">Cargando…</p>
       ) : failed ? (
-        <span className="text-text-muted">No se pudo cargar el resumen de la semana.</span>
+        <p className="mt-1 text-sm text-text-muted">No se pudo cargar el resumen.</p>
       ) : calm ? (
-        'Semana tranquila: no tenés fechas ni tareas.'
+        <p className="mt-1 text-sm text-text">Semana tranquila: no tenés fechas ni tareas.</p>
       ) : (
         <>
-          <span className="text-text-muted">Esta semana: </span>
-          {parts.map((part, index) => (
-            <span key={part.text} className={part.danger ? 'font-medium text-red-300' : ''}>
-              {index > 0 && <span className="text-text-muted"> · </span>}
-              {part.text}
-            </span>
-          ))}
+          <p className="font-display text-4xl font-extrabold tabular-nums">{summary.tasks}</p>
+          <p className="text-sm text-text-muted">
+            {summary.tasks === 1 ? 'tarea' : 'tareas'}, {parts[0].text}
+            {summary.overdue > 0 && <span className="font-medium text-red-300">, {parts[2].text}</span>}
+          </p>
         </>
       )}
-    </p>
+    </section>
   )
 }

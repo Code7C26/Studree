@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom'
 import { HomePanel } from './HomePanel'
 import { ROUTES, subjectFolderPath } from '../../../constants/routes.js'
-import { formatDateTime, formatRelativeTime } from '../../../lib/home/dates.js'
+import { formatRelativeTime } from '../../../lib/home/dates.js'
+import { getSubjectTones } from '../../../constants/subjectTones.js'
+import { Icon } from '../../ui/Icon'
 
 /**
  * "Seguí donde dejaste": la última hoja editada (sin título: materia + fecha +
- * primer renglón). Ver docs/features/home.md.
+ * primer renglón). Bloque protagonista del Inicio, con la hoja asomando
+ * (ADR-018). Ver docs/features/home.md.
  * @param {Object} props
  * @param {import('../../../types/models.js').LastSheet|null} props.sheet
  * @param {boolean} props.loading
@@ -14,28 +17,25 @@ import { formatDateTime, formatRelativeTime } from '../../../lib/home/dates.js'
  */
 export function ContinueCard({ sheet, loading, error, className = '' }) {
   return (
-    <HomePanel title="Seguí donde dejaste" error={error} className={className}>
+    <HomePanel title="Seguí donde dejaste" error={error} variant="hero" className={className}>
       {loading && !sheet ? (
         <p className="text-sm text-text-muted">Cargando…</p>
       ) : sheet ? (
-        <Link
-          to={subjectFolderPath(sheet.subject_id, sheet.id)}
-          className="block rounded-lg border border-border bg-bg p-4 transition-colors hover:border-accent focus-visible:border-accent focus-visible:outline-none"
-        >
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
-              style={sheet.subject_color ? { backgroundColor: sheet.subject_color } : undefined}
+        <Link to={subjectFolderPath(sheet.subject_id, sheet.id)} className="group block min-h-[9.5rem] rounded-xl">
+          <p className="font-display text-2xl font-bold text-text">{sheet.subject_name}</p>
+          <p className="mt-0.5 text-sm text-text-muted">Escribiste {formatRelativeTime(sheet.updated_at)}</p>
+          <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent-soft">
+            Seguir escribiendo <Icon name="chevron-right" size={14} />
+          </span>
+          {sheet.preview && (
+            <div
               aria-hidden="true"
-            />
-            <span className="font-semibold text-text">{sheet.subject_name}</span>
-            <span className="text-text-muted">· {formatDateTime(sheet.updated_at)}</span>
-          </div>
-          {sheet.preview && <p className="mt-2 line-clamp-2 text-sm text-text">{sheet.preview}</p>}
-          <div className="mt-3 flex items-center justify-between text-xs text-text-muted">
-            <span>{formatRelativeTime(sheet.updated_at)}</span>
-            <span className="font-medium text-accent">Seguir →</span>
-          </div>
+              className="paper-sheet motion-peek pointer-events-none absolute -bottom-5 -right-1 hidden w-48 -rotate-[4deg] rounded-md border-l-[5px] px-3 py-2 text-xs leading-[1.4] transition-transform duration-200 group-hover:-translate-y-1 group-hover:-rotate-[2deg] sm:block"
+              style={{ borderLeftColor: getSubjectTones(sheet.subject_color).base }}
+            >
+              <p className="line-clamp-4">{sheet.preview}</p>
+            </div>
+          )}
         </Link>
       ) : (
         <div>
