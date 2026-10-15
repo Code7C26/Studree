@@ -13,6 +13,7 @@
 import { getSupabase } from './supabase.client.js'
 import { createCrudService, translateError } from './crudService.js'
 import { generateId } from '../lib/id.js'
+import { listInChunks } from '../lib/chunk.js'
 import { storageSafeName } from '../lib/attachments/files.js'
 import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENT_LABEL } from '../constants/attachmentLimits.js'
 
@@ -20,6 +21,8 @@ const BUCKET = 'attachments'
 const SIGNED_URL_SECONDS = 60 * 60
 /** Se renueva un poco antes de que venza. */
 const SIGNED_URL_TTL_MS = 55 * 60 * 1000
+/** Ids por consulta en `listBySheets`: un `IN` con cientos de uuids pasa el largo máximo de la URL. */
+const SHEET_IDS_PER_QUERY = 100
 
 const crud = createCrudService({ table: 'attachments', parentColumn: 'sheet_id', orderBy: 'created_at', notifies: false })
 /** La cache `attachments:<hoja>` no la lee nadie (la carpeta usa `listBySheets`): altas y bajas no la tocan. */
@@ -84,11 +87,12 @@ export const attachmentsService = {
   },
 
   /**
+   * Adjuntos de varias hojas, de a tramos de 100 ids (ver `lib/chunk.js`).
    * @param {string[]} sheetIds
    * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Attachment[]>>}
    */
   listBySheets(sheetIds) {
-    return crud.listByParents(sheetIds)
+    return listInChunks(sheetIds, SHEET_IDS_PER_QUERY, (ids) => crud.listByParents(ids))
   },
 
   /**

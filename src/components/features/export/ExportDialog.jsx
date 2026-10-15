@@ -68,8 +68,13 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
       return
     }
 
+    const withAttachments = { withAttachments: true }
     const tree =
-      scope === 'subject' ? await loadSubjectTree(subjectId) : scope === 'career' ? await loadCareerTree(careerId) : await loadAllTree()
+      scope === 'subject'
+        ? await loadSubjectTree(subjectId, withAttachments)
+        : scope === 'career'
+          ? await loadCareerTree(careerId, withAttachments)
+          : await loadAllTree(withAttachments)
     if (!tree) return
 
     setWorking(true)

@@ -44,17 +44,20 @@ const toExportSheet = (sheet, attachmentsBySheet) => ({
 
 /**
  * Materias con sus hojas, con UNA consulta de hojas (`IN`) para todas.
+ * Los adjuntos (filas) solo se traen para el `.zip`: el `.md` único y "Copiar
+ * para IA" los describen desde el Markdown y no los necesitan.
  * @param {import('../types/models.js').Subject[]} subjectRows
+ * @param {boolean} withAttachments
  * @returns {Promise<Array<{name: string, sheets: Array}>>}
  */
-async function buildSubjectTrees(subjectRows) {
+async function buildSubjectTrees(subjectRows, withAttachments) {
   const sheets = unwrap(
     await sheetsService.listByParents(
       subjectRows.map((subject) => subject.id),
       EXPORT_SHEET_COLUMNS,
     ),
   )
-  const attachments = unwrap(await attachmentsService.listBySheets(sheets.map((sheet) => sheet.id)))
+  const attachments = withAttachments ? unwrap(await attachmentsService.listBySheets(sheets.map((sheet) => sheet.id))) : []
   const attachmentsBySheet = groupBy(attachments, 'sheet_id')
   const sheetsBySubject = groupBy(sheets, 'subject_id')
   return subjectRows.map((subject) => ({
@@ -63,34 +66,38 @@ async function buildSubjectTrees(subjectRows) {
   }))
 }
 
-/** @param {string} subjectId */
-async function fetchSubjectTree(subjectId) {
+/** @param {string} subjectId @param {boolean} withAttachments */
+async function fetchSubjectTree(subjectId, withAttachments) {
   const { data: subject, error } = await subjectsService.get(subjectId)
   if (error) throw new Error(error)
   if (!subject) throw new Error('No se encontró la materia.')
 
   const { data: career } = await careersService.get(subject.career_id)
-  const [tree] = await buildSubjectTrees([subject])
+  const [tree] = await buildSubjectTrees([subject], withAttachments)
   return { ...tree, careerName: career?.name ?? '' }
 }
 
-/** @param {string} careerId */
-async function fetchCareerTree(careerId) {
+/** @param {string} careerId @param {boolean} withAttachments */
+async function fetchCareerTree(careerId, withAttachments) {
   const { data: career, error: careerError } = await careersService.get(careerId)
   if (careerError) throw new Error(careerError)
   if (!career) throw new Error('No se encontró la carrera.')
 
   const subjectRows = unwrap(await subjectsService.list(careerId))
-  return { name: career.name, subjects: await buildSubjectTrees(subjectRows) }
+  return { name: career.name, subjects: await buildSubjectTrees(subjectRows, withAttachments) }
 }
 
-/** Todas las carreras del usuario (RLS filtra), con 3 consultas en total. */
-async function fetchAllTree() {
+/**
+ * Todas las carreras del usuario (RLS filtra), con 3 consultas en total (más
+ * las de adjuntos, de a tramos, si van).
+ * @param {boolean} withAttachments
+ */
+async function fetchAllTree(withAttachments) {
   const [careers, subjects] = await Promise.all([
     careersService.list().then(unwrap),
     subjectsService.list().then(unwrap),
   ])
-  const subjectTrees = await buildSubjectTrees(subjects)
+  const subjectTrees = await buildSubjectTrees(subjects, withAttachments)
   const treesByCareer = groupBy(
     subjects.map((subject, index) => ({ career_id: subject.career_id, tree: subjectTrees[index] })),
     'career_id',
@@ -102,12 +109,14 @@ async function fetchAllTree() {
 }
 
 /**
+ * `options.withAttachments`: traer las filas de adjuntos de cada hoja (solo el `.zip`).
+ * @typedef {{withAttachments?: boolean}} ExportTreeOptions
  * @returns {{
  *   loading: boolean,
  *   error: string|null,
- *   loadSubjectTree: (subjectId: string) => Promise<{name: string, careerName: string, sheets: Array}|null>,
- *   loadCareerTree: (careerId: string) => Promise<{name: string, subjects: Array}|null>,
- *   loadAllTree: () => Promise<Array<{name: string, subjects: Array}>|null>,
+ *   loadSubjectTree: (subjectId: string, options?: ExportTreeOptions) => Promise<{name: string, careerName: string, sheets: Array}|null>,
+ *   loadCareerTree: (careerId: string, options?: ExportTreeOptions) => Promise<{name: string, subjects: Array}|null>,
+ *   loadAllTree: (options?: ExportTreeOptions) => Promise<Array<{name: string, subjects: Array}>|null>,
  *   loadAttachmentFiles: (tree: Object|Array) => Promise<{files: Map<string, Blob>, failed: number}>,
  * }}
  */
@@ -128,9 +137,15 @@ export function useExportTree() {
     }
   }, [])
 
-  const loadSubjectTree = useCallback((subjectId) => run(() => fetchSubjectTree(subjectId)), [run])
-  const loadCareerTree = useCallback((careerId) => run(() => fetchCareerTree(careerId)), [run])
-  const loadAllTree = useCallback(() => run(fetchAllTree), [run])
+  const loadSubjectTree = useCallback(
+    (subjectId, { withAttachments = false } = {}) => run(() => fetchSubjectTree(subjectId, withAttachments)),
+    [run],
+  )
+  const loadCareerTree = useCallback(
+    (careerId, { withAttachments = false } = {}) => run(() => fetchCareerTree(careerId, withAttachments)),
+    [run],
+  )
+  const loadAllTree = useCallback(({ withAttachments = false } = {}) => run(() => fetchAllTree(withAttachments)), [run])
 
   /**
    * Descarga los archivos de los adjuntos del árbol (solo para el `.zip`).
