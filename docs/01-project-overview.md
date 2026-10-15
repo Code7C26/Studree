@@ -107,14 +107,25 @@ Diagnóstico completo en `docs/superpowers/specs/2026-10-14-diagnostico-fases-0-
 
 > Migración `0003_three_levels_and_sheet_links.sql` aplicada el 2026-10-14.
 
+### Fase 12 — Inicio útil (2026-10-14, rama `fase-inicio`)
+
+En paralelo con la Fase 11 (La Carpeta, otra rama). Spec:
+`docs/superpowers/specs/2026-10-14-inicio-design.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| `/` es el **Inicio** dentro del workspace (con sesión); la bienvenida pública se eliminó | `features/home.md` | ✅ |
+| Seguí donde dejaste (última hoja editada → `/materias/:id?hoja=:id`), resumen de la semana, próxima fecha | `features/home.md` | ✅ |
+| Calendario mensual con fechas importantes y "Próximas"; tareas con fecha límite; notas rápidas | `features/home.md` | ✅ |
+| Tablas `important_dates`, `tasks`, `quick_notes` + RLS | `DB_SCHEMA.md` | ⏳ `0005_home.sql` escrita, **sin aplicar** |
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido |
 |------|-----------|
-| 11 | Inicio útil: seguí donde dejaste, recientes/fijadas, tareas, calendario de fechas, notas rápidas |
-| 12 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja |
-| 13 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) |
-| 14 | Compartir por link, PWA/offline, flashcards |
+| 13 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja |
+| 14 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) |
+| 15 | Compartir por link, PWA/offline, flashcards (y la fase de celular del Inicio) |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

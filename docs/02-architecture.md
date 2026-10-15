@@ -46,7 +46,7 @@ Studree/
 │   ├── App.jsx                    # Componente raíz + rutas
 │   ├── index.css                  # Tailwind + variables de tema globales
 │   ├── pages/                     # Páginas/vistas (una por ruta)
-│   │   ├── HomePage.jsx
+│   │   ├── HomePage.jsx           # Inicio (`/`): seguí donde dejaste, calendario, tareas, notas
 │   │   ├── LoginPage.jsx          # Acceso (email + contraseña)
 │   │   ├── CareersPage.jsx        # Workspace: panel de inicio con las carreras
 │   │   ├── CareerMapPage.jsx      # Canvas de materias + correlativas
@@ -67,25 +67,29 @@ Studree/
 │   │       ├── subjectMap/        # SubjectMap, SheetNode, SheetList (canvas de hojas)
 │   │       ├── sheets/            # SheetListItem
 │   │       ├── sheetEditor/       # SheetEditor, EditorToolbar, SheetLinksPanel
-│   │       └── export/            # ExportDialog
+│   │       ├── export/            # ExportDialog
+│   │       └── home/              # Inicio: HomePanel, ContinueCard, NextDateCard, WeekSummary,
+│   │                              # CalendarPanel, DateFormModal, TaskList, QuickNotes
 │   ├── hooks/                     # useAuth, useCareers, useCareerMap, useSubjectMap,
 │   │                              # useSheet, useSheetLinks, useExplorerTree,
-│   │                              # useExportTree, useHotkeys, useFlowCanvas
+│   │                              # useExportTree, useHotkeys, useFlowCanvas, useHome
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
 │   │                              # dataEvents, careers, subjects, sheets,
-│   │                              # sheetLinks, prerequisites
+│   │                              # sheetLinks, prerequisites, home,
+│   │                              # importantDates, tasks, quickNotes
 │   ├── lib/
 │   │   ├── id.js
 │   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera + hojas), subjectStatus.js,
 │   │   │                          # canvasPositions.js
 │   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js
-│   │   └── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
+│   │   ├── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
+│   │   └── home/                  # dates.js, calendar.js, preview.js, summary.js (Inicio, puras)
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js,
-│   │                              # subjectStatus.js, prerequisiteKinds.js
+│   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
 ├── supabase/
-│   └── migrations/                # SQL versionado del esquema + RLS (0001, 0002, 0003)
+│   └── migrations/                # SQL versionado del esquema + RLS (0001, 0002, 0003, …, 0005)
 ├── index.html                     # HTML raíz de la SPA
 ├── vite.config.js                 # Configuración de Vite
 ├── tailwind.config.js             # Design system (colores, fuentes, spacing)
@@ -453,7 +457,7 @@ la whitelist de la función (migración).
 
 | Ruta | Página | Descripción |
 |------|--------|-------------|
-| `/` | `HomePage` | Inicio / bienvenida |
+| `/` | `HomePage` | **Inicio** (con sesión, dentro del workspace): seguí donde dejaste, resumen, próxima fecha, calendario, tareas y notas — ver `docs/features/home.md` |
 | `/entrar` | `LoginPage` | Acceso (email + contraseña). Pública |
 | `/carreras` | `CareersPage` | **Workspace**: panel de inicio con las carreras (estilo VSCode) |
 | `/carreras/:careerId` | `CareerMapPage` | Canvas de materias (+ correlativas si la carrera las usa) — lazy |
@@ -464,7 +468,7 @@ la whitelist de la función (migración).
 > Las páginas con canvas, el editor y el perfil se cargan con `React.lazy` (chunks
 > aparte) para no meter React Flow, dagre y TipTap en el bundle inicial.
 
-> Las rutas y sus helpers (`careerPath`, `subjectMapPath`, `sheetPath`) están en
+> Las rutas y sus helpers (`careerPath`, `subjectMapPath`, `sheetPath`, `subjectSheetPath`) están en
 > `src/constants/routes.js`.
 
 **Rutas retiradas** (jerarquía anterior, ver ADR-010): `/carpetas` y `/carpetas/:folderId`
@@ -476,11 +480,12 @@ Todo lo que toca datos del usuario cuelga de `<RequireAuth>`
 (`src/components/layout/RequireAuth.jsx`). **No es cosmético**: las políticas RLS son
 `for all to authenticated`, así que sin sesión `auth.uid()` es `NULL`, las consultas
 devuelven vacío y los `INSERT` fallan. Sin el guard, la app se vería rota en vez de pedir
-login. `/` y `/entrar` son las únicas rutas públicas.
+login. `/entrar` es la única ruta pública (desde el Inicio, `/` exige sesión; la
+bienvenida pública se eliminó).
 
 ### Shell de navegación
 
-A partir de `/carreras`, todas las vistas se renderizan dentro de `WorkspaceLayout`, que
+Desde el Inicio (`/`) y a partir de `/carreras`, todas las vistas se renderizan dentro de `WorkspaceLayout`, que
 aporta de forma persistente:
 
 - **Explorador** lateral (árbol colapsable con los 3 niveles), siempre visible en desktop.
