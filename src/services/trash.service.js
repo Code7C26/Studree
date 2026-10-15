@@ -9,10 +9,13 @@
  * se borraran las filas primero y fallara Storage, quedarían archivos que ya
  * nadie puede encontrar ni borrar. Al revés, a lo sumo quedan filas que
  * apuntan a archivos borrados un rato, y se reintenta la próxima vez.
+ *
+ * Y SOLO si la fila sigue en la papelera: una lista vieja (ej. una hoja
+ * restaurada revive su materia) nunca puede borrar algo vivo.
  */
 
 import { getSupabase } from './supabase.client.js'
-import { translateError } from './crudService.js'
+import { translateError, fetchAllPages } from './crudService.js'
 import { notifyDataChanged } from './dataEvents.js'
 
 /** kind de `list_trash` → tabla. */
@@ -77,21 +80,67 @@ export const trashService = {
   },
 
   /**
-   * Borra para siempre un elemento de la papelera, con sus adjuntos.
+   * Ids de las materias y hojas EN LA PAPELERA que cuelgan de una carrera o
+   * materia: lo que "Borrar para siempre" arrastra además del elemento. La
+   * página los cruza con lo listado para nombrarlos en la confirmación.
+   * @param {'career'|'subject'|'sheet'} kind
+   * @param {string} id
+   * @returns {Promise<import('../types/models.js').ServiceResult<Set<string>>>}
+   */
+  async trashedDescendantIds(kind, id) {
+    const fallback = 'No se pudo revisar qué incluye.'
+    if (kind === 'sheet') return { data: new Set(), error: null }
+    try {
+      const pages = (table, columns, filter) =>
+        fetchAllPages((from, to) =>
+          filter(getSupabase().from(table).select(columns).not('deleted_at', 'is', null)).order('id').range(from, to),
+        )
+      const queries =
+        kind === 'career'
+          ? [
+              pages('subjects', 'id', (query) => query.eq('career_id', id)),
+              pages('sheets', 'id, subjects!inner(career_id)', (query) => query.eq('subjects.career_id', id)),
+            ]
+          : [pages('sheets', 'id', (query) => query.eq('subject_id', id))]
+      const results = await Promise.all(queries)
+      const failed = results.find((result) => result.error)
+      if (failed) return { data: null, error: translateError(failed.error, fallback) }
+      return { data: new Set(results.flatMap((result) => result.data.map((row) => row.id))), error: null }
+    } catch (error) {
+      return { data: null, error: translateError(error, fallback) }
+    }
+  },
+
+  /**
+   * Borra para siempre un elemento de la papelera, con sus adjuntos. Si ya no
+   * está en la papelera (se restauró, o se borró junto con su padre) no hace
+   * nada y devuelve `data: false`.
    * @param {'career'|'subject'|'sheet'} kind
    * @param {string} id
    * @returns {Promise<import('../types/models.js').ServiceResult<boolean>>}
    */
   async purgeForever(kind, id) {
     const fallback = 'No se pudo borrar para siempre.'
+    const table = TABLE_BY_KIND[kind]
     try {
+      // Primero confirmar que sigue en la papelera: recién ahí se tocan archivos.
+      const { data: row, error: rowError } = await getSupabase()
+        .from(table)
+        .select('id')
+        .eq('id', id)
+        .not('deleted_at', 'is', null)
+        .maybeSingle()
+      if (rowError) return { data: null, error: translateError(rowError, fallback) }
+      if (!row) return { data: false, error: null }
+
       const { data: paths, error: pathsError } = await getSupabase().rpc('attachment_paths_for', { p_kind: kind, p_id: id })
       if (pathsError) return { data: null, error: translateError(pathsError, fallback) }
 
       const filesError = await removeFiles(paths ?? [])
       if (filesError) return { data: null, error: translateError(filesError, fallback) }
 
-      const { error } = await getSupabase().from(TABLE_BY_KIND[kind]).delete().eq('id', id)
+      // El filtro `deleted_at` también en el DELETE: si se restauró entre medio, no se borra.
+      const { error } = await getSupabase().from(table).delete().eq('id', id).not('deleted_at', 'is', null)
       if (error) return { data: null, error: translateError(error, fallback) }
       return { data: true, error: null }
     } catch (error) {
@@ -111,9 +160,9 @@ export const trashService = {
       if (error) return { data: 0, error: translateError(error, 'No se pudo vaciar lo vencido.') }
       let purged = 0
       for (const item of data ?? []) {
-        const { error: purgeError } = await this.purgeForever(item.kind, item.id)
+        const { data: deleted, error: purgeError } = await this.purgeForever(item.kind, item.id)
         if (purgeError) return { data: purged, error: purgeError }
-        purged += 1
+        if (deleted) purged += 1
       }
       return { data: purged, error: null }
     } catch (error) {

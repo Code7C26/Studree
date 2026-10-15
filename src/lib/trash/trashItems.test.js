@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { daysLeft, describeContents, trashItemTitle, TRASH_DAYS } from './trashItems.js'
+import { daysLeft, describeContents, trashItemTitle, TRASH_DAYS, nestedTrashItems, purgeMessage } from './trashItems.js'
 
 const now = new Date('2026-10-20T12:00:00Z')
 
@@ -31,4 +31,28 @@ test('trashItemTitle: nombre para carreras y materias; fecha y primer renglón p
   const bare = trashItemTitle({ kind: 'sheet', label: '', sheet_created_at: '2026-10-14T21:30:00Z' })
   assert.match(bare, /^Hoja del .+\d{2}:\d{2}$/)
   assert.doesNotMatch(bare, /: /)
+})
+
+test('nestedTrashItems: los otros elementos listados que cuelgan del que se borra', () => {
+  const career = { kind: 'career', id: 'c1', label: 'Bio' }
+  const subject = { kind: 'subject', id: 's1', label: 'Genética' }
+  const sheet = { kind: 'sheet', id: 'h1', label: '# Mitosis', sheet_created_at: '2026-10-14T21:30:00Z' }
+  const other = { kind: 'sheet', id: 'h9', label: 'Otra', sheet_created_at: '2026-10-14T21:30:00Z' }
+  const items = [career, subject, sheet, other]
+  assert.deepEqual(nestedTrashItems(items, career, new Set(['s1', 'h1', 'h2'])), [subject, sheet])
+  // Una hoja no tiene descendientes; el propio elemento nunca se lista.
+  assert.deepEqual(nestedTrashItems(items, sheet, new Set(['h1'])), [])
+})
+
+test('purgeMessage nombra lo que también se borra', () => {
+  const career = { kind: 'career', id: 'c1', label: 'Bio' }
+  const subject = { kind: 'subject', id: 's1', label: 'Genética' }
+  assert.equal(
+    purgeMessage(career, []),
+    'Se borra para siempre «Bio», con todo lo que incluye. No se puede deshacer.',
+  )
+  assert.equal(
+    purgeMessage(career, [subject, { kind: 'subject', id: 's2', label: 'Física' }]),
+    'Se borra para siempre «Bio», con todo lo que incluye. También se borran para siempre: «Genética» y «Física». No se puede deshacer.',
+  )
 })

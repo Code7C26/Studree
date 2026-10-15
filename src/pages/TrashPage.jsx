@@ -4,21 +4,32 @@ import { TrashItemRow } from '../components/features/trash/TrashItemRow'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Icon } from '../components/ui/Icon'
-import { TRASH_DAYS, trashItemTitle } from '../lib/trash/trashItems.js'
+import { TRASH_DAYS, purgeMessage } from '../lib/trash/trashItems.js'
 
 /**
  * `/papelera`: lo borrado, para restaurar o borrar para siempre.
  * Ver docs/features/trash.md.
  */
 export function TrashPage() {
-  const { items, loading, error, restore, purge, emptyTrash } = useTrash()
-  const [confirm, setConfirm] = useState(null) // { type: 'one', item } | { type: 'all' }
+  const { items, loading, error, restore, purge, nestedItems, emptyTrash } = useTrash()
+  const [confirm, setConfirm] = useState(null) // { type: 'one', item, nested } | { type: 'all' }
   const [busy, setBusy] = useState(false)
 
   async function run(action) {
     setBusy(true)
-    await action()
-    setBusy(false)
+    try {
+      await action()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Antes de confirmar, averigua qué otros elementos listados se borran junto con este. */
+  function askPurge(item) {
+    return run(async () => {
+      const nested = await nestedItems(item)
+      setConfirm({ type: 'one', item, nested })
+    })
   }
 
   async function handleConfirm() {
@@ -73,7 +84,7 @@ export function TrashPage() {
               item={item}
               busy={busy}
               onRestore={() => run(() => restore(item))}
-              onPurge={() => setConfirm({ type: 'one', item })}
+              onPurge={() => askPurge(item)}
             />
           ))}
         </ul>
@@ -86,7 +97,7 @@ export function TrashPage() {
           confirm?.type === 'all'
             ? 'Se borra para siempre todo lo que está en la papelera, con sus adjuntos. No se puede deshacer.'
             : confirm
-              ? `Se borra para siempre «${trashItemTitle(confirm.item)}», con todo lo que incluye. No se puede deshacer.`
+              ? purgeMessage(confirm.item, confirm.nested ?? [])
               : ''
         }
         confirmLabel="Borrar para siempre"

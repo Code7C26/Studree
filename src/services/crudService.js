@@ -58,7 +58,7 @@ const PAGE_SIZE = 1000
  * @param {(from: number, to: number) => PromiseLike<{data: Object[]|null, error: Object|null}>} runPage
  * @returns {Promise<{data: Object[], error: Object|null}>}
  */
-async function fetchAllPages(runPage) {
+export async function fetchAllPages(runPage) {
   const rows = []
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await runPage(from, from + PAGE_SIZE - 1)

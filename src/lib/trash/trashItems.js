@@ -54,3 +54,34 @@ export function trashItemTitle(item) {
   const preview = buildPreview(item.label ?? '', 80)
   return preview ? `Hoja del ${date}: ${preview}` : `Hoja del ${date}`
 }
+
+/**
+ * Elementos de la papelera que se listan aparte pero cuelgan del que se va a
+ * borrar para siempre (ej. una materia borrada el lunes y su carrera el
+ * martes: borrar la carrera arrastra la materia). Para nombrarlos en la
+ * confirmación.
+ * @param {import('../../types/models.js').TrashItem[]} items - Lo listado ahora.
+ * @param {import('../../types/models.js').TrashItem} target
+ * @param {Set<string>} descendantIds - Ids de materias y hojas debajo de `target`.
+ * @returns {import('../../types/models.js').TrashItem[]}
+ */
+export function nestedTrashItems(items, target, descendantIds) {
+  if (target.kind === 'sheet') return []
+  return items.filter((item) => item.id !== target.id && item.kind !== 'career' && descendantIds.has(item.id))
+}
+
+/** @param {string[]} parts */
+const joinList = (parts) => (parts.length <= 1 ? parts.join('') : `${parts.slice(0, -1).join(', ')} y ${parts.at(-1)}`)
+
+/**
+ * Texto de la confirmación de "Borrar para siempre".
+ * @param {import('../../types/models.js').TrashItem} item
+ * @param {import('../../types/models.js').TrashItem[]} nested - De `nestedTrashItems`.
+ * @returns {string}
+ */
+export function purgeMessage(item, nested) {
+  const also = nested.length > 0
+    ? ` También se borran para siempre: ${joinList(nested.map((candidate) => `«${trashItemTitle(candidate)}»`))}.`
+    : ''
+  return `Se borra para siempre «${trashItemTitle(item)}», con todo lo que incluye.${also} No se puede deshacer.`
+}
