@@ -9,6 +9,7 @@ import {
   stripAttachmentRefs,
   describeAttachmentRefs,
   isImageMime,
+  codeRanges,
 } from './refs.js'
 
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e'
@@ -67,4 +68,24 @@ test('isImageMime', () => {
   assert.equal(isImageMime('image/png'), true)
   assert.equal(isImageMime('application/pdf'), false)
   assert.equal(isImageMime(''), false)
+})
+
+test('findAttachmentRefs: imagen dentro de link sin escapar el [ externo', () => {
+  const refs = findAttachmentRefs('[![img](adjunto:1)](http://x)')
+  assert.equal(refs.length, 1)
+  assert.equal(refs[0].isImage, true)
+  assert.equal(refs[0].text, 'img')
+  assert.equal(refs[0].id, '1')
+  assert.equal(refs[0].index, 1)
+})
+
+test('findAttachmentRefs: [ sin cerrar antes de una imagen no la tapa', () => {
+  const refs = findAttachmentRefs('ver [nota ![x](adjunto:1)')
+  assert.equal(refs.length, 1)
+  assert.equal(refs[0].isImage, true)
+  assert.equal(refs[0].text, 'x')
+})
+
+test('codeRanges(null) devuelve lista vacía', () => {
+  assert.deepEqual(codeRanges(null), [])
 })

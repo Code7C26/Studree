@@ -11,8 +11,12 @@
 export const ATTACHMENT_PROTOCOL = 'adjunto'
 const PREFIX = `${ATTACHMENT_PROTOCOL}:`
 
-/** `![texto](adjunto:id "título opcional")` o sin `!`. El texto admite `\[` `\]`. */
-const REF_PATTERN = /(!?)\[((?:\\.|[^\]\\])*)\]\(adjunto:([^)\s]+)(?:\s+"[^"]*")?\)/g
+/**
+ * `![texto](adjunto:id "título opcional")` o sin `!`. El texto admite `\[` `\]`;
+ * un `[` sin escapar no entra en el texto (si no, `[![img](adjunto:1)](http://x)`
+ * se leería como un link de texto `![img`).
+ */
+const REF_PATTERN = /(!?)\[((?:\\.|[^[\]\\])*)\]\(adjunto:([^)\s]+)(?:\s+"[^"]*")?\)/g
 
 /** Bloques ``` / ~~~ y código en línea: ahí una referencia es texto, no un adjunto. */
 const CODE_PATTERN = /(^|\n)(```|~~~)[\s\S]*?(\n\2[^\n]*(?=\n|$)|$)|`[^`\n]*`/g
@@ -54,7 +58,7 @@ export function attachmentMarkdown({ id, name, isImage }) {
  */
 export function codeRanges(markdown) {
   const ranges = []
-  for (const match of markdown.matchAll(CODE_PATTERN)) ranges.push([match.index, match.index + match[0].length])
+  for (const match of (markdown ?? '').matchAll(CODE_PATTERN)) ranges.push([match.index, match.index + match[0].length])
   return ranges
 }
 
