@@ -16,7 +16,8 @@
   `localStorage` es solo cache optimista (ADR-007).
 - **Jerarquía:** Carrera → Materia → Hoja (ADR-014). La materia se ve como **una carpeta**
   de hojas fechadas sin título (ADR-017); los temas son los `#` y `[[Tema]]` salta a uno.
-- **Diseño:** modo oscuro principal, **acento verde**, minimalista.
+- **Diseño:** modo oscuro + **acento verde** con la "lámpara" (ADR-018): papel crema con el
+  color de la materia, Bricolage Grotesque + Inter, íconos SVG (nunca emojis).
 
 ## Protocolo Obligatorio (antes de cada cambio)
 
@@ -88,6 +89,7 @@
 | `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` · `useFlowCanvas` | `docs/features/career-map.md` |
 | `pages/CareersPage.jsx` · `features/careers/**` · `useCareers` | `docs/features/careers.md` |
 | `services/dataEvents.js` · `services/crudService.js` | `docs/API_DOCS.md` |
+| `constants/subjectTones.js` · `components/ui/Icon.jsx` · clases `.lamp`/`.glass`/`.paper-sheet` | `docs/02-architecture.md` (ADR-018, sistema de estilos) |
 | `pages/SubjectFolderPage.jsx` · `pages/SheetRedirectPage.jsx` · `features/folder/**` · `useFolder` · `useReadingMode` · `useSheetLocation` · `lib/editor/**` · `lib/format/**` · `lib/markdown/headings.js` | `docs/features/folder.md` |
 | `features/sheetEditor/**` · `lib/markdown/**` · `useSheetAutosave` · `sheets.service.js` | `docs/features/sheet-editor.md` |
 | `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
@@ -98,9 +100,9 @@
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
 
-## Reglas del rediseño (ADR-007 a ADR-017)
+## Reglas del rediseño (ADR-007 a ADR-018)
 
-> Vigentes desde 2026-08-24 (actualizadas 2026-10-14). Reemplazan a ADR-003, ADR-006,
+> Vigentes desde 2026-08-24 (actualizadas 2026-10-15). Reemplazan a ADR-003, ADR-006,
 > ADR-008, ADR-015 y, en la profundidad, ADR-010.
 
 - **Supabase es la fuente de verdad**; `localStorage` es SOLO cache optimista descartable.
@@ -113,8 +115,10 @@
 - La jerarquía es **fija de 3 niveles** (ADR-014): Carrera → Materia → Hoja (una tabla por
   nivel). `units`, `topics` y `sheet_links` **ya no existen** (migración 0004).
 - **La Carpeta (ADR-017):** la materia muestra todas sus hojas seguidas, en orden
-  cronológico (`created_at`), sin reordenar, sobre papel blanco. **Las hojas no tienen
+  cronológico (`created_at`), sin reordenar, sobre papel crema (ADR-018). **Las hojas no tienen
   título** (`title` siempre NULL): se muestran por fecha y hora.
+- **Colores de materia (ADR-018):** usar `getSubjectTones` / `subjectCssVars`
+  (`constants/subjectTones.js`); nunca el color crudo de la materia para texto.
 - **Temas = headings `#` del Markdown**; el índice se calcula en el cliente
   (`extractHeadings`). `[[Tema]]` salta a un tema de la misma materia: no hay tabla de links.
 - Una hoja nueva no se guarda hasta tener contenido. Antes de borrar una hoja, cancelar su

@@ -17,7 +17,7 @@
 
 Editor de documento tipo Word/Notion para el contenido de una hoja. Desde ADR-017 **no
 hay pantalla propia de hoja**: cada hoja es un editor dentro de la carpeta de su materia
-(`docs/features/folder.md`), sobre papel blanco. `/hojas/:id` redirige a la carpeta.
+(`docs/features/folder.md`), sobre papel crema (ADR-018). `/hojas/:id` redirige a la carpeta.
 
 ## Decisión clave: se edita en rico, se guarda en Markdown
 
@@ -59,7 +59,7 @@ representa (sin colores de texto, sin tablas complejas).
 
 ## `[[Temas]]` y búsqueda (ADR-017)
 
-- `[[Mitosis]]` se ve como link verde: el click lleva al tema (heading) "Mitosis" de la
+- `[[Mitosis]]` se ve como link en el color de la materia: el click lleva al tema (heading) "Mitosis" de la
   misma materia. No hay tabla de links: se resuelve contra el índice de temas.
 - `prosemirror-markdown` escapa los corchetes al serializar (`\[\[X\]\]`):
   `editorToMarkdown` los desescapa (`unescapeWikiLinks`), así el Markdown guardado y el
@@ -74,7 +74,7 @@ representa (sin colores de texto, sin tablas complejas).
 | Archivo | Responsabilidad |
 |---------|----------------|
 | `src/components/features/sheetEditor/SheetEditor.jsx` | Instancia de TipTap de una hoja; props `searchTerm`, `currentHit`, `onWikiLink`, `onHitsChange`, `onFocusEditor` |
-| `src/components/features/sheetEditor/EditorToolbar.jsx` | Negrita, itálica, títulos, listas, código, cita, link (actúa sobre la hoja con foco) |
+| `src/components/features/sheetEditor/EditorToolbar.jsx` | Negrita, itálica, "Título", "Subtítulo", H3, H4, listas, "Tarea", "Cita", código, enlace (actúa sobre la hoja con foco) |
 | `src/components/features/folder/FolderSheet.jsx` | Barra de fecha + editor (ver `folder.md`) |
 | `src/hooks/useSheetAutosave.js` | Borrador, debounce, flush, creación de hojas nuevas |
 | `src/lib/markdown/parse.js` / `serialize.js` | Markdown ↔ TipTap |
@@ -84,9 +84,12 @@ representa (sin colores de texto, sin tablas complejas).
 
 ## Estilos
 
-El editor va sobre **papel**: tinta `ink` sobre `paper` (tokens de `tailwind.config.js`).
-Código con fondo `paper-border/40`, citas con borde `accent`, `[[links]]` en
-`accent-hover`, coincidencias en `warn/30` y la actual en `warn` (`src/index.css`).
+El editor va sobre **papel crema** (ADR-018): tinta `ink` sobre `paper` (tokens de
+`tailwind.config.js`). El `#` (h1) va en `font-display` con `--subject-ink` (el tono del
+color de la materia que se lee sobre el papel); el `##` en `font-display` e `ink`. Links,
+`[[links]]` y el borde de las citas usan las variables `--subject*` (con el verde como
+respaldo). Código con fondo `paper-border/40`, coincidencias en `warn/30` y la actual en
+`warn` (`src/index.css`).
 
 ## Extensiones de TipTap habilitadas
 

@@ -6,6 +6,39 @@
 
 ---
 
+## [0.15.0] — 2026-10-15
+
+### Changed — Rediseño visual (ADR-018)
+
+> Request: "las hojas tienen que estar centradas dentro de la pantalla… esta todo de 1 solo
+> color… aplicaria las skills que tenemos disponibles… y aplicar el logo original" +
+> "en el inicio no se tiene que ver [el explorador] ni las ventanas abiertas de las materias".
+
+- **Carpeta:** hojas centradas en la pantalla y más anchas (hasta 52rem), en papel crema con
+  renglones y el margen del color de la materia; `#` en Bricolage Grotesque con ese color;
+  links y `[[links]]` en el color de la materia; índice con línea y tema activo resaltado;
+  herramientas en una cápsula ("Título", "Subtítulo", "Tarea", "Cita", "Leer", "Exportar").
+- **Inicio:** saludo con la fecha y la próxima fecha importante, grilla bento de paneles de
+  vidrio, "Seguí donde dejaste" con la hoja que asoma, "Esta semana" como bloque con número,
+  notas como post-it. Sin explorador ni tabs.
+- **Shell:** logo original (`public/logo.jpg`, header y favicon; se borró `logo.svg`),
+  buscador `Ctrl K` en el header, materias abiertas como pastillas con su color, explorador
+  cerrado por defecto (`Ctrl+B`, se recuerda en `studree:ui:explorer-open`).
+- **Estilo:** luz de lámpara (`.lamp`), vidrio (`.glass`), papel (`.paper-sheet`), tokens
+  `paper.line`, `postit`, `surface-lit`, `font-display`; Inter y Bricolage Grotesque desde
+  Google Fonts (Inter antes no se cargaba); `theme-color`.
+- **Accesibilidad:** íconos SVG propios (`components/ui/Icon.jsx`) en lugar de emojis; foco
+  visible global; la ✕ de tabs y de hojas aparece también con foco; el drawer cerrado queda
+  `inert`; la hoja que asoma respeta `prefers-reduced-motion`.
+- **Nuevo:** `src/constants/subjectTones.js` (tonos con contraste ≥ 4.5:1 por color de
+  materia), `src/lib/home/greeting.js`.
+- Archivos: `tailwind.config.js`, `src/index.css`, `index.html`, `public/logo.jpg`,
+  `layout/{Header,WorkspaceLayout,TabBar}.jsx`, `pages/{HomePage,SubjectFolderPage}.jsx`,
+  `features/folder/*`, `features/home/*`, `sheetEditor/EditorToolbar.jsx`,
+  `ui/{Icon,EmptyState,Drawer}.jsx`, `constants/storageKeys.js`, docs.
+
+---
+
 ## [0.14.0] — 2026-10-14
 
 ### Added — Inicio útil (FASE 12)

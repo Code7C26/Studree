@@ -13,8 +13,8 @@
 
 Cada materia se ve como **una carpeta escolar**. La carrera es la carpeta, las materias
 son los **separadores de colores** y adentro van **todas las hojas seguidas**, estilo
-Word, sobre **papel blanco**: se lee y se escribe en el mismo lugar y se va agregando más
-abajo.
+Word, sobre **papel crema con renglones** y el **margen del color de la materia**
+(ADR-018): se lee y se escribe en el mismo lugar y se va agregando más abajo.
 
 ## Cómo se usa
 
@@ -23,13 +23,13 @@ abajo.
 | Abrir una materia (`/materias/:id`) | Todas sus hojas en orden cronológico; te lleva a la **última** |
 | Abrir con `?hoja=:id` | Te lleva a esa hoja (lo usa el Inicio: "Seguí donde dejaste") |
 | Escribir en cualquier hoja | Se guarda sola (autosave por hoja) |
-| **＋ Nueva hoja** (al final) | Hoja con la fecha y hora del momento; se guarda recién cuando tiene contenido |
+| **Nueva hoja** (al final) | Hoja con la fecha y hora del momento; se guarda recién cuando tiene contenido |
 | ✕ en la barra de una hoja | La borra (con confirmación; una hoja nueva vacía se quita sin preguntar) |
 | `# Título` en una hoja | Crea un **tema**, que aparece en el índice |
 | Click en un tema del índice | Lleva al inicio de ese tema |
-| `[[Tema]]` en el texto | Link verde; el click lleva a ese tema de la materia |
+| `[[Tema]]` en el texto | Link en el color de la materia; el click lleva a ese tema |
 | Buscador / `Ctrl+F` | Resalta en todas las hojas, "n de m", ↑ ↓ / `Enter` / `Shift+Enter`, `Esc` limpia |
-| **📖 Modo lectura** | Oculta header, explorador, tabs, índice y toolbar; queda el papel. `Esc` sale |
+| **Leer** (modo lectura) | Oculta header, explorador, tabs, índice y toolbar; queda el papel. `Esc` sale |
 
 ## Decisiones (del usuario)
 
@@ -38,9 +38,38 @@ abajo.
 - **Orden cronológico, sin reordenar**: si algo quedó en otro lugar, se corta y se pega.
 - **No hay dibujo de hojas** (canvas): el índice de temas es la forma de orientarse. El
   mapa de la carrera (materias + correlativas) sigue.
-- **Papel blanco solo en las hojas**: el resto de la app sigue oscuro con verde.
+- **Papel solo en las hojas**: el resto de la app sigue oscuro con verde. Desde ADR-018 el
+  papel es crema con renglones y lleva el color de la materia.
 - Descartados: lista de hojas en el índice, tamaño de letra, plegar hojas, dos hojas lado
   a lado.
+
+## Diseño (ADR-018)
+
+```
+┌──── 15rem ────┬──────── hasta 52rem ─────────┬─ 15rem ─┐
+│ ● Genética    │ [buscar · B I Título … Leer   │ (vacía: │
+│ 2 hojas, 4 t. │  Exportar]  barra de vidrio    │ centra  │
+│ Temas         │ ┃ Jueves 15/10/2026 · 11:04    │ las     │
+│ │ Célula      │ ┃ # Mitosis (color materia)    │ hojas)  │
+│ ┃ Organelas   │ ┃ papel crema con renglones    │         │
+└───────────────┴──────────────────────────────┴─────────┘
+```
+
+- **Centrado en la pantalla:** grilla `md:[13rem_52rem]`, `lg:[15rem_52rem_15rem]` con
+  `justify-center`. Con el explorador cerrado (por defecto) las hojas quedan en el centro
+  exacto. Debajo de `md` solo se ven las hojas.
+- **Color de materia:** el contenedor pone `subjectCssVars(subject.color)` (variables
+  `--subject*`). Lo usan el margen de 6 px de cada hoja, el `#` (título) en `font-display`,
+  los links y `[[links]]`, las citas, el punto del nombre, el tema activo del índice y el
+  hover de "Nueva hoja".
+- **Índice:** sin tarjeta, con una línea vertical; los `#` en `text`, los demás en
+  `text-muted` con sangría; el activo con `--subject-light` y una barra del color.
+- **Barra de herramientas:** una cápsula sticky (`.glass` casi opaca) con el buscador, el
+  formato ("Título", "Subtítulo", H3, H4, listas, "Tarea", "Cita", código, enlace), "Leer" y
+  "Exportar".
+- **Fecha de cada hoja:** `formatSheetDateLong` ("Jueves 15/10/2026 · 11:04").
+- Íconos SVG (`components/ui/Icon.jsx`); el ✕ de borrar hoja aparece al pasar el mouse o
+  con foco.
 
 ## Cómo funciona por dentro
 
@@ -88,6 +117,7 @@ abajo.
 | `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export |
 | `src/pages/SheetRedirectPage.jsx` | Redirige `/hojas/:id` a la carpeta |
 | `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + ✕ + editor |
+| `src/constants/subjectTones.js` | Tonos del color de la materia (`getSubjectTones`, `subjectCssVars`) |
 | `src/components/features/folder/TopicIndex.jsx` | Índice de temas (presentacional) |
 | `src/components/features/folder/FolderSearchBar.jsx` | Buscador (presentacional) |
 | `src/components/features/sheetEditor/SheetEditor.jsx` | Editor TipTap de una hoja (+ props de búsqueda y links) |

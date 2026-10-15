@@ -1,6 +1,6 @@
 # Feature: Shell de Navegación (explorador + tabs + command palette)
 
-> **Estado:** ✅ Implementado (2026-09-09) · Carpeta: explorador Carrera → Materia, tabs por materia, modo lectura (2026-10-14, ADR-017)
+> **Estado:** ✅ Implementado (2026-09-09) · Carpeta: explorador Carrera → Materia, tabs por materia, modo lectura (2026-10-14, ADR-017) · Rediseño: Inicio sin shell, explorador cerrado por defecto, pastillas con color, buscador en el header (2026-10-15, ADR-018)
 > **Archivos clave:** `src/components/layout/WorkspaceLayout.jsx`,
 > `src/components/layout/TabBar.jsx`,
 > `src/components/features/explorer/`, `src/components/features/commandPalette/`,
@@ -33,8 +33,9 @@ nombre en dos teclas.
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/components/layout/WorkspaceLayout.jsx` | Grilla del shell: explorador + tabs + `<Outlet/>` |
-| `src/components/layout/TabBar.jsx` | Tabs de las hojas abiertas (activar / cerrar) |
+| `src/components/layout/WorkspaceLayout.jsx` | Grilla del shell: explorador + tabs + `<Outlet/>`; exporta `OPEN_PALETTE_EVENT` |
+| `src/components/layout/TabBar.jsx` | Pastillas de las materias abiertas (activar / cerrar) + botón del explorador |
+| `src/components/layout/Header.jsx` | Logo, buscador que abre el palette, navegación |
 | `src/components/features/explorer/Explorer.jsx` | Panel lateral: buscador + raíz del árbol |
 | `src/components/features/explorer/ExplorerTree.jsx` | Render Carrera → Materia (con cantidad de hojas) |
 | `src/components/features/explorer/ExplorerItem.jsx` | Fila: chevron, icono, nombre, acciones |
@@ -49,14 +50,22 @@ nombre en dos teclas.
 - Un icono por nivel, para distinguirlos de un vistazo.
 - El nodo correspondiente a la ruta actual queda **resaltado y auto-expandido**.
 - El estado de expandido persiste en `studree:ui:explorer` (preferencia de UI).
-- En mobile: colapsado por defecto, se abre como drawer sobre el contenido.
+- **Arranca cerrado** en todas las pantallas (ADR-018): se abre con `Ctrl+B` o con el botón
+  de la izquierda de la barra de tabs, y lo último que eligió el usuario se recuerda en
+  `studree:ui:explorer-open`. Así la Carpeta centra las hojas en la pantalla.
+- En mobile se abre como drawer sobre el contenido. Cerrado, el drawer queda `inert` (no
+  recibe foco con Tab).
+- **En el Inicio (`/`) no hay explorador ni tabs**, y `Ctrl+B` no hace nada ahí.
 - Cada fila tiene un botón ✏️ (visible al hover) para renombrar in-line, en
   carreras y materias: `Enter`/blur confirma, `Escape` cancela. La acción vive en
   `useExplorerTree.js` (`renameEntity`). Si falla, el error se muestra debajo de la fila.
 
 ## Command Palette (`Ctrl+K`)
 
-- Se abre con `Ctrl+K` (`Cmd+K` en Mac) y se cierra con `Esc`.
+- Se abre con `Ctrl+K` (`Cmd+K` en Mac) o con el buscador del header, y se cierra con `Esc`.
+  El header vive fuera de `WorkspaceLayout`: emite el evento de ventana
+  `studree:open-palette` (`OPEN_PALETTE_EVENT`) y el layout lo escucha. Fuera del
+  workspace (Perfil, Entrar) el buscador no se muestra.
 - Busca **materias por nombre** y **texto dentro de las hojas** (ver abajo).
 - Cada materia muestra su **ruta jerárquica** (`Biología › Genética`) para
   desambiguar hojas con el mismo título.
@@ -103,11 +112,14 @@ semántica/RAG — la vectorización queda fuera de alcance en esta etapa.
 
 - Cada **materia** abierta ocupa una tab, como tener varias carpetas abiertas (ADR-017);
   se persisten en `studree:ui:tabs`. Las tabs viejas de hojas se descartan solas.
-- Click en una tab la activa; la ✕ la cierra.
+- Se ven como **pastillas** con el punto del color de la materia; la activa con fondo
+  `soft` y borde de ese color (ADR-018). Cada tab guarda `{ id, title, color }`.
+- Click en una tab la activa; la ✕ la cierra. La ✕ se ve siempre en la activa y en las
+  demás al pasar el mouse **o con foco**.
 - Abrir una hoja ya abierta **activa la tab existente**, no duplica.
 - Cada vez que el árbol del explorador termina de cargar (incluida la recarga después de
   borrar o renombrar), se **cierran las tabs de materias que ya no existen** y se
-  **actualizan los nombres**.
+  **actualizan los nombres y colores**.
 - En **modo lectura** (carpeta) se ocultan el header, el explorador y las tabs.
 - Al cerrar sesión o entrar con otra cuenta se borran (`clearAllCache` borra todo
   `studree:`): las tabs guardan títulos de hojas y no pueden verse desde otra cuenta.
@@ -122,18 +134,17 @@ semántica/RAG — la vectorización queda fuera de alcance en esta etapa.
 
 ## Logo e identidad en el header
 
-El logo vive en **`public/logo.svg`** y se referencia como **`/logo.svg`** (header y
-favicon). Desde el 2026-10-14 es un **SVG propio**: un árbol de 3 nodos verde
-(`accent` / `accent-soft`) sobre el gris `surface`, legible a 16 px.
+El logo es el **original**: `public/logo.jpg` (256 px, versión optimizada de
+`assets/Logo.jpg`) y se referencia como **`/logo.jpg`** en el header y el favicon
+(ADR-018). Al lado va "Studree" en `font-display`. `index.html` declara
+`<meta name="theme-color" content="#0d1117">`.
 
-- El JPEG anterior (una carpeta beige sobre gris) parecía un *placeholder* en el header y
-  tenía una errata: decía **"STUIDREE"**. `assets/Logo.jpg` queda solo como histórico.
+- El SVG que lo reemplazó el 2026-10-14 se eliminó: el usuario prefiere el logo original
+  (dice **STUDREE**; la supuesta errata "STUIDREE" no existía).
 - Todo asset estático servido tal cual va en **`public/`**. Vite **no sirve** la carpeta
   `assets/` de la raíz del repo: eso es material fuente.
 - **Nunca** referenciar el logo con rutas relativas tipo `./assets/…`.
 - Siempre con `width`/`height` explícitos, para que no haya *layout shift* al cargar.
-- Si se cambian los colores del design system, actualizar los hex del SVG (no puede leer
-  los tokens de Tailwind).
 
 ## Refresco del explorador (2026-10-14)
 

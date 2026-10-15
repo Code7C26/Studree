@@ -35,27 +35,36 @@ estudio y ver lo que se viene. Reemplaza la bienvenida pública que antes había
 
 ## Bloques y comportamiento
 
-Disposición en desktop (2 columnas):
+Arriba, el **saludo** (ADR-018): "Buenos días / Buenas tardes / Buenas noches" según la
+hora (6–12:59 / 13–19:59 / resto), y debajo la fecha larga y, si hay, la próxima fecha
+importante ("Jueves 15 de octubre — Parcial de Química en 3 días."). Lo arma
+`lib/home/greeting.js` (`greetingFor`, `formatLongDay`, `describeNextDate`).
+
+Debajo, una **grilla bento** de paneles de vidrio (4 columnas en `lg`, 2 en `md`, 1 en el
+celular):
 
 ```
-┌ Resumen de la semana ─────────────────────────────────────────────┐
-├ Seguí donde dejaste ──────────────┬ Próxima fecha ─────────────────┤
-├ Calendario (mes + Próximas) ──────┼ Tareas ────────────────────────┤
-│                                   ├ Notas rápidas ─────────────────┤
-└───────────────────────────────────┴────────────────────────────────┘
+┌ Seguí donde dejaste (2×2) ────────┬ Próxima fecha ─┬ Esta semana ───┐
+│  Genética · Escribiste hace…      ├────────────────┴────────────────┤
+│                  [hoja que asoma] │ Tareas                          │
+├───────────────────────────────────┴───────────────┬─────────────────┤
+│ Calendario (mes + Próximas)                        │ Notas (post-it) │
+└────────────────────────────────────────────────────┴─────────────────┘
 ```
 
-En el celular hay **una sola columna**, en este orden: resumen, seguí, próxima fecha,
-tareas, calendario, notas. Ese es el orden del DOM, y en desktop cada bloque se ubica con
-`md:col-start`/`md:row-start`. Los botones y las celdas miden al menos 40 px, y nada
-depende del hover.
+En el celular el orden es el del DOM: seguí, próxima fecha, esta semana, tareas,
+calendario, notas. Los botones y las celdas miden al menos 40 px, y nada depende del hover.
+El Inicio ocupa la pantalla entera: **sin explorador ni tabs**.
 
 - **Seguí donde dejaste** (`ContinueCard`):
+  - bloque protagonista (`HomePanel variant="hero"`, fondo `surface-lit`): materia en
+    `font-display`, "Escribiste hace…", "Seguir escribiendo" y, desde `sm`, una **hoja
+    crema que asoma** inclinada con el margen del color de la materia y el comienzo del
+    texto (se levanta un poco al pasar el mouse; sin animación con movimiento reducido);
   - es un link a `/materias/:subjectId?hoja=:sheetId`;
   - sin hojas: "Todavía no escribiste nada" + **Ir a mis carreras**.
-- **Resumen** (`WeekSummary`):
-  - "Esta semana: N fechas · N tareas · N vencidas", con las vencidas en rojo y solo si
-    hay alguna;
+- **Esta semana** (`WeekSummary`): bloque con las tareas de la semana en número grande y
+  debajo "tareas, N fechas" y las vencidas en rojo (solo si hay alguna);
   - "esta semana" = de hoy a hoy+6;
   - si no hay nada: "Semana tranquila: no tenés fechas ni tareas."
 - **Próxima fecha** (`NextDateCard`): la fecha más cercana con `date >= hoy`, con
@@ -96,6 +105,15 @@ Tablas `important_dates`, `tasks` y `quick_notes` (migración `0005_home.sql`, R
   `content_md` de esa única hoja para armar el preview, y la cache guarda solo el
   preview.
 
+## Estilo (ADR-018)
+
+- Paneles `.glass`; el protagonista con borde verde y `surface-lit`.
+- Próxima fecha: número grande en `font-display` y `warn`; borde ámbar si faltan ≤ 7 días.
+- Calendario: hoy en verde lleno; días con fecha subrayados y con punto en `warn`.
+- Notas: cada una es un **post-it** (`postit`), inclinado ±1.5° (derecho con movimiento
+  reducido).
+- Íconos SVG (`components/ui/Icon.jsx`), títulos de bloque en minúscula normal.
+
 ## Archivos
 
 | Archivo | Rol |
@@ -104,9 +122,9 @@ Tablas `important_dates`, `tasks` y `quick_notes` (migración `0005_home.sql`, R
 | `hooks/useHome.js` | Estado por bloque, acciones optimistas y borrado con deshacer |
 | `services/home.service.js` | `getLastEditedSheet()` |
 | `services/importantDates.service.js` · `tasks.service.js` · `quickNotes.service.js` | CRUD (`crudService`, `notifies: false`) |
-| `lib/home/dates.js` · `calendar.js` · `preview.js` · `summary.js` | Funciones puras |
+| `lib/home/dates.js` · `calendar.js` · `preview.js` · `summary.js` · `greeting.js` | Funciones puras |
 | `constants/homeLimits.js` | Largos máximos (iguales a los `check` de la 0005) |
-| `components/features/home/HomePanel.jsx` | Contenedor común (título, acción, error) |
+| `components/features/home/HomePanel.jsx` | Contenedor común (título, acción, error; variantes `glass` y `hero`) |
 | `components/features/home/{ContinueCard,NextDateCard,WeekSummary,CalendarPanel,DateFormModal,TaskList,QuickNotes}.jsx` | Bloques |
 
 ## Contrato con La Carpeta

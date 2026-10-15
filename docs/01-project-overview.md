@@ -138,6 +138,17 @@ Hecha en paralelo con la Fase 11 y mergeada el 2026-10-15. Spec:
 
 > Migración `0005_home.sql` aplicada el 2026-10-15.
 
+### Rediseño visual (2026-10-15, ADR-018)
+
+Spec: `docs/superpowers/specs/2026-10-15-rediseno-visual-design.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Carpeta: hojas centradas en la pantalla, papel crema con renglones y el color de la materia (margen, títulos, links, índice) | `features/folder.md` | ✅ |
+| Inicio: saludo, grilla bento de vidrio, hoja que asoma, notas como post-it; sin explorador ni tabs | `features/home.md` | ✅ |
+| Shell: logo original, buscador `Ctrl K` en el header, tabs como pastillas con color, explorador cerrado por defecto | `features/navigation-shell.md` | ✅ |
+| Estilo: luz de lámpara, Bricolage Grotesque + Inter, íconos SVG, foco visible | `02-architecture.md` (ADR-018) | ✅ |
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |

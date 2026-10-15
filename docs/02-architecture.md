@@ -55,7 +55,8 @@ Studree/
 │   │   └── ProfilePage.jsx
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
-│   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker
+│   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker,
+│   │   │                          #       Icon (íconos SVG, ADR-018)
 │   │   ├── layout/                # AppLayout, Header, AuthProvider, RequireAuth,
 │   │   │                          # WorkspaceLayout, TabBar, ReadingModeProvider
 │   │   └── features/
@@ -84,8 +85,8 @@ Studree/
 │   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets
 │   │   ├── format/                # sheetDate.js (fecha y hora de las hojas)
 │   │   ├── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
-│   │   └── home/                  # dates.js, calendar.js, preview.js, summary.js (Inicio, puras)
-│   ├── constants/                 # routes.js, storageKeys.js, palette.js,
+│   │   └── home/                  # dates.js, calendar.js, preview.js, summary.js, greeting.js (Inicio, puras)
+│   ├── constants/                 # routes.js, storageKeys.js, palette.js, subjectTones.js (ADR-018),
 │   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
@@ -132,7 +133,8 @@ Jerarquía (fuente de verdad → uso):
    spacing, radios, sombras. **NO inventar valores fuera de este config.**
 2. **`src/index.css`** — directivas `@tailwind`, variables CSS globales y `@layer base`.
 3. **Clases utilitarias de Tailwind** en el JSX.
-4. **`@layer components`** en `index.css` — clases reutilizables (`.btn`, `.card`).
+4. **`@layer components`** en `index.css` — clases reutilizables (`.btn-accent`, `.card`,
+   y desde ADR-018 `.lamp`, `.glass`, `.paper-sheet`).
 
 ### Paleta base (design system)
 
@@ -142,6 +144,15 @@ Jerarquía (fuente de verdad → uso):
 | `bg` | Fondo principal (modo oscuro) | gris muy oscuro |
 | `surface` | Tarjetas / paneles | gris oscuro |
 | `text` | Texto principal | gris claro |
+| `surface-lit` | Bloque protagonista bajo la lámpara | `#14201a` |
+| `paper` / `paper.line` / `paper.border` | Papel crema de las hojas (ADR-018) | `#fbf8ef` / `#ebe5d5` / `#e3dcc9` |
+| `ink` / `ink.muted` | Tinta sobre el papel | `#2b2620` / `#7a6f5a` |
+| `postit` / `postit.ink` | Notas rápidas del Inicio | `#fff3a8` / `#3b3415` |
+| `warn` | Urgente / búsqueda / "cursando" | `#f59e0b` |
+| `font-display` | Títulos, saludo, números grandes | Bricolage Grotesque |
+
+> **Color de materia:** nunca el hex crudo para texto. Usar `getSubjectTones` /
+> `subjectCssVars` (`src/constants/subjectTones.js`, ADR-018).
 
 > Los valores exactos se definen en `tailwind.config.js`. El **modo oscuro es el diseño
 > principal**.
@@ -469,7 +480,7 @@ herramientas para leer y orientarse. El dibujo de hojas no le servía, y los tí
 eran fricción.
 **Decisión:**
 - `/materias/:id` muestra todas las hojas de la materia en un scroll, en **orden
-  cronológico**, sobre **papel blanco**. Cada hoja es un editor TipTap con su propio
+  cronológico**, sobre **papel crema (ADR-018)**. Cada hoja es un editor TipTap con su propio
   autosave. No hay reordenamiento.
 - Las hojas **no tienen título**: se identifican por fecha y hora de creación. Los
   **temas** son los headings `#` del contenido, y arman un índice lateral.
@@ -485,6 +496,41 @@ eran fricción.
 - Todas las hojas se montan como editores a la vez. Si una materia muy grande tarda (>~1 s),
   el plan B es el montaje perezoso (`docs/features/folder.md`).
 - El export titula cada hoja con su fecha y nombra los archivos por fecha.
+
+### ADR-018: Identidad visual — la lámpara, el papel crema y el color de materia
+**Fecha:** 2026-10-15
+**Spec:** `docs/superpowers/specs/2026-10-15-rediseno-visual-design.md`
+**Contexto:** las hojas se veían corridas a la derecha y chicas, todo era de un solo color
+(no se distinguían materias ni temas) y la interfaz se sentía genérica para una app que va a
+integrar IA. El diseño se hizo con las skills `frontend-design`, `ui-ux-pro-max` y
+`web-design-guidelines`.
+**Decisión:**
+- Concepto **"estudiar de noche con la lámpara"**: fondo oscuro (el escritorio), un único
+  cono de luz verde suave arriba a la izquierda (`.lamp`, estático) y paneles de vidrio
+  (`.glass`) con distinto peso, en una grilla bento en el Inicio.
+- Las hojas van en **papel crema con renglones** (`.paper-sheet`, tokens `paper` / `ink`) y
+  con un **margen del color de la materia**. Reemplaza el "papel blanco" de ADR-017.
+- **Color de materia:** tabla `src/constants/subjectTones.js` con cuatro tonos por color de
+  la paleta (`base`, `onPaper`, `onDark`, `soft`; los de texto con contraste ≥ 4.5:1). En la
+  Carpeta se aplican como variables CSS `--subject`, `--subject-ink`, `--subject-light` y
+  `--subject-soft`. Un color fuera de la paleta usa los tonos del verde.
+- **Tipografía:** Inter (texto) + Bricolage Grotesque (`font-display`: títulos, saludo,
+  números grandes y marca), desde Google Fonts con `display=swap`.
+- **Íconos SVG propios** (`components/ui/Icon.jsx`), nunca emojis. Foco visible global
+  (`:focus-visible`).
+- **Se evita:** etiquetas en mayúsculas, texto en degradé, tarjetas idénticas, animaciones
+  de entrada en cada bloque. La única animación nueva (la hoja que asoma en "Seguí donde
+  dejaste") respeta `prefers-reduced-motion`.
+- El **Inicio** no muestra explorador ni tabs. El **explorador arranca cerrado** (`Ctrl+B`
+  o el botón de la barra de tabs) y se recuerda; así la Carpeta centra las hojas en la
+  pantalla (grilla de 3 columnas: índice, hojas de hasta 52rem, columna espejo).
+- Logo original (`public/logo.jpg`) en el header y el favicon.
+
+**Consecuencias:**
+- Agregar un color a `palette.js` exige agregar sus tonos a `subjectTones.js` (si no, la
+  materia se ve verde).
+- El texto nunca usa el color crudo de la materia: siempre `onPaper` u `onDark`.
+- Tokens nuevos: `paper.line`, `postit`, `surface-lit`, `fontFamily.display`.
 
 
 ## Rutas
