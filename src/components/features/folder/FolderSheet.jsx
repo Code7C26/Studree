@@ -90,16 +90,16 @@ export function FolderSheet({
   async function handleFiles(fileList) {
     const editor = editorRef.current
     if (!editor || editor.isDestroyed) return
-    setUploadError(null)
+    const failures = []
     for (const file of Array.from(fileList)) {
       if (file.size > MAX_ATTACHMENT_BYTES) {
-        setUploadError(`«${file.name}» pesa más de ${MAX_ATTACHMENT_LABEL}.`)
+        failures.push(`«${file.name}» pesa más de ${MAX_ATTACHMENT_LABEL}.`)
         continue
       }
       const sheetId = await ensureCreated()
       if (!sheetId) {
-        setUploadError('No se pudo guardar la hoja para adjuntar el archivo.')
-        return
+        failures.push('No se pudo guardar la hoja para adjuntar el archivo.')
+        break
       }
       const id = generateId()
       const uploading = attachmentApi.upload(sheetId, file, { id }) // registra "subiendo" en este tick
@@ -107,9 +107,11 @@ export function FolderSheet({
       const { error: uploadFailure } = await uploading
       if (uploadFailure) {
         removeAttachment(editor, id)
-        setUploadError(uploadFailure)
+        failures.push(uploadFailure)
       }
     }
+    // Se muestran todos los avisos de la tanda; si salió todo bien, se limpia el anterior.
+    setUploadError(failures.length ? failures.join(' ') : null)
   }
 
   // El botón de adjuntar de la barra (página) le pasa los archivos a la hoja con foco.

@@ -363,8 +363,13 @@ function SubjectFolder({ subjectId }) {
         multiple
         hidden
         onChange={(event) => {
-          const key = [...editorsRef.current].find(([, editor]) => editor === activeEditor)?.[0]
-          if (key && event.target.files?.length) uploadersRef.current.get(key)?.(event.target.files)
+          // Hoja del editor con foco; si no hay (sin foco aún, o se borró), la última de la carpeta.
+          const focusedKey =
+            activeEditor && !activeEditor.isDestroyed
+              ? [...editorsRef.current].find(([, editor]) => editor === activeEditor)?.[0]
+              : undefined
+          const key = focusedKey ?? sheets[sheets.length - 1]?.key
+          if (key && event.target.files?.length) uploadersRef.current.get(key)?.(Array.from(event.target.files))
           event.target.value = ''
         }}
       />
@@ -416,7 +421,7 @@ function SubjectFolder({ subjectId }) {
                 focusSignal={focusSignal}
               />
             </div>
-            <EditorToolbar editor={activeEditor} onAttach={() => fileInputRef.current?.click()} />
+            <EditorToolbar editor={activeEditor} onAttach={() => fileInputRef.current?.click()} canAttach={sheets.length > 0} />
             <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
             <button
               type="button"

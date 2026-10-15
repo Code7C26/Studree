@@ -9,20 +9,23 @@ import { Icon } from '../../ui/Icon'
 
 /**
  * @param {Object} props
- * @param {boolean} props.active
+ * @param {boolean} [props.active] - Botón de alternancia: sin este valor es una acción (no lleva `aria-pressed`).
+ * @param {string} [props.ariaLabel] - Si falta, se usa `title`.
+ * @param {boolean} [props.disabled]
  * @param {() => void} props.onClick
  * @param {React.ReactNode} props.label
  * @param {string} props.title
  */
-function ToolbarButton({ active, onClick, label, title }) {
+function ToolbarButton({ active, onClick, label, title, ariaLabel, disabled }) {
   return (
     <button
       type="button"
       onClick={onClick}
       title={title}
-      aria-label={title}
+      aria-label={ariaLabel ?? title}
       aria-pressed={active}
-      className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+      disabled={disabled}
+      className={`rounded px-2 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
         active ? 'bg-accent/20 text-accent-soft' : 'text-text-muted hover:bg-surface-2 hover:text-text'
       }`}
     >
@@ -43,9 +46,21 @@ const HEADINGS = [
  * @param {Object} props
  * @param {import('@tiptap/react').Editor|null} props.editor
  * @param {() => void} [props.onAttach] - Abre el selector de archivos; sin ella no se muestra el botón.
+ * @param {boolean} [props.canAttach] - false si no hay hoja a la que adjuntar.
  */
-export function EditorToolbar({ editor, onAttach }) {
-  if (!editor) return null
+export function EditorToolbar({ editor, onAttach, canAttach = true }) {
+  // Adjuntar no depende del editor con foco: la página elige la hoja destino.
+  const attachButton = onAttach && (
+    <ToolbarButton
+      title="Adjuntar (también podés soltar o pegar archivos en la hoja)"
+      ariaLabel="Adjuntar un archivo a la hoja"
+      label={<Icon name="paperclip" size={14} />}
+      disabled={!canAttach}
+      onClick={onAttach}
+    />
+  )
+
+  if (!editor) return attachButton ? <div className="flex items-center">{attachButton}</div> : null
 
   function setLink() {
     const previous = editor.getAttributes('link').href
@@ -124,14 +139,7 @@ export function EditorToolbar({ editor, onAttach }) {
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       />
       <ToolbarButton title="Enlace" label={<Icon name="link" size={14} />} active={editor.isActive('link')} onClick={setLink} />
-      {onAttach && (
-        <ToolbarButton
-          title="Adjuntar (también podés soltar o pegar archivos en la hoja)"
-          label={<Icon name="paperclip" size={14} />}
-          active={false}
-          onClick={onAttach}
-        />
-      )}
+      {attachButton}
     </div>
   )
 }
