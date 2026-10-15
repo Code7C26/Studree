@@ -106,7 +106,13 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
 - **Índice:** `extractHeadings` sobre el Markdown de cada hoja (ignora bloques de código y
   `#hashtag`). Cada tema se ubica en el DOM como el n-ésimo heading de primer nivel del
   editor de su hoja (`:scope > h1..h4`). El tema activo sale de un listener de scroll sobre
-  `<main>`.
+  `<main>`: es el último heading que llegó a su **línea de lectura** (borde de arriba +
+  su `scroll-margin-top` real, leído con `getComputedStyle`, + 8 px), que es justo donde lo
+  deja un salto. Así el umbral no se desfasa si cambia el margen en `index.css`.
+- **Tema elegido:** al saltar a un tema (índice o `[[Tema]]`) se marca enseguida. Los
+  últimos temas no llegan a su línea porque se termina el scroll: mientras el scroll esté
+  al final y ese heading se vea, sigue marcado. Se olvida al scrollear a mano (rueda,
+  toque o teclado).
 - **Scroll de la búsqueda:** va a la coincidencia actual solo cuando navegás (↑ ↓ Enter) o
   cambiás el término, no mientras escribís con el buscador abierto.
 - **Búsqueda y `[[links]]`:** `HighlightExtension` (TipTap) pinta decoraciones calculadas

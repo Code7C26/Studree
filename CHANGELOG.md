@@ -30,6 +30,10 @@
 - **Accesibilidad:** íconos SVG propios (`components/ui/Icon.jsx`) en lugar de emojis; foco
   visible global; la ✕ de tabs y de hojas aparece también con foco; el drawer cerrado queda
   `inert`; la hoja que asoma respeta `prefers-reduced-motion`.
+- **Fix (índice de temas):** al elegir un tema el índice marcaba el anterior (el umbral del
+  tema activo, 140 px, quedaba por encima del `scroll-margin-top` de 144 px de los headings);
+  ahora el umbral sale del `scroll-margin-top` real. Los últimos temas, que no pueden subir
+  hasta arriba, quedan marcados al elegirlos.
 - **Nuevo:** `src/constants/subjectTones.js` (tonos con contraste ≥ 4.5:1 por color de
   materia), `src/lib/home/greeting.js`.
 - Archivos: `tailwind.config.js`, `src/index.css`, `index.html`, `public/logo.jpg`,

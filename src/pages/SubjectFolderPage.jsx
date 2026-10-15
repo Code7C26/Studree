@@ -18,8 +18,12 @@ import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
 import { formatSheetDate } from '../lib/format/sheetDate.js'
 import { isLocalSheet } from '../lib/editor/folderSheets.js'
 
-/** Distancia desde el borde superior del scroll a partir de la cual un tema cuenta como "el que estás leyendo". */
-const ACTIVE_TOPIC_OFFSET = 140
+/**
+ * Margen (px) para que un tema cuente como "el que estás leyendo". Se suma al
+ * `scroll-margin-top` real de cada heading (index.css): al saltar a un tema, el
+ * heading queda justo en esa línea, así que tiene que contar como activo.
+ */
+const ACTIVE_TOPIC_TOLERANCE = 8
 const NOTICE_MS = 3000
 
 /** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
@@ -112,9 +116,19 @@ function SubjectFolder({ subjectId }) {
     [sheets],
   )
 
+  /**
+   * Tema elegido en el índice (o con `[[Tema]]`). Los últimos temas no llegan a
+   * su línea de lectura porque se termina el scroll: mientras el scroll esté al
+   * final y ese heading se vea, sigue marcado. Se olvida al scrollear a mano.
+   */
+  const chosenTopicRef = useRef(null)
+
   const goToTopic = useCallback((topic) => {
     const element = topLevelHeadings(editorsRef.current.get(topic.sheetKey))[topic.index]
-    element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (!element) return
+    chosenTopicRef.current = topic.id
+    setActiveTopicId(topic.id)
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   const showNotice = useCallback((message) => {
@@ -132,28 +146,49 @@ function SubjectFolder({ subjectId }) {
     [topics, goToTopic, showNotice],
   )
 
-  // Tema activo: el último heading que pasó el borde superior del área de scroll.
+  // Tema activo: el último heading que llegó a su línea de lectura (borde superior del
+  // área de scroll + su scroll-margin-top, el mismo lugar donde lo deja un salto).
   useEffect(() => {
     const scroller = containerRef.current?.closest('main')
     if (!scroller) return undefined
     let frame = null
     const update = () => {
       frame = null
-      const top = scroller.getBoundingClientRect().top + ACTIVE_TOPIC_OFFSET
+      const top = scroller.getBoundingClientRect().top + ACTIVE_TOPIC_TOLERANCE
       let active = null
       for (const topic of topics) {
         const element = topLevelHeadings(editorsRef.current.get(topic.sheetKey))[topic.index]
-        if (element && element.getBoundingClientRect().top <= top) active = topic.id
+        if (!element) continue
+        const margin = parseFloat(window.getComputedStyle(element).scrollMarginTop) || 0
+        if (element.getBoundingClientRect().top - margin <= top) active = topic.id
+      }
+      const atEnd = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop < 2
+      const chosen = chosenTopicRef.current && topics.find((topic) => topic.id === chosenTopicRef.current)
+      if (atEnd && chosen) {
+        const element = topLevelHeadings(editorsRef.current.get(chosen.sheetKey))[chosen.index]
+        const box = element?.getBoundingClientRect()
+        const view = scroller.getBoundingClientRect()
+        if (box && box.top >= view.top && box.top < view.bottom) active = chosen.id
       }
       setActiveTopicId(active ?? topics[0]?.id ?? null)
+    }
+    // Scroll hecho por el usuario: se olvida el tema elegido (el salto suave no dispara esto).
+    const forgetChosen = () => {
+      chosenTopicRef.current = null
     }
     const onScroll = () => {
       if (frame == null) frame = window.requestAnimationFrame(update)
     }
     scroller.addEventListener('scroll', onScroll, { passive: true })
+    scroller.addEventListener('wheel', forgetChosen, { passive: true })
+    scroller.addEventListener('touchmove', forgetChosen, { passive: true })
+    scroller.addEventListener('keydown', forgetChosen)
     update()
     return () => {
       scroller.removeEventListener('scroll', onScroll)
+      scroller.removeEventListener('wheel', forgetChosen)
+      scroller.removeEventListener('touchmove', forgetChosen)
+      scroller.removeEventListener('keydown', forgetChosen)
       if (frame != null) window.cancelAnimationFrame(frame)
     }
   }, [topics])
