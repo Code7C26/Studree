@@ -33,7 +33,7 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
   const [format, setFormat] = useState('md')
   const [working, setWorking] = useState(false)
   const [notice, setNotice] = useState(null)
-  const { loading, error, loadSubjectTree, loadCareerTree, loadAllTree } = useExportTree()
+  const { loading, error, loadSubjectTree, loadCareerTree, loadAllTree, loadAttachmentFiles } = useExportTree()
 
   useEffect(() => {
     if (open) {
@@ -73,16 +73,21 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
     if (!tree) return
 
     setWorking(true)
+    const { files, failed } = await loadAttachmentFiles(tree)
     // Dinámico: quien nunca exporta a .zip no paga el peso de jszip en el bundle inicial.
     const { default: JSZip } = await import('jszip')
     const blob =
       scope === 'subject'
-        ? await subjectTreeToZip(JSZip, tree)
+        ? await subjectTreeToZip(JSZip, tree, files)
         : scope === 'career'
-          ? await careerTreeToZip(JSZip, tree)
-          : await allTreeToZip(JSZip, tree)
+          ? await careerTreeToZip(JSZip, tree, files)
+          : await allTreeToZip(JSZip, tree, files)
     setWorking(false)
     downloadBlob(buildExportFilename(scope === 'all' ? 'todo' : tree.name, 'zip'), blob)
+    if (failed > 0) {
+      setNotice(`${failed} adjunto${failed === 1 ? '' : 's'} no se pudo descargar y quedó como texto en el .md.`)
+      return
+    }
     onClose()
   }
 
@@ -136,7 +141,7 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="radio" name="export-format" value="zip" checked={format === 'zip'} onChange={() => setFormat('zip')} />
-            <code>.zip</code> con carpetas (para Obsidian)
+            <code>.zip</code> con carpetas (para Obsidian). Incluye los adjuntos de cada hoja.
           </label>
         </fieldset>
 
@@ -159,7 +164,7 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
             📋 Copiar para IA
           </Button>
           <Button onClick={handleDownload} disabled={busy}>
-            {busy ? 'Generando…' : `Descargar .${format}`}
+            {working ? 'Preparando adjuntos…' : busy ? 'Generando…' : `Descargar .${format}`}
           </Button>
         </div>
       </div>

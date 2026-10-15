@@ -13,6 +13,8 @@ import { useCallback, useState } from 'react'
 import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService } from '../services/sheets.service.js'
+import { attachmentsService } from '../services/attachments.service.js'
+import { collectTreeAttachments } from '../lib/export/toZip.js'
 
 const EXPORT_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'
 
@@ -32,11 +34,12 @@ function groupBy(rows, field) {
   return groups
 }
 
-/** @param {Object} sheet */
-const toExportSheet = (sheet) => ({
+/** @param {Object} sheet @param {Map<string, Array>} attachmentsBySheet */
+const toExportSheet = (sheet, attachmentsBySheet) => ({
   created_at: sheet.created_at,
   content_md: sheet.content_md,
   updated_at: sheet.updated_at,
+  attachments: attachmentsBySheet.get(sheet.id) ?? [],
 })
 
 /**
@@ -51,10 +54,12 @@ async function buildSubjectTrees(subjectRows) {
       EXPORT_SHEET_COLUMNS,
     ),
   )
+  const attachments = unwrap(await attachmentsService.listBySheets(sheets.map((sheet) => sheet.id)))
+  const attachmentsBySheet = groupBy(attachments, 'sheet_id')
   const sheetsBySubject = groupBy(sheets, 'subject_id')
   return subjectRows.map((subject) => ({
     name: subject.name,
-    sheets: (sheetsBySubject.get(subject.id) ?? []).map(toExportSheet),
+    sheets: (sheetsBySubject.get(subject.id) ?? []).map((sheet) => toExportSheet(sheet, attachmentsBySheet)),
   }))
 }
 
@@ -103,6 +108,7 @@ async function fetchAllTree() {
  *   loadSubjectTree: (subjectId: string) => Promise<{name: string, careerName: string, sheets: Array}|null>,
  *   loadCareerTree: (careerId: string) => Promise<{name: string, subjects: Array}|null>,
  *   loadAllTree: () => Promise<Array<{name: string, subjects: Array}>|null>,
+ *   loadAttachmentFiles: (tree: Object|Array) => Promise<{files: Map<string, Blob>, failed: number}>,
  * }}
  */
 export function useExportTree() {
@@ -126,5 +132,20 @@ export function useExportTree() {
   const loadCareerTree = useCallback((careerId) => run(() => fetchCareerTree(careerId)), [run])
   const loadAllTree = useCallback(() => run(fetchAllTree), [run])
 
-  return { loading, error, loadSubjectTree, loadCareerTree, loadAllTree }
+  /**
+   * Descarga los archivos de los adjuntos del árbol (solo para el `.zip`).
+   * Los que fallan quedan como texto en el `.md` (`[imagen: …]`).
+   */
+  const loadAttachmentFiles = useCallback(async (tree) => {
+    const files = new Map()
+    let failed = 0
+    for (const attachment of collectTreeAttachments(tree)) {
+      const blob = await attachmentsService.download(attachment.storage_path)
+      if (blob) files.set(attachment.id, blob)
+      else failed += 1
+    }
+    return { files, failed }
+  }, [])
+
+  return { loading, error, loadSubjectTree, loadCareerTree, loadAllTree, loadAttachmentFiles }
 }

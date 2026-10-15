@@ -64,9 +64,23 @@ export: el dato guardado no cambia.
 ```
 Licenciatura en Biología/
 └── Genética/
+    ├── adjuntos/
+    │   ├── foto pizarrón.jpg
+    │   └── tp.pdf
     ├── 2026-10-13 10-15.md
     └── 2026-10-14 18-30.md
 ```
+
+**Adjuntos (Fase 13).** El `.zip` lleva los archivos adjuntos de las hojas en
+`adjuntos/` dentro de cada materia, y las referencias `adjunto:<id>` del Markdown pasan a
+rutas relativas codificadas: `![foto](adjuntos/foto%20pizarr%C3%B3n.jpg)` (espacios, tildes
+y paréntesis codificados; Obsidian y el import los decodifican). Dos adjuntos con el mismo
+nombre en la materia no se pisan: `a.png`, `a (2).png`. Si un archivo no se pudo descargar,
+la referencia queda como texto (`[imagen: …]` / `[archivo: …]`) y el diálogo avisa cuántos
+fallaron. Los adjuntos y hojas en la papelera no se exportan.
+
+El `.md` único y "Copiar para IA" no llevan archivos: describen los adjuntos como
+`[imagen: nombre]` / `[archivo: nombre]`, sin ningún `adjunto:`.
 
 El archivo se llama como la fecha y hora de creación: el orden alfabético es el
 cronológico. Dos hojas del mismo minuto → `2026-10-14 18-30 (2).md`.

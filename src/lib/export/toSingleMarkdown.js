@@ -12,11 +12,15 @@
  * la carrera y una IA leía mal la estructura). Solo afecta al export: el dato
  * guardado no cambia.
  *
+ * El `.md` único no lleva archivos: los adjuntos quedan descritos como texto
+ * (`[imagen: …]` / `[archivo: …]`). Los archivos van solo en el `.zip`.
+ *
  * Funciones puras: no hablan con services ni con el DOM (eso vive en
  * useExportTree.js y download.js).
  */
 
 import { formatSheetDateLong } from '../format/sheetDate.js'
+import { describeAttachmentRefs } from '../attachments/refs.js'
 
 const MAX_HEADING = 6
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/
@@ -58,7 +62,7 @@ const heading = (level, text) => `${'#'.repeat(Math.min(level, MAX_HEADING))} ${
  * @param {number} level - Nivel del heading de la hoja.
  */
 function sheetToMarkdown(sheet, level) {
-  const content = shiftHeadings(sheet.content_md?.trim() ?? '', level)
+  const content = shiftHeadings(describeAttachmentRefs(sheet.content_md?.trim() ?? ''), level)
   return [heading(level, formatSheetDateLong(sheet.created_at)), content].filter(Boolean).join('\n\n')
 }
 
