@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Studree">
-  <!-- Logo de Studree: un árbol de 3 nodos (carrera → materias) sobre el gris de superficie.
-       Colores del design system: surface #161b22, accent #22c55e, accent-soft #4ade80. -->
-  <rect width="64" height="64" rx="14" fill="#161b22"/>
-  <path d="M32 22v8M32 30 18 42M32 30l14 12" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="32" cy="17" r="7.5" fill="#22c55e"/>
-  <circle cx="17" cy="45.5" r="6.5" fill="#4ade80"/>
-  <circle cx="47" cy="45.5" r="6.5" fill="#4ade80"/>
-</svg>

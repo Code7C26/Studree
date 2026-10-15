@@ -24,21 +24,29 @@ export default {
           DEFAULT: '#e6edf3', // texto principal
           muted: '#8b949e', // texto secundario
         },
-        // Papel de la carpeta (ADR-017): la zona donde se lee y escribe va en
-        // blanco sobre el escritorio oscuro, para que el contenido se destaque.
+        // Papel de la carpeta (ADR-017, ADR-018): papel crema con renglones,
+        // como una hoja de carpeta real sobre el escritorio oscuro.
         paper: {
-          DEFAULT: '#ffffff', // hoja
-          border: '#d0d7de', // bordes / separadores sobre el papel
+          DEFAULT: '#fbf8ef', // hoja
+          line: '#ebe5d5', // renglones
+          border: '#e3dcc9', // bordes / separadores sobre el papel
         },
         ink: {
-          DEFAULT: '#1f2328', // texto sobre el papel
-          muted: '#59636e', // texto secundario sobre el papel
+          DEFAULT: '#2b2620', // texto sobre el papel (tinta cálida)
+          muted: '#7a6f5a', // fecha y texto secundario sobre el papel
+        },
+        // Notas rápidas del Inicio (post-it).
+        postit: {
+          DEFAULT: '#fff3a8',
+          ink: '#3b3415',
         },
         // Advertencia / estado intermedio (materia "cursando", resaltado de búsqueda).
         warn: '#f59e0b',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'],
+        // Títulos, saludo, números grandes y marca (ADR-018).
+        display: ['Bricolage Grotesque', 'Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

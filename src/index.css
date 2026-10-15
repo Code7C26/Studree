@@ -16,6 +16,17 @@
   body {
     @apply bg-bg font-sans text-text antialiased;
   }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* Foco visible y uniforme (web-design-guidelines): reemplaza los outline-none. */
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent-soft;
+  }
 }
 
 @layer components {
@@ -31,8 +42,52 @@
   }
 
   /*
+   * La lámpara (ADR-018): un único cono de luz verde suave desde arriba a la
+   * izquierda. Estático. El contenedor necesita `relative` e `isolate`.
+   */
+  .lamp::before {
+    content: '';
+    position: absolute;
+    left: -10%;
+    top: -35%;
+    width: 85%;
+    height: 110%;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse 60% 55% at 35% 30%,
+      theme('colors.accent.soft / 20%'),
+      theme('colors.accent.DEFAULT / 7%') 45%,
+      transparent 72%
+    );
+  }
+
+  /* Panel de vidrio translúcido sobre la luz. */
+  .glass {
+    @apply rounded-xl border border-white/[0.07] bg-surface/60 backdrop-blur-md;
+  }
+
+  /* Hoja: papel crema con renglones y sombra de escritorio. */
+  .paper-sheet {
+    @apply bg-paper text-ink;
+    background-image: repeating-linear-gradient(
+      transparent,
+      transparent 27px,
+      theme('colors.paper.line') 28px
+    );
+    box-shadow: 0 22px 48px rgb(0 0 0 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-peek {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+
+  /*
    * Contenido del editor de hojas (TipTap/ProseMirror) — ver
-   * docs/features/sheet-editor.md. Va sobre PAPEL BLANCO (ADR-017): tinta
+   * docs/features/sheet-editor.md. Va sobre PAPEL CREMA (ADR-018): tinta
    * oscura (`ink`) sobre `paper`. No hay plugin de tipografía de Tailwind
    * instalado; se estiliza acá con los tokens del design system (Mandamiento VII).
    */
@@ -43,10 +98,11 @@
     @apply my-2 leading-relaxed;
   }
   .sheet-editor .ProseMirror h1 {
-    @apply mb-3 mt-6 text-2xl font-bold first:mt-0;
+    @apply mb-3 mt-6 font-display text-3xl font-extrabold first:mt-0;
+    color: var(--subject-ink, theme('colors.accent.hover'));
   }
   .sheet-editor .ProseMirror h2 {
-    @apply mb-2 mt-5 text-xl font-bold first:mt-0;
+    @apply mb-2 mt-5 font-display text-xl font-bold text-ink first:mt-0;
   }
   .sheet-editor .ProseMirror h3 {
     @apply mb-2 mt-4 text-lg font-semibold first:mt-0;
@@ -73,7 +129,8 @@
     @apply mt-1 select-none;
   }
   .sheet-editor .ProseMirror blockquote {
-    @apply my-3 border-l-2 border-accent pl-4 text-ink-muted;
+    @apply my-3 border-l-2 pl-4 text-ink-muted;
+    border-color: var(--subject, theme('colors.accent.DEFAULT'));
   }
   .sheet-editor .ProseMirror code {
     @apply rounded bg-paper-border/40 px-1 py-0.5 font-mono text-[0.85em];
@@ -87,12 +144,11 @@
   .sheet-editor .ProseMirror hr {
     @apply my-6 border-paper-border;
   }
-  .sheet-editor .ProseMirror a {
-    @apply text-accent-hover underline underline-offset-2;
-  }
-  /* [[Tema]]: salto a un tema de la materia (decoración de highlightExtension). */
+  /* Links y [[Tema]] (decoración de highlightExtension) en el color de la materia. */
+  .sheet-editor .ProseMirror a,
   .sheet-editor .wiki-link {
-    @apply cursor-pointer text-accent-hover underline underline-offset-2;
+    @apply cursor-pointer underline underline-offset-2;
+    color: var(--subject-ink, theme('colors.accent.hover'));
   }
   /* Buscador de la carpeta: todas las coincidencias y la actual. */
   .sheet-editor .search-hit {

@@ -17,7 +17,7 @@ export function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 sm:px-4">
         <span className="flex items-center gap-2 text-base font-bold sm:text-lg">
           <img
-            src="/logo.svg"
+            src="/logo.jpg"
             alt=""
             width="32"
             height="32"
