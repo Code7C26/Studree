@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { subjectTreeToZip, collectTreeAttachments } from './toZip.js'
+import { subjectTreeToZip, collectTreeAttachments, encodeAttachmentPath } from './toZip.js'
 
 /** JSZip mínimo: guarda las rutas y su contenido en un Map. */
 class FakeZip {
@@ -53,8 +53,7 @@ test('el .zip lleva los adjuntos en adjuntos/ y reescribe las referencias a ruta
   assert.equal(out.get('Genética/adjuntos/foto pizarrón (2).jpg'), 'BLOB1')
   assert.equal(out.get('Genética/adjuntos/tp.pdf'), 'BLOB2')
   const md = [...out.entries()].find(([path]) => path.endsWith('.md'))[1]
-  assert.match(md, /!\[foto pizarrón \\(2\\)\.jpg\]|!\[foto pizarrón \(2\)\.jpg\]/)
-  assert.match(md, /\(adjuntos\/foto%20pizarr%C3%B3n%20%282%29\.jpg\)/)
+  assert.ok(md.includes('![foto pizarrón (2).jpg](adjuntos/foto%20pizarr%C3%B3n%20%282%29.jpg)'))
   assert.match(md, /\[tp\.pdf\]\(adjuntos\/tp\.pdf\)/)
   assert.match(md, /\[imagen: perdida\]/) // sin archivo descargado → texto
 })
@@ -76,4 +75,11 @@ test('collectTreeAttachments junta los adjuntos de materia, carrera o todo', () 
   assert.equal(collectTreeAttachments(s).length, 1)
   assert.equal(collectTreeAttachments({ subjects: [s, s] }).length, 2)
   assert.equal(collectTreeAttachments([{ subjects: [s] }, { subjects: [s] }]).length, 2)
+})
+
+test('encodeAttachmentPath codifica # ? y paréntesis, y cada segmento se decodifica al original', () => {
+  assert.equal(encodeAttachmentPath('adjuntos/tema #2 (b).png'), 'adjuntos/tema%20%232%20%28b%29.png')
+  const name = 'tema #2 (b)? a&b+c;d.png'
+  const segment = encodeAttachmentPath(`adjuntos/${name}`).split('/')[1]
+  assert.equal(decodeURIComponent(segment), name)
 })

@@ -73,22 +73,27 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
     if (!tree) return
 
     setWorking(true)
-    const { files, failed } = await loadAttachmentFiles(tree)
-    // Dinámico: quien nunca exporta a .zip no paga el peso de jszip en el bundle inicial.
-    const { default: JSZip } = await import('jszip')
-    const blob =
-      scope === 'subject'
-        ? await subjectTreeToZip(JSZip, tree, files)
-        : scope === 'career'
-          ? await careerTreeToZip(JSZip, tree, files)
-          : await allTreeToZip(JSZip, tree, files)
-    setWorking(false)
-    downloadBlob(buildExportFilename(scope === 'all' ? 'todo' : tree.name, 'zip'), blob)
-    if (failed > 0) {
-      setNotice(`${failed} adjunto${failed === 1 ? '' : 's'} no se pudo descargar y quedó como texto en el .md.`)
-      return
+    try {
+      const { files, failed } = await loadAttachmentFiles(tree)
+      // Dinámico: quien nunca exporta a .zip no paga el peso de jszip en el bundle inicial.
+      const { default: JSZip } = await import('jszip')
+      const blob =
+        scope === 'subject'
+          ? await subjectTreeToZip(JSZip, tree, files)
+          : scope === 'career'
+            ? await careerTreeToZip(JSZip, tree, files)
+            : await allTreeToZip(JSZip, tree, files)
+      downloadBlob(buildExportFilename(scope === 'all' ? 'todo' : tree.name, 'zip'), blob)
+      if (failed > 0) {
+        setNotice(`${failed} adjunto${failed === 1 ? '' : 's'} no se pudo descargar y quedó como texto en el .md.`)
+        return
+      }
+      onClose()
+    } catch {
+      setNotice('No se pudo armar el .zip. Probá de nuevo.')
+    } finally {
+      setWorking(false)
     }
-    onClose()
   }
 
   async function handleCopyForAi() {

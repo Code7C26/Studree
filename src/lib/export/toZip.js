@@ -52,7 +52,11 @@ export const ATTACHMENTS_DIR = 'adjuntos'
  * @param {string} path
  */
 export function encodeAttachmentPath(path) {
-  return encodeURI(path).replace(/\(/g, '%28').replace(/\)/g, '%29')
+  // Por segmento y con encodeURIComponent: encodeURI deja `#`, `?`, `&`, `+` y `;`, que romperían el link.
+  return path
+    .split('/')
+    .map((segment) => encodeURIComponent(segment).replace(/\(/g, '%28').replace(/\)/g, '%29'))
+    .join('/')
 }
 
 /**
