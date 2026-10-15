@@ -161,4 +161,18 @@
   .sheet-editor .search-hit-current {
     @apply rounded-sm bg-warn text-ink;
   }
+  /* Adjuntos en el papel (Fase 13): imagen a lo ancho de la hoja como máximo. */
+  .sheet-editor .sheet-attachment-image {
+    @apply my-2 inline-block max-w-full align-top;
+  }
+  .sheet-editor .sheet-attachment-image img {
+    @apply max-w-full rounded-md border border-paper-border;
+  }
+  .sheet-editor .sheet-attachment-status {
+    @apply inline-block rounded-md border border-dashed border-paper-border px-3 py-2 text-sm text-ink-muted;
+  }
+  .sheet-editor .ProseMirror-selectednode img {
+    @apply ring-2;
+    --tw-ring-color: var(--subject, theme('colors.accent.DEFAULT'));
+  }
 }

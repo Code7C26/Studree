@@ -12,10 +12,13 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
+import { TextSelection } from '@tiptap/pm/state'
 import { Markdown } from 'tiptap-markdown'
 import { markdownToEditorContent } from '../../../lib/markdown/parse.js'
 import { editorToMarkdown } from '../../../lib/markdown/serialize.js'
 import { HighlightExtension, setSearch, getSearchHits } from '../../../lib/editor/highlightExtension.js'
+import { AttachmentImage, AttachmentLinkClick } from '../../../lib/editor/attachmentNodes.js'
+import { ATTACHMENT_PROTOCOL } from '../../../lib/attachments/refs.js'
 
 /**
  * @param {Object} props
@@ -27,6 +30,8 @@ import { HighlightExtension, setSearch, getSearchHits } from '../../../lib/edito
  * @param {string} [props.searchTerm] - Texto a resaltar ('' = nada).
  * @param {number|null} [props.currentHit] - Coincidencia actual DENTRO de esta hoja.
  * @param {(count: number) => void} [props.onHitsChange] - Cuántas coincidencias hay en esta hoja.
+ * @param {{resolve: (id: string) => Promise<string|null>, isUploading: (id: string) => boolean, open: (id: string) => void}} [props.attachments]
+ * @param {(files: FileList) => void} [props.onFiles] - Archivos soltados o pegados sobre la hoja.
  */
 export function SheetEditor({
   content,
@@ -37,11 +42,13 @@ export function SheetEditor({
   searchTerm = '',
   currentHit = null,
   onHitsChange,
+  attachments,
+  onFiles,
 }) {
   // Las opciones de las extensiones se fijan al crear el editor: los callbacks
   // van por ref para que siempre se llame a la versión más nueva.
-  const callbacks = useRef({ onWikiLink, onHitsChange })
-  callbacks.current = { onWikiLink, onHitsChange }
+  const callbacks = useRef({ onWikiLink, onHitsChange, attachments, onFiles })
+  callbacks.current = { onWikiLink, onHitsChange, attachments, onFiles }
 
   const editor = useEditor({
     extensions: [
@@ -49,10 +56,17 @@ export function SheetEditor({
       // no se importa aparte (importarlo de nuevo duplicaría la extensión).
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
-        link: { openOnClick: false, autolink: true },
+        link: { openOnClick: false, autolink: true, protocols: [ATTACHMENT_PROTOCOL] },
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      AttachmentImage.configure({
+        inline: true,
+        allowBase64: false,
+        resolveAttachment: (id) => callbacks.current.attachments?.resolve(id) ?? Promise.resolve(null),
+        isUploading: (id) => callbacks.current.attachments?.isUploading(id) ?? false,
+      }),
+      AttachmentLinkClick.configure({ onOpen: (id) => callbacks.current.attachments?.open(id) }),
       Markdown.configure({ html: false, transformPastedText: true }),
       HighlightExtension.configure({ onWikiLink: (title) => callbacks.current.onWikiLink?.(title) }),
     ],
@@ -63,6 +77,22 @@ export function SheetEditor({
     },
     onFocus: ({ editor: instance }) => onFocusEditor?.(instance),
     editorProps: {
+      // Archivos soltados o pegados → adjuntos (FolderSheet decide qué hacer).
+      handleDrop: (view, event) => {
+        const files = event.dataTransfer?.files
+        if (!files?.length || !callbacks.current.onFiles) return false
+        event.preventDefault()
+        const at = view.posAtCoords({ left: event.clientX, top: event.clientY })
+        if (at) view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(at.pos))))
+        callbacks.current.onFiles(files)
+        return true
+      },
+      handlePaste: (_view, event) => {
+        const files = event.clipboardData?.files
+        if (!files?.length || !callbacks.current.onFiles) return false
+        callbacks.current.onFiles(files)
+        return true
+      },
       attributes: { class: 'sheet-editor min-h-[8rem]' },
     },
   })
