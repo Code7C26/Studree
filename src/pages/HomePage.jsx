@@ -26,7 +26,11 @@ export function HomePage() {
     <div className="mx-auto max-w-6xl space-y-4">
       <h1 className="text-3xl font-bold">Inicio</h1>
 
-      <WeekSummary summary={home.summary} loading={home.dates.loading || home.tasks.loading} />
+      <WeekSummary
+        summary={home.summary}
+        loading={home.dates.loading || home.tasks.loading}
+        failed={Boolean(home.dates.error || home.tasks.error)}
+      />
 
       <div className="grid items-start gap-4 md:grid-cols-2">
         <ContinueCard
@@ -39,6 +43,7 @@ export function HomePage() {
           date={home.dates.next}
           todayKey={home.todayKey}
           loading={home.dates.loading}
+          error={home.dates.error}
           onAdd={() => openNewDate(home.todayKey)}
           className="md:col-start-2 md:row-start-1"
         />

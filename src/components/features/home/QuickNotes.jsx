@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { HomePanel } from './HomePanel'
 import { Button } from '../../ui/Button'
 import { HOME_LIMITS } from '../../../constants/homeLimits.js'
@@ -16,9 +16,16 @@ const TEXTAREA =
 function NoteCard({ note, onUpdate, onRemove }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.body)
+  // Esc cancela: si el navegador dispara `blur` al sacar el textarea del DOM,
+  // `finishEditing` no tiene que guardar.
+  const cancelledRef = useRef(false)
 
   function finishEditing() {
     setEditing(false)
+    if (cancelledRef.current) {
+      cancelledRef.current = false
+      return
+    }
     // Vacía no se guarda: vuelve el texto anterior.
     if (draft.trim() && draft.trim() !== note.body) onUpdate(note.id, draft)
     else setDraft(note.body)
@@ -33,8 +40,9 @@ function NoteCard({ note, onUpdate, onRemove }) {
           onBlur={finishEditing}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
+              cancelledRef.current = true
               setDraft(note.body)
-              setEditing(false)
+              event.currentTarget.blur()
             }
           }}
           maxLength={HOME_LIMITS.noteBody}
@@ -83,11 +91,16 @@ function NoteCard({ note, onUpdate, onRemove }) {
 export function QuickNotes({ notes, pendingRemoval, loading, error, onCreate, onUpdate, onRemove, onUndoRemove, className = '' }) {
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
+  // Ref (no estado): el atajo Ctrl+Enter repetido llega antes del re-render, y
+  // con `saving` solo se crearían notas duplicadas.
+  const savingRef = useRef(false)
 
   async function save() {
-    if (!body.trim()) return
+    if (savingRef.current || !body.trim()) return
+    savingRef.current = true
     setSaving(true)
     const createError = await onCreate(body)
+    savingRef.current = false
     setSaving(false)
     if (!createError) setBody('')
   }

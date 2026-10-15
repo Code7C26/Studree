@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { HomePanel } from './HomePanel'
 import { Button } from '../../ui/Button'
 import { isOverdue } from '../../../lib/home/summary.js'
@@ -20,6 +20,8 @@ const ICON_BUTTON =
 function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(task.text)
+  // Esc cancela: el `blur` que sigue no tiene que guardar.
+  const cancelledRef = useRef(false)
   const done = Boolean(task.done_at)
   const overdue = isOverdue(task, todayKey)
 
@@ -30,20 +32,27 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
 
   function finishEditing() {
     setEditing(false)
+    if (cancelledRef.current) {
+      cancelledRef.current = false
+      return
+    }
     if (draft.trim() && draft.trim() !== task.text) onRename(task.id, draft)
   }
 
   return (
     <li
-      className={`flex items-center gap-2 rounded-lg border px-2 py-1 ${overdue ? 'border-red-800' : 'border-transparent'}`}
+      className={`flex items-center gap-1 rounded-lg border pr-1 ${overdue ? 'border-red-800' : 'border-transparent'}`}
     >
-      <input
-        type="checkbox"
-        checked={done}
-        onChange={() => onToggle(task.id, !done)}
-        aria-label={done ? `Marcar «${task.text}» como pendiente` : `Marcar «${task.text}» como hecha`}
-        className="h-5 w-5 shrink-0 cursor-pointer accent-accent"
-      />
+      {/* El label da 40×40 px de área táctil al checkbox de 20 px. */}
+      <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center">
+        <input
+          type="checkbox"
+          checked={done}
+          onChange={() => onToggle(task.id, !done)}
+          aria-label={done ? `Marcar «${task.text}» como pendiente` : `Marcar «${task.text}» como hecha`}
+          className="h-5 w-5 cursor-pointer accent-accent"
+        />
+      </label>
       {editing ? (
         <input
           value={draft}
@@ -52,8 +61,9 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
           onKeyDown={(event) => {
             if (event.key === 'Enter') event.currentTarget.blur()
             if (event.key === 'Escape') {
+              cancelledRef.current = true
               setDraft(task.text)
-              setEditing(false)
+              event.currentTarget.blur()
             }
           }}
           maxLength={HOME_LIMITS.taskText}
