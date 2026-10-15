@@ -12,6 +12,7 @@ import { EditorToolbar } from '../components/features/sheetEditor/EditorToolbar'
 import { NewSheetButton } from '../components/features/templates/NewSheetButton'
 import { TemplatesManager } from '../components/features/templates/TemplatesManager'
 import { ExportDialog } from '../components/features/export/ExportDialog'
+import { ImportDialog } from '../components/features/import/ImportDialog'
 import { Icon } from '../components/ui/Icon'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -111,6 +112,8 @@ function SubjectFolder({ subjectId }) {
   const [autoFocusKey, setAutoFocusKey] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const importTarget = useMemo(() => (subject ? { mode: 'subject', subjectId, subjectName: subject.name } : null), [subject, subjectId])
   const [notice, setNotice] = useState(null)
   /** Aviso "Deshacer" tras mandar una hoja a la papelera: `{message, sheetId}`. */
   const [undo, setUndo] = useState(null)
@@ -440,6 +443,9 @@ function SubjectFolder({ subjectId }) {
             >
               <Icon name="book-open" /> Leer
             </button>
+            <button type="button" onClick={() => setImportOpen(true)} disabled={!subject} className={`${TOOL} text-text-muted hover:text-text`}>
+              <Icon name="upload" /> Importar
+            </button>
             <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft hover:text-accent`}>
               Exportar
             </button>
@@ -586,6 +592,8 @@ function SubjectFolder({ subjectId }) {
       {subject && (
         <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} careerId={subject.career_id} subjectId={subjectId} />
       )}
+
+      {importTarget && <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} target={importTarget} />}
 
       <UndoToast
         message={undo?.message ?? null}

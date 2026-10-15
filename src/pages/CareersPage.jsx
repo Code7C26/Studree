@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useCareers } from '../hooks/useCareers'
 import { CareerCard } from '../components/features/careers/CareerCard'
 import { CareerFormModal } from '../components/features/careers/CareerFormModal'
@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { UndoToast } from '../components/ui/UndoToast'
 import { Button } from '../components/ui/Button'
 import { ExportDialog } from '../components/features/export/ExportDialog'
+import { ImportDialog } from '../components/features/import/ImportDialog'
 
 /**
  * Workspace: panel de inicio con las carreras / cursos del usuario como
@@ -13,12 +14,14 @@ import { ExportDialog } from '../components/features/export/ExportDialog'
  * Ver docs/features/careers.md.
  */
 export function CareersPage() {
-  const { careers, stats, totals, loading, error, createCareer, updateCareer, deleteCareer, restoreCareer } =
+  const { careers, stats, totals, loading, error, createCareer, updateCareer, deleteCareer, restoreCareer, reload } =
     useCareers()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const importTarget = useMemo(() => ({ mode: 'careers' }), [])
   /** Aviso "Deshacer" tras mandar una carrera a la papelera: `{message, careerId}`. */
   const [undo, setUndo] = useState(null)
   const closeUndo = useCallback(() => setUndo(null), [])
@@ -59,6 +62,9 @@ export function CareersPage() {
           <p className="mt-1 text-sm text-text-muted">Elegí una carrera o curso para ver y organizar sus materias.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={() => setImportOpen(true)}>
+            Importar
+          </Button>
           <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={careers.length === 0}>
             Exportar todo
           </Button>
@@ -118,6 +124,15 @@ export function CareersPage() {
       <CareerFormModal open={formOpen} onClose={() => setFormOpen(false)} career={editing} onSubmit={handleSubmit} />
 
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
+
+      <ImportDialog
+        open={importOpen}
+        onClose={() => {
+          setImportOpen(false)
+          reload()
+        }}
+        target={importTarget}
+      />
 
       <ConfirmDialog
         open={deleting != null}
