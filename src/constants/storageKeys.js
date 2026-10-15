@@ -21,4 +21,6 @@ export const STORAGE_KEYS = Object.freeze({
   /** Preferencias de UI (no son datos de negocio: no se sincronizan a Supabase). */
   uiTabs: 'studree:ui:tabs',
   uiExplorer: 'studree:ui:explorer',
+  /** Explorador lateral abierto/cerrado (ADR-018: arranca cerrado). */
+  uiExplorerOpen: 'studree:ui:explorer-open',
 })

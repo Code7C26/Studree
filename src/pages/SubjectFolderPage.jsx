@@ -83,9 +83,9 @@ function SubjectFolder({ subjectId }) {
   const [focusSignal, setFocusSignal] = useState(0)
 
   useEffect(() => {
-    if (subject) openTab(subject.id, subject.name)
+    if (subject) openTab(subject.id, subject.name, subject.color)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subject?.id, subject?.name])
+  }, [subject?.id, subject?.name, subject?.color])
 
   // Salir del modo lectura al irse de la carpeta.
   useEffect(() => () => setReading(false), [setReading])

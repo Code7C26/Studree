@@ -1,6 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../hooks/useAuth.js'
+import { Icon } from '../ui/Icon'
+import { OPEN_PALETTE_EVENT } from './WorkspaceLayout'
 
 const NAV_ITEMS = [
   { to: ROUTES.home, label: 'Inicio' },
@@ -8,37 +10,50 @@ const NAV_ITEMS = [
   { to: ROUTES.profile, label: 'Perfil' },
 ]
 
-/** Cabecera con el logo, la navegación principal y el acceso a la sesión. */
+/** Rutas con command palette (las del workspace, ver AppLayout). */
+const PALETTE_PREFIXES = ['/carreras', '/materias', '/hojas']
+
+const LINK = 'rounded-lg px-2 py-1.5 text-sm transition-colors sm:px-3'
+const LINK_IDLE = `${LINK} text-text-muted hover:bg-surface-2 hover:text-text`
+
+/**
+ * Cabecera: logo original, buscador (abre la command palette, Ctrl K) y la
+ * navegación principal. Ver docs/features/navigation-shell.md.
+ */
 export function Header() {
   const { user, isAnonymous, signOut } = useAuth()
+  const { pathname } = useLocation()
+  const hasPalette = pathname === ROUTES.home || PALETTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
 
   return (
-    <header className="border-b border-border bg-surface">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 sm:px-4">
-        <span className="flex items-center gap-2 text-base font-bold sm:text-lg">
-          <img
-            src="/logo.jpg"
-            alt=""
-            width="32"
-            height="32"
-            className="h-7 w-7 sm:h-8 sm:w-8"
-          />
-          <span className="text-accent">Studree</span>
+    <header className="border-b border-border/60">
+      <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5">
+        <span className="flex items-center gap-2.5">
+          <img src="/logo.jpg" alt="" width="28" height="28" className="h-7 w-7 rounded-md" />
+          <span className="font-display text-lg font-bold tracking-tight text-text" translate="no">
+            Studree
+          </span>
         </span>
 
-        <nav className="flex items-center gap-0.5 sm:gap-1">
+        {hasPalette && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
+            className="ml-auto hidden min-w-[16rem] items-center gap-2 rounded-lg border border-border bg-surface/70 px-3 py-1.5 text-sm text-text-muted transition-colors hover:border-text-muted/60 hover:text-text sm:flex"
+          >
+            <Icon name="search" />
+            <span>Buscar un tema o una materia</span>
+            <kbd className="ml-auto rounded border border-border px-1 font-sans text-[11px]">Ctrl&nbsp;K</kbd>
+          </button>
+        )}
+
+        <nav className={`flex items-center gap-0.5 ${hasPalette ? 'sm:ml-0 ml-auto' : 'ml-auto'}`}>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === ROUTES.home}
-              className={({ isActive }) =>
-                `rounded-lg px-2 py-1.5 text-xs transition-colors sm:px-3 sm:text-sm ${
-                  isActive
-                    ? 'bg-accent text-bg'
-                    : 'text-text-muted hover:bg-surface-2 hover:text-text'
-                }`
-              }
+              className={({ isActive }) => (isActive ? `${LINK} font-medium text-accent-soft` : LINK_IDLE)}
             >
               {item.label}
             </NavLink>
@@ -49,18 +64,11 @@ export function Header() {
             volver a entrar, así que cerrarla perdería los datos para siempre.
           */}
           {user && !isAnonymous ? (
-            <button
-              type="button"
-              onClick={signOut}
-              className="rounded-lg px-2 py-1.5 text-xs text-text-muted transition-colors hover:bg-surface-2 hover:text-text sm:px-3 sm:text-sm"
-            >
+            <button type="button" onClick={signOut} className={LINK_IDLE}>
               Salir
             </button>
           ) : user && isAnonymous ? null : (
-            <NavLink
-              to={ROUTES.login}
-              className="rounded-lg px-2 py-1.5 text-xs text-text-muted transition-colors hover:bg-surface-2 hover:text-text sm:px-3 sm:text-sm"
-            >
+            <NavLink to={ROUTES.login} className={LINK_IDLE}>
               Entrar
             </NavLink>
           )}
