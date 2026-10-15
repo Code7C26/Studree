@@ -2,7 +2,7 @@
  * Trae el árbol (con `content_md`) que necesita el export a Markdown.
  * Ver docs/features/markdown-export.md.
  *
- * Vive aparte de `useSubjectMap`/`useExplorerTree` porque necesita el
+ * Vive aparte de `useFolder`/`useExplorerTree` porque necesita el
  * contenido completo de cada hoja, no solo el título — traerlo siempre sería
  * desperdiciar red en el resto de la app.
  *

@@ -8,10 +8,9 @@ import { unescapeWikiLinks } from './wikiLinks.js'
  * Esta función aísla ese detalle: nada fuera de `lib/markdown/` sabe CÓMO se
  * serializa, solo que hay una función que lo hace (ADR-011).
  *
- * `prosemirror-markdown` escapa los corchetes (`\[\[Hoja\]\]`); los links entre
- * hojas se desescapan para que el Markdown guardado tenga `[[Hoja]]` limpio
- * (ADR-015) — es lo que lee la base para derivar `sheet_links` y lo que va al
- * export para IA.
+ * `prosemirror-markdown` escapa los corchetes (`\[\[Tema\]\]`); los links a
+ * temas se desescapan para que el Markdown guardado tenga `[[Tema]]` limpio
+ * (ADR-017) — es lo que se ve al reabrir la hoja y lo que va al export para IA.
  *
  * @param {import('@tiptap/react').Editor} editor
  * @returns {string} Markdown.
