@@ -101,6 +101,47 @@
  */
 
 /**
+ * Fecha importante del Inicio (migración 0005).
+ * @typedef {Object} ImportantDate
+ * @property {string} id
+ * @property {string} title
+ * @property {string} date - `YYYY-MM-DD` (día local, sin hora).
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
+ */
+
+/**
+ * Tarea del Inicio (migración 0005).
+ * @typedef {Object} Task
+ * @property {string} id
+ * @property {string} text
+ * @property {string|null} due_date - `YYYY-MM-DD` o null.
+ * @property {string|null} done_at - null = pendiente.
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
+ */
+
+/**
+ * Nota rápida del Inicio (migración 0005).
+ * @typedef {Object} QuickNote
+ * @property {string} id
+ * @property {string} body
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
+ */
+
+/**
+ * Última hoja editada, ya reducida para "Seguí donde dejaste".
+ * @typedef {Object} LastSheet
+ * @property {string} id
+ * @property {string} subject_id
+ * @property {string} updated_at
+ * @property {string} subject_name
+ * @property {string|null} subject_color
+ * @property {string} preview - Primer renglón con texto ('' si la hoja está vacía).
+ */
+
+/**
  * Resultado normalizado de cualquier operación de un service.
  * Los services NO propagan el error crudo de supabase-js: lo traducen a string
  * para que la UI no dependa de la forma de error del proveedor (ver API_DOCS.md).
