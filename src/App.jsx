@@ -16,6 +16,7 @@ const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ defau
 const CareerMapPage = lazyPage(() => import('./pages/CareerMapPage'), 'CareerMapPage')
 const SubjectFolderPage = lazyPage(() => import('./pages/SubjectFolderPage'), 'SubjectFolderPage')
 const SheetRedirectPage = lazyPage(() => import('./pages/SheetRedirectPage'), 'SheetRedirectPage')
+const TrashPage = lazyPage(() => import('./pages/TrashPage'), 'TrashPage')
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
 
 /**
@@ -46,6 +47,7 @@ export default function App() {
             <Route path={ROUTES.careerMap} element={withSuspense(<CareerMapPage />)} />
             <Route path={ROUTES.subjectFolder} element={withSuspense(<SubjectFolderPage />)} />
             <Route path={ROUTES.sheet} element={withSuspense(<SheetRedirectPage />)} />
+            <Route path={ROUTES.trash} element={withSuspense(<TrashPage />)} />
           </Route>
         </Route>
 

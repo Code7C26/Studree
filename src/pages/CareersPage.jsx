@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useCareers } from '../hooks/useCareers'
 import { CareerCard } from '../components/features/careers/CareerCard'
 import { CareerFormModal } from '../components/features/careers/CareerFormModal'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { UndoToast } from '../components/ui/UndoToast'
 import { Button } from '../components/ui/Button'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 
@@ -12,11 +13,15 @@ import { ExportDialog } from '../components/features/export/ExportDialog'
  * Ver docs/features/careers.md.
  */
 export function CareersPage() {
-  const { careers, stats, totals, loading, error, createCareer, updateCareer, deleteCareer } = useCareers()
+  const { careers, stats, totals, loading, error, createCareer, updateCareer, deleteCareer, restoreCareer } =
+    useCareers()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
+  /** Aviso "Deshacer" tras mandar una carrera a la papelera: `{message, careerId}`. */
+  const [undo, setUndo] = useState(null)
+  const closeUndo = useCallback(() => setUndo(null), [])
 
   function openCreate() {
     setEditing(null)
@@ -35,7 +40,9 @@ export function CareersPage() {
   async function handleConfirmDelete() {
     const career = deleting
     setDeleting(null)
-    if (career) await deleteCareer(career.id)
+    if (!career) return
+    const failure = await deleteCareer(career.id)
+    if (!failure) setUndo({ message: `"${career.name}" se movió a la papelera`, careerId: career.id })
   }
 
   const metrics = [
@@ -114,14 +121,25 @@ export function CareersPage() {
 
       <ConfirmDialog
         open={deleting != null}
-        title="Eliminar carrera"
+        title="Mover a la papelera"
+        confirmLabel="Mover a la papelera"
         message={
           deleting
-            ? `Se va a eliminar "${deleting.name}" con TODAS sus materias y hojas. No se puede deshacer.`
+            ? `"${deleting.name}" se mueve a la papelera con todas sus materias y hojas. Podés restaurarla durante 30 días.`
             : ''
         }
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleting(null)}
+      />
+
+      <UndoToast
+        message={undo?.message ?? null}
+        onUndo={() => {
+          const careerId = undo?.careerId
+          setUndo(null)
+          if (careerId) restoreCareer(careerId)
+        }}
+        onClose={closeUndo}
       />
     </div>
   )

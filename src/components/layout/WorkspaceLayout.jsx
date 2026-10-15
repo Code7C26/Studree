@@ -16,6 +16,8 @@ import { CommandPalette } from '../features/commandPalette/CommandPalette'
 import { Drawer } from '../ui/Drawer'
 import { useExplorerTree } from '../../hooks/useExplorerTree.js'
 import { useHotkeys } from '../../hooks/useHotkeys.js'
+import { useAuth } from '../../hooks/useAuth.js'
+import { useTrashPurge } from '../../hooks/useTrashPurge.js'
 import { useReadingMode } from '../../hooks/useReadingMode.js'
 import { readCache, writeCache } from '../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../constants/storageKeys.js'
@@ -45,6 +47,8 @@ export function WorkspaceLayout() {
   const navigate = useNavigate()
   const params = useParams()
   const location = useLocation()
+  const { user } = useAuth()
+  useTrashPurge(user?.id ?? null)
   const { reading } = useReadingMode()
   // El Inicio ocupa la pantalla entera: sin explorador ni tabs (ADR-018).
   const isHome = location.pathname === ROUTES.home

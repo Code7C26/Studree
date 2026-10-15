@@ -8,6 +8,7 @@ import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { UndoToast } from '../components/ui/UndoToast'
 import { PromptDialog } from '../components/ui/PromptDialog'
 import { ROUTES, subjectFolderPath } from '../constants/routes'
 import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
@@ -32,6 +33,7 @@ export function CareerMapPage() {
     updateCareer,
     createSubject,
     deleteSubject,
+    restoreSubject,
     setSubjectStatus,
     addPrerequisite,
     removePrerequisite,
@@ -46,6 +48,9 @@ export function CareerMapPage() {
   const [pendingConnection, setPendingConnection] = useState(null)
   /** Lo que se está por borrar: `{type: 'subject'|'prerequisite', item}`. */
   const [pendingDelete, setPendingDelete] = useState(null)
+  /** Aviso "Deshacer" tras mandar una materia a la papelera: `{message, subjectId}`. */
+  const [undo, setUndo] = useState(null)
+  const closeUndo = useCallback(() => setUndo(null), [])
 
   const subjectsById = new Map(subjects.map((subject) => [subject.id, subject]))
 
@@ -67,14 +72,17 @@ export function CareerMapPage() {
     const target = pendingDelete
     setPendingDelete(null)
     if (!target) return
-    if (target.type === 'subject') await deleteSubject(target.item.id)
+    if (target.type === 'subject') {
+      const failure = await deleteSubject(target.item.id)
+      if (!failure) setUndo({ message: `"${target.item.name}" se movió a la papelera`, subjectId: target.item.id })
+    }
     else await removePrerequisite(target.item.id)
   }
 
   function describePendingDelete() {
     if (!pendingDelete) return ''
     if (pendingDelete.type === 'subject') {
-      return `Se va a eliminar "${pendingDelete.item.name}" con todas sus hojas y sus correlativas. No se puede deshacer.`
+      return `"${pendingDelete.item.name}" se mueve a la papelera con todas sus hojas. Podés restaurarla durante 30 días.`
     }
     const p = pendingDelete.item
     const subjectName = subjectsById.get(p.subject_id)?.name ?? '¿?'
@@ -202,14 +210,24 @@ export function CareerMapPage() {
 
       <ConfirmDialog
         open={pendingDelete != null}
-        title={pendingDelete?.type === 'prerequisite' ? 'Quitar correlativa' : 'Eliminar materia'}
+        title={pendingDelete?.type === 'prerequisite' ? 'Quitar correlativa' : 'Mover a la papelera'}
         message={describePendingDelete()}
-        confirmLabel={pendingDelete?.type === 'prerequisite' ? 'Quitar' : 'Eliminar'}
+        confirmLabel={pendingDelete?.type === 'prerequisite' ? 'Quitar' : 'Mover a la papelera'}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
 
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} careerId={careerId} />
+
+      <UndoToast
+        message={undo?.message ?? null}
+        onUndo={() => {
+          const subjectId = undo?.subjectId
+          setUndo(null)
+          if (subjectId) restoreSubject(subjectId)
+        }}
+        onClose={closeUndo}
+      />
     </div>
   )
 }

@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService, FOLDER_SHEET_COLUMNS } from '../services/sheets.service.js'
+import { trashService } from '../services/trash.service.js'
 import { cacheKey, clearCache, readCache } from '../services/cache.service.js'
 import { onDataChanged } from '../services/dataEvents.js'
 import { generateId } from '../lib/id.js'
@@ -43,7 +44,8 @@ const LIVE_CONTENT_DELAY_MS = 300
  *   reload: () => Promise<void>,
  *   addLocalSheet: () => string,
  *   replaceLocalSheet: (localId: string, created: import('../types/models.js').Sheet) => void,
- *   deleteSheet: (key: string) => Promise<string|null>,
+ *   deleteSheet: (key: string) => Promise<{error: string|null, sheetId: string|null}>,
+ *   restoreSheet: (id: string) => Promise<string|null>,
  *   updateLiveContent: (id: string, markdown: string) => void,
  * }}
  */
@@ -136,27 +138,45 @@ export function useFolder(subjectId) {
   }, [])
 
   /**
-   * Borra por `key` y con el estado ACTUAL: una hoja nueva puede haberse
-   * creado en Supabase mientras se confirmaba el borrado (su id cambió).
+   * Manda una hoja a la papelera, por `key` y con el estado ACTUAL: una hoja
+   * nueva puede haberse creado en Supabase mientras se confirmaba (su id
+   * cambió). Una hoja local (nunca guardada) se descarta sin más.
+   * @returns {Promise<{error: string|null, sheetId: string|null}>} `sheetId`
+   *   de la hoja real mandada a la papelera (para "Deshacer").
    */
   const deleteSheet = useCallback(
     async (key) => {
       const sheet = sheetsRef.current.find((candidate) => candidate.key === key)
-      if (!sheet) return null
-      if (!isLocalSheet(sheet)) {
-        const { error: removeError } = await sheetsService.remove(sheet.id, subjectId)
-        if (removeError) {
-          setError(removeError)
-          return removeError
+      if (!sheet) return { error: null, sheetId: null }
+      const local = isLocalSheet(sheet)
+      if (!local) {
+        const { error: trashError } = await trashService.trash('sheets', sheet.id)
+        if (trashError) {
+          setError(trashError)
+          return { error: trashError, sheetId: null }
         }
         clearCache(cacheKey('sheet', sheet.id))
       }
       liveRef.current.delete(sheet.id)
       setSheets((current) => current.filter((candidate) => candidate.id !== sheet.id))
       setError(null)
+      return { error: null, sheetId: local ? null : sheet.id }
+    },
+    [],
+  )
+
+  /** "Deshacer": la hoja vuelve de la papelera y se recarga la carpeta. */
+  const restoreSheet = useCallback(
+    async (id) => {
+      const { error: restoreError } = await trashService.restore('sheets', id)
+      if (restoreError) {
+        setError(restoreError)
+        return restoreError
+      }
+      await load({ silent: true })
       return null
     },
-    [subjectId],
+    [load],
   )
 
   /** Lo que se está escribiendo, para el índice y el buscador (con debounce). */
@@ -187,6 +207,7 @@ export function useFolder(subjectId) {
     addLocalSheet,
     replaceLocalSheet,
     deleteSheet,
+    restoreSheet,
     updateLiveContent,
   }
 }

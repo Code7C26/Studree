@@ -11,6 +11,7 @@ import { ExportDialog } from '../components/features/export/ExportDialog'
 import { Icon } from '../components/ui/Icon'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { UndoToast } from '../components/ui/UndoToast'
 import { careerPath } from '../constants/routes'
 import { subjectCssVars } from '../constants/subjectTones.js'
 import { extractHeadings } from '../lib/markdown/headings.js'
@@ -70,6 +71,7 @@ function SubjectFolder({ subjectId }) {
     addLocalSheet,
     replaceLocalSheet,
     deleteSheet,
+    restoreSheet,
     updateLiveContent,
   } = useFolder(subjectId)
 
@@ -84,6 +86,9 @@ function SubjectFolder({ subjectId }) {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [notice, setNotice] = useState(null)
+  /** Aviso "Deshacer" tras mandar una hoja a la papelera: `{message, sheetId}`. */
+  const [undo, setUndo] = useState(null)
+  const closeUndo = useCallback(() => setUndo(null), [])
 
   // Búsqueda: término, coincidencia actual (índice global) y cuántas hay por hoja.
   const [term, setTerm] = useState('')
@@ -300,7 +305,8 @@ function SubjectFolder({ subjectId }) {
   async function removeSheet(sheet) {
     cancelersRef.current.get(sheet.key)?.()
     // Por `key`: si la hoja nueva se creó mientras se confirmaba, su id ya cambió.
-    await deleteSheet(sheet.key)
+    const { sheetId } = await deleteSheet(sheet.key)
+    if (sheetId) setUndo({ message: 'Hoja movida a la papelera', sheetId })
   }
 
   function handleRequestDelete(sheet) {
@@ -470,10 +476,11 @@ function SubjectFolder({ subjectId }) {
 
       <ConfirmDialog
         open={pendingDelete != null}
-        title="Eliminar hoja"
+        title="Mover a la papelera"
+        confirmLabel="Mover a la papelera"
         message={
           pendingDelete
-            ? `Se va a eliminar la hoja del ${formatSheetDate(pendingDelete.created_at)} con todo su contenido. No se puede deshacer.`
+            ? `La hoja del ${formatSheetDate(pendingDelete.created_at)} se mueve a la papelera. Podés restaurarla durante 30 días.`
             : ''
         }
         onConfirm={handleConfirmDelete}
@@ -483,6 +490,16 @@ function SubjectFolder({ subjectId }) {
       {subject && (
         <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} careerId={subject.career_id} subjectId={subjectId} />
       )}
+
+      <UndoToast
+        message={undo?.message ?? null}
+        onUndo={() => {
+          const sheetId = undo?.sheetId
+          setUndo(null)
+          if (sheetId) restoreSheet(sheetId)
+        }}
+        onClose={closeUndo}
+      />
     </div>
   )
 }

@@ -4,10 +4,13 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ExplorerTree } from './ExplorerTree'
 import { EmptyState } from '../../ui/EmptyState'
+import { Icon } from '../../ui/Icon'
 import { readCache, writeCache } from '../../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../../constants/storageKeys.js'
+import { ROUTES } from '../../../constants/routes.js'
 
 /** Niveles hijos en orden, para el filtro recursivo por nombre. */
 const CHILD_LEVELS = [{ key: 'subjects', nameField: 'name' }]
@@ -134,6 +137,15 @@ export function Explorer({
             activeSubjectId={activeSubjectId}
           />
         )}
+      </div>
+
+      <div className="border-t border-border p-1.5">
+        <Link
+          to={ROUTES.trash}
+          className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-text-muted hover:bg-surface-2 hover:text-text"
+        >
+          <Icon name="trash" /> Papelera
+        </Link>
       </div>
     </div>
   )

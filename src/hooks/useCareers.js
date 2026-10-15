@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
+import { trashService } from '../services/trash.service.js'
 import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
 
 /**
@@ -23,6 +24,7 @@ import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
  *   updateCareer: (id: string, values: {name?: string, color?: string, uses_prerequisites?: boolean}) => Promise<string|null>,
  *   renameCareer: (id: string, name: string) => Promise<string|null>,
  *   deleteCareer: (id: string) => Promise<string|null>,
+ *   restoreCareer: (id: string) => Promise<string|null>,
  *   reload: () => void
  * }}
  */
@@ -99,7 +101,7 @@ export function useCareers() {
   const renameCareer = useCallback((id, name) => updateCareer(id, { name }), [updateCareer])
 
   const deleteCareer = useCallback(async (id) => {
-    const { error: removeError } = await careersService.remove(id)
+    const { error: removeError } = await trashService.trash('careers', id)
     if (removeError) {
       setError(removeError)
       return removeError
@@ -110,5 +112,31 @@ export function useCareers() {
     return null
   }, [])
 
-  return { careers, stats, totals, loading, error, createCareer, updateCareer, renameCareer, deleteCareer, reload: load }
+  /** "Deshacer" de borrar una carrera: vuelve con sus materias y hojas. */
+  const restoreCareer = useCallback(
+    async (id) => {
+      const { error: restoreError } = await trashService.restore('careers', id)
+      if (restoreError) {
+        setError(restoreError)
+        return restoreError
+      }
+      await load()
+      return null
+    },
+    [load],
+  )
+
+  return {
+    careers,
+    stats,
+    totals,
+    loading,
+    error,
+    createCareer,
+    updateCareer,
+    renameCareer,
+    deleteCareer,
+    restoreCareer,
+    reload: load,
+  }
 }

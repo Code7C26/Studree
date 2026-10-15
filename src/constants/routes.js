@@ -13,6 +13,7 @@ export const ROUTES = Object.freeze({
   subjectFolder: '/materias/:subjectId', // la carpeta de la materia (ADR-017); acepta ?hoja=:sheetId
   sheet: '/hojas/:sheetId', // links viejos: redirige a la carpeta en esa hoja
   profile: '/perfil',
+  trash: '/papelera', // papelera (docs/features/trash.md)
 })
 
 /** @param {string} careerId */

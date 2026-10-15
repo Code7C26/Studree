@@ -9,6 +9,7 @@ import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { livePrerequisites } from '../lib/graph/livePrerequisites.js'
 import { prerequisitesService } from '../services/prerequisites.service.js'
+import { trashService } from '../services/trash.service.js'
 import { PREREQUISITE_KINDS } from '../constants/prerequisiteKinds.js'
 import { onDataChanged } from '../services/dataEvents.js'
 
@@ -34,6 +35,7 @@ import { onDataChanged } from '../services/dataEvents.js'
  *   updateCareer: (values: {uses_prerequisites?: boolean}) => Promise<string|null>,
  *   createSubject: (values: CreateSubjectValues) => Promise<string|null>,
  *   deleteSubject: (id: string) => Promise<string|null>,
+ *   restoreSubject: (id: string) => Promise<string|null>,
  *   setSubjectStatus: (id: string, status: import('../types/models.js').SubjectStatus) => Promise<string|null>,
  *   addPrerequisite: (values: {subject_id: string, requires_id: string, kind: import('../types/models.js').PrerequisiteKind}) => Promise<string|null>,
  *   removePrerequisite: (id: string) => Promise<string|null>,
@@ -140,15 +142,26 @@ export function useCareerMap(careerId) {
 
   const deleteSubject = useCallback(
     async (id) => {
-      const { error: removeError } = await subjectsService.remove(id, careerId)
+      const { error: removeError } = await trashService.trash('subjects', id)
       if (removeError) return fail(removeError)
       setSubjects((current) => current.filter((subject) => subject.id !== id))
-      // La base borra en cascada las correlativas de esa materia; se refleja acá también.
+      // Las correlativas siguen en la base (vuelven al restaurar); acá se ocultan.
       setPrerequisites((current) => current.filter((p) => p.subject_id !== id && p.requires_id !== id))
       setError(null)
       return null
     },
-    [careerId, fail],
+    [fail],
+  )
+
+  /** "Deshacer" de borrar una materia: vuelve con sus hojas y sus correlativas. */
+  const restoreSubject = useCallback(
+    async (id) => {
+      const { error: restoreError } = await trashService.restore('subjects', id)
+      if (restoreError) return fail(restoreError)
+      await load({ silent: true })
+      return null
+    },
+    [load, fail],
   )
 
   const setSubjectStatus = useCallback(
@@ -240,6 +253,7 @@ export function useCareerMap(careerId) {
     updateCareer,
     createSubject,
     deleteSubject,
+    restoreSubject,
     setSubjectStatus,
     addPrerequisite,
     removePrerequisite,
