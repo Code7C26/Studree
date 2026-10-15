@@ -92,6 +92,7 @@
 | `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
+| `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
