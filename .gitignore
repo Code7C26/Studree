@@ -24,3 +24,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.local
+
+# Brainstorming local (visual companion de superpowers)
+.superpowers/
