@@ -58,6 +58,10 @@ export const AttachmentImage = Image.extend({
         }
         img.src = url
         dom.append(img)
+      }).catch(() => {
+        if (!alive) return
+        status.textContent = 'Adjunto no disponible'
+        dom.dataset.state = 'missing'
       })
 
       return {

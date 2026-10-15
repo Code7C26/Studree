@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { useFolder } from '../hooks/useFolder.js'
+import { useFolderAttachments } from '../hooks/useFolderAttachments.js'
 import { useHotkeys } from '../hooks/useHotkeys.js'
 import { useReadingMode } from '../hooks/useReadingMode.js'
 import { FolderSheet } from '../components/features/folder/FolderSheet'
@@ -74,6 +75,22 @@ function SubjectFolder({ subjectId }) {
     restoreSheet,
     updateLiveContent,
   } = useFolder(subjectId)
+
+  const realSheetIds = useMemo(() => sheets.filter((sheet) => !isLocalSheet(sheet)).map((sheet) => sheet.id), [sheets])
+  const attachmentsState = useFolderAttachments(realSheetIds)
+  const folderAttachmentApi = useMemo(
+    () => ({
+      upload: attachmentsState.upload,
+      resolveUrl: attachmentsState.resolveUrl,
+      isUploading: attachmentsState.isUploading,
+      open: attachmentsState.open,
+    }),
+    [attachmentsState.upload, attachmentsState.resolveUrl, attachmentsState.isUploading, attachmentsState.open],
+  )
+  /** key de hoja → función que sube archivos a esa hoja (la registra cada FolderSheet). */
+  const uploadersRef = useRef(new Map())
+  const fileInputRef = useRef(null)
+  const [pendingAttachment, setPendingAttachment] = useState(null)
 
   const containerRef = useRef(null)
   /** key de hoja → editor TipTap montado. */
@@ -340,6 +357,18 @@ function SubjectFolder({ subjectId }) {
             'grid gap-8 lg:grid-cols-[minmax(13rem,1fr)_minmax(0,52rem)_minmax(0,1fr)]'
       }
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        hidden
+        onChange={(event) => {
+          const key = [...editorsRef.current].find(([, editor]) => editor === activeEditor)?.[0]
+          if (key && event.target.files?.length) uploadersRef.current.get(key)?.(event.target.files)
+          event.target.value = ''
+        }}
+      />
+
       {!reading && (
         <aside className="sticky top-0 hidden max-h-[calc(100vh-8rem)] w-full max-w-[15rem] self-start justify-self-end overflow-y-auto lg:block">
           {subject && (
@@ -387,7 +416,7 @@ function SubjectFolder({ subjectId }) {
                 focusSignal={focusSignal}
               />
             </div>
-            <EditorToolbar editor={activeEditor} />
+            <EditorToolbar editor={activeEditor} onAttach={() => fileInputRef.current?.click()} />
             <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
             <button
               type="button"
@@ -408,14 +437,21 @@ function SubjectFolder({ subjectId }) {
             {notice}
           </p>
         )}
-        {error && (
+        {(error || attachmentsState.error) && (
           <p role="alert" className="mb-3 flex items-start justify-between gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
-            <span>{error}</span>
+            <span>{error ?? attachmentsState.error}</span>
             <span className="flex shrink-0 gap-2">
               <button type="button" onClick={reload} className="underline">
                 Reintentar
               </button>
-              <button type="button" onClick={clearError} aria-label="Cerrar aviso">
+              <button
+                type="button"
+                onClick={() => {
+                  clearError()
+                  attachmentsState.clearError()
+                }}
+                aria-label="Cerrar aviso"
+              >
                 <Icon name="close" size={14} />
               </button>
             </span>
@@ -448,6 +484,10 @@ function SubjectFolder({ subjectId }) {
                   currentHit={currentLocation?.key === sheet.key ? currentLocation.local : null}
                   onHitsChange={handleHitsChange}
                   cancelers={cancelersRef}
+                  attachments={attachmentsState.bySheet.get(sheet.id) ?? []}
+                  attachmentApi={folderAttachmentApi}
+                  onRequestRemoveAttachment={setPendingAttachment}
+                  uploaders={uploadersRef}
                 />
               ))}
               {!reading && subject && (
@@ -485,6 +525,23 @@ function SubjectFolder({ subjectId }) {
         }
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={pendingAttachment != null}
+        title="Borrar adjunto"
+        message={
+          pendingAttachment
+            ? `Se borra «${pendingAttachment.name}» para siempre. Donde estaba en el texto va a decir "Adjunto no disponible".`
+            : ''
+        }
+        confirmLabel="Borrar"
+        onConfirm={async () => {
+          const attachment = pendingAttachment
+          setPendingAttachment(null)
+          if (attachment) await attachmentsState.remove(attachment)
+        }}
+        onCancel={() => setPendingAttachment(null)}
       />
 
       {subject && (

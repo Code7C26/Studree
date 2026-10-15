@@ -39,7 +39,21 @@ export function useFolderAttachments(sheetIds) {
     const ids = idsKey ? idsKey.split(',') : []
     attachmentsService.listBySheets(ids).then(({ data, error: listError }) => {
       if (!alive) return
-      setBySheet(groupBySheet(data))
+      // Se mezcla en vez de reemplazar: si la hoja recién se creó con el primer adjunto, esta
+      // consulta puede resolverse DESPUÉS de la subida y no trae el adjunto nuevo. Por cada hoja
+      // se usan las filas traídas, pero se conservan las ya en estado que la consulta no incluye.
+      setBySheet((current) => {
+        const fetched = groupBySheet(data)
+        for (const [sheetId, rows] of fetched) {
+          const known = new Set(rows.map((row) => row.id))
+          const extra = (current.get(sheetId) ?? []).filter((row) => !known.has(row.id))
+          if (extra.length) fetched.set(sheetId, [...rows, ...extra])
+        }
+        for (const [sheetId, rows] of current) {
+          if (!fetched.has(sheetId) && ids.includes(sheetId) && rows.length) fetched.set(sheetId, rows)
+        }
+        return fetched
+      })
       if (listError) setError(listError)
     })
     return () => {

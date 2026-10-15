@@ -90,6 +90,10 @@ export function SheetEditor({
       handlePaste: (_view, event) => {
         const files = event.clipboardData?.files
         if (!files?.length || !callbacks.current.onFiles) return false
+        // Word, Excel o una página web ponen una imagen JUNTO con texto/HTML: eso es un
+        // pegado normal. Solo una captura (únicamente el archivo) se sube como adjunto.
+        const types = Array.from(event.clipboardData.types ?? [])
+        if (types.includes('text/plain') || types.includes('text/html')) return false
         callbacks.current.onFiles(files)
         return true
       },

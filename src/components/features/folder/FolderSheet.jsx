@@ -7,11 +7,16 @@
  * hoja recién borrada.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SheetEditor } from '../sheetEditor/SheetEditor'
 import { useSheetAutosave } from '../../../hooks/useSheetAutosave.js'
 import { formatSheetDate, formatSheetDateLong } from '../../../lib/format/sheetDate.js'
 import { Icon } from '../../ui/Icon'
+import { AttachmentList } from '../attachments/AttachmentList'
+import { insertAttachment, removeAttachment } from '../../../lib/editor/attachmentNodes.js'
+import { isImageMime } from '../../../lib/attachments/refs.js'
+import { generateId } from '../../../lib/id.js'
+import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENT_LABEL } from '../../../constants/attachmentLimits.js'
 
 const STATUS_LABELS = { idle: '', saving: 'Guardando…', saved: 'Guardado', error: 'Error al guardar' }
 
@@ -29,6 +34,10 @@ const STATUS_LABELS = { idle: '', saving: 'Guardando…', saved: 'Guardado', err
  * @param {number|null} props.currentHit
  * @param {(key: string, count: number) => void} props.onHitsChange
  * @param {{current: Map<string, () => void>}} props.cancelers - Para cancelar lo pendiente antes de borrar.
+ * @param {import('../../../types/models.js').Attachment[]} [props.attachments] - Adjuntos de la hoja.
+ * @param {{upload: Function, resolveUrl: Function, isUploading: Function, open: Function}} props.attachmentApi
+ * @param {(attachment: import('../../../types/models.js').Attachment) => void} props.onRequestRemoveAttachment - Pide confirmación (la página).
+ * @param {{current: Map<string, (files: FileList|File[]) => void>}} props.uploaders - Para que el botón de adjuntar de la barra le pase archivos a la hoja con foco.
  */
 export function FolderSheet({
   sheet,
@@ -43,8 +52,13 @@ export function FolderSheet({
   currentHit,
   onHitsChange,
   cancelers,
+  attachments = [],
+  attachmentApi,
+  onRequestRemoveAttachment,
+  uploaders,
 }) {
-  const { initialContent, syncStatus, error, updateContent, cancel } = useSheetAutosave({ sheet, onCreated })
+  const { initialContent, syncStatus, error, updateContent, cancel, ensureCreated } = useSheetAutosave({ sheet, onCreated })
+  const [uploadError, setUploadError] = useState(null)
   const editorRef = useRef(null)
   const idRef = useRef(sheet.id)
   idRef.current = sheet.id
@@ -66,6 +80,50 @@ export function FolderSheet({
     onEditor(sheet.key, editor)
     if (editor && autoFocus) editor.commands.focus('end')
   }
+
+  /**
+   * Archivos soltados, pegados o elegidos con el botón de adjuntar. Una hoja
+   * nueva se crea primero (el adjunto le da contenido). La referencia entra en
+   * el texto ANTES de que termine la subida (se ve "Subiendo…"); si falla, se saca.
+   * @param {FileList|File[]} fileList
+   */
+  async function handleFiles(fileList) {
+    const editor = editorRef.current
+    if (!editor || editor.isDestroyed) return
+    setUploadError(null)
+    for (const file of Array.from(fileList)) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        setUploadError(`«${file.name}» pesa más de ${MAX_ATTACHMENT_LABEL}.`)
+        continue
+      }
+      const sheetId = await ensureCreated()
+      if (!sheetId) {
+        setUploadError('No se pudo guardar la hoja para adjuntar el archivo.')
+        return
+      }
+      const id = generateId()
+      const uploading = attachmentApi.upload(sheetId, file, { id }) // registra "subiendo" en este tick
+      insertAttachment(editor, { id, name: file.name, isImage: isImageMime(file.type) })
+      const { error: uploadFailure } = await uploading
+      if (uploadFailure) {
+        removeAttachment(editor, id)
+        setUploadError(uploadFailure)
+      }
+    }
+  }
+
+  // El botón de adjuntar de la barra (página) le pasa los archivos a la hoja con foco.
+  // Sin deps a propósito: `handleFiles` cierra sobre `ensureCreated`/`attachmentApi` actuales.
+  useEffect(() => {
+    const map = uploaders.current
+    map.set(sheet.key, handleFiles)
+    return () => map.delete(sheet.key)
+  })
+
+  const editorAttachments = useMemo(
+    () => ({ resolve: attachmentApi.resolveUrl, isUploading: attachmentApi.isUploading, open: attachmentApi.open }),
+    [attachmentApi],
+  )
 
   const status = STATUS_LABELS[syncStatus]
 
@@ -99,8 +157,20 @@ export function FolderSheet({
           searchTerm={searchTerm}
           currentHit={currentHit}
           onHitsChange={(count) => onHitsChange(sheet.key, count)}
+          onFiles={handleFiles}
+          attachments={editorAttachments}
         />
       </div>
+      {uploadError && (
+        <p role="alert" className="border-t border-paper-border px-7 py-2 text-xs text-red-700">
+          {uploadError}
+        </p>
+      )}
+      <AttachmentList
+        attachments={attachments}
+        onOpen={(attachment) => attachmentApi.open(attachment.id)}
+        onRemove={onRequestRemoveAttachment}
+      />
     </article>
   )
 }

@@ -39,8 +39,12 @@ const HEADINGS = [
   { level: 4, title: 'Título 4', label: 'H4' },
 ]
 
-/** @param {{editor: import('@tiptap/react').Editor|null}} props */
-export function EditorToolbar({ editor }) {
+/**
+ * @param {Object} props
+ * @param {import('@tiptap/react').Editor|null} props.editor
+ * @param {() => void} [props.onAttach] - Abre el selector de archivos; sin ella no se muestra el botón.
+ */
+export function EditorToolbar({ editor, onAttach }) {
   if (!editor) return null
 
   function setLink() {
@@ -120,6 +124,14 @@ export function EditorToolbar({ editor }) {
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       />
       <ToolbarButton title="Enlace" label={<Icon name="link" size={14} />} active={editor.isActive('link')} onClick={setLink} />
+      {onAttach && (
+        <ToolbarButton
+          title="Adjuntar (también podés soltar o pegar archivos en la hoja)"
+          label={<Icon name="paperclip" size={14} />}
+          active={false}
+          onClick={onAttach}
+        />
+      )}
     </div>
   )
 }
