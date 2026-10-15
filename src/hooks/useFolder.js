@@ -14,10 +14,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService, FOLDER_SHEET_COLUMNS } from '../services/sheets.service.js'
-import { cacheKey, clearCache } from '../services/cache.service.js'
+import { cacheKey, clearCache, readCache } from '../services/cache.service.js'
 import { onDataChanged } from '../services/dataEvents.js'
 import { generateId } from '../lib/id.js'
-import { LOCAL_SHEET_PREFIX, isLocalSheet, orderFolderSheets } from '../lib/editor/folderSheets.js'
+import {
+  LOCAL_SHEET_PREFIX,
+  isLocalSheet,
+  nextFolderSheets,
+  orderFolderSheets,
+  restoreLocalSheets,
+} from '../lib/editor/folderSheets.js'
 
 const LIVE_CONTENT_DELAY_MS = 300
 
@@ -37,7 +43,7 @@ const LIVE_CONTENT_DELAY_MS = 300
  *   reload: () => Promise<void>,
  *   addLocalSheet: () => string,
  *   replaceLocalSheet: (localId: string, created: import('../types/models.js').Sheet) => void,
- *   deleteSheet: (sheet: FolderSheet) => Promise<string|null>,
+ *   deleteSheet: (key: string) => Promise<string|null>,
  *   updateLiveContent: (id: string, markdown: string) => void,
  * }}
  */
@@ -51,31 +57,30 @@ export function useFolder(subjectId) {
   /** id → contenido que se está escribiendo (más nuevo que el del servidor). */
   const liveRef = useRef(new Map())
   const liveTimerRef = useRef(null)
+  /** Hojas actuales, para acciones que no pueden usar un objeto viejo (borrar). */
+  const sheetsRef = useRef(sheets)
+  sheetsRef.current = sheets
+  /** Id de la última carga: una respuesta vieja (otra materia, carga lenta) se descarta. */
+  const requestRef = useRef(0)
 
   /** @param {{silent?: boolean}} [options] */
   const load = useCallback(
     async ({ silent = false } = {}) => {
       if (!subjectId) return
+      const request = (requestRef.current += 1)
       if (!silent) setLoading(true)
 
       const [{ data: subjectRow, error: getError }, { data: rows, error: listError }] = await Promise.all([
         subjectsService.get(subjectId),
         sheetsService.list(subjectId, undefined, { columns: FOLDER_SHEET_COLUMNS }),
       ])
+      if (request !== requestRef.current) return
 
       setSubject(subjectRow)
       setSubjectError(subjectRow ? null : (getError ?? 'No se encontró la materia.'))
       setError(listError)
-      setSheets((current) => {
-        const keyById = new Map(current.map((sheet) => [sheet.id, sheet.key]))
-        const saved = (rows ?? []).map((row) => ({
-          ...row,
-          key: keyById.get(row.id) ?? row.id,
-          content_md: liveRef.current.get(row.id) ?? row.content_md,
-        }))
-        // Las locales no vienen del servidor: se conservan (siguen al final).
-        return orderFolderSheets([...saved, ...current.filter(isLocalSheet)])
-      })
+      // Si la lista falló NO se usan sus filas (son la cache vieja): ver nextFolderSheets.
+      setSheets((current) => nextFolderSheets(current, rows, listError, liveRef.current))
       setLoading(false)
     },
     [subjectId],
@@ -83,9 +88,14 @@ export function useFolder(subjectId) {
 
   useEffect(() => {
     liveRef.current = new Map()
-    setSheets([])
+    // Hojas nuevas escritas sin conexión que no llegaron a crearse (sheetSaver):
+    // vuelven como hojas locales y se crean apenas se edite de nuevo.
+    setSheets(orderFolderSheets(restoreLocalSheets(readCache(cacheKey('sheet-local', subjectId), {}), subjectId)))
     load()
-  }, [load])
+    return () => {
+      requestRef.current += 1
+    }
+  }, [load, subjectId])
 
   // Otra vista (explorador, otra pestaña de la app) creó / borró algo: recargar en silencio.
   useEffect(() => {
@@ -125,8 +135,14 @@ export function useFolder(subjectId) {
     )
   }, [])
 
+  /**
+   * Borra por `key` y con el estado ACTUAL: una hoja nueva puede haberse
+   * creado en Supabase mientras se confirmaba el borrado (su id cambió).
+   */
   const deleteSheet = useCallback(
-    async (sheet) => {
+    async (key) => {
+      const sheet = sheetsRef.current.find((candidate) => candidate.key === key)
+      if (!sheet) return null
       if (!isLocalSheet(sheet)) {
         const { error: removeError } = await sheetsService.remove(sheet.id, subjectId)
         if (removeError) {

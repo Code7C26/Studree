@@ -26,15 +26,26 @@ const topLevelHeadings = (editor) =>
   editor && !editor.isDestroyed ? editor.view.dom.querySelectorAll(':scope > h1, :scope > h2, :scope > h3, :scope > h4') : []
 
 /**
+ * Ruta `/materias/:subjectId`. Monta la carpeta con `key={subjectId}`: al pasar
+ * de una materia a otra se arranca de cero (editores, búsqueda, posición
+ * inicial) en vez de arrastrar el estado y el scroll de la anterior.
+ */
+export function SubjectFolderPage() {
+  const { subjectId } = useParams()
+  return <SubjectFolder key={subjectId} subjectId={subjectId} />
+}
+
+/**
  * La Carpeta de una materia (ADR-017): todas sus hojas seguidas, en orden
  * cronológico, sobre papel blanco; índice de temas, buscador y modo lectura.
  * Ver docs/features/folder.md.
  *
  * `?hoja=:id` posiciona en esa hoja (contrato con el Inicio); sin parámetro,
  * va a la última hoja (lo normal es seguir escribiendo al final).
+ *
+ * @param {{subjectId: string}} props
  */
-export function SubjectFolderPage() {
-  const { subjectId } = useParams()
+function SubjectFolder({ subjectId }) {
   const [searchParams] = useSearchParams()
   const targetSheetId = searchParams.get('hoja')
   const { openTab } = useOutletContext()
@@ -76,15 +87,6 @@ export function SubjectFolderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject?.id, subject?.name])
 
-  // Al cambiar de materia, todo lo de la búsqueda y el foco arranca de cero.
-  useEffect(() => {
-    setTerm('')
-    setCurrent(null)
-    setHitCounts({})
-    setActiveTopicId(null)
-    setActiveEditor(null)
-  }, [subjectId])
-
   // Salir del modo lectura al irse de la carpeta.
   useEffect(() => () => setReading(false), [setReading])
 
@@ -92,11 +94,15 @@ export function SubjectFolderPage() {
   const topics = useMemo(
     () =>
       sheets.flatMap((sheet) =>
-        extractHeadings(sheet.content_md).map((heading) => ({
-          ...heading,
-          id: `${sheet.key}:${heading.index}`,
-          sheetKey: sheet.key,
-        })),
+        extractHeadings(sheet.content_md)
+          // Los headings vacíos no van al índice, pero conservan su `index`
+          // (sigue alineado con el n-ésimo heading del editor).
+          .filter((heading) => heading.text)
+          .map((heading) => ({
+            ...heading,
+            id: `${sheet.key}:${heading.index}`,
+            sheetKey: sheet.key,
+          })),
       ),
     [sheets],
   )
@@ -185,9 +191,16 @@ export function SubjectFolderPage() {
     return entry ? { key: entry.key, local: current - entry.offset } : null
   }, [current, hitLayout])
 
+  // Scroll a la coincidencia actual SOLO cuando el usuario navega (↑ ↓ Enter) o
+  // cambia lo que busca — no cada vez que escribe en una hoja con el buscador abierto.
+  const scrollToHitRef = useRef(false)
+  const currentKey = currentLocation?.key ?? null
+  const currentLocal = currentLocation?.local ?? null
   useEffect(() => {
-    if (currentLocation) scrollToCurrentHit(editorsRef.current.get(currentLocation.key))
-  }, [currentLocation])
+    if (!scrollToHitRef.current || currentKey == null) return
+    scrollToHitRef.current = false
+    scrollToCurrentHit(editorsRef.current.get(currentKey))
+  }, [currentKey, currentLocal])
 
   const handleHitsChange = useCallback((key, count) => {
     setHitCounts((counts) => (counts[key] === count ? counts : { ...counts, [key]: count }))
@@ -195,6 +208,7 @@ export function SubjectFolderPage() {
 
   const goToHit = (step) => {
     if (totalHits === 0) return
+    scrollToHitRef.current = true
     setCurrent((value) => ((value ?? -step) + step + totalHits) % totalHits)
   }
 
@@ -245,7 +259,8 @@ export function SubjectFolderPage() {
 
   async function removeSheet(sheet) {
     cancelersRef.current.get(sheet.key)?.()
-    await deleteSheet(sheet)
+    // Por `key`: si la hoja nueva se creó mientras se confirmaba, su id ya cambió.
+    await deleteSheet(sheet.key)
   }
 
   function handleRequestDelete(sheet) {
@@ -293,6 +308,7 @@ export function SubjectFolderPage() {
               <FolderSearchBar
                 term={term}
                 onTermChange={(value) => {
+                  scrollToHitRef.current = true
                   setTerm(value)
                   setCurrent(null)
                 }}
@@ -343,7 +359,7 @@ export function SubjectFolderPage() {
             <p className="mt-8 text-center text-text-muted">Cargando…</p>
           ) : (
             <>
-              {sheets.length === 0 && (
+              {sheets.length === 0 && !error && (
                 <EmptyState
                   icon="📝"
                   title="La carpeta está vacía"

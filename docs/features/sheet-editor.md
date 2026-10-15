@@ -33,7 +33,7 @@ Markdown (BD) ──parse──► TipTap (HTML en memoria) ──serialize─�
 copiar el campo. **Costo aceptado:** el editor queda limitado a lo que Markdown
 representa (sin colores de texto, sin tablas complejas).
 
-## Guardado: optimista con debounce (`useSheetAutosave`, uno por hoja)
+## Guardado: optimista con debounce (`useSheetAutosave` → `lib/editor/sheetSaver.js`, uno por hoja)
 
 1. Cada cambio se escribe **ya** en el borrador local `studree:cache:sheet:<id>` como
    `{ content, baseUpdatedAt }`.
@@ -43,7 +43,9 @@ representa (sin colores de texto, sin tablas complejas).
 4. Si el guardado sale bien y el borrador sigue siendo eso, **se borra**.
 5. Al salir (desmontar, cerrar la pestaña: `pagehide`) lo pendiente **se manda enseguida**.
 6. **Hoja nueva** (`local:…`): no existe en Supabase hasta tener contenido no vacío; el
-   primer guardado la **crea**. Si se borra antes, `cancel()` descarta lo pendiente.
+   primer guardado la **crea**. Su borrador va en `studree:cache:sheet-local:<subjectId>`
+   (sobrevive a cerrar la pestaña sin conexión). Si se borra antes, `cancel()` descarta lo
+   pendiente; si el `create` ya estaba en vuelo, la fila creada se borra al volver.
 
 ### Cuándo gana el borrador local (`resolveDraft`, fix de la Fase 0)
 

@@ -49,17 +49,31 @@ abajo.
   - Cada hoja lleva una `key` estable: una hoja local (`local:…`) que se guarda cambia de
     `id`, pero su editor no se remonta.
   - Se recarga en silencio con `studree:data-changed`.
-- **Guardado:** cada `FolderSheet` usa `useSheetAutosave`:
+- **Remontaje por materia:** la ruta monta la carpeta con `key={subjectId}`. Pasar de
+  una materia a otra arranca de cero (posición inicial, búsqueda, editores), y una carga
+  vieja que vuelve tarde se descarta.
+- **Si falla la carga de hojas**, no se montan editores sobre la cache vieja: se muestra el
+  aviso con "Reintentar" (`nextFolderSheets`).
+- **Guardado:** cada `FolderSheet` usa `useSheetAutosave`, que envuelve
+  `lib/editor/sheetSaver.js` (reglas puras con el service y la cache inyectados, probadas en
+  Node):
   - borrador `{ content, baseUpdatedAt }` con la regla de la Fase 0 (`resolveDraft`);
   - debounce de 800 ms;
   - los guardados de una hoja van en fila;
   - flush al desmontar y en `pagehide`;
   - antes de borrar una hoja se llama a `cancel()`, para que el flush del desmontaje no la
-    reviva.
+    reviva. Si el `create` de una hoja nueva ya estaba en vuelo, cuando vuelve se borra la
+    fila creada;
+  - las **hojas nuevas** guardan borrador en `studree:cache:sheet-local:<subjectId>`. Si se
+    escribió sin conexión y se cerró la pestaña, al volver a abrir la materia reaparecen
+    como hojas nuevas y se crean al editarlas;
+  - se borra **por `key`** y con el estado actual (el id de una hoja nueva cambia al crearse).
 - **Índice:** `extractHeadings` sobre el Markdown de cada hoja (ignora bloques de código y
   `#hashtag`). Cada tema se ubica en el DOM como el n-ésimo heading de primer nivel del
   editor de su hoja (`:scope > h1..h4`). El tema activo sale de un listener de scroll sobre
   `<main>`.
+- **Scroll de la búsqueda:** va a la coincidencia actual solo cuando navegás (↑ ↓ Enter) o
+  cambiás el término, no mientras escribís con el buscador abierto.
 - **Búsqueda y `[[links]]`:** `HighlightExtension` (TipTap) pinta decoraciones calculadas
   por `computeHighlights` (puro). No cambian el documento ni el Markdown. Cada hoja reporta
   cuántas coincidencias tiene, y la página traduce el índice global ("3 de 12") a la hoja
@@ -83,7 +97,8 @@ abajo.
 | `src/hooks/useSheetLocation.js` | Materia de una hoja (para la redirección) |
 | `src/hooks/useReadingMode.js` · `layout/ReadingModeProvider.jsx` | Modo lectura |
 | `src/lib/editor/highlightExtension.js` · `computeHighlights.js` · `matches.js` | Resaltado de `[[links]]` y búsqueda |
-| `src/lib/editor/folderSheets.js` | `resolveDraft`, `orderFolderSheets`, `isLocalSheet` |
+| `src/lib/editor/folderSheets.js` | `resolveDraft`, `orderFolderSheets`, `isLocalSheet`, `restoreLocalSheets`, `nextFolderSheets` |
+| `src/lib/editor/sheetSaver.js` | Guardado de una hoja sin React (borradores, cola, crear, cancelar) |
 | `src/lib/markdown/headings.js` | `extractHeadings` |
 | `src/lib/format/sheetDate.js` | `formatSheetDate`, `formatSheetDateLong`, `sheetLocalIso`, `sheetFileName` |
 
@@ -103,7 +118,8 @@ hojas en menos de ~1 s. En desarrollo, la consola muestra
 - Markdown es la fuente de verdad (ADR-011): las decoraciones no se guardan.
 - `[[Tema]]` se resuelve dentro de la misma materia, sin distinguir mayúsculas, al primer
   tema con ese texto.
-- Un heading dentro de una lista o cita no es un tema (no está en el índice).
+- Un heading dentro de una lista o cita no es un tema (no está en el índice). Un heading
+  vacío (`# `) tampoco se muestra, pero cuenta para alinear el índice con el editor.
 
 ## Pendiente
 

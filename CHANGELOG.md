@@ -6,6 +6,68 @@
 
 ---
 
+## [0.13.0] — 2026-10-14
+
+### Changed — La Carpeta (FASE 11)
+
+**Request original:** "me gustaría que por materia haya una hoja y vas agregando más en el
+mismo lugar estilo Word… como si fuera una carpeta escolar", fondo blanco para el
+contenido, buscar por temas, herramientas para leer mejor, y estados de materia que se
+diferencien. Decisiones en el brainstorming: carpeta continua con los datos divididos en
+hojas, sin dibujo de hojas, orden cronológico sin reordenar, papel blanco solo en las hojas,
+índice de temas + buscador + modo lectura, hojas sin título. Spec:
+`docs/superpowers/specs/2026-10-14-carpeta-design.md`; plan:
+`docs/superpowers/plans/2026-10-14-carpeta.md`.
+
+**Migración `0004_carpeta.sql` aplicada** (destructiva, autorizada). Probada antes en
+`begin … rollback` con asserts; esa prueba encontró que los triggers de la 0003 dejaban el
+contenido en NULL al anular títulos, así que se dropean primero.
+
+#### Datos (ADR-017)
+- Cada título de hoja pasó a ser el primer tema (`# título`); `title` queda NULL.
+- Se eliminan `sheet_links` (+ triggers/funciones), `units`, `topics`, `sheets.topic_id`,
+  `sheets.pos_x/pos_y` y `subjects.map_x/map_y`. `save_node_positions` solo acepta `subjects`.
+
+#### La Carpeta (`features/folder.md`, **nuevo doc**)
+- `SubjectFolderPage` (**nuevo**): hojas en orden cronológico sobre papel blanco, cada una
+  con su autosave (`useSheetAutosave`, **nuevo**, misma regla de borrador de la Fase 0).
+- **＋ Nueva hoja**: se guarda recién con contenido. `?hoja=:id` posiciona (contrato con el Inicio).
+- **Índice de temas** (`extractHeadings`), **buscador** con resaltado en todas las hojas
+  (`HighlightExtension` + `computeHighlights`), **`[[Tema]]` clickeable**, **modo lectura**.
+- `/hojas/:id` redirige a la carpeta (`SheetRedirectPage`, **nuevo**).
+
+#### Shell, export y estilos
+- Tabs por materia; explorador Carrera → Materia (con cantidad de hojas); Ctrl+K abre la
+  carpeta en la hoja encontrada (materia + fecha + fragmento).
+- Export: cada hoja con su fecha como heading; `.zip` con archivos `AAAA-MM-DD HH-MM.md`
+  y `creada` en el frontmatter.
+- Tokens `paper`, `ink`, `warn`. Estados: `○ Pendiente`, `◐ Cursando` (ámbar),
+  `✓ Aprobada`, `🔒 Bloqueada` (punteado).
+- `@tiptap/pm` declarado en `package.json` (ya estaba instalado como peer).
+
+#### Eliminados
+`SubjectMapPage`, `SheetPage`, `features/subjectMap/*`, `SheetListItem`,
+`SheetLinksPanel`, `useSubjectMap`, `useSheet`, `useSheetLinks`, `sheetLinks.service.js`,
+`computeSheetLayout`, `appendWikiLink`/`removeWikiLink`/`includesTitle`.
+
+#### Fixed (revisión final de la rama)
+- Borrar una hoja nueva mientras se creaba la dejaba viva: ahora se borra por `key` con el
+  estado actual, y un `create` en vuelo que vuelve después de borrar elimina la fila creada.
+- Las hojas nuevas no tenían borrador local (se perdía lo escrito sin conexión): ahora lo
+  tienen y se restauran al abrir la materia.
+- Cambiar de materia arrastraba el scroll y podía mostrar hojas de la anterior: la carpeta
+  se remonta por materia y las cargas viejas se descartan.
+- Con el buscador abierto, la vista saltaba al resultado en cada pausa al escribir.
+- Un heading vacío o dentro de una lista desalineaba el índice con el editor.
+- Si fallaba la carga de hojas, los editores se abrían sobre la cache vieja.
+- La lógica de guardado se movió a `lib/editor/sheetSaver.js` (sin React, con pruebas).
+
+#### Pendiente
+- Medir el montaje con una materia grande: en desarrollo, la consola muestra
+  `[carpeta] N hojas montadas en X ms` (criterio < ~1 s).
+
+---
+
 ## [0.12.0] — 2026-10-14
 
 ### Changed — Jerarquía de 3 niveles + canvas de hojas con `[[links]]` (FASE 10 / Fase 1)

@@ -7,8 +7,13 @@
  */
 
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/
-/** `#` seguido de espacio: `#hashtag` NO es un heading. Hasta nivel 4 (lo que permite el editor). */
-const HEADING = /^\s{0,3}(#{1,4})\s+(.+?)\s*#*\s*$/
+/**
+ * `#` seguido de espacio (`#hashtag` NO es un heading), SIN indentación: el
+ * serializador nunca indenta los headings de primer nivel, y uno indentado
+ * está dentro de una lista (no es un tema del índice ni un `:scope > hN` del
+ * editor). Hasta nivel 4 (lo que permite el editor). El texto puede ser vacío.
+ */
+const HEADING = /^(#{1,4})(?:[ \t]+(.*?))?[ \t]*$/
 
 /** Quita las marcas de formato más comunes para mostrar el tema como texto plano. */
 function plainText(text) {
@@ -23,7 +28,7 @@ function plainText(text) {
 /**
  * @typedef {Object} Heading
  * @property {1|2|3|4} level
- * @property {string} text - Texto plano del tema.
+ * @property {string} text - Texto plano del tema ('' si el heading está vacío).
  * @property {number} index - Posición entre los headings de ESA hoja (0, 1, 2…):
  *   sirve para encontrar el n-ésimo heading del editor y hacer scroll.
  */
@@ -48,9 +53,10 @@ export function extractHeadings(markdown) {
 
     const match = line.match(HEADING)
     if (!match) continue
-    const text = plainText(match[2])
-    if (!text) continue
-    headings.push({ level: /** @type {1|2|3|4} */ (match[1].length), text, index: headings.length })
+    // Los vacíos (`# `) también cuentan: el editor los dibuja como heading y el
+    // `index` tiene que coincidir con el n-ésimo heading del DOM. Quien muestra
+    // el índice los filtra.
+    headings.push({ level: /** @type {1|2|3|4} */ (match[1].length), text: plainText(match[2] ?? ''), index: headings.length })
   }
 
   return headings

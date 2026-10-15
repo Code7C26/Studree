@@ -226,6 +226,7 @@ create index sheets_subject_created_idx on sheets (subject_id, created_at);
 | `studree:cache:<tabla>:<parentId>` | Colección acotada a un padre |
 | `studree:cache:<tabla>[<columnas>]:<parentId>` | Lista con columnas parciales (ej. las hojas de la carpeta) |
 | `studree:cache:sheet:<id>` | Borrador local de una hoja: `{ content, baseUpdatedAt }` (ver `sheet-editor.md`) |
+| `studree:cache:sheet-local:<subjectId>` | Borradores de hojas nuevas todavía no creadas: `{ [localId]: { content, created_at } }` |
 | `studree:ui:tabs` | Tabs abiertas (una por materia) |
 | `studree:ui:explorer` | Carreras expandidas en el explorador |
 
