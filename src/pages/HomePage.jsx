@@ -1,28 +1,90 @@
-import { Link } from 'react-router-dom'
-import { ROUTES } from '../constants/routes'
-import { Button } from '../components/ui/Button'
+import { useState } from 'react'
+import { useHome } from '../hooks/useHome.js'
+import { WeekSummary } from '../components/features/home/WeekSummary'
+import { ContinueCard } from '../components/features/home/ContinueCard'
+import { NextDateCard } from '../components/features/home/NextDateCard'
+import { CalendarPanel } from '../components/features/home/CalendarPanel'
+import { DateFormModal } from '../components/features/home/DateFormModal'
+import { TaskList } from '../components/features/home/TaskList'
+import { QuickNotes } from '../components/features/home/QuickNotes'
 
-/** Página de inicio: bienvenida + acceso a las carpetas. */
+/**
+ * Inicio (`/`, dentro del workspace): seguí donde dejaste, resumen de la
+ * semana, próxima fecha, calendario, tareas y notas. Ver docs/features/home.md.
+ *
+ * El orden del DOM es el del celular (una columna). En desktop la grilla de 2
+ * columnas ubica cada bloque con `md:col-start`/`md:row-start`.
+ */
 export function HomePage() {
-  return (
-    <section>
-      <h1 className="text-2xl font-bold">
-        Bienvenido a <span className="text-accent">Studree</span>
-      </h1>
-      <p className="mt-2 text-text-muted">
-        El conocimiento no se guarda en carpetas, crece como un árbol.
-      </p>
+  const home = useHome()
+  /** Fecha abierta en el modal (alta si no tiene id), o null. */
+  const [dateForm, setDateForm] = useState(/** @type {{id?: string, title: string, date: string}|null} */ (null))
 
-      <div className="card mt-6">
-        <h2 className="text-lg font-semibold">Empezá a organizar</h2>
-        <p className="mt-1 text-sm text-text-muted">
-          Creá una carrera y, dentro, tus materias con sus correlativas. Cada materia se
-          llena de hojas de apuntes que podés enlazar entre sí.
-        </p>
-        <Link to={ROUTES.careers} className="mt-4 inline-block">
-          <Button>Ir a mis carreras</Button>
-        </Link>
+  const openNewDate = (key) => setDateForm({ title: '', date: key })
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-4">
+      <h1 className="text-3xl font-bold">Inicio</h1>
+
+      <WeekSummary summary={home.summary} loading={home.dates.loading || home.tasks.loading} />
+
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <ContinueCard
+          sheet={home.lastSheet.data}
+          loading={home.lastSheet.loading}
+          error={home.lastSheet.error}
+          className="md:col-start-1 md:row-start-1"
+        />
+        <NextDateCard
+          date={home.dates.next}
+          todayKey={home.todayKey}
+          loading={home.dates.loading}
+          onAdd={() => openNewDate(home.todayKey)}
+          className="md:col-start-2 md:row-start-1"
+        />
+        <TaskList
+          pending={home.tasks.pending}
+          done={home.tasks.done}
+          todayKey={home.todayKey}
+          loading={home.tasks.loading}
+          error={home.tasks.error}
+          onCreate={home.createTask}
+          onToggle={home.toggleTask}
+          onRename={home.renameTask}
+          onDelete={home.deleteTask}
+          className="md:col-start-2 md:row-start-2"
+        />
+        <CalendarPanel
+          todayKey={home.todayKey}
+          upcoming={home.dates.upcoming}
+          markers={home.markers}
+          loading={home.dates.loading}
+          error={home.dates.error}
+          onAddDate={openNewDate}
+          onEditDate={(item) => setDateForm({ id: item.id, title: item.title, date: item.date })}
+          className="md:col-start-1 md:row-span-2 md:row-start-2"
+        />
+        <QuickNotes
+          notes={home.notes.items}
+          pendingRemoval={home.notes.pendingRemoval}
+          loading={home.notes.loading}
+          error={home.notes.error}
+          onCreate={home.createNote}
+          onUpdate={home.updateNote}
+          onRemove={home.removeNote}
+          onUndoRemove={home.undoRemoveNote}
+          className="md:col-start-2 md:row-start-3"
+        />
       </div>
-    </section>
+
+      {dateForm && (
+        <DateFormModal
+          initial={dateForm}
+          onClose={() => setDateForm(null)}
+          onSave={(values) => (dateForm.id ? home.updateDate(dateForm.id, values) : home.createDate(values))}
+          onDelete={home.deleteDate}
+        />
+      )}
+    </div>
   )
 }

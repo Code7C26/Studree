@@ -31,7 +31,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path={ROUTES.home} element={<HomePage />} />
+        {/* Única ruta pública (más el catch-all). */}
         <Route path={ROUTES.login} element={<LoginPage />} />
 
         {/* Todo lo que toca datos del usuario exige sesión (RLS). */}
@@ -40,6 +40,8 @@ export default function App() {
 
           {/* A partir de acá, el shell (explorador + tabs + palette) — ver navigation-shell.md. */}
           <Route element={<WorkspaceLayout />}>
+            {/* Inicio: "/" con sesión (ver docs/features/home.md). */}
+            <Route path={ROUTES.home} element={<HomePage />} />
             <Route path={ROUTES.careers} element={<CareersPage />} />
             <Route path={ROUTES.careerMap} element={withSuspense(<CareerMapPage />)} />
             <Route path={ROUTES.subjectMap} element={withSuspense(<SubjectMapPage />)} />

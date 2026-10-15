@@ -6,7 +6,7 @@
  * reemplazadas por `/carreras` y `/carreras/:careerId` (ADR-010).
  */
 export const ROUTES = Object.freeze({
-  home: '/',
+  home: '/', // Inicio (workspace, con sesión — docs/features/home.md)
   login: '/entrar',
   careers: '/carreras', // workspace: panel de inicio con las carreras
   careerMap: '/carreras/:careerId', // canvas de materias + correlativas
