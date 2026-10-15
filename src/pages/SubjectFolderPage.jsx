@@ -211,6 +211,11 @@ export function SubjectFolderPage() {
 
   // ---- Hojas -------------------------------------------------------------
 
+  // Solo en desarrollo: cuánto tarda en montar todos los editores (criterio de
+  // rendimiento de docs/features/folder.md: < ~1 s; si no, montaje perezoso).
+  const mountStartRef = useRef(performance.now())
+  const mountReportedRef = useRef(false)
+
   const handleEditor = useCallback((key, editor) => {
     if (editor) {
       editorsRef.current.set(key, editor)
@@ -220,6 +225,17 @@ export function SubjectFolderPage() {
     // La hoja con foco se borró: la toolbar no puede seguir apuntando a un editor destruido.
     setActiveEditor((active) => (active && active.isDestroyed ? null : active))
   }, [])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || mountReportedRef.current || loading || sheets.length === 0) return
+    const timer = window.setInterval(() => {
+      if (editorsRef.current.size < sheets.length) return
+      window.clearInterval(timer)
+      mountReportedRef.current = true
+      console.info(`[carpeta] ${sheets.length} hojas montadas en ${Math.round(performance.now() - mountStartRef.current)} ms`)
+    }, 50)
+    return () => window.clearInterval(timer)
+  }, [loading, sheets.length])
 
   function handleAddSheet() {
     const id = addLocalSheet()
