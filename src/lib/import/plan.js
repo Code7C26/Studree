@@ -27,7 +27,7 @@ export function isIgnoredPath(path) {
 /** Carrera y materia de un `.md` según su carpeta y su frontmatter. */
 function destinationFor(path, meta) {
   let dirs = path.split('/').slice(0, -1).map((segment) => segment.trim()).filter(Boolean)
-  if (dirs.length >= 3 && dirs[0] === EXPORT_ROOT) dirs = dirs.slice(1)
+  if (dirs.length >= 2 && dirs[0] === EXPORT_ROOT) dirs = dirs.slice(1)
   const careerName = meta.carrera?.trim() || (dirs.length >= 2 ? dirs[dirs.length - 2] : '') || IMPORT_FALLBACK_NAME
   const subjectName = meta.materia?.trim() || (dirs.length >= 1 ? dirs[dirs.length - 1] : '') || IMPORT_FALLBACK_NAME
   return { careerName, subjectName }
@@ -41,7 +41,10 @@ function destinationFor(path, meta) {
  * @param {Array<{id: string, name: string, subjects: Array<{id: string, name: string}>}>} params.existingCareers
  * @param {Date} [params.now]
  */
-export function buildImportPlan({ mdEntries, filePaths, target, existingCareers, now = new Date() }) {
+export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, target, existingCareers, now = new Date() }) {
+  // Zips hechos en Windows pueden traer `\` como separador.
+  const mdEntries = rawEntries.map((entry) => ({ ...entry, path: entry.path.replaceAll('\\', '/') }))
+  const filePaths = rawPaths.map((path) => path.replaceAll('\\', '/'))
   const visibleFiles = filePaths.filter((path) => !isIgnoredPath(path))
   const index = buildZipIndex(visibleFiles)
   const careersByKey = new Map(existingCareers.map((career) => [nameKey(career.name), career]))
@@ -97,8 +100,15 @@ export function buildImportPlan({ mdEntries, filePaths, target, existingCareers,
   return { groups: [...groups.values()], skipped }
 }
 
-/** Misma hoja = mismo minuto de creación y mismo contenido (sin espacios de los bordes). */
-const sheetKey = (createdAt, content) => `${new Date(createdAt).toISOString().slice(0, 16)}|${(content ?? '').trim()}`
+const LINK_DESTINATION = /(!?\[(?:\\.|[^[\]\\])*\])\([^)]*\)/g
+
+/**
+ * Misma hoja = mismo minuto de creación y mismo contenido (sin espacios de los
+ * bordes). Se ignoran los destinos de links e imágenes: en la base son
+ * `adjunto:<id>` y en el archivo importado una ruta.
+ */
+const sheetKey = (createdAt, content) =>
+  `${new Date(createdAt).toISOString().slice(0, 16)}|${(content ?? '').replace(LINK_DESTINATION, '$1()').trim()}`
 
 /**
  * Marca como duplicadas las hojas que ya existen en la materia destino o que

@@ -113,3 +113,28 @@ test('summarizePlan y describeSummary', () => {
     'Se van a crear 3 hojas. 2 hojas ya existen y se saltean.',
   )
 })
+
+test('Studree/Materia (dos niveles) no crea una carrera "Studree"', () => {
+  const { groups } = plan([md('Studree/Genética/a.md')])
+  assert.equal(groups[0].careerName, IMPORT_FALLBACK_NAME)
+  assert.equal(groups[0].subjectName, 'Genética')
+})
+
+test('rutas con barra invertida (zips de Windows)', () => {
+  const { groups } = plan([md('Bio\\G\\a.md')])
+  assert.equal(`${groups[0].careerName}/${groups[0].subjectName}`, 'Bio/G')
+})
+
+test('duplicados ignoran los destinos de links e imágenes', () => {
+  const at = new Date(2026, 9, 14, 18, 30, 10).toISOString()
+  const mk = (text) => buildImportPlan({
+    mdEntries: [md('Bio/G/2026-10-14 18-30.md', text)],
+    filePaths: ['Bio/G/adjuntos/f.png'],
+    target: { mode: 'careers' },
+    existingCareers: [{ id: 'c1', name: 'Bio', subjects: [{ id: 's1', name: 'G' }] }],
+    now,
+  })
+  const existing = new Map([['s1', [{ created_at: at, content_md: '# T\n\n![a](adjunto:abc)' }]]])
+  assert.equal(markDuplicates(mk('# T\n\n![a](adjuntos/f.png)'), existing).groups[0].sheets[0].duplicate, true)
+  assert.equal(markDuplicates(mk('# Otro\n\n![a](adjuntos/f.png)'), existing).groups[0].sheets[0].duplicate, false)
+})

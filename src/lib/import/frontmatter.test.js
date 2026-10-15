@@ -18,3 +18,8 @@ test('acepta CRLF y comillas simples', () => {
   assert.equal(meta.materia, 'Física')
   assert.equal(body, 'Texto')
 })
+
+test('ignora el BOM y acepta un bloque vacío', () => {
+  assert.deepEqual(splitFrontmatter('\uFEFF---\nmateria: "G"\n---\n# x').meta, { materia: 'G' })
+  assert.deepEqual(splitFrontmatter('---\n---\n# x'), { meta: {}, body: '# x' })
+})

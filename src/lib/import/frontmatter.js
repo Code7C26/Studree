@@ -4,7 +4,7 @@
  * Obsidian; no es un parser YAML completo a propósito (sin dependencia nueva).
  */
 
-const BLOCK = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/
+const BLOCK = /^---\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/
 
 /** @param {string} raw */
 function parseValue(raw) {
@@ -23,11 +23,11 @@ function parseValue(raw) {
  * @returns {{meta: Record<string, string>, body: string}}
  */
 export function splitFrontmatter(text) {
-  const source = text ?? ''
+  const source = (text ?? '').replace(/^﻿/, '')
   const match = source.match(BLOCK)
   if (!match) return { meta: {}, body: source }
   const meta = {}
-  for (const line of match[1].split(/\r?\n/)) {
+  for (const line of (match[1] ?? '').split(/\r?\n/)) {
     const colon = line.indexOf(':')
     if (colon <= 0) continue
     meta[line.slice(0, colon).trim()] = parseValue(line.slice(colon + 1))

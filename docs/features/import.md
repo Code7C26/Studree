@@ -24,10 +24,11 @@
 
 - **Fecha de la hoja:** `creada:` del frontmatter → nombre `AAAA-MM-DD HH-MM` → fecha del archivo → ahora.
   Las dos primeras son hora local; una fecha inválida pasa a la siguiente fuente.
+- **Raíz `Studree/`:** se descarta si hay al menos una carpeta más (`Studree/Materia` no crea una carrera "Studree"). Las rutas con `` se normalizan a `/`.
 - **Carrera y materia existentes** se reusan por nombre, sin distinguir mayúsculas ni espacios de los bordes.
 - **"Importado":** lo que no tiene carpeta va a la carrera y materia `Importado`.
 - **Se saltean:** hojas vacías, archivos ocultos (`.obsidian/`, `__MACOSX/`, `.DS_Store`), archivos del zip
-  que ninguna hoja usa, y duplicados (mismo minuto de creación y mismo contenido, en la base o repetido en el zip).
+  que ninguna hoja usa, y duplicados (mismo minuto de creación y mismo contenido, en la base o repetido en el zip; al comparar se ignoran los destinos de links e imágenes, porque en la base son `adjunto:<id>`).
 - **Imágenes y archivos → adjuntos:** la referencia se reescribe a `adjunto:<id>`.
 - **Límite:** 20 MB por archivo.
 
