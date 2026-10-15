@@ -20,13 +20,27 @@ export const BLOCKED_STATUS = 'bloqueada'
 export const SUBJECT_STATUS_VALUES = Object.freeze(Object.values(SUBJECT_STATUS))
 
 /**
- * Etiqueta visible y clases de borde por estado efectivo.
+ * Etiqueta, ícono y clases por estado efectivo. Cada estado se ve DISTINTO
+ * (ícono + color + borde): antes "aprobada" y "cursando" eran dos verdes casi
+ * iguales y "pendiente"/"bloqueada" el mismo gris.
  * Los colores salen del design system (tailwind.config.js) — Mandamiento VII.
- * @type {Readonly<Record<import('../types/models.js').EffectiveStatus, {label: string, border: string, text: string}>>}
+ * @type {Readonly<Record<import('../types/models.js').EffectiveStatus, {label: string, icon: string, border: string, text: string, chip: string}>>}
  */
 export const STATUS_STYLES = Object.freeze({
-  aprobada: { label: 'Aprobada', border: 'border-accent', text: 'text-accent' },
-  cursando: { label: 'Cursando', border: 'border-accent-soft', text: 'text-accent-soft' },
-  pendiente: { label: 'Pendiente', border: 'border-border', text: 'text-text-muted' },
-  bloqueada: { label: 'Bloqueada', border: 'border-border', text: 'text-text-muted' },
+  aprobada: { label: 'Aprobada', icon: '✓', border: 'border-accent', text: 'text-accent', chip: 'bg-accent/10 text-accent' },
+  cursando: { label: 'Cursando', icon: '◐', border: 'border-warn', text: 'text-warn', chip: 'bg-warn/10 text-warn' },
+  pendiente: {
+    label: 'Pendiente',
+    icon: '○',
+    border: 'border-border',
+    text: 'text-text-muted',
+    chip: 'bg-surface-2 text-text-muted',
+  },
+  bloqueada: {
+    label: 'Bloqueada',
+    icon: '🔒',
+    border: 'border-border border-dashed',
+    text: 'text-text-muted',
+    chip: 'bg-surface-2 text-text-muted opacity-70',
+  },
 })

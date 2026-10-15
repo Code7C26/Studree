@@ -50,7 +50,7 @@ export function SubjectNode({ data, selected }) {
           style={{ backgroundColor: `${subject.color}26`, color: subject.color }}
           aria-hidden="true"
         >
-          {status === 'bloqueada' ? '🔒' : subject.name.trim().charAt(0).toUpperCase()}
+          {subject.name.trim().charAt(0).toUpperCase()}
         </span>
         <button
           type="button"
@@ -71,11 +71,14 @@ export function SubjectNode({ data, selected }) {
       </div>
 
       <div className="mt-2 flex items-center gap-1.5">
+        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${style.chip}`}>
+          <span aria-hidden="true">{style.icon}</span> {style.label}
+        </span>
         <select
           value={subject.status}
           onChange={(event) => onChangeStatus(event.target.value)}
-          aria-label="Estado"
-          className={`nodrag min-w-0 flex-1 rounded border border-border bg-bg px-1 py-0.5 text-[11px] outline-none transition-colors focus:border-accent ${style.text}`}
+          aria-label="Cambiar estado"
+          className="nodrag min-w-0 flex-1 rounded border border-border bg-bg px-1 py-0.5 text-[11px] text-text-muted outline-none transition-colors focus:border-accent"
         >
           {SUBJECT_STATUS_VALUES.map((value) => (
             <option key={value} value={value}>

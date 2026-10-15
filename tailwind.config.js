@@ -24,6 +24,18 @@ export default {
           DEFAULT: '#e6edf3', // texto principal
           muted: '#8b949e', // texto secundario
         },
+        // Papel de la carpeta (ADR-017): la zona donde se lee y escribe va en
+        // blanco sobre el escritorio oscuro, para que el contenido se destaque.
+        paper: {
+          DEFAULT: '#ffffff', // hoja
+          border: '#d0d7de', // bordes / separadores sobre el papel
+        },
+        ink: {
+          DEFAULT: '#1f2328', // texto sobre el papel
+          muted: '#59636e', // texto secundario sobre el papel
+        },
+        // Advertencia / estado intermedio (materia "cursando", resaltado de búsqueda).
+        warn: '#f59e0b',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'],

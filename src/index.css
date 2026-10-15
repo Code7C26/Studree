@@ -32,12 +32,12 @@
 
   /*
    * Contenido del editor de hojas (TipTap/ProseMirror) — ver
-   * docs/features/sheet-editor.md. No hay plugin de tipografía de Tailwind
-   * instalado; se estiliza acá con los mismos tokens del design system en vez
-   * de sumar una dependencia nueva solo para esto (Mandamiento VII).
+   * docs/features/sheet-editor.md. Va sobre PAPEL BLANCO (ADR-017): tinta
+   * oscura (`ink`) sobre `paper`. No hay plugin de tipografía de Tailwind
+   * instalado; se estiliza acá con los tokens del design system (Mandamiento VII).
    */
   .sheet-editor .ProseMirror {
-    @apply text-text outline-none;
+    @apply text-ink outline-none;
   }
   .sheet-editor .ProseMirror p {
     @apply my-2 leading-relaxed;
@@ -73,21 +73,32 @@
     @apply mt-1 select-none;
   }
   .sheet-editor .ProseMirror blockquote {
-    @apply my-3 border-l-2 border-accent pl-4 text-text-muted;
+    @apply my-3 border-l-2 border-accent pl-4 text-ink-muted;
   }
   .sheet-editor .ProseMirror code {
-    @apply rounded bg-surface-2 px-1 py-0.5 font-mono text-[0.85em];
+    @apply rounded bg-paper-border/40 px-1 py-0.5 font-mono text-[0.85em];
   }
   .sheet-editor .ProseMirror pre {
-    @apply my-3 overflow-x-auto rounded-lg bg-surface-2 p-3 font-mono text-sm;
+    @apply my-3 overflow-x-auto rounded-lg bg-paper-border/40 p-3 font-mono text-sm;
   }
   .sheet-editor .ProseMirror pre code {
     @apply bg-transparent p-0;
   }
   .sheet-editor .ProseMirror hr {
-    @apply my-6 border-border;
+    @apply my-6 border-paper-border;
   }
   .sheet-editor .ProseMirror a {
-    @apply text-accent underline underline-offset-2;
+    @apply text-accent-hover underline underline-offset-2;
+  }
+  /* [[Tema]]: salto a un tema de la materia (decoración de highlightExtension). */
+  .sheet-editor .wiki-link {
+    @apply cursor-pointer text-accent-hover underline underline-offset-2;
+  }
+  /* Buscador de la carpeta: todas las coincidencias y la actual. */
+  .sheet-editor .search-hit {
+    @apply rounded-sm bg-warn/30;
+  }
+  .sheet-editor .search-hit-current {
+    @apply rounded-sm bg-warn text-ink;
   }
 }
