@@ -172,8 +172,8 @@ Solo cambia la presentación. `useHome`, los servicios y la lógica de cada bloq
           Buenas tardes.                           (display 800)
           Jueves 15 de octubre — tenés un parcial en 3 días.
 ┌──────────────────────────┬────────────┬────────────┐
-│ Seguí donde dejaste       │ Parcial de │ Hojas esta │
-│ Genética                  │ Química  3 │ semana  12 │
+│ Seguí donde dejaste       │ Parcial de │ Esta semana│
+│ Genética                  │ Química  3 │ 4 tareas   │
 │ Escribiste ayer 18:30     ├────────────┴────────────┤
 │              ┌hoja crema┐ │ 2 tareas pendientes     │
 │              │ inclinada│ │ ○ … ○ …                 │
@@ -187,7 +187,10 @@ Solo cambia la presentación. `useHome`, los servicios y la lógica de cada bloq
 - **Saludo:** "Buenos días / Buenas tardes / Buenas noches" según la hora local (función pura
   `greetingFor(date)` en `src/lib/home/`), y debajo una frase con la fecha larga y, si hay, la
   próxima fecha importante ("tenés un parcial en 3 días") armada con datos que `useHome` ya da.
-  Reemplaza al `h1` "Inicio" y absorbe a `WeekSummary` (su texto pasa a ser esta línea).
+  Reemplaza al `h1` "Inicio" (el `h1` pasa a ser el saludo).
+- **Esta semana** (`WeekSummary`): deja de ser una línea y pasa a ser un bloque chico con el
+  número de tareas de la semana en grande y debajo fechas y vencidas (mismos datos de
+  `buildWeekSummary`; "Semana tranquila" si no hay nada). No se inventan datos nuevos.
 - **Seguí donde dejaste** (`ContinueCard`): bloque protagonista 2×2, más redondeado
   (`rounded-2xl`), borde y tinte verde, nombre de la materia en `display`, y una **hoja crema
   inclinada (-4°) que asoma** con el margen del color de la materia y el primer título de la hoja.
