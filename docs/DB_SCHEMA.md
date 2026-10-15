@@ -2,13 +2,13 @@
 
 **Fuente de verdad:** **Supabase (PostgreSQL)** — ver ADR-007.
 **Cache:** `localStorage` (optimista, descartable).
-**Última actualización:** 2026-10-14 (migración 0003: 3 niveles + links entre hojas + posiciones en lote)
+**Última actualización:** 2026-10-14 (migración 0004: La Carpeta)
 
-> **Cambio de modelo (2026-10-14, ADR-014).** La jerarquía pasa de 5 niveles a **3**:
-> Carrera → Materia → Hoja. Las hojas cuelgan directo de la materia y se conectan entre
-> sí con `[[links]]` (ADR-015). `units` y `topics` quedan **deprecadas**: siguen en la
-> base (sin UI ni services) y se eliminan en una migración posterior. La 0003 migró los
-> datos existentes (cada hoja heredó la materia de su tema → unidad).
+> **La Carpeta (2026-10-14, ADR-017).** Jerarquía de 3 niveles (ADR-014): Carrera →
+> Materia → Hoja. Las hojas **no tienen título** (se identifican por su fecha de creación y
+> se muestran en orden cronológico); los temas son los headings `#` de su contenido. La
+> 0004 convirtió cada título existente en el primer tema de su hoja y **eliminó**
+> `sheet_links`, `units`, `topics` y las columnas sin uso.
 
 ---
 
@@ -17,11 +17,10 @@
 ```
 Career (Carrera / curso)
 └── Subject (Materia)        ←→ Prerequisite (correlativas entre materias)
-    └── Sheet (Hoja — documento Markdown)   ←→ SheetLink ([[links]] entre hojas)
+    └── Sheet (Hoja — documento Markdown, fechado, sin título)
 ```
 
-Cada nivel es una **tabla propia** con FK real al padre. `sheet_links` no es jerarquía:
-es un grafo entre hojas de la misma materia, **derivado del Markdown** (ver abajo).
+Cada nivel es una **tabla propia** con FK real al padre.
 
 ## Diagrama de Entidades
 
@@ -31,8 +30,6 @@ erDiagram
     SUBJECT ||--o{ SHEET : contiene
     SUBJECT ||--o{ PREREQUISITE : "requiere (subject_id)"
     SUBJECT ||--o{ PREREQUISITE : "es requisito de (requires_id)"
-    SHEET ||--o{ SHEET_LINK : "enlaza (source_id)"
-    SHEET ||--o{ SHEET_LINK : "es enlazada (target_id)"
 
     CAREER {
         uuid id PK
@@ -53,8 +50,6 @@ erDiagram
         int position "orden manual en listas"
         float pos_x "canvas de carrera, nullable (ADR-012)"
         float pos_y "canvas de carrera, nullable"
-        float map_x "LEGADO: nodo raíz del canvas viejo, sin uso"
-        float map_y "LEGADO"
         timestamp created_at
         timestamp updated_at
     }
@@ -69,153 +64,103 @@ erDiagram
         uuid id PK
         uuid subject_id FK "ADR-014"
         uuid user_id FK
-        string title "único por materia (lower/trim)"
+        string title "LEGADO: siempre NULL (0004)"
         text content_md "Markdown — fuente de verdad"
-        int position
-        float pos_x "canvas de materia, nullable (ADR-012)"
-        float pos_y "nullable"
-        uuid topic_id "LEGADO, nullable, on delete set null"
-        timestamp created_at
+        int position "LEGADO: el orden es created_at"
+        timestamp created_at "orden de la carpeta + lo que se muestra"
         timestamp updated_at "solo cambia con title o content_md"
-    }
-    SHEET_LINK {
-        uuid id PK
-        uuid user_id FK
-        uuid source_id FK "hoja que escribe [[...]]"
-        uuid target_id FK "hoja enlazada"
-        timestamp created_at
     }
 ```
 
-> **Posiciones del canvas (ADR-012).** `pos_x`/`pos_y` (en `subjects` para el canvas de
-> carrera y en `sheets` para el canvas de materia) son coordenadas **opcionales** del
-> lienzo de React Flow. `NULL` = el nodo lo ubica el auto-layout; con valor = el usuario lo
-> acomodó a mano. "Reordenar" las vuelve a `NULL`. `position` es otra cosa: un **entero
-> de orden** dentro de una lista (explorador y export), no una coordenada. Las posiciones
-> se guardan en lote con la RPC `save_node_positions` (ADR-016).
+> **Posiciones del canvas (ADR-012).** `subjects.pos_x/pos_y` son coordenadas
+> **opcionales** del canvas de carrera. `NULL` = el nodo lo ubica dagre. "Reordenar" las
+> vuelve a `NULL`. Se guardan en lote con `save_node_positions` (ADR-016).
 >
 > **Correlativas opcionales (ADR-013).** `careers.uses_prerequisites = false` oculta toda
-> la UI de correlativas de esa carrera (curso / organizador). Las filas de
-> `prerequisites` no se borran: solo se ignoran mientras esté en `false`.
+> la UI de correlativas de esa carrera. Las filas de `prerequisites` no se borran.
 
 ---
 
+## Hojas: la carpeta (ADR-017)
+
+- **Sin título:** `title` es `NULL` (columna legada, nullable, sin check ni índice único).
+  En la UI, la hoja se identifica por `created_at` ("Miércoles 14/10 · 18:30").
+- **Orden:** cronológico por `created_at` (índice `sheets_subject_created_idx`). No hay
+  reordenamiento.
+- **Temas:** los headings `#`–`####` del `content_md`. No se guardan aparte: el índice de
+  temas se calcula en el cliente.
+- **`[[Tema]]`:** link a un tema de la misma materia, resuelto en el cliente. No hay tabla
+  de links (la 0004 eliminó `sheet_links`, derivada desde la 0003).
+- **Hoja vacía:** el cliente no la crea hasta que tiene contenido.
+- **`updated_at`:** el trigger `sheets_set_updated_at` solo se dispara si cambia `title` o
+  `content_md`. Lo usan el borrador local del editor y el "Seguí donde dejaste" del Inicio.
+
 ## Correlativas: dos tipos distintos
 
-> **Son opcionales.** `prerequisites` es una tabla aparte, sin ninguna restricción que
-> obligue a una materia a tener correlativas. Una materia sin filas en `prerequisites`
-> es un caso normal — así funciona un curso o una capacitación sin requisitos entre
-> materias. Ver `docs/features/career-map.md` § "Las correlativas son opcionales".
+> **Son opcionales.** Una materia sin filas en `prerequisites` es un caso normal (cursos,
+> capacitaciones). Ver `docs/features/career-map.md`.
 
 | `kind` | Significado | Bloquea |
 |--------|-------------|---------|
-| `cursar` | Materias que deben estar aprobadas (o con cursada regular) para **poder cursar** esta | Inscribirse a la cursada |
+| `cursar` | Materias que deben estar aprobadas para **poder cursar** esta | Inscribirse a la cursada |
 | `rendir` | Materias que deben estar aprobadas para **poder rendir el final** de esta | Rendir el final |
 
-Una misma materia puede aparecer en ambas listas de otra (ej. *Álgebra* requerida para
-cursar **y** para rendir *Análisis II*): son dos filas con distinto `kind`.
-
-### Estado de una materia
-
-`Subject.status` guarda solo lo que el usuario declara: `aprobada` o `cursando`
-(default: `pendiente`). El estado **`bloqueada` es derivado, no se guarda**:
+`Subject.status` guarda solo lo declarado (`pendiente` / `cursando` / `aprobada`). El
+estado **`bloqueada` es derivado** (`src/lib/graph/subjectStatus.js`):
 
 ```
 bloqueada  ⟺  ∃ correlativa de kind='cursar' cuya materia requerida NO está 'aprobada'
 ```
 
-Se calcula en `src/lib/graph/subjectStatus.js`.
-
-### Regla de integridad: las correlativas deben ser un DAG
-
-- Se valida **al guardar** una correlativa, no al renderizar (**ADR-009**).
-- Si el alta cerraría un ciclo → se **rechaza** y se muestra el ciclo concreto.
-- Implementación: `src/lib/graph/validateDag.js` (DFS de 3 colores).
-- Además la base rechaza el caso trivial con un `CHECK (subject_id <> requires_id)`.
-
-> Los **links entre hojas** NO son un DAG ni se validan como tal: que dos apuntes se
-> enlacen mutuamente es normal (ver abajo).
-
----
-
-## Links entre hojas (ADR-015)
-
-Una hoja enlaza a otra escribiendo **`[[Título de la otra hoja]]`** en su Markdown. La
-tabla `sheet_links` es un **índice derivado** de ese texto: el cliente nunca la escribe.
-
-| Trigger (migración 0003) | Cuándo | Qué hace |
-|---|---|---|
-| `sheets_refresh_links` | `insert` o `update of content_md` | `refresh_sheet_links(id)`: parsea los `[[ ]]` (también la forma escapada `\[\[ \]\]`), los resuelve por título **dentro de la misma materia** sin distinguir mayúsculas y reemplaza las filas salientes de esa hoja |
-| `sheets_title_links` | `insert` o `update of title` | Si es un rename, **reescribe** `[[título viejo]]` → `[[título nuevo]]` en las hojas que la enlazaban; y refresca las hojas que ya mencionaban el título nuevo (resuelve links "colgados") |
-
-Reglas:
-
-- Un `[[link]]` a un título que no existe no genera fila (queda "colgado" hasta que se
-  crea esa hoja). El editor los muestra como "Todavía no existen".
-- Una hoja no puede enlazarse a sí misma (`check (source_id <> target_id)`).
-- El título **no puede contener corchetes** para ser enlazable.
-- Los títulos son **únicos por materia** (índice `sheets_subject_title_unique` sobre
-  `lower(trim(title))`), así un `[[link]]` nunca es ambiguo.
-- Conectar/desconectar desde el canvas **edita el Markdown** del origen
-  (`sheetLinks.service.js`); la base deriva el resto.
-- Las funciones son `security invoker`: corren con los permisos (y el RLS) de quien edita.
+**Las correlativas deben ser un DAG:** se valida al guardar (ADR-009,
+`src/lib/graph/validateDag.js`) y la base rechaza el caso trivial
+(`CHECK (subject_id <> requires_id)`).
 
 ## Posiciones en lote (ADR-016)
 
 `save_node_positions(p_table, p_x_column, p_y_column, p_moves jsonb)`: un único `UPDATE`
-para todos los nodos movidos (`p_moves = [{id, x, y}]`). **`security invoker`** (RLS
-aplica: nadie mueve filas ajenas) y **whitelist** estricta de tabla/columnas
-(`subjects.pos_*`, `subjects.map_*`, `sheets.pos_*`), porque el nombre de tabla se interpola
-en SQL dinámico. Solo `authenticated` puede ejecutarla.
-
-## `updated_at` de las hojas
-
-El trigger `sheets_set_updated_at` solo se dispara si cambia `title` o `content_md`. Mover
-un nodo **no** es editar la hoja: si no, el borrador local del editor (que se valida contra
-`updated_at`, ver `docs/features/sheet-editor.md`) se descartaría sin motivo.
+para todos los nodos movidos. **`security invoker`** (RLS aplica) y **whitelist**: desde la
+0004 acepta **solo** `subjects (pos_x, pos_y)`. Solo `authenticated` puede ejecutarla.
 
 ---
 
 ## Esquema SQL (Supabase)
 
-> **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**
-> (`0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
-> `0003_three_levels_and_sheet_links.sql`) — son la fuente de verdad del DDL. Lo de abajo
-> es el resumen conceptual; si difieren, manda el `.sql`.
+> **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**:
+> `0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
+> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`. Lo de abajo es el **estado
+> resultante**; si difiere, manda el `.sql`.
 
 Además de las tablas, las migraciones incluyen:
-
-1. **`user_id ... default auth.uid()`** — el cliente **nunca manda `user_id`**: lo pone
-   Postgres a partir de la sesión.
+1. **`user_id ... default auth.uid()`**: el cliente **nunca manda `user_id`**.
 2. **Trigger `set_updated_at()`** en `careers`, `subjects` y `sheets` (en `sheets`, solo
    por título o contenido).
-3. **RLS activado + política `_owner` por tabla** (`for all to authenticated`, con `using`
-   y `with check` sobre `auth.uid() = user_id`) — incluida `sheet_links`.
-4. **Triggers de links** y **RPC de posiciones** (secciones de arriba).
+3. **RLS activado + política `_owner` por tabla** (`for all to authenticated`, `using` y
+   `with check` sobre `auth.uid() = user_id`).
+4. **RPC `save_node_positions`** (sección de arriba).
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → pegar `0001_init.sql` → **Run**, después
-`0002_manual_layout_and_prereq_toggle.sql` → **Run**, y después
-`0003_three_levels_and_sheet_links.sql` → **Run** (0002 y 0003 son idempotentes).
-(O `supabase db push` con la CLI.)
+Supabase Dashboard → **SQL Editor** → correr en orden `0001`, `0002`, `0003` y `0004`. La
+`0004` es **destructiva** (borra `sheet_links`, `units`, `topics` y columnas): autorizada
+por el usuario el 2026-10-14.
 
-> **Estado (2026-10-14):** `0002` y `0003` aplicadas en el proyecto vía Management API.
-> La 0003 se probó primero dentro de una transacción con `rollback` (asserts de links,
-> rename, títulos con caracteres especiales, duplicados, whitelist y posiciones) y después
-> con un E2E como usuario autenticado (RLS de `sheet_links` y de la RPC). 0 hojas sin
-> `subject_id`. Para aplicar migraciones así, ver `docs/03-security.md` § "Token de
-> acceso personal".
+> **Estado (2026-10-14):** `0002`, `0003` y `0004` aplicadas vía Management API. La 0004 se
+> probó antes dentro de `begin … rollback` con asserts. Esa prueba encontró un bug de orden:
+> los triggers de la 0003 dejaban `content_md` en NULL al anular títulos, así que se
+> dropean primero. Resultado verificado: 3 hojas con su título convertido en `# tema`, sin
+> `sheet_links`/`units`/`topics`, whitelist solo `subjects`. Para aplicar migraciones así,
+> ver `docs/03-security.md` § "Token de acceso personal".
 
-### Resumen de las tablas
+### Estado de las tablas
 
 ```sql
 create table careers (
   id                 uuid primary key default gen_random_uuid(),
-  user_id            uuid not null references auth.users(id) on delete cascade,
+  user_id            uuid not null default auth.uid() references auth.users(id) on delete cascade,
   name               text not null check (length(trim(name)) between 1 and 120),
   color              text not null default '#22c55e',
-  uses_prerequisites boolean not null default true,   -- 0002, ADR-013
+  uses_prerequisites boolean not null default true,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
@@ -223,24 +168,20 @@ create table careers (
 create table subjects (
   id         uuid primary key default gen_random_uuid(),
   career_id  uuid not null references careers(id) on delete cascade,
-  user_id    uuid not null references auth.users(id) on delete cascade,
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
   name       text not null check (length(trim(name)) between 1 and 120),
   color      text not null default '#22c55e',
-  status     text not null default 'pendiente'
-             check (status in ('pendiente', 'cursando', 'aprobada')),
+  status     text not null default 'pendiente' check (status in ('pendiente', 'cursando', 'aprobada')),
   position   int  not null default 0,
-  pos_x      double precision,   -- 0002, ADR-012
+  pos_x      double precision,   -- canvas de carrera (ADR-012)
   pos_y      double precision,
-  map_x      double precision,   -- 0002, LEGADO desde la 0003
-  map_y      double precision,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
--- Correlativas: grafo dirigido entre materias. Debe ser un DAG (validado en el service).
 create table prerequisites (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
   subject_id  uuid not null references subjects(id) on delete cascade, -- la condicionada
   requires_id uuid not null references subjects(id) on delete cascade, -- la requerida
   kind        text not null check (kind in ('cursar', 'rendir')),
@@ -248,52 +189,29 @@ create table prerequisites (
   unique (subject_id, requires_id, kind)
 );
 
--- units / topics: DEPRECADAS desde la 0003 (sin UI ni services). Se conservan hasta
--- una migración futura; borrar una no borra hojas (topic_id es on delete set null).
-
 create table sheets (
   id         uuid primary key default gen_random_uuid(),
-  subject_id uuid not null references subjects(id) on delete cascade,   -- 0003
-  user_id    uuid not null references auth.users(id) on delete cascade,
-  title      text not null check (length(trim(title)) between 1 and 200),
+  subject_id uuid not null references subjects(id) on delete cascade,
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title      text,                       -- LEGADO: siempre NULL desde la 0004
   content_md text not null default '',   -- Markdown: fuente de verdad (ADR-011)
-  position   int  not null default 0,
-  pos_x      double precision,           -- 0003, ADR-012
-  pos_y      double precision,
-  topic_id   uuid references topics(id) on delete set null,             -- LEGADO
+  position   int  not null default 0,    -- LEGADO
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create unique index sheets_subject_title_unique on sheets (subject_id, lower(trim(title)));
 
-create table sheet_links (                                              -- 0003, ADR-015
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  source_id  uuid not null references sheets(id) on delete cascade,
-  target_id  uuid not null references sheets(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  constraint no_self_link check (source_id <> target_id),
-  unique (source_id, target_id)
-);
-
--- Índices para las consultas del explorador y de los canvas
 create index on subjects (career_id);
 create index on prerequisites (subject_id);
 create index on prerequisites (requires_id);
 create index on sheets (subject_id);
-create index on sheet_links (source_id);
-create index on sheet_links (target_id);
+create index sheets_subject_created_idx on sheets (subject_id, created_at);
 ```
 
 ### Reglas de integridad (cascada)
 
-**La cascada la hace Postgres** (`ON DELETE CASCADE`), no los services:
-
-- Borrar una **Career** → borra sus Subjects → Sheets → SheetLinks.
-- Borrar un **Subject** → borra sus Sheets (y sus links) **y** las filas de
-  `prerequisites` donde aparezca, sea como `subject_id` o como `requires_id`.
-- Borrar una **Sheet** → borra sus filas de `sheet_links` (entrantes y salientes). El texto
-  `[[título]]` en otras hojas queda, como link colgado.
+**La cascada la hace Postgres** (`ON DELETE CASCADE`):
+- Borrar una **Career** → borra sus Subjects → Sheets.
+- Borrar un **Subject** → borra sus Sheets **y** las `prerequisites` donde aparezca.
 - Borrar el usuario → borra todo lo suyo.
 
 ---
@@ -301,37 +219,30 @@ create index on sheet_links (target_id);
 ## Cache en `localStorage`
 
 > La cache **no es el modelo**: es una copia descartable para pintar rápido (ADR-007).
-> Borrarla no debe perder datos. Ante conflicto, gana Supabase.
 
 | Clave | Contenido |
 |-------|-----------|
 | `studree:cache:<tabla>` | Colección global (ej. `studree:cache:careers`) |
-| `studree:cache:<tabla>:<parentId>` | Colección acotada a un padre (ej. `studree:cache:sheets:<subjectId>`) |
-| `studree:cache:<tabla>[<columnas>]:<parentId>` | Lista con columnas parciales (ej. hojas sin `content_md`) |
+| `studree:cache:<tabla>:<parentId>` | Colección acotada a un padre |
+| `studree:cache:<tabla>[<columnas>]:<parentId>` | Lista con columnas parciales (ej. las hojas de la carpeta) |
 | `studree:cache:sheet:<id>` | Borrador local de una hoja: `{ content, baseUpdatedAt }` (ver `sheet-editor.md`) |
-| `studree:ui:tabs` | Tabs abiertas (preferencia de UI, no dato de negocio) |
-| `studree:ui:explorer` | Nodos expandidos del explorador |
+| `studree:ui:tabs` | Tabs abiertas (una por materia) |
+| `studree:ui:explorer` | Carreras expandidas en el explorador |
 
-Las claves de cache se arman con `cacheKey(coleccion, parentId)` de `cache.service.js`.
 **Todas las claves de Studree empiezan con `studree:`**, y `clearAllCache()` borra por ese
-prefijo (cache **y** UI) al cerrar sesión o al entrar con otra cuenta — si no, las tabs
-(con títulos de hojas) de un usuario quedarían visibles para el siguiente que entre en el
-mismo navegador.
-
-> Las claves se centralizan en `src/constants/storageKeys.js`.
+prefijo (cache **y** UI) al cerrar sesión o al entrar con otra cuenta.
 
 ### Límite de filas
 
 PostgREST devuelve **como máximo 1000 filas por consulta**. `crudService.list` y
-`listByParents` **paginan** con `.range()` hasta traer todo; una consulta global sin
-paginar se cortaría en silencio.
+`listByParents` **paginan** con `.range()` hasta traer todo.
 
 ---
 
 ## Preparado para IA (sin implementar todavía)
 
-`sheets.content_md` guarda Markdown plano, lo que deja el contenido **chunkeable por
-hoja** para un futuro RAG. **En esta etapa NO se implementa vectorización.**
+`sheets.content_md` es Markdown plano, **chunkeable por hoja** y fechado. **No se
+implementa vectorización en esta etapa.**
 
 ---
 
@@ -339,16 +250,8 @@ hoja** para un futuro RAG. **En esta etapa NO se implementa vectorización.**
 
 | Fecha | Cambio | Estado |
 |-------|--------|--------|
-| 2026-06-28 | Modelo inicial (Subject, TreeNode, Resource, Settings) | Obsoleto |
-| 2026-06-28 | Añadido `Folder`; `Subject.folderId`; `TreeNode.completed` y `position` | Obsoleto |
-| 2026-06-28 | `Resource` implementado + cascada por nodo | Obsoleto |
-| 2026-08-24 | 5 niveles explícitos (Career/Subject/Unit/Topic/Sheet) + `prerequisites` con `kind`; fuente de verdad en Supabase | Reemplazado por la 0003 (`0001_init.sql`) |
-| 2026-10-14 | `careers.uses_prerequisites`; `pos_x`/`pos_y` en subjects/units/topics; `map_x`/`map_y` en subjects (ADR-012, ADR-013) | ✅ Implementado (`0002_manual_layout_and_prereq_toggle.sql`) |
-| 2026-10-14 | **3 niveles** (ADR-014): `sheets.subject_id` + backfill, `sheets.pos_x/pos_y`, títulos únicos por materia, `units`/`topics` deprecadas; `sheet_links` derivada por triggers (ADR-015); RPC `save_node_positions` (ADR-016); `updated_at` de hojas solo por título/contenido | ✅ Implementado (`0003_three_levels_and_sheet_links.sql`) |
-
-### Modelos anteriores (histórico)
-
-- `Folder (carrera) → Subject → TreeNode (recursivo) → Resource`, en `localStorage`.
-  Reemplazado por ADR-007 y ADR-010.
-- `Career → Subject → Unit → Topic → Sheet` (ADR-010). Reemplazado por ADR-014: abrir
-  Unidad → Tema antes de llegar a una hoja era tedioso.
+| 2026-06-28 | Modelo inicial en `localStorage` (Subject, TreeNode, Resource, Folder) | Obsoleto |
+| 2026-08-24 | 5 niveles explícitos (Career/Subject/Unit/Topic/Sheet) + `prerequisites`; Supabase | Reemplazado (`0001_init.sql`) |
+| 2026-10-14 | `careers.uses_prerequisites`; posiciones manuales (ADR-012, ADR-013) | ✅ `0002` |
+| 2026-10-14 | 3 niveles (ADR-014): `sheets.subject_id`; `sheet_links` por triggers (ADR-015); RPC de posiciones (ADR-016) | ✅ `0003` (links derogados por la 0004) |
+| 2026-10-14 | **La Carpeta** (ADR-017): hojas sin título (título → `# tema`), sin `sheet_links`/`units`/`topics`/posiciones de hojas/`map_*`; whitelist solo `subjects` | ✅ `0004` |

@@ -50,42 +50,43 @@ Studree/
 │   │   ├── LoginPage.jsx          # Acceso (email + contraseña)
 │   │   ├── CareersPage.jsx        # Workspace: panel de inicio con las carreras
 │   │   ├── CareerMapPage.jsx      # Canvas de materias + correlativas
-│   │   ├── SubjectMapPage.jsx     # Canvas de unidades → temas + panel de hojas
-│   │   ├── SheetPage.jsx          # Editor de una hoja (TipTap)
+│   │   ├── SubjectFolderPage.jsx  # La Carpeta de una materia (ADR-017)
+│   │   ├── SheetRedirectPage.jsx  # /hojas/:id → carpeta en esa hoja
 │   │   └── ProfilePage.jsx
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
 │   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker
 │   │   ├── layout/                # AppLayout, Header, AuthProvider, RequireAuth,
-│   │   │                          # WorkspaceLayout, TabBar
+│   │   │                          # WorkspaceLayout, TabBar, ReadingModeProvider
 │   │   └── features/
 │   │       ├── explorer/          # Explorer, ExplorerTree, ExplorerItem
 │   │       ├── commandPalette/    # CommandPalette
 │   │       ├── careers/           # CareerCard, CareerFormModal (panel de inicio)
 │   │       ├── careerMap/         # CareerMap, SubjectNode, PrerequisiteEditor,
 │   │       │                      # PrerequisiteKindDialog
-│   │       ├── subjectMap/        # SubjectMap, SheetNode, SheetList (canvas de hojas)
-│   │       ├── sheets/            # SheetListItem
-│   │       ├── sheetEditor/       # SheetEditor, EditorToolbar, SheetLinksPanel
+│   │       ├── folder/            # FolderSheet, TopicIndex, FolderSearchBar (La Carpeta)
+│   │       ├── sheetEditor/       # SheetEditor, EditorToolbar
 │   │       └── export/            # ExportDialog
-│   ├── hooks/                     # useAuth, useCareers, useCareerMap, useSubjectMap,
-│   │                              # useSheet, useSheetLinks, useExplorerTree,
-│   │                              # useExportTree, useHotkeys, useFlowCanvas
+│   ├── hooks/                     # useAuth, useCareers, useCareerMap, useFolder,
+│   │                              # useSheetAutosave, useSheetLocation, useReadingMode,
+│   │                              # useExplorerTree, useExportTree, useHotkeys, useFlowCanvas
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
 │   │                              # dataEvents, careers, subjects, sheets,
-│   │                              # sheetLinks, prerequisites
+│   │                              # prerequisites
 │   ├── lib/
 │   │   ├── id.js
-│   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera + hojas), subjectStatus.js,
+│   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera), subjectStatus.js,
 │   │   │                          # canvasPositions.js
-│   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js
+│   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js, headings.js
+│   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets
+│   │   ├── format/                # sheetDate.js (fecha y hora de las hojas)
 │   │   └── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js,
 │   │                              # subjectStatus.js, prerequisiteKinds.js
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
 ├── supabase/
-│   └── migrations/                # SQL versionado del esquema + RLS (0001, 0002, 0003)
+│   └── migrations/                # SQL versionado del esquema + RLS (0001 a 0004)
 ├── index.html                     # HTML raíz de la SPA
 ├── vite.config.js                 # Configuración de Vite
 ├── tailwind.config.js             # Design system (colores, fuentes, spacing)
@@ -402,6 +403,8 @@ reactiva). Default `true` = las carreras existentes no cambian de comportamiento
 
 ### ADR-014: Jerarquía de 3 niveles — Carrera → Materia → Hoja
 **Fecha:** 2026-10-14
+**Estado:** vigente en la jerarquía. Lo del **canvas de hojas** quedó reemplazado por
+ADR-017 (La Carpeta).
 **Reemplaza a:** ADR-010 (en la profundidad)
 **Contexto:** Con 5 niveles, llegar a una hoja exigía crear y abrir Unidad → Tema: el
 usuario lo describió como "tedioso". El público incluye secundarios y cursos cortos, para
@@ -419,6 +422,9 @@ services) y se eliminan en una migración futura; la 0003 migró los datos.
 
 ### ADR-015: Links entre hojas con `[[Título]]`, derivados del Markdown en la base
 **Fecha:** 2026-10-14
+**Estado:** ⚠️ **DEROGADO por ADR-017** (mismo día). Las hojas ya no tienen título: los
+`[[links]]` apuntan a **temas** y se resuelven en el cliente; `sheet_links` y sus triggers
+se eliminaron en la migración 0004.
 **Contexto:** Sin Unidad/Tema, lo que estructura una materia son las relaciones entre
 apuntes. Guardar las conexiones del canvas en una tabla editable por el cliente crearía dos
 fuentes de verdad (el texto y la tabla) que se desincronizan, y el export para IA no
@@ -447,7 +453,35 @@ reescribía la lista entera en `localStorage`: con 40 materias, 40 requests.
 **whitelist** de tabla/columnas (el nombre de tabla va en SQL dinámico).
 `crudService.savePositions` la usa y actualiza la cache una sola vez.
 **Consecuencias:** Un request por arrastre. Agregar un canvas nuevo exige sumar su tabla a
-la whitelist de la función (migración).
+la whitelist de la función (migración). Desde la 0004 la whitelist es **solo**
+`subjects (pos_x, pos_y)` (el canvas de hojas desapareció con ADR-017).
+
+### ADR-017: La Carpeta — la materia como documento continuo de hojas fechadas
+**Fecha:** 2026-10-14
+**Reemplaza a:** el canvas de hojas de ADR-014 y la tabla de links de ADR-015.
+**Contexto:** el usuario quería que una materia se sintiera como una **carpeta escolar**
+(separadores de colores = materias, y adentro todas las hojas seguidas, estilo Word), con
+herramientas para leer y orientarse. El dibujo de hojas no le servía, y los títulos de hoja
+eran fricción.
+**Decisión:**
+- `/materias/:id` muestra todas las hojas de la materia en un scroll, en **orden
+  cronológico**, sobre **papel blanco**. Cada hoja es un editor TipTap con su propio
+  autosave. No hay reordenamiento.
+- Las hojas **no tienen título**: se identifican por fecha y hora de creación. Los
+  **temas** son los headings `#` del contenido, y arman un índice lateral.
+- `[[Tema]]` es un salto a un tema de la misma materia, resuelto en el cliente.
+- Buscador de la materia (resaltado con decoraciones de ProseMirror) y modo lectura.
+- Los datos siguen divididos en hojas (no un documento único): no se pone lenta con meses
+  de apuntes y no se pisan ediciones entre dispositivos.
+- Migración 0004: títulos → `# tema`, se eliminan `sheet_links`, `units`, `topics` y las
+  columnas sin uso.
+
+**Consecuencias:**
+- `/hojas/:id` pasa a ser una redirección. Tabs por materia; explorador Carrera → Materia.
+- Todas las hojas se montan como editores a la vez. Si una materia muy grande tarda (>~1 s),
+  el plan B es el montaje perezoso (`docs/features/folder.md`).
+- El export titula cada hoja con su fecha y nombra los archivos por fecha.
+
 
 ## Rutas
 
@@ -457,14 +491,14 @@ la whitelist de la función (migración).
 | `/entrar` | `LoginPage` | Acceso (email + contraseña). Pública |
 | `/carreras` | `CareersPage` | **Workspace**: panel de inicio con las carreras (estilo VSCode) |
 | `/carreras/:careerId` | `CareerMapPage` | Canvas de materias (+ correlativas si la carrera las usa) — lazy |
-| `/materias/:subjectId` | `SubjectMapPage` | Canvas de hojas conectadas por `[[links]]` + vista Lista — lazy |
-| `/hojas/:sheetId` | `SheetPage` | Editor de la hoja (TipTap) |
+| `/materias/:subjectId` | `SubjectFolderPage` | **La Carpeta**: hojas seguidas + índice de temas + buscador; acepta `?hoja=:id` — lazy |
+| `/hojas/:sheetId` | `SheetRedirectPage` | Redirige a `/materias/:subjectId?hoja=:sheetId` (links viejos) |
 | `/perfil` | `ProfilePage` | Perfil (placeholder) |
 
 > Las páginas con canvas, el editor y el perfil se cargan con `React.lazy` (chunks
 > aparte) para no meter React Flow, dagre y TipTap en el bundle inicial.
 
-> Las rutas y sus helpers (`careerPath`, `subjectMapPath`, `sheetPath`) están en
+> Las rutas y sus helpers (`careerPath`, `subjectFolderPath(subjectId, sheetId?)`) están en
 > `src/constants/routes.js`.
 
 **Rutas retiradas** (jerarquía anterior, ver ADR-010): `/carpetas` y `/carpetas/:folderId`
@@ -483,9 +517,9 @@ login. `/` y `/entrar` son las únicas rutas públicas.
 A partir de `/carreras`, todas las vistas se renderizan dentro de `WorkspaceLayout`, que
 aporta de forma persistente:
 
-- **Explorador** lateral (árbol colapsable con los 3 niveles), siempre visible en desktop.
-- **Barra de tabs** con las hojas abiertas.
-- **Command Palette** (`Ctrl+K`) para saltar a cualquier hoja por nombre o por contenido.
+- **Explorador** lateral (Carrera → Materia), siempre visible en desktop.
+- **Barra de tabs** con las materias abiertas.
+- **Command Palette** (`Ctrl+K`) para saltar a una materia o a la hoja donde aparece un texto.
 
 > El canvas es un **modo de exploración**, no el único camino: toda la navegación debe ser
 > posible solo con explorador + palette (requisito de mobile, donde arrastrar nodos no

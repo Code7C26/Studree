@@ -6,9 +6,10 @@
 
 Studree es una plataforma web que ayuda a estudiantes a organizar sus materias y
 recursos de estudio de forma visual, mediante **árboles conceptuales interactivos**.
-Su nombre une *Study + Tree*: cada carrera o curso es un árbol, las materias son sus
-ramas y las **hojas** son los apuntes, conectados entre sí con `[[links]]` para formar
-un mapa conceptual (Carrera → Materia → Hoja, ADR-014).
+Su nombre une *Study + Tree*: cada carrera o curso es un árbol (y una **carpeta
+escolar**), las materias son sus ramas (los **separadores de colores**) y las **hojas**
+son los apuntes, todas seguidas y fechadas dentro de su materia, con un índice de temas
+para orientarse (Carrera → Materia → Hoja, ADR-014 y ADR-017).
 
 ## Objetivos
 
@@ -101,20 +102,37 @@ Diagnóstico completo en `docs/superpowers/specs/2026-10-14-diagnostico-fases-0-
 | Cambio | Doc | Estado |
 |--------|-----|--------|
 | Carrera → Materia → **Hoja** (ADR-014), migración 0003 con datos migrados | `DB_SCHEMA.md` | ✅ |
-| Canvas de materia con hojas como nodos y `[[links]]` como aristas (ADR-015) + vista Lista | `features/subject-map.md` | ✅ |
+| Canvas de materia con hojas como nodos y `[[links]]` como aristas (ADR-015) + vista Lista | `features/subject-map.md` | ✅ → reemplazado por la Carpeta (Fase 11) |
 | Panel "Enlaces" en el editor (salientes, backlinks, no resueltos) | `features/sheet-editor.md` | ✅ |
 | Export a 3 niveles + **Exportar todo** + **Copiar para IA** + headings corridos + nombres sin pisarse | `features/markdown-export.md` | ✅ |
 
 > Migración `0003_three_levels_and_sheet_links.sql` aplicada el 2026-10-14.
 
+### Fase 11 — La Carpeta (2026-10-14)
+
+Spec: `docs/superpowers/specs/2026-10-14-carpeta-design.md` · plan:
+`docs/superpowers/plans/2026-10-14-carpeta.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| La materia se ve como una carpeta: hojas seguidas, fechadas y sin título, sobre papel blanco (ADR-017) | `features/folder.md` | ✅ |
+| Índice de temas, buscador de la materia (`Ctrl+F`), `[[Tema]]` clickeable, modo lectura | `features/folder.md` | ✅ |
+| Se elimina el canvas de hojas; tabs por materia; explorador Carrera → Materia | `features/navigation-shell.md` | ✅ |
+| Estados de materia distinguibles (ícono + color) | `features/career-map.md` | ✅ |
+| Migración 0004: títulos → temas; se borran `sheet_links`, `units`, `topics` | `DB_SCHEMA.md` | ✅ |
+| Medir rendimiento con una materia grande | `features/folder.md` | ⏳ pendiente (prueba manual) |
+
+> Migración `0004_carpeta.sql` aplicada el 2026-10-14.
+
 ### Próximas fases (hoja de ruta)
 
-| Fase | Contenido |
-|------|-----------|
-| 11 | Inicio útil: seguí donde dejaste, recientes/fijadas, tareas, calendario de fechas, notas rápidas |
-| 12 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja |
-| 13 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) |
-| 14 | Compartir por link, PWA/offline, flashcards |
+| Fase | Contenido | Estado |
+|------|-----------|--------|
+| 12 | **Inicio útil**: seguí donde dejaste, calendario de fechas, tareas, notas rápidas. Al abrir Studree se va al Inicio | 🟡 En curso (otro agente, rama `fase-inicio`) |
+| 13 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja | Pendiente |
+| 14 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) | Pendiente |
+| 15 | Compartir por link, flashcards | Pendiente |
+| 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

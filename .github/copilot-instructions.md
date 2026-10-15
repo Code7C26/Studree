@@ -14,7 +14,8 @@
   React Flow (`@xyflow/react`) + React Router DOM.
 - **Persistencia:** **Supabase** (Postgres + Auth + RLS) es la fuente de verdad;
   `localStorage` es solo cache optimista (ADR-007).
-- **Jerarquía:** Carrera → Materia → Hoja (ADR-014); las hojas se enlazan con `[[Título]]`.
+- **Jerarquía:** Carrera → Materia → Hoja (ADR-014). La materia se ve como **una carpeta**
+  de hojas fechadas sin título (ADR-017); los temas son los `#` y `[[Tema]]` salta a uno.
 - **Diseño:** modo oscuro principal, **acento verde**, minimalista.
 
 ## Protocolo Obligatorio (antes de cada cambio)
@@ -87,8 +88,8 @@
 | `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` · `useFlowCanvas` | `docs/features/career-map.md` |
 | `pages/CareersPage.jsx` · `features/careers/**` · `useCareers` | `docs/features/careers.md` |
 | `services/dataEvents.js` · `services/crudService.js` | `docs/API_DOCS.md` |
-| `features/subjectMap/**` · `features/sheets/**` · `useSubjectMap` · `sheetLinks.service.js` · `lib/graph/dagreLayout.js` (`computeSheetLayout`) | `docs/features/subject-map.md` |
-| `features/sheetEditor/**` · `lib/markdown/**` · `useSheet` · `useSheetLinks` · `sheets.service.js` | `docs/features/sheet-editor.md` |
+| `pages/SubjectFolderPage.jsx` · `pages/SheetRedirectPage.jsx` · `features/folder/**` · `useFolder` · `useReadingMode` · `useSheetLocation` · `lib/editor/**` · `lib/format/**` · `lib/markdown/headings.js` | `docs/features/folder.md` |
+| `features/sheetEditor/**` · `lib/markdown/**` · `useSheetAutosave` · `sheets.service.js` | `docs/features/sheet-editor.md` |
 | `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
@@ -96,27 +97,29 @@
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
 
-## Reglas del rediseño (ADR-007 a ADR-016)
+## Reglas del rediseño (ADR-007 a ADR-017)
 
 > Vigentes desde 2026-08-24 (actualizadas 2026-10-14). Reemplazan a ADR-003, ADR-006,
-> ADR-008 y, en la profundidad, ADR-010.
+> ADR-008, ADR-015 y, en la profundidad, ADR-010.
 
 - **Supabase es la fuente de verdad**; `localStorage` es SOLO cache optimista descartable.
-- **Layout híbrido (ADR-012, reemplaza a ADR-008):** dagre por defecto; las posiciones
-  manuales (`pos_x`/`pos_y`, `map_x`/`map_y`) se guardan SOLO por arrastre o creación en el
-  lienzo, y "Reordenar" las vuelve a `NULL`.
+- **Layout híbrido (ADR-012) — solo canvas de carrera:** dagre por defecto; las posiciones
+  manuales (`subjects.pos_x`/`pos_y`) se guardan SOLO por arrastre o creación en el lienzo,
+  y "Reordenar" las vuelve a `NULL`.
 - **Correlativas opcionales por carrera (ADR-013):** respetar `careers.uses_prerequisites`.
 - **Validar el DAG de correlativas al GUARDAR**, nunca al renderizar.
 - **Markdown es la fuente de verdad del contenido**; el HTML de TipTap es solo de memoria.
 - La jerarquía es **fija de 3 niveles** (ADR-014): Carrera → Materia → Hoja (una tabla por
-  nivel). `units`/`topics` están **deprecadas**: no usarlas en código nuevo.
-- El canvas de materia muestra **hojas como nodos** y los `[[links]]` como aristas.
-- **Los links viven en el Markdown** (ADR-015): `sheet_links` la deriva la base con
-  triggers. Nunca insertar/borrar filas de `sheet_links` desde el cliente: conectar =
-  agregar `[[Título]]` al contenido del origen.
-- Títulos de hoja **únicos por materia**.
-- Posiciones del canvas: siempre en lote con `savePositions` (RPC `save_node_positions`,
-  ADR-016). Un canvas nuevo exige sumar su tabla a la whitelist de la función.
+  nivel). `units`, `topics` y `sheet_links` **ya no existen** (migración 0004).
+- **La Carpeta (ADR-017):** la materia muestra todas sus hojas seguidas, en orden
+  cronológico (`created_at`), sin reordenar, sobre papel blanco. **Las hojas no tienen
+  título** (`title` siempre NULL): se muestran por fecha y hora.
+- **Temas = headings `#` del Markdown**; el índice se calcula en el cliente
+  (`extractHeadings`). `[[Tema]]` salta a un tema de la misma materia: no hay tabla de links.
+- Una hoja nueva no se guarda hasta tener contenido. Antes de borrar una hoja, cancelar su
+  autosave pendiente.
+- No hay canvas de hojas. Posiciones (solo canvas de carrera): siempre en lote con
+  `savePositions` (RPC `save_node_positions`, ADR-016).
 - Las listas paginan (PostgREST corta en 1000 filas): usar `crudService.list`/`listByParents`.
 - Funciones SQL nuevas: `security invoker`, nunca `security definer` sin revisión.
 - Los archivos `.cursorrules`, `.windsurfrules`, `.clinerules` y

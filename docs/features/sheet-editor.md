@@ -1,23 +1,23 @@
 # Feature: Editor de Hojas (TipTap, Markdown como fuente de verdad)
 
-> **Estado:** ✅ Implementado (2026-09-09) · Borrador seguro + panel de enlaces (2026-10-14)
-> **Archivos clave:** `src/pages/SheetPage.jsx`,
-> `src/components/features/sheetEditor/`, `src/lib/markdown/`, `src/hooks/useSheet.js`
-> **Dependencias nuevas:** `@tiptap/react`, `@tiptap/starter-kit`, `tiptap-markdown`,
-> `@tiptap/extension-task-list`, `@tiptap/extension-task-item` — `Link` **no** se instaló
-> aparte: en TipTap v3 ya viene incluido en `starter-kit` (se configura, no se importa).
-> **ADR relacionado:** ADR-011
+> **Estado:** ✅ Implementado (2026-09-09) · Borrador seguro (2026-10-14) · Dentro de la
+> carpeta, un editor por hoja (ADR-017, 2026-10-14)
+> **Archivos clave:** `src/components/features/sheetEditor/`, `src/lib/markdown/`,
+> `src/lib/editor/`, `src/hooks/useSheetAutosave.js`
+> **Dependencias:** `@tiptap/react`, `@tiptap/pm` (peer, declarada), `@tiptap/starter-kit`,
+> `tiptap-markdown`, `@tiptap/extension-task-list`, `@tiptap/extension-task-item`
+> **ADR relacionado:** ADR-011, ADR-017
 >
-> **Nota de versión:** TipTap se instaló en **v3** (`3.31.3`), no v2 como cuando se
-> escribió este doc originalmente. `tiptap-markdown@0.9.0` declara soporte explícito
-> para `@tiptap/core ^3.0.1`, así que no hubo que buscar una alternativa.
+> **Nota de versión:** TipTap **v3** (`3.31.3`). `tiptap-markdown@0.9.0` soporta
+> `@tiptap/core ^3.0.1`.
 
 ---
 
 ## Descripción
 
-Editor de documento tipo Word/Notion para el contenido de una hoja: la unidad mínima de
-apuntes de Studree.
+Editor de documento tipo Word/Notion para el contenido de una hoja. Desde ADR-017 **no
+hay pantalla propia de hoja**: cada hoja es un editor dentro de la carpeta de su materia
+(`docs/features/folder.md`), sobre papel blanco. `/hojas/:id` redirige a la carpeta.
 
 ## Decisión clave: se edita en rico, se guarda en Markdown
 
@@ -29,111 +29,76 @@ montado:
 Markdown (BD) ──parse──► TipTap (HTML en memoria) ──serialize──► Markdown (BD)
 ```
 
-**Por qué:** el objetivo de exportar a IA / segundo cerebro es un requisito central del
-proyecto. Con Markdown guardado, el export es **copiar el campo** — sin conversión y sin
-pérdida. Con HTML guardado, cada exportación sería una conversión con pérdida.
+**Por qué:** exportar a IA es un requisito central; con Markdown guardado, el export es
+copiar el campo. **Costo aceptado:** el editor queda limitado a lo que Markdown
+representa (sin colores de texto, sin tablas complejas).
 
-**Costo aceptado:** el editor queda limitado a lo que Markdown representa (sin colores de
-texto, sin tablas complejas). Se acepta a cambio de la portabilidad.
+## Guardado: optimista con debounce (`useSheetAutosave`, uno por hoja)
 
-## Guardado: optimista con debounce
+1. Cada cambio se escribe **ya** en el borrador local `studree:cache:sheet:<id>` como
+   `{ content, baseUpdatedAt }`.
+2. A los **~800 ms sin teclear** se manda a Supabase. Los guardados de una hoja van en
+   fila: nunca dos a la vez.
+3. La barra de la hoja muestra **Guardando… / Guardado / Error al guardar**.
+4. Si el guardado sale bien y el borrador sigue siendo eso, **se borra**.
+5. Al salir (desmontar, cerrar la pestaña: `pagehide`) lo pendiente **se manda enseguida**.
+6. **Hoja nueva** (`local:…`): no existe en Supabase hasta tener contenido no vacío; el
+   primer guardado la **crea**. Si se borra antes, `cancel()` descarta lo pendiente.
 
-Coherente con ADR-007 (Supabase fuente de verdad, `localStorage` cache):
-
-1. El usuario escribe. Cada cambio se escribe **ya** en el borrador local
-   `studree:cache:sheet:<id>` como `{ content, baseUpdatedAt }`.
-2. A los **~800 ms sin teclear** se manda el `UPDATE` a Supabase.
-3. La UI muestra el estado: **guardando… / guardado / error**.
-4. Si el guardado sale bien y el borrador sigue siendo eso, **se borra**. Si el usuario
-   siguió escribiendo, se le actualiza la base.
-5. Si se sale de la hoja (cambiar de ruta, cerrar la pestaña: `pagehide`) con un guardado
-   pendiente, **se manda enseguida** en vez de esperar el debounce.
-
-### Cuándo gana el borrador local (fix 2026-10-14)
-
-`baseUpdatedAt` es el `updated_at` de la versión del servidor sobre la que se escribió el
-borrador. Al abrir la hoja:
+### Cuándo gana el borrador local (`resolveDraft`, fix de la Fase 0)
 
 | Caso | Resultado |
 |------|-----------|
-| Hay borrador, `baseUpdatedAt === updated_at` del servidor y el contenido difiere | **Gana el borrador** (trabajo que no llegó: cierre accidental, red caída) y se reenvía |
-| Hay borrador pero el servidor cambió desde entonces (`updated_at` distinto) | **Se descarta**: alguien guardó otra cosa después (otro dispositivo); pisarlo perdería ese trabajo |
-| Borrador con el formato viejo (string, sin base) | Se descarta (no se puede validar) |
+| Hay borrador, `baseUpdatedAt === updated_at` y el contenido difiere | **Gana el borrador** (trabajo que no llegó) y se reenvía |
+| El servidor cambió desde entonces (`updated_at` distinto) | **Se descarta**: otro dispositivo guardó después |
+| Borrador con el formato viejo (string) | Se descarta |
 
-Antes el borrador nunca se borraba y ganaba siempre que difería: editar en la PC, después
-en el celular, y volver a la PC pisaba lo del celular.
+> `updated_at` de las hojas solo cambia con el contenido (trigger, migración 0003).
 
-> `updated_at` de las hojas solo cambia con el título o el contenido (trigger de la
-> migración 0003): mover el nodo en el canvas no invalida el borrador.
+## `[[Temas]]` y búsqueda (ADR-017)
 
-## Enlaces entre hojas (`[[Título]]`, ADR-015)
-
-Escribir `[[Título de otra hoja]]` enlaza a esa hoja de la **misma materia** (sin
-distinguir mayúsculas). La base indexa los links al guardar (`sheet_links`, trigger). Debajo
-del editor, el panel **Enlaces** muestra:
-
-- **Enlaza a**: hojas a las que apunta esta (navegables);
-- **Enlazada desde**: backlinks;
-- **Todavía no existen**: `[[Títulos]]` escritos sin hoja; un click la crea en la materia y
-  la abre (el link se resuelve solo).
-
-`prosemirror-markdown` escapa los corchetes al serializar (`\[\[X\]\]`):
-`editorToMarkdown` los desescapa con `unescapeWikiLinks` (`src/lib/markdown/wikiLinks.js`),
-así el Markdown guardado y el export quedan con `[[X]]` limpio.
-
-Renombrar una hoja reescribe los `[[título viejo]]` de las hojas que la enlazaban (lo hace
-la base). Si el título nuevo ya existe en la materia, se muestra *"Ya existe una hoja con
-ese título en esta materia."* y el título vuelve al anterior.
+- `[[Mitosis]]` se ve como link verde: el click lleva al tema (heading) "Mitosis" de la
+  misma materia. No hay tabla de links: se resuelve contra el índice de temas.
+- `prosemirror-markdown` escapa los corchetes al serializar (`\[\[X\]\]`):
+  `editorToMarkdown` los desescapa (`unescapeWikiLinks`), así el Markdown guardado y el
+  export quedan con `[[X]]` limpio.
+- El buscador de la carpeta resalta las coincidencias con decoraciones.
+- Las dos cosas las hace `HighlightExtension` (`src/lib/editor/highlightExtension.js`), con
+  el cálculo puro en `computeHighlights.js`. Son decoraciones de ProseMirror: **no**
+  cambian el documento ni el Markdown.
 
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/pages/SheetPage.jsx` | Página del editor (volver a la materia + título + toolbar + contenido + enlaces) |
-| `src/components/features/sheetEditor/SheetLinksPanel.jsx` | Panel "Enlaces" (presentacional) |
-| `src/hooks/useSheetLinks.js` | Salientes, backlinks, no resueltos y crear la hoja de un link |
-| `src/lib/markdown/wikiLinks.js` | Funciones puras de `[[links]]` (extraer, agregar, quitar, desescapar) |
-| `src/components/features/sheetEditor/SheetEditor.jsx` | Instancia de TipTap |
-| `src/components/features/sheetEditor/EditorToolbar.jsx` | Negrita, itálica, títulos, listas, código, cita, link |
-| `src/lib/markdown/parse.js` | Markdown → documento de TipTap |
-| `src/lib/markdown/serialize.js` | Documento de TipTap → Markdown |
-| `src/hooks/useSheet.js` | Carga, autosave con debounce y estado de sincronización |
-| `src/services/sheets.service.js` | Lectura/escritura de la hoja |
+| `src/components/features/sheetEditor/SheetEditor.jsx` | Instancia de TipTap de una hoja; props `searchTerm`, `currentHit`, `onWikiLink`, `onHitsChange`, `onFocusEditor` |
+| `src/components/features/sheetEditor/EditorToolbar.jsx` | Negrita, itálica, títulos, listas, código, cita, link (actúa sobre la hoja con foco) |
+| `src/components/features/folder/FolderSheet.jsx` | Barra de fecha + editor (ver `folder.md`) |
+| `src/hooks/useSheetAutosave.js` | Borrador, debounce, flush, creación de hojas nuevas |
+| `src/lib/markdown/parse.js` / `serialize.js` | Markdown ↔ TipTap |
+| `src/lib/markdown/wikiLinks.js` | `WIKI_LINK_PATTERN`, `extractWikiLinks`, `unescapeWikiLinks` |
+| `src/lib/editor/*` | Resaltado (`highlightExtension`, `computeHighlights`, `matches`) y reglas de hojas (`folderSheets`) |
+| `src/services/sheets.service.js` | `create`, `saveContent`, `searchContent` |
+
+## Estilos
+
+El editor va sobre **papel**: tinta `ink` sobre `paper` (tokens de `tailwind.config.js`).
+Código con fondo `paper-border/40`, citas con borde `accent`, `[[links]]` en
+`accent-hover`, coincidencias en `warn/30` y la actual en `warn` (`src/index.css`).
 
 ## Extensiones de TipTap habilitadas
 
-Solo lo que Markdown puede representar sin pérdida:
-
 `Bold` · `Italic` · `Strike` · `Code` · `CodeBlock` · `Heading` (h1–h4) · `BulletList` ·
-`OrderedList` · `TaskList` (checkboxes `- [ ]`) · `Blockquote` · `HorizontalRule` · `Link`
-
-**Excluidas** por no ser representables: colores de texto, resaltado, alineación, fuentes.
+`OrderedList` · `TaskList` · `Blockquote` · `HorizontalRule` · `Link` · `HighlightExtension`
+(propia).
 
 ## Seguridad (XSS)
 
-El contenido lo escribe el propio usuario, pero igual:
-
 - **Nunca** renderizar el Markdown con `dangerouslySetInnerHTML` sin sanitizar.
-- TipTap renderiza vía ProseMirror (no inyecta HTML crudo), que es el camino seguro.
-- Ver `docs/03-security.md`.
-
-## Restricciones
-
-- **Markdown es la fuente de verdad.** Nunca guardar HTML en la base (ADR-011).
-- La conversión vive aislada en `src/lib/markdown/` para poder cambiar de editor sin
-  tocar los datos.
-- No perder contenido del usuario ante error de red: el borrador local es la red de
-  seguridad.
-
-## Preparado para IA (sin implementar)
-
-El contenido queda *chunkeable* por hoja, listo para embeddings más adelante. **En esta
-etapa no se implementa vectorización ni búsqueda semántica.**
+- TipTap renderiza vía ProseMirror (no inyecta HTML crudo). `html: false` en Markdown.
 
 ## Pendiente
 
 - [ ] Imágenes (requiere Supabase Storage).
 - [ ] Historial de versiones.
-- [x] Enlaces entre hojas (`[[wikilink]]`) — 2026-10-14.
-- [ ] Autocompletar `[[` con los títulos de la materia.
-- [ ] Links clickeables dentro del texto del editor (hoy se navega desde el panel).
+- [ ] Autocompletar `[[` con los temas de la materia.

@@ -1,6 +1,6 @@
 # Feature: Export a Markdown (para IA / segundo cerebro)
 
-> **Estado:** ✅ Implementado (2026-09-28) · 3 niveles, "todo", "Copiar para IA" (2026-10-14)
+> **Estado:** ✅ Implementado (2026-09-28) · 3 niveles, "todo", "Copiar para IA" (2026-10-14) · hojas por fecha (ADR-017)
 > **Archivos clave:** `src/lib/export/`, `src/hooks/useExportTree.js`,
 > `src/components/features/export/ExportDialog.jsx`
 > **Dependencias:** `jszip` (cargada con `import()` dinámico, no va en el bundle inicial)
@@ -27,13 +27,14 @@ Gracias al ADR-011 (Markdown como fuente de verdad) el export no convierte forma
 
 | Botón | Qué hace |
 |-------|----------|
-| **📋 Copiar para IA** | Copia el `.md` único al portapapeles con un **preámbulo** que explica qué es, la estructura de headings y que `[[Título]]` es un link a otra hoja. Es lo más rápido para pegar en un chat. |
+| **📋 Copiar para IA** | Copia el `.md` único al portapapeles con un **preámbulo** que explica qué es, la estructura de headings, que cada hoja se titula con su fecha y que `[[Tema]]` es un link a un tema. Es lo más rápido para pegar en un chat. |
 | **Descargar `.md`** | Un solo archivo (`studree-<nombre>-<AAAA-MM-DD>.md`) |
 | **Descargar `.zip`** | Carpetas con un `.md` por hoja y frontmatter (`studree-<nombre>-<fecha>.zip`) |
 
 ## 1. `.md` único
 
-La jerarquía va como **headings**:
+La jerarquía va como **headings**. Las hojas no tienen título (ADR-017): su heading es
+la **fecha y hora de creación** (`Miércoles 14/10/2026 · 18:30`), en orden cronológico.
 
 | Alcance | `#` | `##` | `###` | `####` |
 |---------|-----|------|-------|--------|
@@ -46,7 +47,7 @@ La jerarquía va como **headings**:
 
 ## Genética
 
-### Leyes de Mendel
+### Miércoles 14/10/2026 · 18:30
 
 #### Primera ley        ← en la hoja era "# Primera ley"
 Contenido… ver [[Herencia ligada al sexo]]
@@ -63,9 +64,12 @@ export: el dato guardado no cambia.
 ```
 Licenciatura en Biología/
 └── Genética/
-    ├── Leyes de Mendel.md
-    └── Resumen.md
+    ├── 2026-10-13 10-15.md
+    └── 2026-10-14 18-30.md
 ```
+
+El archivo se llama como la fecha y hora de creación: el orden alfabético es el
+cronológico. Dos hojas del mismo minuto → `2026-10-14 18-30 (2).md`.
 
 Con "todo", todo va dentro de una carpeta `Studree/`.
 
@@ -73,18 +77,18 @@ Con "todo", todo va dentro de una carpeta `Studree/`.
 ---
 carrera: "Licenciatura en Biología"
 materia: "Genética"
-fecha: 2026-08-24
+creada: 2026-10-14T18:30
+fecha: 2026-10-15
 ---
 
 Contenido de la hoja…
 ```
 
 - Los nombres se **sanitizan** (se quitan `/ \ : * ? " < > |`; vacío → "Sin título").
-- Los nombres se **deduplican sin distinguir mayúsculas** dentro de cada carpeta
-  (`Resumen.md`, `resumen (2).md`). Antes dos hojas o temas con el mismo nombre se
-  pisaban (Windows y macOS no distinguen mayúsculas en los paths).
-- `fecha` = `sheets.updated_at` (última edición). Si no hay, el campo se omite.
-- El frontmatter se arma a mano (`frontmatter.js`): 3 campos, no justifica `js-yaml`.
+- Los nombres se **deduplican sin distinguir mayúsculas** dentro de cada carpeta.
+- `creada` = `created_at` en hora local; `fecha` = `updated_at` (última edición, se omite
+  si no hay).
+- El frontmatter se arma a mano (`frontmatter.js`): 4 campos, no justifica `js-yaml`.
 
 ## Componentes / Archivos
 
@@ -93,7 +97,7 @@ Contenido de la hoja…
 | `src/hooks/useExportTree.js` | Trae el árbol con `content_md`: `loadSubjectTree(id)`, `loadCareerTree(id)`, `loadAllTree()` (consultas con `IN`, paginadas) |
 | `src/lib/export/toSingleMarkdown.js` | `shiftHeadings`, `subjectTreeToMarkdown`, `careerTreeToMarkdown`, `allTreeToMarkdown`, `withAiPreamble` (puras) |
 | `src/lib/export/toZip.js` | `uniqueName`, `subjectTreeToZip`, `careerTreeToZip`, `allTreeToZip` (reciben el constructor de JSZip) |
-| `src/lib/export/frontmatter.js` | `buildFrontmatter({ careerName, subjectName, date })` |
+| `src/lib/export/frontmatter.js` | `buildFrontmatter({ careerName, subjectName, created, date })` |
 | `src/lib/export/download.js` | `buildExportFilename`, `downloadBlob`, `downloadTextFile` |
 | `src/components/features/export/ExportDialog.jsx` | Modal: alcance, formato, descargar / copiar para IA |
 

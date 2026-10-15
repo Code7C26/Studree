@@ -138,6 +138,11 @@ Solo las de `cursar` participan del cálculo de `bloqueada`.
 
 ## Restricciones
 
+- **Estados distinguibles (2026-10-14):** cada materia muestra un chip con ícono y color
+  propio — `○ Pendiente` (gris), `◐ Cursando` (ámbar, token `warn`), `✓ Aprobada` (verde,
+  fondo suave), `🔒 Bloqueada` (gris apagado, borde punteado). Antes "aprobada" y
+  "cursando" eran dos verdes casi iguales. Ver `STATUS_STYLES` en
+  `src/constants/subjectStatus.js`. Click en una materia abre su **carpeta**.
 - Las posiciones se guardan solo por arrastre / creación en el lienzo (ADR-012), en **un
   solo request** para todos los nodos (`subjectsService.savePositions` → RPC
   `save_node_positions`, ADR-016).

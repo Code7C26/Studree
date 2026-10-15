@@ -4,7 +4,7 @@
 cliente (BaaS), usando `@supabase/supabase-js`. No hay servidor propio ni endpoints
 `/api/*`.
 
-**Última actualización:** 2026-10-14 (3 niveles, sheet_links, paginación)
+**Última actualización:** 2026-10-14 (La Carpeta: hojas sin título, sin sheet_links)
 
 > El rol de "capa de API" lo cumplen los **services** de `src/services/`. La seguridad no
 > la da un backend intermedio sino **RLS en Postgres** — ver `docs/03-security.md`.
@@ -25,11 +25,10 @@ Regla de oro: **ningún componente ni hook importa `supabase.client.js` ni toca
 | `careers.service.js` | CRUD de carreras |
 | `subjects.service.js` | CRUD de materias + cambio de estado |
 | `prerequisites.service.js` | CRUD de correlativas **+ validación DAG** (ADR-009) |
-| `sheets.service.js` | CRUD de hojas (por materia) + guardado del Markdown + búsqueda de contenido en el servidor |
-| `sheetLinks.service.js` | Leer `sheet_links` (aristas del canvas, panel de enlaces) + conectar/desconectar editando el Markdown (ADR-015) |
+| `sheets.service.js` | Hojas de una materia (sin título, orden por `created_at`) + guardado del Markdown + búsqueda de contenido en el servidor |
 
-> `units.service.js` y `topics.service.js` se eliminaron con la jerarquía de 3 niveles
-> (ADR-014).
+> Eliminados: `units.service.js` y `topics.service.js` (ADR-014) y `sheetLinks.service.js`
+> (ADR-017: los `[[links]]` apuntan a temas y se resuelven en el cliente).
 
 ### Contrato común
 
@@ -44,7 +43,7 @@ remove(id)       // → boolean  la cascada la hace Postgres (ON DELETE CASCADE)
 
 // Agregados el 2026-10-14:
 listByParents(parentIds, columns?)          // → T[]  una consulta con IN (evita N+1), paginada
-savePositions(moves, parentId?, cols?)      // → bool posiciones manuales en lote (RPC save_node_positions, ADR-016), silencioso
+savePositions(moves, parentId?, cols?)      // → bool posiciones manuales en lote (RPC save_node_positions, ADR-016; solo subjects), silencioso
 clearPositions(parentIds, cols?)            // → bool "Reordenar": pone las posiciones en NULL
 ```
 
@@ -53,20 +52,17 @@ piden páginas con `.range()` (ordenadas por `orderBy` + `id`) hasta recibir una
 incompleta. `columns` permite no traer `content_md` (`SHEET_SUMMARY_COLUMNS`); con columnas
 parciales la cache usa otra clave.
 
-### Hojas y links
+### Hojas (ADR-017)
 
 ```js
-sheetsService.create({ subject_id, title, content_md?, position?, pos_x?, pos_y? })
-sheetsService.saveContent(id, markdown)   // → Sheet (con updated_at, para el borrador de useSheet)
-sheetsService.searchContent(query)        // → [{id, title, subject_id, content_md}] (ilike, máx. 20)
-
-sheetLinksService.listForSheets(sheetIds) // → [{id, source_id, target_id}]
-sheetLinksService.listForSheet(sheetId)   // → { outgoing: [{id,title}], incoming: [{id,title}] }
-sheetLinksService.connect(source, target)    // agrega [[target.title]] al Markdown de source
-sheetLinksService.disconnect(source, target) // quita [[target.title]] (queda texto plano)
+sheetsService.list(subjectId, undefined, { columns: FOLDER_SHEET_COLUMNS }) // orden: created_at
+sheetsService.create({ subject_id, content_md })  // sin título; la carpeta la crea recién con contenido
+sheetsService.saveContent(id, markdown)   // → Sheet (con updated_at, para el borrador de useSheetAutosave)
+sheetsService.searchContent(query)        // → [{id, subject_id, content_md, created_at}] (ilike, máx. 20)
+sheetsService.get(id) / remove(id, subjectId)
 ```
 
-- Título repetido en la misma materia → `"Ya existe una hoja con ese título en esta materia."`
+- `FOLDER_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'`.
 - `searchContent` neutraliza `%` y `\` (PostgREST no respeta el escape con barra); el
   palette descarta los falsos positivos con `buildContentSnippet`.
 
@@ -76,7 +72,7 @@ emiten `notifyDataChanged()` (`dataEvents.js`), que escucha `useExplorerTree` co
 debounce de 300 ms. El autosave de hojas (`saveContent`) **no** lo emite.
 
 `list()` **sin** `parentId` devuelve todas las filas del usuario (RLS filtra): el
-explorador arma el árbol entero con 3 consultas (carreras, materias, hojas sin contenido).
+explorador arma el árbol con 3 consultas (carreras, materias y, de las hojas, solo `id, subject_id` para contarlas).
 
 ### Forma de las respuestas
 
