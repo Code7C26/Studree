@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { ReadingModeProvider } from './ReadingModeProvider'
 import { useReadingMode } from '../../hooks/useReadingMode.js'
+import { ROUTES } from '../../constants/routes'
 
 /** Rutas que viven dentro del shell (WorkspaceLayout: explorador + tabs + palette). */
 const WORKSPACE_PREFIXES = ['/carreras', '/materias', '/hojas']
@@ -26,7 +27,9 @@ export function AppLayout() {
 function AppShell() {
   const location = useLocation()
   const { reading } = useReadingMode()
-  const isWorkspace = WORKSPACE_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))
+  // "/" (exacta) es el Inicio, que también vive en el shell (docs/features/home.md).
+  const isWorkspace =
+    location.pathname === ROUTES.home || WORKSPACE_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))
 
   return (
     <div className="flex h-screen flex-col bg-bg text-text">

@@ -26,6 +26,10 @@ Regla de oro: **ningún componente ni hook importa `supabase.client.js` ni toca
 | `subjects.service.js` | CRUD de materias + cambio de estado |
 | `prerequisites.service.js` | CRUD de correlativas **+ validación DAG** (ADR-009) |
 | `sheets.service.js` | Hojas de una materia (sin título, orden por `created_at`) + guardado del Markdown + búsqueda de contenido en el servidor |
+| `importantDates.service.js` | CRUD de fechas importantes del Inicio (título + día) |
+| `tasks.service.js` | CRUD de tareas del Inicio + `rename` + `setDone` |
+| `quickNotes.service.js` | CRUD de notas rápidas del Inicio |
+| `home.service.js` | `getLastEditedSheet()`: "Seguí donde dejaste" (una consulta, sin `title`) |
 
 > Eliminados: `units.service.js` y `topics.service.js` (ADR-014) y `sheetLinks.service.js`
 > (ADR-017: los `[[links]]` apuntan a temas y se resuelven en el cliente).
@@ -47,6 +51,10 @@ savePositions(moves, parentId?, cols?)      // → bool posiciones manuales en l
 clearPositions(parentIds, cols?)            // → bool "Reordenar": pone las posiciones en NULL
 ```
 
+**Config de la fábrica:** `createCrudService({ table, parentColumn?, orderBy = 'position',
+notifies = true })`. Con `notifies: false` (tablas del Inicio), `create`, `update` y
+`remove` no emiten `notifyDataChanged()`: tildar una tarea no recarga el explorador.
+
 **Paginación:** PostgREST corta cada consulta en 1000 filas. `list` y `listByParents`
 piden páginas con `.range()` (ordenadas por `orderBy` + `id`) hasta recibir una página
 incompleta. `columns` permite no traer `content_md` (`SHEET_SUMMARY_COLUMNS`); con columnas
@@ -65,6 +73,36 @@ sheetsService.get(id) / remove(id, subjectId)
 - `FOLDER_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'`.
 - `searchContent` neutraliza `%` y `\` (PostgREST no respeta el escape con barra); el
   palette descarta los falsos positivos con `buildContentSnippet`.
+
+### Inicio (migración 0005, ver `docs/features/home.md`)
+
+```js
+importantDatesService.list(undefined, onCached?)  // → ImportantDate[] (orden: date)
+importantDatesService.create({ title, date })     // date: 'YYYY-MM-DD'
+importantDatesService.update(id, { title, date })
+importantDatesService.remove(id)
+
+tasksService.list(undefined, onCached?)           // → Task[] (orden: created_at)
+tasksService.create({ text, due_date? })          // due_date: 'YYYY-MM-DD' | null
+tasksService.rename(id, text)
+tasksService.setDone(id, done)                    // done_at = now() | null
+tasksService.remove(id)
+
+quickNotesService.list(undefined, onCached?)      // → QuickNote[] (orden: created_at)
+quickNotesService.create(body)
+quickNotesService.updateBody(id, body)
+quickNotesService.remove(id)
+
+homeService.getLastEditedSheet(onCached?)
+// → LastSheet | null = { id, subject_id, updated_at, subject_name, subject_color, preview }
+```
+
+- Los tres services de tablas usan `notifies: false`.
+- `getLastEditedSheet` consulta `sheets` (`order updated_at desc`, `limit 1`, con
+  `subjects(name, color)` embebido) y **no pide `title`**, así funciona igual antes y
+  después de La Carpeta (0004).
+- Trae el `content_md` de esa única hoja para armar el preview (`lib/home/preview.js`),
+  y la cache (`studree:cache:home:lastSheet`) guarda solo el preview.
 
 `update(id, values, parentId, { silent })`: con `silent: true` no emite el aviso de
 cambio de estructura (se usa para posiciones). `create`, `update` y `remove` exitosos

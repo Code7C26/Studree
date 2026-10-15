@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** **Supabase (PostgreSQL)** — ver ADR-007.
 **Cache:** `localStorage` (optimista, descartable).
-**Última actualización:** 2026-10-14 (migración 0004: La Carpeta)
+**Última actualización:** 2026-10-15 (migración 0005: tablas del Inicio — fechas, tareas y notas)
 
 > **La Carpeta (2026-10-14, ADR-017).** Jerarquía de 3 niveles (ADR-014): Carrera →
 > Materia → Hoja. Las hojas **no tienen título** (se identifican por su fecha de creación y
@@ -21,6 +21,10 @@ Career (Carrera / curso)
 ```
 
 Cada nivel es una **tabla propia** con FK real al padre.
+
+Fuera de la jerarquía, el **Inicio** (migración 0005) tiene tres tablas sueltas del
+usuario: `important_dates`, `tasks` y `quick_notes`. No cuelgan de ninguna carrera ni
+materia (ver § "Inicio").
 
 ## Diagrama de Entidades
 
@@ -69,6 +73,30 @@ erDiagram
         int position "LEGADO: el orden es created_at"
         timestamp created_at "orden de la carpeta + lo que se muestra"
         timestamp updated_at "solo cambia con title o content_md"
+    }
+    IMPORTANT_DATE {
+        uuid id PK
+        uuid user_id FK
+        string title "1..120"
+        date date "día local, sin hora"
+        timestamp created_at
+        timestamp updated_at
+    }
+    TASK {
+        uuid id PK
+        uuid user_id FK
+        string text "1..300"
+        date due_date "nullable"
+        timestamp done_at "NULL = pendiente"
+        timestamp created_at
+        timestamp updated_at
+    }
+    QUICK_NOTE {
+        uuid id PK
+        uuid user_id FK
+        text body "1..2000"
+        timestamp created_at
+        timestamp updated_at
     }
 ```
 
@@ -122,13 +150,33 @@ bloqueada  ⟺  ∃ correlativa de kind='cursar' cuya materia requerida NO está
 para todos los nodos movidos. **`security invoker`** (RLS aplica) y **whitelist**: desde la
 0004 acepta **solo** `subjects (pos_x, pos_y)`. Solo `authenticated` puede ejecutarla.
 
+Por la misma razón, "Seguí donde dejaste" del Inicio usa la hoja con mayor `updated_at`
+como **la última editada**.
+
+## Inicio (migración 0005)
+
+Tablas del Inicio (`docs/features/home.md`). Son colecciones globales del usuario, sin FK
+a carrera ni materia: el usuario eligió que una fecha sea solo **título + día** (decisión
+I4).
+
+| Tabla | Columnas propias | Notas |
+|-------|------------------|-------|
+| `important_dates` | `title` (1..120), `date` | `date` es tipo `date`: el cliente lo maneja como `YYYY-MM-DD` en la hora local, así no se corre de día por la zona horaria |
+| `tasks` | `text` (1..300), `due_date` (nullable), `done_at` (nullable) | `done_at` NULL = pendiente; con valor = hecha (y sirve para ordenar "Hechas") |
+| `quick_notes` | `body` (1..2000) | Texto plano |
+
+- Las tres tienen `user_id default auth.uid()`, el trigger `set_updated_at()`, RLS y la
+  política `<tabla>_owner`.
+- No hay funciones nuevas.
+- Sus services usan `notifies: false` (no recargan el explorador).
+
 ---
 
 ## Esquema SQL (Supabase)
 
 > **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**:
 > `0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
-> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`. Lo de abajo es el **estado
+> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`. Lo de abajo es el **estado
 > resultante**; si difiere, manda el `.sql`.
 
 Además de las tablas, las migraciones incluyen:
@@ -141,7 +189,7 @@ Además de las tablas, las migraciones incluyen:
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → correr en orden `0001`, `0002`, `0003` y `0004`. La
+Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0005`. La
 `0004` es **destructiva** (borra `sheet_links`, `units`, `topics` y columnas): autorizada
 por el usuario el 2026-10-14.
 
@@ -151,6 +199,10 @@ por el usuario el 2026-10-14.
 > dropean primero. Resultado verificado: 3 hojas con su título convertido en `# tema`, sin
 > `sheet_links`/`units`/`topics`, whitelist solo `subjects`. Para aplicar migraciones así,
 > ver `docs/03-security.md` § "Token de acceso personal".
+
+> **Estado de la 0005 (2026-10-15):** aplicada vía Management API. Solo agrega
+> `important_dates`, `tasks` y `quick_notes` (idempotente); verificado RLS activo y una
+> política `_owner` por tabla.
 
 ### Estado de las tablas
 
@@ -205,6 +257,38 @@ create index on prerequisites (subject_id);
 create index on prerequisites (requires_id);
 create index on sheets (subject_id);
 create index sheets_subject_created_idx on sheets (subject_id, created_at);
+
+-- Inicio (0005): tablas sueltas del usuario, sin FK a la jerarquía.
+create table important_dates (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title      text not null check (length(trim(title)) between 1 and 120),
+  date       date not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table tasks (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  text       text not null check (length(trim(text)) between 1 and 300),
+  due_date   date,
+  done_at    timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table quick_notes (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  body       text not null check (length(trim(body)) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index on important_dates (user_id, date);
+create index on tasks (user_id, done_at, due_date);
+create index on quick_notes (user_id, created_at);
 ```
 
 ### Reglas de integridad (cascada)
@@ -229,6 +313,8 @@ create index sheets_subject_created_idx on sheets (subject_id, created_at);
 | `studree:cache:sheet-local:<subjectId>` | Borradores de hojas nuevas todavía no creadas: `{ [localId]: { content, created_at } }` |
 | `studree:ui:tabs` | Tabs abiertas (una por materia) |
 | `studree:ui:explorer` | Carreras expandidas en el explorador |
+| `studree:cache:important_dates` · `studree:cache:tasks` · `studree:cache:quick_notes` | Colecciones del Inicio (0005) |
+| `studree:cache:home:lastSheet` | "Seguí donde dejaste": `{id, subject_id, updated_at, subject_name, subject_color, preview}`. Guarda solo el preview, no el contenido de la hoja |
 
 **Todas las claves de Studree empiezan con `studree:`**, y `clearAllCache()` borra por ese
 prefijo (cache **y** UI) al cerrar sesión o al entrar con otra cuenta.
@@ -256,3 +342,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-14 | `careers.uses_prerequisites`; posiciones manuales (ADR-012, ADR-013) | ✅ `0002` |
 | 2026-10-14 | 3 niveles (ADR-014): `sheets.subject_id`; `sheet_links` por triggers (ADR-015); RPC de posiciones (ADR-016) | ✅ `0003` (links derogados por la 0004) |
 | 2026-10-14 | **La Carpeta** (ADR-017): hojas sin título (título → `# tema`), sin `sheet_links`/`units`/`topics`/posiciones de hojas/`map_*`; whitelist solo `subjects` | ✅ `0004` |
+| 2026-10-14 | **Inicio**: `important_dates`, `tasks`, `quick_notes` + RLS `_owner` + `set_updated_at` | ✅ `0005` (aplicada el 2026-10-15) |

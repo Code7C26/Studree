@@ -6,6 +6,65 @@
 
 ---
 
+## [0.14.0] — 2026-10-14
+
+### Added — Inicio útil (FASE 12)
+
+**Request original:** "Al abrir Studree (ya logueado) la app tiene que abrir en el Inicio",
+con "Seguí donde dejaste" (última hoja editada, materia, fecha y click directo a
+`/materias/:subjectId?hoja=:sheetId`), un calendario de fechas importantes, tareas
+pendientes, notas rápidas y propuestas del brainstorming. En paralelo con La Carpeta (otro
+agente). Spec: `docs/superpowers/specs/2026-10-14-inicio-design.md`; plan:
+`docs/superpowers/plans/2026-10-14-inicio.md`.
+
+Decisiones del usuario:
+- el Inicio va dentro del workspace;
+- `/` es el Inicio y la bienvenida pública se eliminó;
+- las fechas son solo título + día;
+- calendario con mes + "Próximas";
+- tareas con fecha límite opcional y "Hechas";
+- las tareas también se marcan en el calendario;
+- notas en tarjetas sueltas;
+- extras: resumen de la semana y próxima fecha;
+- preview del primer renglón;
+- vencidas en rojo.
+
+**Migración `0005_home.sql` aplicada** el 2026-10-15 (solo agrega tablas, idempotente).
+
+#### Datos
+- `supabase/migrations/0005_home.sql` (**nuevo**): `important_dates`, `tasks` y
+  `quick_notes`, con RLS `_owner`, `user_id default auth.uid()`, `set_updated_at` y
+  checks de largo. No hay funciones nuevas.
+- `crudService.js`: flag `notifies` (default `true`). Con `false`, las tablas del Inicio no
+  recargan el explorador.
+- Services **nuevos**: `importantDates.service.js`, `tasks.service.js`,
+  `quickNotes.service.js` y `home.service.js` (`getLastEditedSheet`: una consulta con
+  `limit 1`, sin `title`, preview de una sola hoja).
+- `types/models.js`: `ImportantDate`, `Task`, `QuickNote` y `LastSheet`.
+
+#### UI
+- `pages/HomePage.jsx` reescrita: grilla de 2 columnas en desktop y 1 en el celular
+  (orden: resumen, seguí, próxima fecha, tareas, calendario, notas).
+- `components/features/home/` (**nuevo**): `HomePanel`, `ContinueCard`, `NextDateCard`,
+  `WeekSummary`, `CalendarPanel`, `DateFormModal`, `TaskList` y `QuickNotes`.
+- `hooks/useHome.js` (**nuevo**): bloques independientes, escrituras optimistas y borrado
+  de notas con "Deshacer" (5 s, que se manda igual al salir).
+- `lib/home/` (**nuevo**, puras): `dates.js`, `calendar.js` (grilla de 6×7 que empieza el
+  lunes), `preview.js` y `summary.js`. `constants/homeLimits.js` (**nuevo**).
+- Ruteo:
+  - `App.jsx`: `/` dentro de `RequireAuth` + `WorkspaceLayout`;
+  - `AppLayout.jsx`: `/` exacta es ruta del workspace;
+  - `LoginPage.jsx`: vuelve a `/`;
+  - `ContinueCard` usa `subjectFolderPath(subjectId, sheetId)` de La Carpeta.
+
+#### Docs
+- `docs/features/home.md` (**nuevo**).
+- Actualizados: `DB_SCHEMA.md`, `API_DOCS.md`, `02-architecture.md` y
+  `01-project-overview.md`.
+- Fila de lookup en `CLAUDE.md` y sus 4 copias.
+
+> Es 0.14.0 porque La Carpeta ya tomó la 0.13.0. Mergeada en `rama-nicolas` el 2026-10-15.
+
 ## [0.13.0] — 2026-10-14
 
 ### Changed — La Carpeta (FASE 11)

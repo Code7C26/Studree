@@ -124,11 +124,24 @@ Spec: `docs/superpowers/specs/2026-10-14-carpeta-design.md` · plan:
 
 > Migración `0004_carpeta.sql` aplicada el 2026-10-14.
 
+### Fase 12 — Inicio útil (2026-10-14)
+
+Hecha en paralelo con la Fase 11 y mergeada el 2026-10-15. Spec:
+`docs/superpowers/specs/2026-10-14-inicio-design.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| `/` es el **Inicio** dentro del workspace (con sesión); la bienvenida pública se eliminó | `features/home.md` | ✅ |
+| Seguí donde dejaste (última hoja editada → `/materias/:id?hoja=:id`), resumen de la semana, próxima fecha | `features/home.md` | ✅ |
+| Calendario mensual con fechas importantes y "Próximas"; tareas con fecha límite; notas rápidas | `features/home.md` | ✅ |
+| Tablas `important_dates`, `tasks`, `quick_notes` + RLS | `DB_SCHEMA.md` | ✅ |
+
+> Migración `0005_home.sql` aplicada el 2026-10-15.
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| 12 | **Inicio útil**: seguí donde dejaste, calendario de fechas, tareas, notas rápidas. Al abrir Studree se va al Inicio | 🟡 En curso (otro agente, rama `fase-inicio`) |
 | 13 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja | Pendiente |
 | 14 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) | Pendiente |
 | 15 | Compartir por link, flashcards | Pendiente |

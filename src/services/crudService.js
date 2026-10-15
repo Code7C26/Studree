@@ -75,9 +75,13 @@ async function fetchAllPages(runPage) {
  * @param {string} config.table - Nombre de la tabla en Postgres.
  * @param {string} [config.parentColumn] - Columna de FK al padre (ej. 'career_id'). Si falta, la colección es global.
  * @param {string} [config.orderBy='position'] - Columna de orden.
+ * @param {boolean} [config.notifies=true] - `false` para tablas que no forman
+ *   parte del árbol del explorador (ej. tareas del Inicio): sus altas, cambios y
+ *   bajas no disparan `notifyDataChanged()`, así tildar una tarea no recarga el
+ *   explorador.
  * @returns {Object} Service con list / get / create / update / remove.
  */
-export function createCrudService({ table, parentColumn, orderBy = 'position' }) {
+export function createCrudService({ table, parentColumn, orderBy = 'position', notifies = true }) {
   /** @param {string} [parentId] */
   const keyFor = (parentId) => cacheKey(table, parentId)
 
@@ -161,7 +165,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
         }
 
         writeCache(key, [...previous, data])
-        notifyDataChanged()
+        if (notifies) notifyDataChanged()
         return { data, error: null }
       } catch (error) {
         writeCache(key, previous)
@@ -193,7 +197,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
         }
 
         writeCache(key, previous.map((row) => (row.id === id ? data : row)))
-        if (!options.silent) notifyDataChanged()
+        if (notifies && !options.silent) notifyDataChanged()
         return { data, error: null }
       } catch (error) {
         writeCache(key, previous)
@@ -263,7 +267,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position' })
           return { data: null, error: translateError(error, 'No se pudo eliminar.') }
         }
 
-        notifyDataChanged()
+        if (notifies) notifyDataChanged()
         return { data: true, error: null }
       } catch (error) {
         writeCache(key, previous)

@@ -26,7 +26,7 @@ export function LoginPage() {
   }
 
   if (user) {
-    return <Navigate to={location.state?.from ?? ROUTES.careers} replace />
+    return <Navigate to={location.state?.from ?? ROUTES.home} replace />
   }
 
   if (!configured) {
