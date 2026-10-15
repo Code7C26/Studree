@@ -6,7 +6,7 @@
 
 ---
 
-## [0.13.0] — 2026-10-14
+## [0.14.0] — 2026-10-14
 
 ### Added — Inicio útil (FASE 12, rama `fase-inicio`)
 
@@ -64,7 +64,8 @@ usuario).
   `01-project-overview.md`.
 - Fila de lookup en `CLAUDE.md` y sus 4 copias.
 
-> Si al mergear La Carpeta ya tomó la versión 0.13.0, esta entrada se renumera.
+> Es 0.14.0 porque La Carpeta (en `rama-nicolas`) ya tomó la 0.13.0. Al mergear, esta
+> entrada va arriba de la de La Carpeta.
 
 ---
 
