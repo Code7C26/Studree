@@ -95,6 +95,7 @@
 | `features/sheetEditor/**` · `lib/markdown/**` · `useSheetAutosave` · `sheets.service.js` | `docs/features/sheet-editor.md` |
 | `constants/sheetTemplates.js` · `services/sheetTemplates.service.js` · `useSheetTemplates` · `features/templates/**` | `docs/features/sheet-templates.md` |
 | `features/export/**` · `lib/export/**` · `useExportTree` | `docs/features/markdown-export.md` |
+| `lib/import/**` · `services/import.service.js` · `useImport` · `features/import/**` | `docs/features/import.md` |
 | `services/attachments.service.js` · `useFolderAttachments` · `lib/attachments/**` · `lib/editor/attachmentNodes.js` · `features/attachments/**` | `docs/features/attachments.md` |
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
