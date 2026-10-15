@@ -39,8 +39,15 @@ export function parseAttachmentHref(href) {
  * @param {string} text
  */
 export const escapeLinkText = (text) => text.replace(/[[\]\\]/g, (char) => `\\${char}`)
-/** @param {string} text */
-const unescapeText = (text) => text.replace(/\\([[\]\\])/g, '$1')
+/**
+ * Quita los escapes de CommonMark (`\` + puntuación ASCII) del texto de un
+ * link/imagen. El serializador del editor (prosemirror-markdown) escapa `_`,
+ * `*`, `~`, `` ` ``, `!`, `#`, etc.: si solo se deshicieran `\[ \] \\`, cada
+ * export→import sumaría barras al nombre. Lo usa también `lib/import`.
+ * @param {string} text
+ */
+export const unescapeMarkdownText = (text) => text.replace(/\\([!-/:-@[-`{-~])/g, '$1')
+const unescapeText = unescapeMarkdownText
 
 /**
  * @param {{id: string, name: string, isImage: boolean}} attachment

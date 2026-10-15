@@ -8,7 +8,7 @@
  * - `[[Tema]]` (sin `!`) es un link a un tema de Studree: NO se toca.
  */
 
-import { codeRanges } from '../attachments/refs.js'
+import { codeRanges, unescapeMarkdownText } from '../attachments/refs.js'
 
 const LINK = /(!?)\[((?:\\.|[^[\]\\])*)\]\(\s*(<[^>]*>|[^)\s]+)(?:\s+"[^"]*")?\s*\)/g
 const EMBED = /!\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]/g
@@ -89,7 +89,7 @@ export function findMediaRefs(markdown, mdPath, index) {
     if (SCHEME.test(target) || target.startsWith('#') || /\.md$/i.test(target)) continue
     const zipPath = resolvePath(dir, target)
     if (!index.paths.has(zipPath)) continue
-    refs.push({ match: match[0], index: match.index, isImage: match[1] === '!', text: match[2].replace(/\\([[\]\\])/g, '$1'), zipPath })
+    refs.push({ match: match[0], index: match.index, isImage: match[1] === '!', text: unescapeMarkdownText(match[2]), zipPath })
   }
 
   for (const match of source.matchAll(EMBED)) {

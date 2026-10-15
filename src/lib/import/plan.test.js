@@ -138,3 +138,16 @@ test('duplicados ignoran los destinos de links e imágenes', () => {
   assert.equal(markDuplicates(mk('# T\n\n![a](adjuntos/f.png)'), existing).groups[0].sheets[0].duplicate, true)
   assert.equal(markDuplicates(mk('# Otro\n\n![a](adjuntos/f.png)'), existing).groups[0].sheets[0].duplicate, false)
 })
+
+test('duplicados: el texto escapado de la base coincide con el del zip sin escapes', () => {
+  const at = new Date(2026, 9, 14, 18, 30, 10).toISOString()
+  const p = buildImportPlan({
+    mdEntries: [md('Bio/G/2026-10-14 18-30.md', '![_b*.png](adjuntos/_b*.png)')],
+    filePaths: ['Bio/G/adjuntos/_b*.png'],
+    target: { mode: 'careers' },
+    existingCareers: [{ id: 'c1', name: 'Bio', subjects: [{ id: 's1', name: 'G' }] }],
+    now,
+  })
+  const existing = new Map([['s1', [{ created_at: at, content_md: '![\\_b\\*.png](adjunto:x)' }]]])
+  assert.equal(markDuplicates(p, existing).groups[0].sheets[0].duplicate, true)
+})

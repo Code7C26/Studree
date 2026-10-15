@@ -89,3 +89,11 @@ test('findAttachmentRefs: [ sin cerrar antes de una imagen no la tapa', () => {
 test('codeRanges(null) devuelve lista vacía', () => {
   assert.deepEqual(codeRanges(null), [])
 })
+
+test('findAttachmentRefs quita todos los escapes de CommonMark del texto (no solo corchetes)', () => {
+  const [ref] = findAttachmentRefs('![\\_borrador\\*.png](adjunto:1)')
+  assert.equal(ref.text, '_borrador*.png')
+  assert.equal(findAttachmentRefs('[\\~a\\`b\\!\\#c\\\\d](adjunto:2)')[0].text, '~a`b!#c\\d')
+  // Una barra antes de una letra no es un escape: queda.
+  assert.equal(findAttachmentRefs('[a\\b](adjunto:3)')[0].text, 'a\\b')
+})

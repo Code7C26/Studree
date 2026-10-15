@@ -7,6 +7,7 @@
 import { splitFrontmatter } from './frontmatter.js'
 import { resolveCreatedAt } from './createdAt.js'
 import { buildZipIndex, findMediaRefs } from './mediaRefs.js'
+import { unescapeMarkdownText } from '../attachments/refs.js'
 
 export const IMPORT_FALLBACK_NAME = 'Importado'
 const EXPORT_ROOT = 'Studree'
@@ -100,15 +101,18 @@ export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, ta
   return { groups: [...groups.values()], skipped }
 }
 
-const LINK_DESTINATION = /(!?\[(?:\\.|[^[\]\\])*\])\([^)]*\)/g
+const LINK_DESTINATION = /(!?)\[((?:\\.|[^[\]\\])*)\]\([^)]*\)/g
 
 /**
  * Misma hoja = mismo minuto de creación y mismo contenido (sin espacios de los
- * bordes). Se ignoran los destinos de links e imágenes: en la base son
- * `adjunto:<id>` y en el archivo importado una ruta.
+ * bordes). Se ignoran los destinos de links e imágenes (en la base son
+ * `adjunto:<id>` y en el archivo importado una ruta) y los escapes de su texto
+ * (el editor guarda `\_a\*.png`; el export escribe `_a*.png`).
  */
 const sheetKey = (createdAt, content) =>
-  `${new Date(createdAt).toISOString().slice(0, 16)}|${(content ?? '').replace(LINK_DESTINATION, '$1()').trim()}`
+  `${new Date(createdAt).toISOString().slice(0, 16)}|${(content ?? '')
+    .replace(LINK_DESTINATION, (_, bang, text) => `${bang}[${unescapeMarkdownText(text)}]()`)
+    .trim()}`
 
 /**
  * Marca como duplicadas las hojas que ya existen en la materia destino o que

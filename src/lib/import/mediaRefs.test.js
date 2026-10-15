@@ -55,3 +55,9 @@ test('mimeFromName', () => {
   assert.equal(mimeFromName('a.pdf'), 'application/pdf')
   assert.equal(mimeFromName('a.xyz'), 'application/octet-stream')
 })
+
+test('el texto del link pierde todos los escapes de CommonMark', () => {
+  const index = buildZipIndex(['a/_b*.png'])
+  const [ref] = findMediaRefs('![\\_b\\*.png](_b*.png)', 'a/x.md', index)
+  assert.equal(ref.text, '_b*.png')
+})

@@ -83,3 +83,27 @@ test('encodeAttachmentPath codifica # ? y paréntesis, y cada segmento se decodi
   const segment = encodeAttachmentPath(`adjuntos/${name}`).split('/')[1]
   assert.equal(decodeURIComponent(segment), name)
 })
+
+test('nombres con puntuación escapada por el editor no ganan barras en el export', async () => {
+  const subject = {
+    name: 'M',
+    careerName: 'C',
+    sheets: [
+      {
+        created_at: '2026-10-14T21:30:00Z',
+        updated_at: null,
+        content_md: '![\\_borrador\\*.png](adjunto:b1) [\\[v\\]\\_\\\\.pdf](adjunto:b2)',
+        attachments: [
+          { ...attachment('b1', '_borrador*.png'), mime_type: 'image/png' },
+          { ...attachment('b2', '[v]_\\.pdf'), mime_type: 'application/pdf' },
+        ],
+      },
+    ],
+  }
+  const out = await subjectTreeToZip(FakeZip, subject, new Map([['b1', 'B'], ['b2', 'P']]))
+  const md = [...out.entries()].find(([path]) => path.endsWith('.md'))[1]
+  assert.ok(md.includes('![_borrador*.png](adjuntos/'))
+  // Solo se escapan [ ] y \
+  assert.ok(md.includes('[\\[v\\]_\\\\.pdf](adjuntos/'))
+  assert.ok(!md.includes('\\_') && !md.includes('\\*'))
+})
