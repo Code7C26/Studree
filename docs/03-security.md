@@ -122,6 +122,17 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - Da acceso total a la **cuenta** de Supabase (todos los proyectos): revocarlo cuando no
   se use, y rotarlo ante cualquier sospecha de filtración.
 
+## Storage (adjuntos, 0006)
+
+- El bucket `attachments` es **privado**; nunca `public = true`.
+- Las 4 políticas de `storage.objects` (select, insert, update, delete) exigen que la
+  primera carpeta de la ruta sea `auth.uid()` (`<user_id>/<attachment_id>/<nombre>`).
+- Los archivos se muestran con **links firmados** de 1 h (`createSignedUrl`); no se guardan
+  URLs en el Markdown (solo `adjunto:<id>`).
+- La política de la tabla `attachments` exige que la hoja sea del usuario.
+- Borrar desde SQL una fila de `storage.objects` deja el archivo huérfano: siempre borrar
+  con la API de Storage.
+
 ## Reglas INVIOLABLES
 
 - NUNCA hardcodear credenciales, tokens o claves en el código.

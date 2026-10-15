@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** **Supabase (PostgreSQL)** — ver ADR-007.
 **Cache:** `localStorage` (optimista, descartable).
-**Última actualización:** 2026-10-15 (migración 0005: tablas del Inicio — fechas, tareas y notas)
+**Última actualización:** 2026-10-15 (migración 0006: papelera, adjuntos y plantillas)
 
 > **La Carpeta (2026-10-14, ADR-017).** Jerarquía de 3 niveles (ADR-014): Carrera →
 > Materia → Hoja. Las hojas **no tienen título** (se identifican por su fecha de creación y
@@ -32,6 +32,7 @@ materia (ver § "Inicio").
 erDiagram
     CAREER ||--o{ SUBJECT : agrupa
     SUBJECT ||--o{ SHEET : contiene
+    SHEET ||--o{ ATTACHMENT : adjunta
     SUBJECT ||--o{ PREREQUISITE : "requiere (subject_id)"
     SUBJECT ||--o{ PREREQUISITE : "es requisito de (requires_id)"
 
@@ -41,6 +42,7 @@ erDiagram
         string name
         string color
         boolean uses_prerequisites "ADR-013, default true"
+        timestamp deleted_at "papelera: NULL = vivo (0006)"
         timestamp created_at
         timestamp updated_at
     }
@@ -54,6 +56,7 @@ erDiagram
         int position "orden manual en listas"
         float pos_x "canvas de carrera, nullable (ADR-012)"
         float pos_y "canvas de carrera, nullable"
+        timestamp deleted_at "papelera: NULL = vivo (0006)"
         timestamp created_at
         timestamp updated_at
     }
@@ -73,6 +76,25 @@ erDiagram
         int position "LEGADO: el orden es created_at"
         timestamp created_at "orden de la carpeta + lo que se muestra"
         timestamp updated_at "solo cambia con title o content_md"
+        timestamp deleted_at "papelera: NULL = vivo (0006)"
+    }
+    ATTACHMENT {
+        uuid id PK
+        uuid user_id FK
+        uuid sheet_id FK
+        string name "1..200"
+        string mime_type
+        bigint size_bytes "1..20971520 (20 MB)"
+        string storage_path "unique, en el bucket attachments"
+        timestamp created_at
+    }
+    SHEET_TEMPLATE {
+        uuid id PK
+        uuid user_id FK
+        string name "1..60"
+        text content_md "1..20000"
+        timestamp created_at
+        timestamp updated_at
     }
     IMPORTANT_DATE {
         uuid id PK
@@ -172,11 +194,46 @@ I4).
 
 ---
 
+## Papelera (0006, ADR-019)
+
+`careers`, `subjects` y `sheets` tienen `deleted_at timestamptz` (NULL = vivo).
+
+- **Una sola marca por borrado.** `trash_item(p_table, p_id)` marca la fila y todos sus
+  descendientes **vivos** con el mismo `deleted_at` (`clock_timestamp()`, no `now()`, para
+  que dos borrados en una misma transacción no compartan marca). Devuelve la marca.
+- **Restaurar.** `restore_item(p_table, p_id)` revive la fila y **solo** los descendientes
+  con su misma marca (lo que se borró antes por separado sigue en la papelera). Si un
+  ancestro está en la papelera, se restaura también ese ancestro (si no, lo restaurado no
+  se vería); sus otros hijos no.
+- **`list_trash()`** devuelve solo elementos de **primer nivel**: los que no tienen un
+  padre marcado con la misma fecha, con conteos de lo que arrastran.
+- **30 días.** `list_expired_trash(p_days default 30)` lista los vencidos; la purga la hace
+  la app: primero borra los archivos de Storage (`attachment_paths_for`) y recién después
+  las filas.
+- Whitelist de `p_table`: solo `careers|subjects|sheets`. Todas las funciones son
+  `security invoker` (RLS aplica).
+
+## Adjuntos (0006)
+
+Tabla `attachments` (solo cuelgan de hojas) y bucket **privado** `attachments` de Storage.
+
+- Ruta: `<user_id>/<attachment_id>/<nombre>`; tope de 20 MB (tabla y bucket).
+- En el Markdown se referencian como `adjunto:<id>`; no se guardan URLs.
+- Sin `deleted_at` propio: siguen a su hoja (`on delete cascade`). Para borrar archivos
+  se usa la API de Storage, no SQL.
+
+## Plantillas (0006)
+
+Tabla `sheet_templates`: plantillas propias del usuario (`name`, `content_md`). Las de
+fábrica viven en `src/constants/sheetTemplates.js`, no en la base.
+
+---
+
 ## Esquema SQL (Supabase)
 
 > **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**:
 > `0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
-> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`. Lo de abajo es el **estado
+> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`, `0006_fase13.sql`. Lo de abajo es el **estado
 > resultante**; si difiere, manda el `.sql`.
 
 Además de las tablas, las migraciones incluyen:
@@ -186,10 +243,13 @@ Además de las tablas, las migraciones incluyen:
 3. **RLS activado + política `_owner` por tabla** (`for all to authenticated`, `using` y
    `with check` sobre `auth.uid() = user_id`).
 4. **RPC `save_node_positions`** (sección de arriba).
+5. **0006:** RPC de papelera (`trash_item`, `restore_item`, `list_trash`,
+   `list_expired_trash`, `attachment_paths_for`), tablas `attachments` y `sheet_templates`
+   con RLS `_owner`, y bucket privado `attachments` con 4 políticas en `storage.objects`.
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0005`. La
+Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0006`. La
 `0004` es **destructiva** (borra `sheet_links`, `units`, `topics` y columnas): autorizada
 por el usuario el 2026-10-14.
 
@@ -203,6 +263,9 @@ por el usuario el 2026-10-14.
 > **Estado de la 0005 (2026-10-15):** aplicada vía Management API. Solo agrega
 > `important_dates`, `tasks` y `quick_notes` (idempotente); verificado RLS activo y una
 > política `_owner` por tabla.
+
+> **Estado de la 0006 (2026-10-15):** ⏳ probada en transacción con rollback; pendiente de
+> aplicar. Es aditiva (no borra datos) e idempotente.
 
 ### Estado de las tablas
 
@@ -344,3 +407,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-14 | 3 niveles (ADR-014): `sheets.subject_id`; `sheet_links` por triggers (ADR-015); RPC de posiciones (ADR-016) | ✅ `0003` (links derogados por la 0004) |
 | 2026-10-14 | **La Carpeta** (ADR-017): hojas sin título (título → `# tema`), sin `sheet_links`/`units`/`topics`/posiciones de hojas/`map_*`; whitelist solo `subjects` | ✅ `0004` |
 | 2026-10-14 | **Inicio**: `important_dates`, `tasks`, `quick_notes` + RLS `_owner` + `set_updated_at` | ✅ `0005` (aplicada el 2026-10-15) |
+| 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ⏳ `0006` (probada en rollback; pendiente de aplicar) |
