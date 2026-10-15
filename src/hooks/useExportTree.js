@@ -14,7 +14,7 @@ import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService } from '../services/sheets.service.js'
 
-const EXPORT_SHEET_COLUMNS = 'id, subject_id, title, content_md, updated_at, position'
+const EXPORT_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'
 
 /** Lanza el error de un ServiceResult como excepción (lo atrapa `run`). */
 function unwrap({ data, error }) {
@@ -33,7 +33,11 @@ function groupBy(rows, field) {
 }
 
 /** @param {Object} sheet */
-const toExportSheet = (sheet) => ({ title: sheet.title, content_md: sheet.content_md, updated_at: sheet.updated_at })
+const toExportSheet = (sheet) => ({
+  created_at: sheet.created_at,
+  content_md: sheet.content_md,
+  updated_at: sheet.updated_at,
+})
 
 /**
  * Materias con sus hojas, con UNA consulta de hojas (`IN`) para todas.

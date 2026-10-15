@@ -1,8 +1,9 @@
 /**
  * Árbol → Markdown único (ver docs/features/markdown-export.md).
  *
- * Jerarquía de 3 niveles (ADR-014) expresada como headings:
- *   materia sola → `#` materia, `##` hoja
+ * Jerarquía de 3 niveles (ADR-014) expresada como headings. Las hojas no
+ * tienen título (ADR-017): su heading es la fecha y hora de creación.
+ *   materia sola → `#` materia, `##` hoja (fecha)
  *   carrera      → `#` carrera, `##` materia, `###` hoja
  *   todo         → `#` "Mis apuntes", `##` carrera, `###` materia, `####` hoja
  *
@@ -14,6 +15,8 @@
  * Funciones puras: no hablan con services ni con el DOM (eso vive en
  * useExportTree.js y download.js).
  */
+
+import { formatSheetDateLong } from '../format/sheetDate.js'
 
 const MAX_HEADING = 6
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/
@@ -51,12 +54,12 @@ export function shiftHeadings(markdown, by) {
 const heading = (level, text) => `${'#'.repeat(Math.min(level, MAX_HEADING))} ${text}`
 
 /**
- * @param {{title: string, content_md: string}} sheet
+ * @param {{created_at: string, content_md: string}} sheet
  * @param {number} level - Nivel del heading de la hoja.
  */
 function sheetToMarkdown(sheet, level) {
   const content = shiftHeadings(sheet.content_md?.trim() ?? '', level)
-  return [heading(level, sheet.title.trim()), content].filter(Boolean).join('\n\n')
+  return [heading(level, formatSheetDateLong(sheet.created_at)), content].filter(Boolean).join('\n\n')
 }
 
 /**
@@ -117,7 +120,8 @@ export function withAiPreamble(markdown, scopeLabel) {
   const preamble = [
     `> Apuntes de estudio exportados de Studree el ${date} (${scopeLabel}).`,
     '> Estructura: cada heading de nivel superior agrupa a los de abajo (carrera › materia › hoja).',
-    '> Cada hoja es un apunte en Markdown. `[[Título]]` es un enlace a otra hoja de la misma materia con ese título.',
+    '> Cada hoja es un apunte en Markdown y su título es la fecha y hora en que se escribió (orden cronológico).',
+    '> `[[Tema]]` es un enlace al título (tema) con ese nombre dentro de la misma materia.',
   ].join('\n')
   return `${preamble}\n\n${markdown}`
 }

@@ -1,6 +1,6 @@
 /**
  * Frontmatter YAML de una hoja para el export `.zip` (ver
- * docs/features/markdown-export.md). Se arma a mano: son 3 campos fijos, no
+ * docs/features/markdown-export.md). Se arma a mano: son 4 campos fijos, no
  * justifica sumar `js-yaml` como dependencia solo para esto.
  */
 
@@ -13,14 +13,16 @@ function yamlString(value) {
  * @param {Object} meta
  * @param {string} meta.careerName
  * @param {string} meta.subjectName
- * @param {string} meta.date - `AAAA-MM-DD` (vacío si no se conoce).
+ * @param {string} meta.created - `AAAA-MM-DDTHH:MM` local: cuándo se escribió la hoja.
+ * @param {string} meta.date - `AAAA-MM-DD` de la última edición (vacío si no se conoce).
  * @returns {string}
  */
-export function buildFrontmatter({ careerName, subjectName, date }) {
+export function buildFrontmatter({ careerName, subjectName, created, date }) {
   return [
     '---',
     `carrera: ${yamlString(careerName)}`,
     `materia: ${yamlString(subjectName)}`,
+    `creada: ${created}`,
     ...(date ? [`fecha: ${date}`] : []),
     '---',
     '',

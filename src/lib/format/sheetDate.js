@@ -39,6 +39,16 @@ export function formatSheetDateLong(iso) {
 }
 
 /**
+ * Fecha y hora local en formato ISO corto, para el frontmatter: `2026-10-14T18:30`.
+ * @param {string} iso
+ * @returns {string}
+ */
+export function sheetLocalIso(iso) {
+  const date = new Date(iso)
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${time(date)}`
+}
+
+/**
  * Nombre de archivo ordenable alfabéticamente: `2026-10-14 18-30`.
  * @param {string} iso
  * @returns {string}

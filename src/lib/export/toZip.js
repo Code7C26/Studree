@@ -1,7 +1,10 @@
 /**
  * Árbol → `.zip` con estructura de carpetas (ver docs/features/markdown-export.md).
  *
- *   Carrera/Materia/Título de la hoja.md     (con frontmatter YAML)
+ *   Carrera/Materia/2026-10-14 18-30.md     (una por hoja, con frontmatter YAML)
+ *
+ * Las hojas no tienen título (ADR-017): el archivo se llama como su fecha y
+ * hora de creación, así el orden alfabético es el cronológico.
  *
  * Los nombres se sanitizan y se DEDUPLICAN sin distinguir mayúsculas
  * (`Resumen.md`, `resumen (2).md`): dos hojas o carpetas con el mismo nombre
@@ -13,6 +16,7 @@
  */
 
 import { buildFrontmatter } from './frontmatter.js'
+import { sheetFileName, sheetLocalIso } from '../format/sheetDate.js'
 
 const INVALID_FILENAME_CHARS = /[/\\:*?"<>|]/g
 const FALLBACK_NAME = 'Sin título'
@@ -40,14 +44,18 @@ export function uniqueName(name, used) {
 /**
  * Vuelca las hojas de una materia dentro de una carpeta ya creada de JSZip.
  * @param {import('jszip')} folder
- * @param {Array<{title: string, content_md: string, updated_at: string|null}>} sheets
+ * @param {Array<{created_at: string, content_md: string, updated_at: string|null}>} sheets
  * @param {{careerName: string, subjectName: string}} meta - Para el frontmatter.
  */
 function addSheetsToFolder(folder, sheets, meta) {
   const used = new Set()
   for (const sheet of sheets) {
-    const frontmatter = buildFrontmatter({ ...meta, date: (sheet.updated_at ?? '').slice(0, 10) })
-    folder.file(`${uniqueName(sheet.title, used)}.md`, `${frontmatter}\n${sheet.content_md ?? ''}`)
+    const frontmatter = buildFrontmatter({
+      ...meta,
+      created: sheetLocalIso(sheet.created_at),
+      date: (sheet.updated_at ?? '').slice(0, 10),
+    })
+    folder.file(`${uniqueName(sheetFileName(sheet.created_at), used)}.md`, `${frontmatter}\n${sheet.content_md ?? ''}`)
   }
 }
 
