@@ -21,7 +21,7 @@ export function ContinueCard({ sheet, loading, error, className = '' }) {
       {loading && !sheet ? (
         <p className="text-sm text-text-muted">Cargando…</p>
       ) : sheet ? (
-        <Link to={subjectFolderPath(sheet.subject_id, sheet.id)} className="group block min-h-[9.5rem] rounded-xl">
+        <Link to={subjectFolderPath(sheet.subject_id, sheet.id)} className="group block rounded-xl sm:min-h-[13rem]">
           <p className="font-display text-2xl font-bold text-text">{sheet.subject_name}</p>
           <p className="mt-0.5 text-sm text-text-muted">Escribiste {formatRelativeTime(sheet.updated_at)}</p>
           <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent-soft">
@@ -30,10 +30,10 @@ export function ContinueCard({ sheet, loading, error, className = '' }) {
           {sheet.preview && (
             <div
               aria-hidden="true"
-              className="paper-sheet motion-peek pointer-events-none absolute -bottom-5 -right-1 hidden w-48 -rotate-[4deg] rounded-md border-l-[5px] px-3 py-2 text-xs leading-[1.4] transition-transform duration-200 group-hover:-translate-y-1 group-hover:-rotate-[2deg] sm:block"
+              className="paper-sheet motion-peek pointer-events-none absolute -bottom-8 right-6 hidden h-40 w-64 -rotate-[4deg] overflow-hidden rounded-md border-l-[5px] px-4 py-3 text-xs leading-[1.6] transition-transform duration-200 group-hover:-translate-y-2 group-hover:-rotate-[2deg] sm:block"
               style={{ borderLeftColor: getSubjectTones(sheet.subject_color).base }}
             >
-              <p className="line-clamp-4">{sheet.preview}</p>
+              <p className="line-clamp-5">{sheet.preview}</p>
             </div>
           )}
         </Link>

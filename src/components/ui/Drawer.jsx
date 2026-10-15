@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
+import { Icon } from './Icon'
 
 /**
  * Panel lateral deslizante (drawer) desde la derecha, con overlay.
  * Se mantiene montado para animar la entrada/salida (controlado por `open`).
+ * Cerrado queda `inert`: fuera de la pantalla no tiene que recibir foco con Tab.
  * @param {Object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
@@ -35,6 +37,8 @@ export function Drawer({ open, onClose, title, children }) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        aria-hidden={open ? undefined : true}
+        inert={open ? undefined : ''}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="truncate text-lg font-semibold">{title}</h2>
@@ -43,7 +47,7 @@ export function Drawer({ open, onClose, title, children }) {
             className="rounded p-1 text-text-muted transition-colors hover:text-text"
             aria-label="Cerrar panel"
           >
-            ✕
+            <Icon name="close" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">{children}</div>

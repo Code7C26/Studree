@@ -24,7 +24,7 @@ const NOTICE_MS = 3000
 
 /** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
 const TOOL =
-  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-40'
+  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-40'
 
 /** Headings de primer nivel del editor, en el mismo orden que `extractHeadings`. */
 const topLevelHeadings = (editor) =>
@@ -323,7 +323,7 @@ function SubjectFolder({ subjectId }) {
 
       <div className={reading ? 'w-full max-w-[52rem]' : 'min-w-0'}>
         {!reading && (
-          <div className="glass sticky top-0 z-10 mb-5 flex w-full flex-wrap items-center gap-2 px-2 py-1.5">
+          <div className="glass sticky -top-6 z-10 mb-5 flex w-full flex-wrap items-center gap-2 bg-surface/95 px-2 py-1.5 shadow-lg shadow-black/30">
             <div className="min-w-[12rem] flex-1">
               <FolderSearchBar
                 term={term}
@@ -349,11 +349,11 @@ function SubjectFolder({ subjectId }) {
               type="button"
               onClick={() => setReading(true)}
               title="Ocultar todo menos las hojas (Esc para salir)"
-              className={TOOL}
+              className={`${TOOL} text-text-muted hover:text-text`}
             >
               <Icon name="book-open" /> Leer
             </button>
-            <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft`}>
+            <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft hover:text-accent`}>
               Exportar
             </button>
           </div>
