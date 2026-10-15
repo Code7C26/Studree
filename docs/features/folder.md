@@ -55,9 +55,15 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
 └───────────────┴──────────────────────────────┴─────────┘
 ```
 
-- **Centrado en la pantalla:** grilla `md:[13rem_52rem]`, `lg:[15rem_52rem_15rem]` con
-  `justify-center`. Con el explorador cerrado (por defecto) las hojas quedan en el centro
-  exacto. Debajo de `md` solo se ven las hojas.
+- **Centrado en la pantalla:** desde `lg`, grilla
+  `[minmax(13rem,1fr) | minmax(0,52rem) | minmax(0,1fr)]`. Las hojas toman primero su ancho
+  y las dos columnas de los costados se reparten lo que sobra: con lugar quedan iguales y
+  las hojas quedan en el centro exacto de la pantalla (explorador cerrado, por defecto); sin
+  lugar (ventana chica o explorador abierto) la columna derecha se achica a 0 en vez de
+  angostar las hojas. El índice (máx. 15rem) va pegado a las hojas. Debajo de `lg` solo se
+  ven las hojas.
+- Al saltar a un tema, los headings tienen `scroll-margin-top` para no quedar debajo de la
+  barra de herramientas.
 - **Color de materia:** el contenedor pone `subjectCssVars(subject.color)` (variables
   `--subject*`). Lo usan el margen de 6 px de cada hoja, el `#` (título) en `font-display`,
   los links y `[[links]]`, las citas, el punto del nombre, el tema activo del índice y el

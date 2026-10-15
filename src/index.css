@@ -97,6 +97,10 @@
   .sheet-editor .ProseMirror p {
     @apply my-2 leading-relaxed;
   }
+  /* Al saltar a un tema, que la barra de herramientas (sticky, hasta 3 filas) no lo tape. */
+  .sheet-editor .ProseMirror :is(h1, h2, h3, h4) {
+    @apply scroll-mt-36;
+  }
   .sheet-editor .ProseMirror h1 {
     @apply mb-3 mt-6 font-display text-3xl font-extrabold first:mt-0;
     color: var(--subject-ink, theme('colors.accent.hover'));

@@ -21,6 +21,9 @@ import { readCache, writeCache } from '../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../constants/storageKeys.js'
 import { ROUTES, careerPath, subjectFolderPath } from '../../constants/routes.js'
 
+/** Breakpoint `md` de Tailwind: desde acá el explorador es un panel fijo (antes, un drawer). */
+const DESKTOP_QUERY = '(min-width: 768px)'
+
 /** Evento que emite el buscador del header para abrir la command palette. */
 export const OPEN_PALETTE_EVENT = 'studree:open-palette'
 
@@ -50,7 +53,10 @@ export function WorkspaceLayout() {
 
   // Arranca cerrado (así la carpeta centra las hojas en la pantalla) y se
   // recuerda lo último que eligió el usuario (Ctrl+B o el botón de la TabBar).
-  const [explorerOpen, setExplorerOpen] = useState(() => readCache(STORAGE_KEYS.uiExplorerOpen, false) === true)
+  // En el celular siempre arranca cerrado: ahí es un drawer que tapa todo.
+  const [explorerOpen, setExplorerOpen] = useState(
+    () => readCache(STORAGE_KEYS.uiExplorerOpen, false) === true && window.matchMedia(DESKTOP_QUERY).matches,
+  )
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [tabs, setTabs] = useState(() => readCache(STORAGE_KEYS.uiTabs, []))
 

@@ -52,7 +52,8 @@ nombre en dos teclas.
 - El estado de expandido persiste en `studree:ui:explorer` (preferencia de UI).
 - **Arranca cerrado** en todas las pantallas (ADR-018): se abre con `Ctrl+B` o con el botón
   de la izquierda de la barra de tabs, y lo último que eligió el usuario se recuerda en
-  `studree:ui:explorer-open`. Así la Carpeta centra las hojas en la pantalla.
+  `studree:ui:explorer-open`. Así la Carpeta centra las hojas en la pantalla. En el
+  celular (< `md`) siempre arranca cerrado, aunque se haya guardado abierto.
 - En mobile se abre como drawer sobre el contenido. Cerrado, el drawer queda `inert` (no
   recibe foco con Tab).
 - **En el Inicio (`/`) no hay explorador ni tabs**, y `Ctrl+B` no hace nada ahí.

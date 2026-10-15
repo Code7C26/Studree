@@ -293,11 +293,14 @@ function SubjectFolder({ subjectId }) {
       className={
         reading
           ? 'flex justify-center'
-          : 'grid justify-center gap-8 md:grid-cols-[13rem_minmax(0,52rem)] lg:grid-cols-[15rem_minmax(0,52rem)_15rem]'
+          : // Índice desde lg. Las hojas toman primero su ancho (hasta 52rem) y las columnas de
+            // los costados se reparten lo que sobra: con lugar quedan iguales (hojas centradas en
+            // la pantalla); sin lugar la de la derecha se achica a 0 en vez de angostar las hojas.
+            'grid gap-8 lg:grid-cols-[minmax(13rem,1fr)_minmax(0,52rem)_minmax(0,1fr)]'
       }
     >
       {!reading && (
-        <aside className="sticky top-0 hidden max-h-[calc(100vh-8rem)] self-start overflow-y-auto md:block">
+        <aside className="sticky top-0 hidden max-h-[calc(100vh-8rem)] w-full max-w-[15rem] self-start justify-self-end overflow-y-auto lg:block">
           {subject && (
             <Link
               to={careerPath(subject.career_id)}
