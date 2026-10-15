@@ -23,3 +23,11 @@ export const subjectMapPath = (subjectId) => `/materias/${subjectId}`
 
 /** @param {string} sheetId */
 export const sheetPath = (sheetId) => `/hojas/${sheetId}`
+
+/**
+ * Una hoja dentro de la carpeta de su materia (contrato con La Carpeta: esa
+ * vista hace el scroll a `?hoja=`).
+ * @param {string} subjectId
+ * @param {string} sheetId
+ */
+export const subjectSheetPath = (subjectId, sheetId) => `/materias/${subjectId}?hoja=${sheetId}`
