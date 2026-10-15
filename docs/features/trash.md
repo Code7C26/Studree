@@ -1,6 +1,6 @@
 # Feature: Papelera
 
-> **Fase 13** · Estado: 🟢 UI y purga hechas (falta verificación en el navegador).
+> **Fase 13** · Estado: ✅ Implementado (2026-10-15). Migración `0006_fase13.sql` aplicada el 2026-10-15.
 > Leer antes de tocar `services/trash.service.js`, `useTrash`, `useTrashPurge`,
 > `pages/TrashPage.jsx`, `features/trash/**` o `lib/trash/**`.
 
@@ -46,6 +46,18 @@ Reglas del lado de la app:
 - `homeService.getLastEditedSheet` ("Seguí donde dejaste").
 - `useCareerMap`: correlativas filtradas con `livePrerequisites`.
 
+## Detalles de implementación
+
+- `trash_item` y `list_expired_trash` usan `clock_timestamp()` (no `now()`): dos borrados en
+  una misma transacción reciben marcas distintas, así restaurar uno no revive al otro.
+- La migración se probó antes de aplicarla con un `begin … rollback` con asserts, incluida la
+  RLS cruzada entre usuarios (21 usuarios).
+
 ## Errores
 
 Todos los métodos devuelven `{ data, error }` con el error ya traducido (`translateError`).
+
+## Pendiente
+
+- [ ] Verificar en el navegador (la extensión de Chrome no estaba conectada al implementar): borrar y "Deshacer" en las tres páginas, `/papelera` completa (restaurar, borrar para siempre, vaciar), que lo borrado no aparezca en el explorador, `Ctrl+K`, el Inicio ni el export, y el chequeo de huérfanos en Storage tras "borrar para siempre".
+- [ ] Seguimiento menor: la purga solo corre cuando alguien entra a la app (no hay cron).

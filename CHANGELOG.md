@@ -6,20 +6,88 @@
 
 ---
 
-## [Fase 13] — 2026-10-15 — Plantillas de hoja
+## [0.16.0] — 2026-10-15
 
-### Added
+### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
 
-> Request: Fase 13, Tarea 8 (plantillas de hoja).
+> Request: "quiero trabajar en la fase 13".
+> Spec: `docs/superpowers/specs/2026-10-15-fase-13-design.md` · plan:
+> `docs/superpowers/plans/2026-10-15-fase-13.md`.
 
-- "Nueva hoja ▾": botón partido (en blanco, o desde una plantilla de fábrica / propia).
-- 4 plantillas de fábrica (Clase, Resumen, Práctica, Repaso para parcial).
-- "Guardar como plantilla" en cada hoja (sin adjuntos) y administrador (renombrar, editar, borrar).
-- La hoja creada desde una plantilla se guarda al crearse.
-- La hoja usa el ícono de papelera para eliminar (aria-label "Mover a la papelera…").
-- Archivos: `docs/features/sheet-templates.md`, `src/constants/sheetTemplates.js`,
-  `src/services/sheetTemplates.service.js`, `src/hooks/useSheetTemplates.js`,
-  `src/components/features/templates/**`, `FolderSheet.jsx`, `SubjectFolderPage.jsx`, `Icon.jsx`, `models.js`.
+**Decisiones del brainstorming:**
+
+| Tema | Decisión |
+|------|----------|
+| Adjuntos | Solo en hojas; imágenes dentro del texto y lista "Adjuntos" al pie de la hoja |
+| Papelera | Carreras, materias y hojas (en cascada); 30 días y se borra sola |
+| Plantillas | 4 de fábrica + "Guardar como plantilla" |
+| Importar | `.md`/`.zip` en una materia + restaurar un export de Studree + imágenes |
+| Almacenamiento (ADR-020) | Bucket privado + tabla `attachments` + referencias `adjunto:<id>` con links firmados |
+| Papelera (ADR-019) | Columna `deleted_at` en `careers`, `subjects` y `sheets` |
+| Purga | La hace la app al iniciar sesión (sin servidor) |
+
+**Datos (`0006_fase13.sql`, aplicada el 2026-10-15):**
+- Columna `deleted_at` en `careers`, `subjects` y `sheets`; tablas `attachments` y
+  `sheet_templates` con RLS; bucket privado `attachments` con políticas por primera carpeta.
+- Funciones `security invoker`: `trash_item`, `restore_item`, `list_trash`,
+  `list_expired_trash` y `attachment_paths_for`. `trash_item` y `list_expired_trash` usan
+  `clock_timestamp()` (no `now()`) para que dos borrados en una misma transacción tengan
+  marcas distintas.
+- Probada antes de aplicarla con un `begin … rollback` con asserts, incluida la RLS cruzada
+  entre usuarios (21 usuarios).
+
+**Papelera (ADR-019):**
+- Borrar una carrera, materia u hoja la manda a la papelera (30 días) con aviso "Deshacer";
+  página `/papelera` (restaurar, borrar para siempre, vaciar) y entrada en el explorador.
+- Purga de lo vencido una vez por sesión (`useTrashPurge`); borrar para siempre elimina antes
+  los archivos de Storage.
+- Toda lectura filtra `deleted_at` (`softDelete` en `crudService`, `searchContent`,
+  `getLastEditedSheet`); las correlativas hacia materias en la papelera se descartan en el
+  cliente (`livePrerequisites`).
+
+**Adjuntos (ADR-020):**
+- Soltar, pegar o usar el clip (siempre visible en la cápsula; sin hoja con foco adjunta a la
+  última, deshabilitado si la carpeta no tiene hojas). Máximo 20 MB.
+- Las imágenes se ven dentro del texto; el marcador "Subiendo…" es el propio nodo de imagen
+  (`adjunto:<id>` antes de terminar la subida). Los otros archivos se insertan como link
+  enseguida y todos van en la lista al pie de la hoja.
+- Al pegar, solo los portapapeles con archivos y sin `text/plain` ni `text/html` (capturas)
+  cuentan como adjuntos; lo de Word, Excel o la web pega normal.
+- Una hoja nueva se crea antes de subir (`ensureCreated` en el saver).
+
+**Plantillas:**
+- "Nueva hoja ▾" (botón partido): en blanco, 4 de fábrica (Clase, Resumen, Práctica, Repaso
+  para parcial) o propias; "Guardar como plantilla" (sin adjuntos) y administrador. La hoja
+  creada desde una plantilla se guarda al crearse.
+
+**Importar:**
+- `.md` sueltos y `.zip` (export de Studree o vault de Obsidian) en una materia, o restaurar
+  un export completo desde el panel de carreras; las imágenes y archivos del zip se suben como
+  adjuntos y cada hoja conserva su fecha.
+- Duplicados: mismo minuto de creación y mismo contenido ignorando los destinos de links e
+  imágenes (un export con imágenes vuelto a importar se detecta como duplicado). La raíz
+  `Studree/` se descarta si hay al menos una carpeta más; se normalizan las rutas de Windows
+  (`\`); se aceptan BOM y frontmatter vacío.
+
+**Export:**
+- El `.zip` lleva los adjuntos en `adjuntos/`; las rutas se codifican por segmento
+  (`encodeURIComponent` más paréntesis, así sobrevive el `#`). Si una descarga falla, la
+  referencia pasa a `[imagen: …]` / `[archivo: …]` y el diálogo avisa. El `.md` único y
+  "Copiar para IA" describen los adjuntos como `[imagen: …]` / `[archivo: …]`.
+
+**Dependencias:** `@tiptap/extension-image@3.31.3` (autorizada). Se agregó el script
+`npm test` (`node --test`).
+
+**Docs:** ADR-019 y ADR-020 en `docs/02-architecture.md`; `docs/features/{trash,attachments,sheet-templates,import}.md`
+nuevos; `folder.md`, `navigation-shell.md`, `markdown-export.md`, `API_DOCS.md`, `DB_SCHEMA.md`,
+`03-security.md`, `01-project-overview.md` y las reglas de IA (`CLAUDE.md` y sus 4 copias).
+
+**Tests:** `npm test` = 62 tests, todos pasan (puras de adjuntos, papelera, export, import,
+saver, correlativas vivas y plantillas). `npx eslint src` sin salida y `npm run build` ok.
+
+> **Pendiente:** la verificación en el navegador no se pudo hacer (la extensión de Chrome no
+> estaba conectada): adjuntos de punta a punta en el editor, papelera completa, plantillas e
+> export/import de ida y vuelta.
 
 ---
 

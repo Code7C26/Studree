@@ -52,11 +52,12 @@ Studree/
 │   │   ├── CareerMapPage.jsx      # Canvas de materias + correlativas
 │   │   ├── SubjectFolderPage.jsx  # La Carpeta de una materia (ADR-017)
 │   │   ├── SheetRedirectPage.jsx  # /hojas/:id → carpeta en esa hoja
+│   │   ├── TrashPage.jsx          # Papelera (`/papelera`, ADR-019)
 │   │   └── ProfilePage.jsx
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
 │   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker,
-│   │   │                          #       Icon (íconos SVG, ADR-018)
+│   │   │                          #       Icon (íconos SVG, ADR-018), UndoToast
 │   │   ├── layout/                # AppLayout, Header, AuthProvider, RequireAuth,
 │   │   │                          # WorkspaceLayout, TabBar, ReadingModeProvider
 │   │   └── features/
@@ -68,15 +69,21 @@ Studree/
 │   │       ├── folder/            # FolderSheet, TopicIndex, FolderSearchBar (La Carpeta)
 │   │       ├── sheetEditor/       # SheetEditor, EditorToolbar
 │   │       ├── export/            # ExportDialog
+│   │       ├── trash/             # TrashItemRow (Fase 13)
+│   │       ├── attachments/       # AttachmentList (lista al pie de la hoja)
+│   │       ├── templates/         # NewSheetButton, TemplatesManager
+│   │       ├── import/            # ImportDialog
 │   │       └── home/              # Inicio: HomePanel, ContinueCard, NextDateCard, WeekSummary,
 │   │                              # CalendarPanel, DateFormModal, TaskList, QuickNotes
 │   ├── hooks/                     # useAuth, useCareers, useCareerMap, useFolder,
 │   │                              # useSheetAutosave, useSheetLocation, useReadingMode,
-│   │                              # useExplorerTree, useExportTree, useHotkeys, useFlowCanvas, useHome
+│   │                              # useExplorerTree, useExportTree, useHotkeys, useFlowCanvas, useHome,
+│   │                              # useTrash, useTrashPurge, useFolderAttachments,
+│   │                              # useSheetTemplates, useImport
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
 │   │                              # dataEvents, careers, subjects, sheets,
 │   │                              # prerequisites, home, importantDates, tasks,
-│   │                              # quickNotes
+│   │                              # quickNotes, trash, attachments, sheetTemplates, import
 │   ├── lib/
 │   │   ├── id.js
 │   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera), subjectStatus.js,
@@ -85,13 +92,17 @@ Studree/
 │   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets
 │   │   ├── format/                # sheetDate.js (fecha y hora de las hojas)
 │   │   ├── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
+│   │   ├── trash/                 # trashItems.js (textos de la papelera, puras)
+│   │   ├── attachments/           # refs.js (`adjunto:<id>`), files.js (puras)
+│   │   ├── import/                # frontmatter, createdAt, mediaRefs, plan (puras, con tests)
 │   │   └── home/                  # dates.js, calendar.js, preview.js, summary.js, greeting.js (Inicio, puras)
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js, subjectTones.js (ADR-018),
-│   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js
+│   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js,
+│   │                              # sheetTemplates.js, attachmentLimits.js (Fase 13)
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
 ├── supabase/
-│   └── migrations/                # SQL versionado del esquema + RLS (0001 a 0005)
+│   └── migrations/                # SQL versionado del esquema + RLS (0001 a 0006)
 ├── index.html                     # HTML raíz de la SPA
 ├── vite.config.js                 # Configuración de Vite
 ├── tailwind.config.js             # Design system (colores, fuentes, spacing)
@@ -516,7 +527,8 @@ integrar IA. El diseño se hizo con las skills `frontend-design`, `ui-ux-pro-max
   `--subject-soft`. Un color fuera de la paleta usa los tonos del verde.
 - **Tipografía:** Inter (texto) + Bricolage Grotesque (`font-display`: títulos, saludo,
   números grandes y marca), desde Google Fonts con `display=swap`.
-- **Íconos SVG propios** (`components/ui/Icon.jsx`), nunca emojis. Foco visible global
+- **Íconos SVG propios** (`components/ui/Icon.jsx`; en la Fase 13 se sumaron `trash`,
+  `restore`, `paperclip`, `image`, `upload`, `template` y `chevron-down`), nunca emojis. Foco visible global
   (`:focus-visible`).
 - **Se evita:** etiquetas en mayúsculas, texto en degradé, tarjetas idénticas, animaciones
   de entrada en cada bloque. La única animación nueva (la hoja que asoma en "Seguí donde
@@ -532,6 +544,51 @@ integrar IA. El diseño se hizo con las skills `frontend-design`, `ui-ux-pro-max
 - El texto nunca usa el color crudo de la materia: siempre `onPaper` u `onDark`.
 - Tokens nuevos: `paper.line`, `postit`, `surface-lit`, `fontFamily.display`.
 
+### ADR-019: Papelera con `deleted_at`
+**Fecha:** 2026-10-15
+**Spec:** `docs/superpowers/specs/2026-10-15-fase-13-design.md`
+**Contexto:** borrar una carrera, una materia o una hoja era definitivo (con cascada): un
+click de más podía costar semanas de apuntes.
+**Decisión:**
+- Columna `deleted_at` en `careers`, `subjects` y `sheets`. Borrar llama a la función SQL
+  `trash_item` (`security invoker`), que marca el elemento y, en cascada, todo lo que
+  contiene con **una sola marca** (`clock_timestamp()`, no `now()`, para que dos borrados
+  dentro de una misma transacción tengan marcas distintas).
+- Restaurar (`restore_item`) revive lo que tiene **esa misma marca**: lo que ya estaba en la
+  papelera antes de borrar el contenedor sigue ahí.
+- La papelera lista solo el **primer nivel** borrado (`list_trash`); lo vencido a los 30 días
+  se purga desde la app (`list_expired_trash` + `attachment_paths_for`).
+**Alternativas descartadas:** una tabla `trash` aparte que guarde copias (duplica el modelo
+y complica restaurar las relaciones y las correlativas).
+**Consecuencias:**
+- **Toda lectura** de esas tres tablas filtra `deleted_at is null` (`crudService` con
+  `softDelete: true`, `searchContent`, `getLastEditedSheet`).
+- Las correlativas hacia una materia en la papelera siguen en la base: se descartan **en el
+  cliente** (`livePrerequisites`).
+- La purga corre desde la app (`useTrashPurge`, una vez por sesión), no hay cron: si nadie
+  entra, lo vencido espera.
+- Borrar para siempre: primero los archivos de Storage, después las filas.
+
+### ADR-020: Adjuntos en bucket privado con referencias `adjunto:`
+**Fecha:** 2026-10-15
+**Spec:** `docs/superpowers/specs/2026-10-15-fase-13-design.md`
+**Contexto:** las hojas necesitan imágenes y archivos (fotos del pizarrón, PDF), y el
+Markdown es la fuente de verdad del contenido (ADR-011).
+**Decisión:**
+- Archivos en el bucket **privado** `attachments` de Supabase Storage, con rutas
+  `<user_id>/<attachment_id>/<nombre>` y políticas por primera carpeta = `auth.uid()`;
+  metadatos en la tabla `attachments`.
+- En el Markdown se guarda `![nombre](adjunto:<id>)` o `[nombre](adjunto:<id>)`, **nunca una
+  URL**. Al mostrarlo se pide un link firmado de 1 h (cacheado en memoria).
+**Alternativa descartada:** bucket público con URLs fijas (cualquiera con el link vería los
+apuntes; las URLs quedarían clavadas en el Markdown).
+**Consecuencias:**
+- Los links firmados vencen: el id es lo estable, el link se resuelve al mostrar.
+- El export `.zip` reescribe `adjunto:<id>` a rutas relativas y el import hace el camino
+  inverso; el `.md` único y "Copiar para IA" los describen como `[imagen: …]`.
+- Borrar archivos siempre con la API de Storage (no con SQL) y antes que las filas.
+- Tope de 20 MB por archivo.
+
 
 ## Rutas
 
@@ -543,6 +600,7 @@ integrar IA. El diseño se hizo con las skills `frontend-design`, `ui-ux-pro-max
 | `/carreras/:careerId` | `CareerMapPage` | Canvas de materias (+ correlativas si la carrera las usa) — lazy |
 | `/materias/:subjectId` | `SubjectFolderPage` | **La Carpeta**: hojas seguidas + índice de temas + buscador; acepta `?hoja=:id` — lazy |
 | `/hojas/:sheetId` | `SheetRedirectPage` | Redirige a `/materias/:subjectId?hoja=:sheetId` (links viejos) |
+| `/papelera` | `TrashPage` | **Papelera** (Fase 13, ADR-019): restaurar, borrar para siempre o vaciar — ver `docs/features/trash.md` |
 | `/perfil` | `ProfilePage` | Perfil (placeholder) |
 
 > Las páginas con canvas, el editor y el perfil se cargan con `React.lazy` (chunks

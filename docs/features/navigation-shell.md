@@ -36,7 +36,7 @@ nombre en dos teclas.
 | `src/components/layout/WorkspaceLayout.jsx` | Grilla del shell: explorador + tabs + `<Outlet/>`; exporta `OPEN_PALETTE_EVENT` |
 | `src/components/layout/TabBar.jsx` | Pastillas de las materias abiertas (activar / cerrar) + botón del explorador |
 | `src/components/layout/Header.jsx` | Logo, buscador que abre el palette, navegación |
-| `src/components/features/explorer/Explorer.jsx` | Panel lateral: buscador + raíz del árbol |
+| `src/components/features/explorer/Explorer.jsx` | Panel lateral: buscador + raíz del árbol + entrada "Papelera" al pie |
 | `src/components/features/explorer/ExplorerTree.jsx` | Render Carrera → Materia (con cantidad de hojas) |
 | `src/components/features/explorer/ExplorerItem.jsx` | Fila: chevron, icono, nombre, acciones |
 | `src/components/features/commandPalette/CommandPalette.jsx` | Overlay `Ctrl+K` con búsqueda |
@@ -57,6 +57,9 @@ nombre en dos teclas.
 - En mobile se abre como drawer sobre el contenido. Cerrado, el drawer queda `inert` (no
   recibe foco con Tab).
 - **En el Inicio (`/`) no hay explorador ni tabs**, y `Ctrl+B` no hace nada ahí.
+- **Papelera (Fase 13):** al pie del explorador hay una entrada "Papelera" (ícono `trash`)
+  que lleva a `/papelera` (`ROUTES.trash`, página `TrashPage`). Lo que se manda a la papelera
+  desaparece del árbol, de las tabs, del `Ctrl+K` y del Inicio. Ver `docs/features/trash.md`.
 - Cada fila tiene un botón ✏️ (visible al hover) para renombrar in-line, en
   carreras y materias: `Enter`/blur confirma, `Escape` cancela. La acción vive en
   `useExplorerTree.js` (`renameEntity`). Si falla, el error se muestra debajo de la fila.

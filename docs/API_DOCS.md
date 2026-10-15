@@ -4,7 +4,7 @@
 cliente (BaaS), usando `@supabase/supabase-js`. No hay servidor propio ni endpoints
 `/api/*`.
 
-**Última actualización:** 2026-10-14 (La Carpeta: hojas sin título, sin sheet_links)
+**Última actualización:** 2026-10-15 (Fase 13: papelera, adjuntos, plantillas e importar)
 
 > El rol de "capa de API" lo cumplen los **services** de `src/services/`. La seguridad no
 > la da un backend intermedio sino **RLS en Postgres** — ver `docs/03-security.md`.
@@ -30,6 +30,10 @@ Regla de oro: **ningún componente ni hook importa `supabase.client.js` ni toca
 | `tasks.service.js` | CRUD de tareas del Inicio + `rename` + `setDone` |
 | `quickNotes.service.js` | CRUD de notas rápidas del Inicio |
 | `home.service.js` | `getLastEditedSheet()`: "Seguí donde dejaste" (una consulta, sin `title`) |
+| `trash.service.js` | Papelera (ADR-019): mandar a la papelera, restaurar, listar, borrar para siempre, purgar vencidos |
+| `attachments.service.js` | Adjuntos (ADR-020): subir al bucket privado, listar, link firmado, borrar, descargar |
+| `sheetTemplates.service.js` | CRUD de las plantillas propias (`sheet_templates`); las de fábrica están en `constants/sheetTemplates.js` |
+| `import.service.js` | `executePlan(plan, { readFile, onProgress })`: crea carreras, materias, hojas y adjuntos de una importación |
 
 > Eliminados: `units.service.js` y `topics.service.js` (ADR-014) y `sheetLinks.service.js`
 > (ADR-017: los `[[links]]` apuntan a temas y se resuelven en el cliente).
@@ -52,7 +56,8 @@ clearPositions(parentIds, cols?)            // → bool "Reordenar": pone las po
 ```
 
 **Config de la fábrica:** `createCrudService({ table, parentColumn?, orderBy = 'position',
-notifies = true })`. Con `notifies: false` (tablas del Inicio), `create`, `update` y
+notifies = true, softDelete = false })`. Con `softDelete: true` (carreras, materias y hojas,
+migración 0006) `list`, `listByParents` y `get` solo traen filas con `deleted_at` NULL. Con `notifies: false` (tablas del Inicio), `create`, `update` y
 `remove` no emiten `notifyDataChanged()`: tildar una tarea no recarga el explorador.
 
 **Paginación:** PostgREST corta cada consulta en 1000 filas. `list` y `listByParents`
@@ -64,7 +69,7 @@ parciales la cache usa otra clave.
 
 ```js
 sheetsService.list(subjectId, undefined, { columns: FOLDER_SHEET_COLUMNS }) // orden: created_at
-sheetsService.create({ subject_id, content_md })  // sin título; la carpeta la crea recién con contenido
+sheetsService.create({ subject_id, content_md, created_at? })  // sin título; la carpeta la crea recién con contenido; `created_at` lo usa el import para conservar la fecha original
 sheetsService.saveContent(id, markdown)   // → Sheet (con updated_at, para el borrador de useSheetAutosave)
 sheetsService.searchContent(query)        // → [{id, subject_id, content_md, created_at}] (ilike, máx. 20)
 sheetsService.get(id) / remove(id, subjectId)
@@ -73,6 +78,35 @@ sheetsService.get(id) / remove(id, subjectId)
 - `FOLDER_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'`.
 - `searchContent` neutraliza `%` y `\` (PostgREST no respeta el escape con barra); el
   palette descarta los falsos positivos con `buildContentSnippet`.
+
+### Papelera, adjuntos, plantillas e importar (migración 0006, Fase 13)
+
+Todos devuelven `{ data, error }` con el error traducido (`translateError`).
+
+```js
+trashService.trash(table, id)        // → marca deleted_at (RPC trash_item); table: 'careers'|'subjects'|'sheets'
+trashService.restore(table, id)      // → bool (RPC restore_item, revive lo que tiene la misma marca)
+trashService.list()                  // → TrashItem[] (RPC list_trash, solo el primer nivel borrado)
+trashService.purgeForever(kind, id)  // → bool; primero los archivos de Storage, después las filas
+trashService.purgeExpired(days = 30) // → número purgado (RPC list_expired_trash + attachment_paths_for)
+
+attachmentsService.upload(sheetId, file, { id?, name? }) // → Attachment; NO es async: registra la subida pendiente en el mismo tick
+attachmentsService.isUploading(id)                       // → bool
+attachmentsService.listBySheets(sheetIds)                // → Attachment[] (una consulta IN)
+attachmentsService.signedUrl(id)                         // → link firmado de 1 h, cacheado en memoria (se renueva a los 55 min)
+attachmentsService.remove(attachment)                    // → bool; Storage primero, fila después
+attachmentsService.download(storagePath)                 // → Blob (lo usa el export .zip)
+
+sheetTemplatesService.list() / create({ name, content_md }) / update(id, data) / remove(id)
+importService.executePlan(plan, { readFile, onProgress }) // → ImportReport { careers, subjects, sheets, attachments, failures }
+```
+
+- **RPCs nuevas** (todas `security invoker`): `trash_item(p_table, p_id)`, `restore_item`,
+  `list_trash()`, `list_expired_trash(p_days)` y `attachment_paths_for(p_kind, p_id)`. Detalle
+  en `DB_SCHEMA.md` y en `docs/features/trash.md`.
+- Bucket Storage `attachments` (privado): ver `docs/03-security.md`.
+- Lecturas que además filtran `deleted_at`: `sheetsService.searchContent`,
+  `homeService.getLastEditedSheet`.
 
 ### Inicio (migración 0005, ver `docs/features/home.md`)
 

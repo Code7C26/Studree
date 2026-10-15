@@ -129,5 +129,11 @@
   `savePositions` (RPC `save_node_positions`, ADR-016).
 - Las listas paginan (PostgREST corta en 1000 filas): usar `crudService.list`/`listByParents`.
 - Funciones SQL nuevas: `security invoker`, nunca `security definer` sin revisión.
+- Borrar **manda a la papelera** (`trashService.trash`): nunca `delete` directo en carreras,
+  materias u hojas, salvo "borrar para siempre". Toda lectura nueva de esas tablas filtra
+  `deleted_at is null` (`softDelete` del crud).
+- Los adjuntos van en el bucket **privado** `attachments`. En el Markdown se referencian como
+  `adjunto:<id>`, nunca con una URL. Borrar archivos siempre con la API de Storage, antes que
+  las filas.
 - Los archivos `.cursorrules`, `.windsurfrules`, `.clinerules` y
   `.github/copilot-instructions.md` son **copias** de este archivo: al editarlo, copiarlo.

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementada (Fase 13, Tarea 8).
+✅ Implementado (2026-10-15, Fase 13). Migración `0006_fase13.sql` aplicada el 2026-10-15.
 
 ## Archivos clave
 
@@ -55,5 +55,6 @@ red/RLS: el hook devuelve el mensaje y la UI lo muestra en el diálogo.
 
 ## Pendiente
 
-- Plantillas por materia o compartidas.
-- Reordenar las propias.
+- [ ] Verificar en el navegador (la extensión de Chrome no estaba conectada al implementar): crear una hoja desde "Clase", guardar una hoja como plantilla y administrar las propias.
+- [ ] Plantillas por materia o compartidas.
+- [ ] Reordenar las propias.

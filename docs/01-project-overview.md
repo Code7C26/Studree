@@ -40,6 +40,7 @@ para orientarse (Carrera → Materia → Hoja, ADR-014 y ADR-017).
 | Routing | React Router (`react-router-dom`) | 6 | Navegación SPA |
 | Persistencia | **Supabase (Postgres)** | - | Fuente de verdad (ADR-007) |
 | Cache | `localStorage` (navegador) | - | Cache optimista de la UI (ADR-007) |
+| Storage | Supabase Storage | - | Bucket privado `attachments` para los adjuntos de las hojas (ADR-020) |
 | Backend | Supabase (BaaS) | - | Sin servidor propio |
 | Base de datos | PostgreSQL (Supabase) | - | Esquema en `docs/DB_SCHEMA.md` |
 | Auth | Supabase Auth | - | Necesaria para RLS (ver `docs/03-security.md`) |
@@ -149,11 +150,27 @@ Spec: `docs/superpowers/specs/2026-10-15-rediseno-visual-design.md`.
 | Shell: logo original, buscador `Ctrl K` en el header, tabs como pastillas con color, explorador cerrado por defecto | `features/navigation-shell.md` | ✅ |
 | Estilo: luz de lámpara, Bricolage Grotesque + Inter, íconos SVG, foco visible | `02-architecture.md` (ADR-018) | ✅ |
 
+### Fase 13: Papelera, adjuntos, plantillas e importar (2026-10-15)
+
+Spec: `docs/superpowers/specs/2026-10-15-fase-13-design.md` · plan:
+`docs/superpowers/plans/2026-10-15-fase-13.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Papelera: borrar manda a la papelera 30 días, con "Deshacer", página `/papelera` y purga desde la app (ADR-019) | `features/trash.md` | ✅ |
+| Adjuntos en las hojas (soltar, pegar, clip): bucket privado y referencias `adjunto:<id>` en el Markdown (ADR-020) | `features/attachments.md` | ✅ |
+| Plantillas de hoja: 4 de fábrica, propias, guardar y administrar | `features/sheet-templates.md` | ✅ |
+| Importar `.md` y `.zip` (también un export completo de Studree o un vault de Obsidian) | `features/import.md` | ✅ |
+| Export `.zip` con los adjuntos | `features/markdown-export.md` | ✅ |
+| Verificación en el navegador de punta a punta | los 4 docs | ⏳ pendiente (prueba manual) |
+
+> Migración `0006_fase13.sql` aplicada el 2026-10-15. Dependencia nueva:
+> `@tiptap/extension-image@3.31.3`.
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| 13 | Adjuntos (Supabase Storage), papelera, importar `.md`/`.zip`, plantillas de hoja | Pendiente |
 | 14 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) | Pendiente |
 | 15 | Compartir por link, flashcards | Pendiente |
 | 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |

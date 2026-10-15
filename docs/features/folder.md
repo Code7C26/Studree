@@ -23,8 +23,11 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
 | Abrir una materia (`/materias/:id`) | Todas sus hojas en orden cronológico; te lleva a la **última** |
 | Abrir con `?hoja=:id` | Te lleva a esa hoja (lo usa el Inicio: "Seguí donde dejaste") |
 | Escribir en cualquier hoja | Se guarda sola (autosave por hoja) |
-| **Nueva hoja** (al final) | Hoja con la fecha y hora del momento; se guarda recién cuando tiene contenido |
-| ✕ en la barra de una hoja | La borra (con confirmación; una hoja nueva vacía se quita sin preguntar) |
+| **Nueva hoja** (al final) | Hoja en blanco con la fecha y hora del momento; se guarda recién cuando tiene contenido |
+| **Nueva hoja ▾** (flecha del botón) | Menú con las plantillas de fábrica, las propias y "Administrar plantillas…"; la hoja se guarda al crearse (`docs/features/sheet-templates.md`) |
+| Soltar o pegar un archivo en una hoja, o el clip de la cápsula | Lo adjunta (máx. 20 MB): las imágenes se ven en el texto, el resto queda como link; todos van en la lista al pie de la hoja (`docs/features/attachments.md`) |
+| Ícono de papelera en la barra de una hoja | La manda a la papelera (con confirmación) y muestra el aviso "Deshacer" (6 s); una hoja nueva vacía se quita sin preguntar (`docs/features/trash.md`) |
+| **Importar** (cápsula) | Diálogo para importar `.md` o `.zip` a esta materia (`docs/features/import.md`) |
 | `# Título` en una hoja | Crea un **tema**, que aparece en el índice |
 | Click en un tema del índice | Lleva al inicio de ese tema |
 | `[[Tema]]` en el texto | Link en el color de la materia; el click lleva a ese tema |
@@ -122,13 +125,30 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
 - **Modo lectura:** contexto `useReadingMode` (provider en `AppLayout`).
 - **Links viejos:** `/hojas/:id` → `SheetRedirectPage` → `/materias/:subjectId?hoja=:id`.
 
+## Fase 13: papelera, adjuntos, plantillas e importar (2026-10-15)
+
+- **Borrar → papelera:** `useFolder.deleteSheet` cancela el autosave pendiente de la hoja y
+  llama a `trashService.trash`; `restoreSheet` deshace. Se mantiene el diálogo de
+  confirmación ("Mover a la papelera"), y después aparece el aviso con "Deshacer".
+- **Adjuntos:** `useFolderAttachments` trae los adjuntos de todas las hojas de la carpeta
+  (una consulta `IN`). El clip de la cápsula está siempre visible: sin hoja con foco adjunta
+  a la última, y queda deshabilitado si la materia no tiene hojas. Una hoja nueva (local) se
+  crea primero con `ensureCreated()` del saver. Al pegar, solo los portapapeles con archivos
+  y **sin** `text/plain` ni `text/html` cuentan como adjuntos (capturas de pantalla); lo que
+  viene de Word, Excel o la web pega normal.
+- **Plantillas:** `NewSheetButton` (botón partido) y "Guardar como plantilla" en la barra de
+  cada hoja.
+- **Importar:** `ImportDialog` desde la cápsula; importa a la materia abierta.
+
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
 | `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export |
 | `src/pages/SheetRedirectPage.jsx` | Redirige `/hojas/:id` a la carpeta |
-| `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + plantilla + papelera + editor |
+| `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + plantilla + papelera + editor + lista de adjuntos |
+| `src/components/features/templates/` · `attachments/` · `import/` | Nueva hoja ▾ y administrador, lista de adjuntos al pie, diálogo de importación |
+| `src/hooks/useFolderAttachments.js` | Adjuntos de todas las hojas de la carpeta |
 | `src/constants/subjectTones.js` | Tonos del color de la materia (`getSubjectTones`, `subjectCssVars`) |
 | `src/components/features/folder/TopicIndex.jsx` | Índice de temas (presentacional) |
 | `src/components/features/folder/FolderSearchBar.jsx` | Buscador (presentacional) |
@@ -165,6 +185,7 @@ hojas en menos de ~1 s. En desarrollo, la consola muestra
 
 ## Pendiente
 
+- [ ] Verificar en el navegador la Fase 13 en la carpeta: adjuntos de punta a punta (el Markdown guarda `![…](adjunto:…)` limpio y la imagen se ve al recargar), borrar con "Deshacer", plantillas e importar.
 - [ ] Medir rendimiento con una materia grande (ver arriba).
 - [ ] Autocompletar `[[` con los temas de la materia.
 - [ ] Celular: índice como drawer (fase "Celular", al final de la hoja de ruta).

@@ -1,6 +1,6 @@
 # Feature: Export a Markdown (para IA / segundo cerebro)
 
-> **Estado:** ✅ Implementado (2026-09-28) · 3 niveles, "todo", "Copiar para IA" (2026-10-14) · hojas por fecha (ADR-017)
+> **Estado:** ✅ Implementado (2026-09-28) · 3 niveles, "todo", "Copiar para IA" (2026-10-14) · hojas por fecha (ADR-017) · adjuntos en el `.zip` y papelera (Fase 13, 2026-10-15)
 > **Archivos clave:** `src/lib/export/`, `src/hooks/useExportTree.js`,
 > `src/components/features/export/ExportDialog.jsx`
 > **Dependencias:** `jszip` (cargada con `import()` dinámico, no va en el bundle inicial)
@@ -129,6 +129,7 @@ Contenido de la hoja…
 
 ## Pendiente
 
+- [ ] Verificar en el navegador el ida y vuelta export `.zip` e import con adjuntos (la extensión de Chrome no estaba conectada al implementar).
 - [ ] Export de una sola hoja.
 - [ ] Incluir/excluir hojas vacías.
 - [ ] Índice de contenidos al principio del `.md` único.
