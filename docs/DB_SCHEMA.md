@@ -426,4 +426,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-14 | **La Carpeta** (ADR-017): hojas sin título (título → `# tema`), sin `sheet_links`/`units`/`topics`/posiciones de hojas/`map_*`; whitelist solo `subjects` | ✅ `0004` |
 | 2026-10-14 | **Inicio**: `important_dates`, `tasks`, `quick_notes` + RLS `_owner` + `set_updated_at` | ✅ `0005` (aplicada el 2026-10-15) |
 | 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ✅ `0006` (aplicada 2026-10-15 vía Management API, tras probarla con `begin … rollback`) |
-| 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | Pendiente de aplicar (`0007`) |
+| 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | ✅ Aplicada el 2026-10-19 (`0007`) |
