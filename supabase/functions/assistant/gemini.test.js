@@ -141,3 +141,69 @@ test('acota la cantidad de partes', async () => {
   const f = fakeFetch(sseResponse([ev({ candidates: [{ content: { role: 'model', parts } }] })]))
   await assert.rejects(run(f), (e) => e.kind === 'upstream')
 })
+
+test('muchos fragmentos de texto (>64): OK, text completo y modelParts compacto', async () => {
+  const chunks = Array.from({ length: 200 }, (_, i) => ev(textChunk(`f${i};`)))
+  const r = await run(fakeFetch(sseResponse(chunks)))
+  const expected = Array.from({ length: 200 }, (_, i) => `f${i};`).join('')
+  assert.equal(r.text, expected)
+  assert.deepEqual(r.modelParts, [{ text: expected }])
+  assert.equal(r.truncated, false)
+})
+
+test('una parte con thoughtSignature en el medio se conserva intacta y corta la fusión', async () => {
+  const signed = { text: 'medio', thoughtSignature: 'sig==' }
+  const chunks = [ev(textChunk('a')), ev(textChunk('b')), ev({ candidates: [{ content: { parts: [signed] } }] }), ev(textChunk('c')), ev(textChunk('d'))]
+  const r = await run(fakeFetch(sseResponse(chunks)))
+  assert.deepEqual(r.modelParts, [{ text: 'ab' }, signed, { text: 'cd' }])
+  assert.equal(r.text, 'abmediocd')
+})
+
+test('functionCall.id se conserva en calls', async () => {
+  const withId = { functionCall: { id: 'c1', name: 'get_agenda', args: {} } }
+  const noId = { functionCall: { name: 'search_notes', args: { query: 'q' } } }
+  const r = await run(fakeFetch(sseResponse([ev({ candidates: [{ content: { parts: [withId, noId] } }] })])))
+  assert.deepEqual(r.calls, [{ id: 'c1', name: 'get_agenda', args: {} }, { name: 'search_notes', args: { query: 'q' } }])
+  assert.ok(!('id' in r.calls[1]))
+})
+
+test('abort durante la lectura del stream -> aborted', async () => {
+  const ac = new AbortController()
+  const fetchImpl = async (url, init) => {
+    assert.equal(init.signal, ac.signal)
+    return new Response(
+      new ReadableStream({
+        start(c) {
+          c.enqueue(enc.encode(ev(textChunk('hola'))))
+          init.signal.addEventListener('abort', () => c.error(new DOMException('abort', 'AbortError')))
+        },
+      }),
+      { status: 200 },
+    )
+  }
+  await assert.rejects(
+    run(fetchImpl, { signal: ac.signal, onText: () => ac.abort() }),
+    (e) => e instanceof GeminiError && e.kind === 'aborted',
+  )
+})
+
+test('abort antes de conectar (fetch rechaza) -> aborted', async () => {
+  const ac = new AbortController()
+  ac.abort()
+  const fetchImpl = async () => {
+    throw new DOMException('abort', 'AbortError')
+  }
+  await assert.rejects(run(fetchImpl, { signal: ac.signal }), (e) => e.kind === 'aborted')
+})
+
+test('devuelve finishReason y truncated', async () => {
+  const r1 = await run(fakeFetch(sseResponse([ev({ candidates: [{ content: { parts: [{ text: 'x' }] }, finishReason: 'STOP' }] })])))
+  assert.equal(r1.finishReason, 'STOP')
+  assert.equal(r1.truncated, false)
+  const r2 = await run(fakeFetch(sseResponse([ev(textChunk('x'))])))
+  assert.equal(r2.finishReason, null)
+  const big = 'a'.repeat(40000)
+  const r3 = await run(fakeFetch(sseResponse([ev(textChunk(big)), ev(textChunk(big))])))
+  assert.equal(r3.text.length, 60000)
+  assert.equal(r3.truncated, true)
+})

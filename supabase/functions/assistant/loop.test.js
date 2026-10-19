@@ -115,3 +115,15 @@ test('no muta los contents recibidos', async () => {
   await runConversation({ callModel, runTool: async () => ({ result: {} }), contents: c, emit: () => {} })
   assert.equal(c.length, 1)
 })
+
+test('el id de la llamada vuelve en la functionResponse; sin id no se agrega la clave', async () => {
+  const c = [{ id: 'c1', name: 'get_agenda', args: {} }, call('search_notes', { query: 'q' })]
+  const callModel = script([
+    { text: '', calls: c, modelParts: asParts(c) },
+    { text: 'x', calls: [], modelParts: [{ text: 'x' }] },
+  ])
+  await runConversation({ callModel, runTool: async () => ({ result: {} }), contents: start(), emit: () => {} })
+  const [a, b] = callModel.seen[1][2].parts.map((p) => p.functionResponse)
+  assert.equal(a.id, 'c1')
+  assert.ok(!('id' in b))
+})

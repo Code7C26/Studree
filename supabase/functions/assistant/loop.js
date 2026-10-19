@@ -9,7 +9,7 @@ export const MAX_CALLS_PER_STEP = 8
 
 /**
  * @param {{
- *  callModel: (contents: object[]) => Promise<{text: string, calls: Array<{name: string, args: object}>, modelParts: object[]}>,
+ *  callModel: (contents: object[]) => Promise<{text: string, calls: Array<{id?: string, name: string, args: object}>, modelParts: object[]}>,
  *  runTool: (name: string, args: object) => Promise<{result: object, proposal?: object}>,
  *  contents: object[],
  *  emit: (event: object) => void,
@@ -26,9 +26,10 @@ export async function runConversation({ callModel, runTool, contents, emit, maxS
     history.push({ role: 'model', parts: modelParts })
     const responses = []
     for (let i = 0; i < calls.length; i++) {
-      const { name, args } = calls[i]
+      const { id, name, args } = calls[i]
+      const idKey = id ? { id } : {}
       if (i >= MAX_CALLS_PER_STEP) {
-        responses.push({ functionResponse: { name, response: { error: 'demasiadas llamadas en un turno' } } })
+        responses.push({ functionResponse: { ...idKey, name, response: { error: 'demasiadas llamadas en un turno' } } })
         continue
       }
       emit({ type: 'tool', name })
@@ -39,7 +40,7 @@ export async function runConversation({ callModel, runTool, contents, emit, maxS
         out = { result: { error: 'falló la herramienta' } }
       }
       if (out.proposal) emit({ type: 'proposal', proposal: out.proposal })
-      responses.push({ functionResponse: { name, response: out.result ?? {} } })
+      responses.push({ functionResponse: { ...idKey, name, response: out.result ?? {} } })
     }
     history.push({ role: 'user', parts: responses })
   }
