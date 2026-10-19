@@ -227,13 +227,31 @@ Tabla `attachments` (solo cuelgan de hojas) y bucket **privado** `attachments` d
 Tabla `sheet_templates`: plantillas propias del usuario (`name`, `content_md`). Las de
 fábrica viven en `src/constants/sheetTemplates.js`, no en la base.
 
+## Asistente de IA (0007)
+
+Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nunca lo manda).
+
+- **`user_plans`** (`user_id` PK, `plan` `'free'|'premium'` default `'free'`, `updated_at`).
+  Política **solo `select` propio**: nadie se sube de plan desde la app. **El plan se
+  cambia a mano en el panel de Supabase.** Sin fila = `free`.
+- **`ai_usage`** (`id`, `user_id`, `action`, `external`, `created_at`). `action` en
+  `chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
+  `connections`. Políticas `select` e `insert` propios; **sin update ni delete**. Índice
+  `(user_id, action, created_at desc)` para contar el uso diario.
+- **`quiz_attempts`** (`id`, `user_id`, `scope_type` `sheet|subject|career|all`,
+  `scope_id` nullable, `total` ≥ 0, `correct` ≥ 0, `created_at`). Política `_owner`.
+- **`weak_topics`** (`id`, `user_id`, `subject_id` → `subjects` cascade, `sheet_id` nullable
+  → `sheets` set null, `topic` 1..200, `misses` ≥ 1 default 1, `last_missed_at`,
+  `updated_at`; único `(user_id, subject_id, topic)`). Política `_owner`. Índice
+  `(user_id, subject_id)`.
+
 ---
 
 ## Esquema SQL (Supabase)
 
 > **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**:
 > `0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
-> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`, `0006_fase13.sql`. Lo de abajo es el **estado
+> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`, `0006_fase13.sql`, `0007_asistente.sql`. Lo de abajo es el **estado
 > resultante**; si difiere, manda el `.sql`.
 
 Además de las tablas, las migraciones incluyen:
@@ -249,7 +267,7 @@ Además de las tablas, las migraciones incluyen:
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0006`. La
+Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0007`. La
 `0004` es **destructiva** (borra `sheet_links`, `units`, `topics` y columnas): autorizada
 por el usuario el 2026-10-14.
 
@@ -408,3 +426,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-14 | **La Carpeta** (ADR-017): hojas sin título (título → `# tema`), sin `sheet_links`/`units`/`topics`/posiciones de hojas/`map_*`; whitelist solo `subjects` | ✅ `0004` |
 | 2026-10-14 | **Inicio**: `important_dates`, `tasks`, `quick_notes` + RLS `_owner` + `set_updated_at` | ✅ `0005` (aplicada el 2026-10-15) |
 | 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ✅ `0006` (aplicada 2026-10-15 vía Management API, tras probarla con `begin … rollback`) |
+| 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | Pendiente de aplicar (`0007`) |

@@ -152,4 +152,5 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - [ ] No se guardan datos sensibles en `localStorage`.
 - [ ] La `service_role` key de Supabase NO aparece en ningún `VITE_*` ni en el código.
 - [ ] **RLS activado en todas las tablas** de Supabase, con políticas por usuario.
+- [ ] `user_plans` NO tiene política de escritura (solo `select` propio): el plan se cambia a mano en el panel de Supabase. `ai_usage` solo permite `select` e `insert`.
 - [ ] El contenido del usuario se renderiza de forma segura (sin XSS).
