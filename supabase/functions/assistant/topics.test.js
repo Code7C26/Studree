@@ -21,6 +21,10 @@ test('nivel 5 y headings indentados no cuentan; null/undefined → []', () => {
   assert.deepEqual(extractTopics(null), [])
 })
 
+test('saltos de línea CRLF (.md importados)', () => {
+  assert.deepEqual(extractTopics('# A\r\n## B\r\n'), ['A', 'B'])
+})
+
 test('limpia links, [[x]], marcas y escapes', () => {
   assert.deepEqual(extractTopics('# Ver [[Otro tema]]\n## [sitio](http://x.com)\n### a\\*b'), ['Ver Otro tema', 'sitio', 'ab'])
 })
@@ -30,6 +34,7 @@ const MUESTRAS = [
   '- item\n  # dentro de lista\n# Real\n1. uno\n## Otro `code` aquí',
   '# Ver [[Límites]] y [[Derivadas]]\n\n#hashtag\n## [doc](http://a.b/c) enlazado',
   '# **Negrita** y _cursiva_ ~~tachado~~\n~~~\n# no\n~~~\n### Final\n#### Nivel 4\n##### Nivel 5',
+  '# A\r\n## B\r\ntexto\r\n```\r\n# no\r\n```\r\n### **C** [[D]]\r\n',
   '# \n##  \n# Con \\[\\[escape\\]\\] y \\# hash\n\n\n# Último',
 ]
 

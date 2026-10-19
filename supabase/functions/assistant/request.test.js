@@ -65,6 +65,13 @@ test('historial: rol inválido o forma inválida → error', () => {
   assert.equal(validateRequest({ ...base, history: 'x' }).ok, false)
 })
 
+test('historial: turno en el tope pasa, uno de más falla (no se recorta en silencio)', () => {
+  const turn = (n) => [{ role: 'user', text: 'a'.repeat(n) }]
+  assert.equal(validateRequest({ ...base, history: turn(MAX.message) }).ok, true)
+  assert.equal(validateRequest({ ...base, history: turn(MAX.message + 1) }).ok, false)
+  assert.equal(validateRequest({ ...base, history: turn(1_000_000) }).ok, false)
+})
+
 test('message: exactamente en el tope pasa, uno de más falla', () => {
   assert.equal(validateRequest({ ...base, message: 'a'.repeat(MAX.message) }).ok, true)
   assert.equal(validateRequest({ ...base, message: 'a'.repeat(MAX.message + 1) }).ok, false)

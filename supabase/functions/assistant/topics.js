@@ -31,7 +31,7 @@ export function extractTopics(markdown) {
   const topics = []
   let fence = null
 
-  for (const line of (markdown ?? '').split('\n')) {
+  for (const line of (markdown ?? '').split(/\r?\n/)) {
     const fenceMatch = line.match(FENCE)
     if (fenceMatch) {
       const marker = fenceMatch[1][0]

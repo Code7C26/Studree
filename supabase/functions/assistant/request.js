@@ -53,6 +53,7 @@ export function validateRequest(body) {
     if (!isObject(turn) || !ROLES.includes(turn.role) || typeof turn.text !== 'string') {
       return fail('Turno de historial inválido.')
     }
+    if (turn.text.length > MAX.message) return fail(`Un turno del historial supera los ${MAX.message} caracteres.`)
   }
   const history = rawHistory.slice(-MAX.history).map((t) => ({ role: t.role, text: t.text }))
 

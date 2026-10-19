@@ -12,14 +12,18 @@ const TOPICS_MAX = 300
 
 const pad = (n) => String(n).padStart(2, '0')
 
-/** Fecha local `DD/MM/AA HH:mm` (las hojas no tienen título: se identifican por fecha). */
+/** Fecha `DD/MM/AA HH:mm UTC`: Deno corre en UTC; se aclara para que no se confunda con la hora local del usuario. */
 function formatDate(iso) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return 'sin fecha'
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${pad(d.getFullYear() % 100)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCFullYear() % 100)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`
 }
 
-const clip = (text, max) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
+// Colapsa espacios y saltos de línea: un nombre con `\n- hoja …` no puede falsificar líneas del mapa.
+const clip = (text, max) => {
+  const flat = String(text ?? '').replace(/\s+/g, ' ').trim()
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat
+}
 
 /**
  * @param {{
@@ -49,8 +53,8 @@ export function buildMapMarkdown({ careers, subjects, sheets, onlySubjectId }) {
     const careerLines = []
     for (const subject of liveSubjects.filter((s) => s.career_id === career.id)) {
       const own = (sheetsOf.get(subject.id) ?? []).sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0))
-      if (own.length === 0) continue
-      careerLines.push(`## ${clip(subject.name, NAME_MAX)} (materia ${subject.id})`)
+      // Las materias vacías también se listan: la IA necesita su id para proponer una hoja nueva.
+      careerLines.push(`## ${clip(subject.name, NAME_MAX)} (materia ${subject.id})${own.length === 0 ? ' (sin hojas)' : ''}`)
       for (const sheet of own) {
         const topics = extractTopics(sheet.content_md)
         const list = topics.length ? clip(topics.join('; '), TOPICS_MAX) : '(sin temas)'
@@ -67,7 +71,7 @@ export function buildMapMarkdown({ careers, subjects, sheets, onlySubjectId }) {
   let out = ''
   for (const line of lines) {
     const next = out ? `${out}\n${line}` : line
-    if (next.length > MAX.mapChars) return `${out}\n${CUT_NOTE}`
+    if (next.length > MAX.mapChars) return out ? `${out}\n${CUT_NOTE}` : CUT_NOTE
     out = next
   }
   return out

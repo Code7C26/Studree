@@ -41,7 +41,7 @@ export function extractHeadings(markdown) {
   const headings = []
   let fence = null
 
-  for (const line of (markdown ?? '').split('\n')) {
+  for (const line of (markdown ?? '').split(/\r?\n/)) {
     const fenceMatch = line.match(FENCE)
     if (fenceMatch) {
       const marker = fenceMatch[1][0]
