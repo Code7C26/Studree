@@ -26,6 +26,9 @@
 **Pedido, temas y mapa (Tarea 3):**
 - `request.js` (`validateRequest`, falla cerrado), `topics.js` (copia deliberada de `extractHeadings`, con test de paridad contra el cliente) y `careerMap.js` (`buildMapMarkdown`, recorta a `MAX.mapChars`), puros y con tests.
 
+**Herramientas y acceso a datos (Tarea 4):**
+- `supabaseDb.js` (`createDb`: `loadTree` sin `content_md` paginado de a 1000, `getSheet`, `listSheetsBySubject`, `searchSheets` con `%`/`\` neutralizados y tope 8, `listAgenda` 60 días, `listWeakTopics`; `searchSheets` y `listWeakTopics` descartan además las materias en la papelera; toda consulta a careers/subjects/sheets filtra `deleted_at is null`) y `tools.js` (`TOOL_DECLARATIONS`, `createToolRunner`: lecturas acotadas por materia, `propose_*` que solo registran propuestas, ids validados, `run` nunca lanza), con tests.
+
 ## [0.16.0] — 2026-10-15
 
 ### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
