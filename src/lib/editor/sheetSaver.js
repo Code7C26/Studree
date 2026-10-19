@@ -17,11 +17,29 @@
  * - `cancel()` (antes de borrar): descarta lo pendiente y el borrador. Si un
  *   `create` ya estaba en vuelo, cuando vuelve se BORRA la fila creada en vez
  *   de avisar `onCreated` — si no, la hoja "borrada" reaparecería.
+ * - `start()` NO guarda nada: solo decide el contenido y deja pendiente lo que
+ *   haya que mandar. El primer `flush()` lo dispara el efecto del hook (nunca
+ *   el render: StrictMode renderiza dos veces con refs nuevos).
+ * - Registro de creates por id local (`creates`, a nivel módulo): si dos savers
+ *   de la MISMA hoja local conviven (StrictMode, remontaje), el segundo espera
+ *   y adopta la fila del primero en vez de crear otra.
  */
 
 import { isLocalSheet, resolveDraft } from './folderSheets.js'
 
 const AUTOSAVE_DELAY_MS = 800
+
+/**
+ * id local → promesa del create (`{data, error}`) en vuelo o ya hecho. Si el
+ * create falla se saca, para poder reintentar.
+ * @type {Map<string, Promise<{data: Object|null, error: string|null}>>}
+ */
+const sharedCreates = new Map()
+
+/** Solo para tests: vacía el registro de creates. */
+export function resetSheetCreates() {
+  sharedCreates.clear()
+}
 
 /**
  * @typedef {Object} SaverCache
@@ -50,6 +68,7 @@ export function localDraftKey(cache, subjectId) {
  * @param {number} [params.delayMs]
  * @param {typeof setTimeout} [params.setTimer]
  * @param {typeof clearTimeout} [params.clearTimer]
+ * @param {Map<string, Promise<{data: Object|null, error: string|null}>>} [params.creates] - Registro de creates (inyectable en tests).
  */
 export function createSheetSaver({
   sheet,
@@ -60,6 +79,7 @@ export function createSheetSaver({
   delayMs = AUTOSAVE_DELAY_MS,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
+  creates = sharedCreates,
 }) {
   const subjectId = sheet.subject_id
   const localId = isLocalSheet(sheet) ? sheet.id : null
@@ -86,10 +106,20 @@ export function createSheetSaver({
     else cache.write(key, drafts)
   }
 
-  /** Crea la fila de una hoja local con `markdown`. */
+  /**
+   * Crea la fila de una hoja local con `markdown`, o adopta la que ya creó
+   * otro saver de la misma hoja (ver `creates`).
+   */
   async function createRow(markdown) {
     onStatus('saving', null)
-    const { data, error } = await service.create({ subject_id: subjectId, content_md: markdown })
+    let request = creates.get(localId)
+    const adopted = Boolean(request)
+    if (!request) {
+      request = service.create({ subject_id: subjectId, content_md: markdown })
+      creates.set(localId, request)
+    }
+    const { data, error } = await request
+    if (error && creates.get(localId) === request) creates.delete(localId)
     if (error) {
       pending = pending ?? markdown // se reintenta en el próximo cambio; el borrador local queda
       onStatus('error', error)
@@ -102,11 +132,15 @@ export function createSheetSaver({
     }
     id = data.id
     base = data.updated_at
+    // Fila adoptada con otro contenido: lo de este saver se guarda encima.
+    if (adopted && markdown !== data.content_md && pending == null) pending = markdown
     clearLocalDraft()
     // Lo escrito mientras volvía el create pasa a ser borrador de la hoja real.
     if (pending != null) cache.write(cache.key('sheet', id), { content: pending, baseUpdatedAt: base })
     onCreated(localId, data)
     onStatus('saved', null)
+    // Ya estamos dentro de la fila de guardados: se manda acá mismo.
+    if (adopted && pending != null) await runFlush()
   }
 
   async function runFlush() {
@@ -138,7 +172,9 @@ export function createSheetSaver({
   return {
     /**
      * Contenido con el que arranca el editor (decide sobre el borrador local).
-     * Si hay que reenviar un borrador, lo deja pendiente y lo manda.
+     * Si hay que reenviar un borrador (o crear una plantilla), lo deja
+     * PENDIENTE: lo manda el primer `flush()`. Se llama en el render, así que
+     * no tiene efectos fuera de la cache local.
      * @returns {string}
      */
     start() {
@@ -148,16 +184,12 @@ export function createSheetSaver({
         if (sheet.createNow && content.trim()) {
           writeLocalDraft(content)
           pending = content
-          this.flush()
         }
         return content
       }
       const decision = resolveDraft(cache.read(cache.key('sheet', id), null), sheet)
       if (decision.clearDraft) cache.clear(cache.key('sheet', id))
-      if (decision.resend) {
-        pending = decision.content
-        this.flush()
-      }
+      if (decision.resend) pending = decision.content
       return decision.content
     },
 

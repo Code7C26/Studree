@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createSheetSaver } from './sheetSaver.js'
 
-function setup(sheetOverrides = {}) {
+function setup(sheetOverrides = {}, { creates = new Map() } = {}) {
   const calls = { create: [], save: [], remove: [] }
   const store = new Map()
   const service = {
@@ -34,6 +34,7 @@ function setup(sheetOverrides = {}) {
     onStatus: () => {},
     setTimer: () => 0,
     clearTimer: () => {},
+    creates,
   })
   return { saver, calls, created }
 }
@@ -90,4 +91,51 @@ test('sin createNow, una hoja local con contenido espera a que se edite (como an
   saver.start()
   await saver.flush()
   assert.equal(calls.create.length, 0)
+})
+
+test('start no crea nada por sí solo: el create de la plantilla sale del primer flush (efecto)', async () => {
+  const { saver, calls } = setup({ content_md: '# Clase', createNow: true })
+  saver.start()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.equal(calls.create.length, 0)
+  await saver.flush()
+  assert.equal(calls.create.length, 1)
+})
+
+test('dos savers de la misma hoja local (StrictMode / remontaje) crean UNA sola fila', async () => {
+  const creates = new Map()
+  const sheet = { content_md: '# Clase', createNow: true }
+  const first = setup(sheet, { creates })
+  const second = setup(sheet, { creates })
+  first.saver.start()
+  second.saver.start()
+  await Promise.all([first.saver.flush(), second.saver.flush()])
+  assert.equal(first.calls.create.length + second.calls.create.length, 1)
+  // Los dos quedan apuntando a la fila real (y avisan onCreated).
+  assert.deepEqual(first.created, [['local:abc', 'real-1']])
+  assert.deepEqual(second.created, [['local:abc', 'real-1']])
+  assert.equal(await second.saver.ensureCreated(), 'real-1')
+})
+
+test('ensureCreated desde dos savers de la misma hoja local crea una sola fila', async () => {
+  const creates = new Map()
+  const first = setup({}, { creates })
+  const second = setup({}, { creates })
+  const [a, b] = await Promise.all([first.saver.ensureCreated(), second.saver.ensureCreated()])
+  assert.equal(a, 'real-1')
+  assert.equal(b, 'real-1')
+  assert.equal(first.calls.create.length + second.calls.create.length, 1)
+})
+
+test('lo escrito en el segundo saver después de adoptar la fila se guarda en ella', async () => {
+  const creates = new Map()
+  const first = setup({ content_md: '# Clase', createNow: true }, { creates })
+  const second = setup({ content_md: '# Clase', createNow: true }, { creates })
+  first.saver.start()
+  await first.saver.flush()
+  second.saver.start()
+  second.saver.update('# Clase más')
+  await second.saver.flush()
+  assert.equal(second.calls.create.length, 0)
+  assert.deepEqual(second.calls.save, [['real-1', '# Clase más']])
 })

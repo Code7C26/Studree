@@ -37,6 +37,8 @@ export function useSheetAutosave({ sheet, onCreated }) {
   onCreatedRef.current = onCreated
 
   // Un saver por hoja montada, creado una sola vez (la `key` de la hoja es estable).
+  // `start()` corre en el render y NO guarda nada (StrictMode renderiza dos
+  // veces con refs nuevos): lo pendiente lo manda el efecto de abajo.
   const saverRef = useRef(null)
   const initialRef = useRef(null)
   if (saverRef.current === null) {
@@ -58,10 +60,14 @@ export function useSheetAutosave({ sheet, onCreated }) {
   const cancel = useCallback(() => saverRef.current.cancel(), [])
   const ensureCreated = useCallback(() => saverRef.current.ensureCreated(), [])
 
-  // Desmontar o cerrar la pestaña: mandar lo pendiente sin esperar el debounce.
+  // Al montar: mandar lo que `start()` dejó pendiente (plantilla nueva, borrador
+  // a reenviar). Desmontar o cerrar la pestaña: mandar lo pendiente sin esperar
+  // el debounce. Un remontaje con otro saver de la misma hoja local no crea dos
+  // filas: el saver comparte un registro de creates por id local.
   useEffect(() => {
     mountedRef.current = true
     const saver = saverRef.current
+    saver.flush()
     const onPageHide = () => {
       saver.flush()
     }
