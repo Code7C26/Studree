@@ -39,6 +39,9 @@
 **Servicio del cliente (Tarea 7):**
 - `lib/assistant/sse.js` (copia deliberada del parser del servidor), `lib/assistant/assistantError.js` (`translateAssistantError`, pura), `services/assistant.service.js` (`streamAssistant` con streaming SSE, aborto silencioso y errores en castellano) y `services/userPlan.service.js` (`getPlan`, sin fila = `free`), con tests. Documentados en `docs/API_DOCS.md`.
 
+**Estado del chat, puente y propuestas (Tarea 8):**
+- `lib/assistant/chatState.js` (`initialChat`, `reduceEvent`, `addUserMessage`, `setProposalStatus`; una propuesta entra siempre `pending`, `usage` tras `error` no reabre `busy`; tope de 50 mensajes y 60.000 caracteres por mensaje), `bridge.js` (`createBridge`, `assistantBridge`: contexto de la carpeta para el panel) y `applyProposal.js` (`withOriginMark`, `canApplyReplace` que falla cerrado, `proposalTitle`), puros y con tests.
+
 ## [0.16.0] — 2026-10-15
 
 ### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
