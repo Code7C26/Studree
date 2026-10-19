@@ -6,6 +6,20 @@
 
 ---
 
+## [0.17.0] — 2026-10-19 (borrador)
+
+### Added — El Brote, asistente de IA (FASE 14)
+
+> Request: "pasar a la fase 14".
+> Spec: `docs/superpowers/specs/2026-10-19-asistente-ia-design.md` · plan:
+> `docs/superpowers/plans/2026-10-19-fase-14-asistente.md`.
+> Doc de la feature: `docs/features/assistant.md` (en desarrollo).
+
+**Preparación (Tarea 0):**
+- Rama `fase-14` creada desde `fase-13` en su worktree; base verde (`npm test`, `eslint`, `build`).
+- `npm test` incluye `supabase/functions/**/*.test.js` además de `src/**/*.test.js`.
+- `.env.example`: aclaración de que `GEMINI_API_KEY` y `GEMINI_MODEL` son secrets de la Edge Function (no van en `VITE_*`).
+
 ## [0.16.0] — 2026-10-15
 
 ### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
