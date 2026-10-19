@@ -31,6 +31,11 @@ Ver [`DB_SCHEMA.md` § Adjuntos](../DB_SCHEMA.md#adjuntos-0006).
 guardan URLs**: los links firmados vencen y el Markdown es la fuente de verdad del
 contenido; el id es estable y el link se resuelve al mostrarlo.
 
+El editor (prosemirror-markdown) escapa la puntuación del nombre (`![\_borrador\*.png](…)`).
+`findAttachmentRefs` quita **todos** los escapes de CommonMark (`unescapeMarkdownText`:
+barra seguida de puntuación ASCII), y al escribir un link solo se escapan `[`, `]` y `\` (`escapeLinkText`):
+así el nombre no gana barras en cada export→import. `lib/import/mediaRefs.js` usa la misma función.
+
 ## Subir
 
 Soltar el archivo, pegarlo o usar el botón. Máximo **20 MB** por archivo. Una hoja nueva
@@ -70,6 +75,9 @@ El export `.zip` lleva los archivos en `adjuntos/` y reescribe las referencias a
 relativas, codificando cada segmento con `encodeURIComponent` más los paréntesis (así
 sobrevive el `#`); si una descarga falla, la referencia pasa a `[imagen: …]` / `[archivo: …]`
 y el diálogo avisa. El import hace el camino inverso. Ver `markdown-export.md` e `import.md`.
+
+`listBySheets` consulta de a 100 hojas (`lib/chunk.js`): un `IN` con cientos de ids pasaba el
+largo máximo de la URL. Altas y bajas de adjuntos no tocan la cache local (nadie la lee).
 
 ## Errores
 

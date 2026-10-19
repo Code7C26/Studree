@@ -79,6 +79,10 @@ nombre en la materia no se pisan: `a.png`, `a (2).png`. Si un archivo no se pudo
 la referencia queda como texto (`[imagen: …]` / `[archivo: …]`) y el diálogo avisa cuántos
 fallaron. Los adjuntos y hojas en la papelera no se exportan.
 
+Las filas de adjuntos solo se piden para el `.zip` (`loadSubjectTree(id, { withAttachments: true })`,
+igual en carrera y "todo"), de a 100 hojas por consulta. El `.md` único y "Copiar para IA" no
+consultan adjuntos.
+
 El `.md` único y "Copiar para IA" no llevan archivos: describen los adjuntos como
 `[imagen: nombre]` / `[archivo: nombre]`, sin ningún `adjunto:`.
 

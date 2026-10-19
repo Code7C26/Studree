@@ -69,7 +69,7 @@ parciales la cache usa otra clave.
 
 ```js
 sheetsService.list(subjectId, undefined, { columns: FOLDER_SHEET_COLUMNS }) // orden: created_at
-sheetsService.create({ subject_id, content_md, created_at? })  // sin título; la carpeta la crea recién con contenido; `created_at` lo usa el import para conservar la fecha original
+sheetsService.create({ subject_id, content_md, created_at? }, { cache? })  // sin título; la carpeta la crea recién con contenido; `created_at` y `cache: false` los usa el import
 sheetsService.saveContent(id, markdown)   // → Sheet (con updated_at, para el borrador de useSheetAutosave)
 sheetsService.searchContent(query)        // → [{id, subject_id, content_md, created_at}] (ilike, máx. 20)
 sheetsService.get(id) / remove(id, subjectId)
@@ -87,12 +87,13 @@ Todos devuelven `{ data, error }` con el error traducido (`translateError`).
 trashService.trash(table, id)        // → marca deleted_at (RPC trash_item); table: 'careers'|'subjects'|'sheets'
 trashService.restore(table, id)      // → bool (RPC restore_item, revive lo que tiene la misma marca)
 trashService.list()                  // → TrashItem[] (RPC list_trash, solo el primer nivel borrado)
-trashService.purgeForever(kind, id)  // → bool; primero los archivos de Storage, después las filas
+trashService.purgeForever(kind, id)  // → bool; solo si sigue en la papelera (si no, false sin tocar nada); archivos de Storage primero, filas después
+trashService.trashedDescendantIds(kind, id) // → Set<string> de materias/hojas en la papelera debajo de una carrera/materia
 trashService.purgeExpired(days = 30) // → número purgado (RPC list_expired_trash + attachment_paths_for)
 
 attachmentsService.upload(sheetId, file, { id?, name? }) // → Attachment; NO es async: registra la subida pendiente en el mismo tick
 attachmentsService.isUploading(id)                       // → bool
-attachmentsService.listBySheets(sheetIds)                // → Attachment[] (una consulta IN)
+attachmentsService.listBySheets(sheetIds)                // → Attachment[] (IN de a 100 ids, `lib/chunk.js`: un IN enorme pasa el largo de la URL)
 attachmentsService.signedUrl(id)                         // → link firmado de 1 h, cacheado en memoria (se renueva a los 55 min)
 attachmentsService.remove(attachment)                    // → bool; Storage primero, fila después
 attachmentsService.download(storagePath)                 // → Blob (lo usa el export .zip)
@@ -105,8 +106,11 @@ importService.executePlan(plan, { readFile, onProgress }) // → ImportReport { 
   `list_trash()`, `list_expired_trash(p_days)` y `attachment_paths_for(p_kind, p_id)`. Detalle
   en `DB_SCHEMA.md` y en `docs/features/trash.md`.
 - Bucket Storage `attachments` (privado): ver `docs/03-security.md`.
-- Lecturas que además filtran `deleted_at`: `sheetsService.searchContent`,
-  `homeService.getLastEditedSheet`.
+- Lecturas que además filtran `deleted_at` de la hoja **y de su materia** (`subjects!inner`):
+  `sheetsService.searchContent`, `homeService.getLastEditedSheet`.
+- `crudService.create(values, parentId, { cache })` y `remove(id, parentId, { cache })`:
+  `cache: false` no toca localStorage. Lo usan el import (`sheetsService.create(values, { cache: false })`)
+  y los adjuntos (su cache no la lee nadie).
 
 ### Inicio (migración 0005, ver `docs/features/home.md`)
 

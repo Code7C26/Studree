@@ -48,6 +48,12 @@ Una hoja creada desde una plantilla se guarda al crearse (`createNow`), aunque e
 usuario todavía no haya escrito: tiene contenido. La hoja en blanco sigue sin guardarse
 hasta tener contenido.
 
+El create sale del **efecto** de `useSheetAutosave` (primer `flush()`), nunca del render:
+StrictMode renderiza dos veces con refs nuevos y eso creaba dos filas. Además
+`lib/editor/sheetSaver.js` tiene un registro a nivel módulo de creates por id local: si dos
+savers de la misma hoja local conviven (StrictMode, remontaje, `ensureCreated` de un adjunto),
+el segundo adopta la fila del primero (`resetSheetCreates()` / `creates` para tests).
+
 ## Errores
 
 Nombre vacío o de más de 60 caracteres, contenido vacío o de más de 20000, o falla de

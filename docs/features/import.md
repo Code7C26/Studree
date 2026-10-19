@@ -29,7 +29,7 @@
 - **"Importado":** lo que no tiene carpeta va a la carrera y materia `Importado`.
 - **Frontmatter:** se acepta con BOM al principio y también vacío.
 - **Se saltean:** hojas vacías, archivos ocultos (`.obsidian/`, `__MACOSX/`, `.DS_Store`), archivos del zip
-  que ninguna hoja usa, y duplicados (mismo minuto de creación y mismo contenido, en la base o repetido en el zip; al comparar se ignoran los destinos de links e imágenes, porque en la base son `adjunto:<id>`; así un export de Studree con imágenes que se vuelve a importar se detecta como duplicado).
+  que ninguna hoja usa, y duplicados (mismo minuto de creación y mismo contenido, en la base o repetido en el zip; al comparar se ignoran los destinos de links e imágenes, porque en la base son `adjunto:<id>`, y los escapes de CommonMark de su texto, porque el editor guarda `\_a\*.png` y el export escribe `_a*.png`; así un export de Studree con imágenes que se vuelve a importar se detecta como duplicado).
 - **Imágenes y archivos → adjuntos:** la referencia se reescribe a `adjunto:<id>`.
 - **Límite:** 20 MB por archivo.
 
@@ -42,7 +42,8 @@ Resumen (`describeSummary`) → importar → progreso → informe.
 `useImport` lee los archivos (los `.zip` con `jszip` por `import()` dinámico), arma el plan
 (`buildImportPlan`), marca duplicados contra la base (`markDuplicates`) y muestra el resumen.
 `importService.executePlan` crea, por hoja, la carrera y materia que falten, la hoja con su
-fecha original (`sheets.create` con `created_at`) y sus adjuntos; si hubo adjuntos, guarda el
+fecha original (`sheets.create` con `created_at` y `{ cache: false }`: un import grande no
+reescribe la cache local por cada hoja) y sus adjuntos; si hubo adjuntos, guarda el
 Markdown con las referencias reescritas. `ImportDialog` se abre desde la cápsula de la
 carpeta (materia abierta) y desde el panel de carreras.
 

@@ -38,12 +38,22 @@ Reglas del lado de la app:
 - **Borrar → deshacer:** las tres páginas (carpeta, carreras, canvas) llaman `trashService.trash` desde su hook y muestran `UndoToast`; "Deshacer" llama `restore` y recarga. En la carpeta, antes de mandar la hoja a la papelera se cancela su autosave pendiente.
 - **Página `/papelera`:** restaurar, borrar para siempre o vaciar todo.
 - **Purga:** `useTrashPurge` llama `trashService.purgeExpired()` una vez por sesión (por usuario); un error solo se avisa por consola y se reintenta en la próxima sesión.
+- **Nunca se borra algo vivo (revisión final):** `purgeForever` primero confirma con un
+  `select … where deleted_at is not null` que la fila sigue en la papelera (si no, devuelve
+  `false` sin tocar archivos) y el `DELETE` también filtra `deleted_at`. `useTrash` recarga la
+  lista después de cada restaurar/borrar (restaurar una hoja revive su materia y su carrera) y
+  "Vaciar papelera" vuelve a pedir `list_trash` antes de borrar.
+- **Lo que arrastra un borrado:** antes de confirmar "Borrar para siempre" de una carrera o
+  materia, `trashService.trashedDescendantIds` trae los ids de sus materias/hojas en la papelera
+  y `nestedTrashItems` (`lib/trash/trashItems.js`) los cruza con lo listado: la confirmación
+  dice "También se borran para siempre: …". Sin migración nueva.
 
 ## Lecturas filtradas (`deleted_at IS NULL`)
 
 - `careersService`, `subjectsService`, `sheetsService`: `list`, `listByParents` y `get` (vía `softDelete: true`).
-- `sheetsService.searchContent` (Ctrl+K).
-- `homeService.getLastEditedSheet` ("Seguí donde dejaste").
+- `sheetsService.searchContent` (Ctrl+K) y `homeService.getLastEditedSheet` ("Seguí donde
+  dejaste"): filtran la hoja **y su materia** (`subjects!inner(…)` + `.is('subjects.deleted_at', null)`),
+  así una hoja viva dentro de una materia borrada (ej. autosave desde otra pestaña) no aparece.
 - `useCareerMap`: correlativas filtradas con `livePrerequisites`.
 
 ## Detalles de implementación

@@ -91,6 +91,21 @@ saver, correlativas vivas y plantillas). `npx eslint src` sin salida y `npm run 
 
 ---
 
+### Fixed (revisión final)
+
+- **Papelera:** "Borrar para siempre" y "Vaciar papelera" ya no pueden borrar algo vivo:
+  `purgeForever` confirma que la fila sigue en la papelera antes de tocar archivos y filtra
+  `deleted_at` en el `DELETE`; la página recarga después de cada acción y "Vaciar" pide la lista
+  de nuevo. La confirmación nombra los otros elementos listados que arrastra un borrado.
+- **Export:** los adjuntos se piden de a 100 hojas (antes un `IN` gigante fallaba con cientos de
+  hojas) y solo para el `.zip`.
+- **Adjuntos:** los nombres con `_ * ~ ! #` etc. ya no ganan barras en cada export→import, y la
+  detección de duplicados del import ignora esos escapes.
+- **Plantillas:** una hoja de plantilla ya no se crea dos veces (StrictMode / remontaje): el
+  primer guardado va en un efecto y hay un registro de creates por hoja local.
+- **Importar:** las hojas importadas no se suman a la cache local (crecía al cuadrado).
+- **Inicio y Ctrl+K:** no muestran hojas de una materia que está en la papelera.
+
 ## [0.15.0] — 2026-10-15
 
 ### Changed — Rediseño visual (ADR-018)
