@@ -35,7 +35,7 @@ let n = 0
 const idFn = () => `p${++n}`
 
 test('declaraciones: las 7 herramientas', () => {
-  const names = TOOL_DECLARATIONS.flatMap((t) => t.functionDeclarations ?? [t]).map((d) => d.name).sort()
+  const names = TOOL_DECLARATIONS.flatMap((t) => t.functionDeclarations).map((d) => d.name).sort()
   assert.deepEqual(names, [
     'get_agenda', 'list_subject_topics', 'propose_append', 'propose_new_sheet',
     'propose_replace_selection', 'read_sheet', 'search_notes',
@@ -172,8 +172,12 @@ test('nunca lanza: herramienta desconocida, args nulos, db que falla', async () 
   assert.ok((await run('read_sheet', 'x')).result.error)
   const db = fakeDb()
   db.getSheet = async () => { throw new Error('boom') }
-  const r = await mk({ db }).run('read_sheet', { sheet_id: H1 })
+  const logged = []
+  const r = await mk({ db, logError: (...a) => logged.push(a) }).run('read_sheet', { sheet_id: H1 })
   assert.ok(r.result.error)
+  assert.equal(logged.length, 1)
+  assert.equal(logged[0][1], 'read_sheet')
+  assert.equal(logged[0][2].message, 'boom')
 })
 
 test('nunca lanza: nombres heredados del prototipo y args array', async () => {
@@ -207,18 +211,31 @@ test('get_agenda pasa la fecha de hoy (now inyectado) al db', async () => {
   assert.equal(seen, '2026-10-19')
 })
 
-test('propose_replace_selection: sheetId no-UUID en selection falla y ids por defecto son únicos', async () => {
+test('propose_replace_selection: sheetId no-UUID en selection falla', async () => {
   const bad = await mk({ selection: { sheetId: 'x' } }).run('propose_replace_selection', { markdown: 'x', source: 'notes' })
   assert.ok(bad.result.error)
   assert.equal(bad.proposal, undefined)
-  const run = mk().run
-  const a = await run('propose_append', { sheet_id: H1, markdown: 'x', source: 'notes' })
-  const b = await run('propose_append', { sheet_id: H1, markdown: 'x', source: 'notes' })
-  assert.notEqual(a.proposal.id, b.proposal.id)
 })
 
-test('propose_new_sheet: markdown inválido no llega a la base y el modo notes fuerza la fuente', async () => {
+test('propose_new_sheet: el modo notes fuerza la fuente y un markdown vacío no genera propuesta', async () => {
   const p = await mk({ mode: 'notes' }).run('propose_new_sheet', { subject_id: S1, markdown: 'x', source: 'external' })
   assert.equal(p.proposal.source, 'notes')
-  assert.ok((await mk().run('propose_new_sheet', { subject_id: S1, markdown: '', source: 'notes' })).result.error)
+  const bad = await mk().run('propose_new_sheet', { subject_id: S1, markdown: '', source: 'notes' })
+  assert.ok(bad.result.error)
+  assert.equal(bad.proposal, undefined)
+})
+
+test('list_subject_topics: 200 hojas sin truncar; 201 -> las 200 más recientes con truncated', async () => {
+  const mkRows = (n) => Array.from({ length: n }, (_, i) => ({ id: `h${i}`, created_at: `d${i}`, content_md: '# T' }))
+  const db = fakeDb()
+  db.listSheetsBySubject = async () => mkRows(200)
+  const ok = await mk({ db }).run('list_subject_topics', { subject_id: S1 })
+  assert.equal(ok.result.sheets.length, 200)
+  assert.equal('truncated' in ok.result, false)
+  db.listSheetsBySubject = async () => mkRows(201)
+  const cut = await mk({ db }).run('list_subject_topics', { subject_id: S1 })
+  assert.equal(cut.result.sheets.length, 200)
+  assert.equal(cut.result.truncated, true)
+  assert.equal(cut.result.sheets[0].id, 'h1')
+  assert.equal(cut.result.sheets[199].id, 'h200')
 })

@@ -13,6 +13,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const QUERY_MAX = 200
 const MATCHES_MAX = 8
 const SNIPPET_CHARS = 200
+const TOPIC_SHEETS_MAX = 200
 const OUT_OF_SCOPE = 'fuera del alcance'
 const PROPOSAL_OK = { ok: true, message: 'Propuesta mostrada al usuario; esperá su respuesta' }
 
@@ -100,6 +101,7 @@ function snippet(content, query) {
  *   selection?: { sheetId: string, text?: string },
  *   now?: Date,
  *   idFn?: () => string,
+ *   logError?: (...args: any[]) => void,
  * }} ctx
  * @returns {{ run: (name: string, args: object) => Promise<{ result: object, proposal?: object }> }}
  */
@@ -110,6 +112,7 @@ export function createToolRunner({
   selection,
   idFn = () => crypto.randomUUID(),
   now = new Date(),
+  logError = (...args) => console.error(...args),
 }) {
   const inScope = (subjectId) => allowedSubjectIds === null || allowedSubjectIds.includes(subjectId)
   // En modo notes el modelo no puede declarar fuente externa; cualquier valor raro es 'notes'.
@@ -149,11 +152,11 @@ export function createToolRunner({
       if (!isUuid(args.subject_id)) return fail('subject_id inválido')
       if (!inScope(args.subject_id)) return fail(OUT_OF_SCOPE)
       const rows = await db.listSheetsBySubject(args.subject_id)
-      return {
-        result: {
-          sheets: rows.map((s) => ({ id: s.id, date: s.created_at, topics: extractTopics(s.content_md) })),
-        },
-      }
+      // `rows` viene en orden cronológico: se conservan las más recientes.
+      const truncated = rows.length > TOPIC_SHEETS_MAX
+      const recent = truncated ? rows.slice(-TOPIC_SHEETS_MAX) : rows
+      const sheets = recent.map((s) => ({ id: s.id, date: s.created_at, topics: extractTopics(s.content_md) }))
+      return { result: truncated ? { sheets, truncated: true } : { sheets } }
     },
 
     async search_notes(args) {
@@ -228,7 +231,8 @@ export function createToolRunner({
         if (!Object.hasOwn(handlers, name)) return fail('herramienta desconocida')
         if (args === null || typeof args !== 'object' || Array.isArray(args)) return fail('argumentos inválidos')
         return await handlers[name](args)
-      } catch {
+      } catch (error) {
+        logError('[assistant/tools]', name, error)
         return fail('no se pudo ejecutar la herramienta')
       }
     },
