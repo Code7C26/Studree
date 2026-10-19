@@ -150,6 +150,14 @@ debounce de 300 ms. El autosave de hojas (`saveContent`) **no** lo emite.
 `list()` **sin** `parentId` devuelve todas las filas del usuario (RLS filtra): el
 explorador arma el árbol con 3 consultas (carreras, materias y, de las hojas, solo `id, subject_id` para contarlas).
 
+### Asistente y plan (migración 0007, Fase 14, ver `docs/features/assistant.md`)
+
+| Service | Función | Notas |
+|---|---|---|
+| `assistant.service.js` | `streamAssistant({request, signal?, onEvent}) → ServiceResult<true>` | POST a `/functions/v1/assistant` con `Authorization: Bearer <JWT>` y `apikey`. Lee el stream SSE (`lib/assistant/sse.js`) y reenvía cada evento a `onEvent`, sin asumir que `done` sea el último. Abortar con `signal` resuelve `{data: null, error: null}`. Los no-2xx se traducen en castellano. |
+| `assistant.service.js` | `translateAssistantError(status, body) → string` | Reexporta la función pura de `lib/assistant/assistantError.js`: 401 sesión, 403/429 el `message` del servidor, 400 `not_found` "ya no existe", 404 "falta desplegar", resto genérico. Nunca muestra cuerpos crudos. |
+| `userPlan.service.js` | `getPlan() → ServiceResult<'free'\|'premium'>` | Lee `user_plans`; sin fila = `'free'`; ante error devuelve `'free'` más el `error`. |
+
 ### Forma de las respuestas
 
 Los services **no propagan el objeto crudo de Supabase**. Normalizan a:
