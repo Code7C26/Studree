@@ -23,6 +23,9 @@
 **Config y cuotas (Tarea 2):**
 - `supabase/functions/assistant/config.js` (acciones, baldes, topes por plan **provisorios**, features y máximos) y `quota.js` (`periodStart`, `planOf`, `requiredCounts`, `decideAccess`), puros y con tests; `decideAccess` falla cerrado si falta un conteo.
 
+**Pedido, temas y mapa (Tarea 3):**
+- `request.js` (`validateRequest`, falla cerrado), `topics.js` (copia deliberada de `extractHeadings`, con test de paridad contra el cliente) y `careerMap.js` (`buildMapMarkdown`, recorta a `MAX.mapChars`), puros y con tests.
+
 ## [0.16.0] — 2026-10-15
 
 ### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
