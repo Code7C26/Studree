@@ -27,7 +27,7 @@ test('free: funciones premium bloqueadas por feature', () => {
     assert.equal(x.allowed, false)
     assert.equal(x.code, 'feature')
   }
-  assert.equal(decideAccess({ plan: 'free', action: 'chat', scope: { type: 'subject', id: 's' }, counts: {} }).allowed, true)
+  assert.equal(decideAccess({ plan: 'free', action: 'chat', scope: { type: 'subject', id: 's' }, counts: { chat: 0 } }).allowed, true)
 })
 
 test('tope del chat: en el máximo corta, uno antes permite', () => {
@@ -37,12 +37,6 @@ test('tope del chat: en el máximo corta, uno antes permite', () => {
   assert.equal(r.allowed, false)
   assert.equal(r.code, 'quota')
   assert.equal(decideAccess({ plan: 'free', action: 'chat', scope, counts: { chat: max - 1 } }).allowed, true)
-})
-
-test('tope externo se chequea si viene en counts', () => {
-  const scope = { type: 'subject', id: 's' }
-  const r = decideAccess({ plan: 'free', action: 'chat', scope, counts: { chat: 0, external: LIMITS.free.external.max } })
-  assert.equal(r.code, 'quota')
 })
 
 test('premium sin tope en summary', () => {
@@ -68,4 +62,67 @@ test('requiredCounts: external suma una clave extra', () => {
 test('requiredCounts: quiz_grade no cuenta; premium summary sin tope', () => {
   assert.deepEqual(requiredCounts({ plan: 'free', action: 'quiz_grade', external: false, now: NOW }), [])
   assert.deepEqual(requiredCounts({ plan: 'premium', action: 'summary', external: false, now: NOW }), [])
+})
+
+const SUBJ = { type: 'subject', id: 's' }
+const acc = (o) => decideAccess({ scope: SUBJ, counts: {}, ...o })
+
+test('falla cerrado: falta el conteo del balde', () => {
+  for (const counts of [{}, { chat: undefined }, { chat: null }, { chat: NaN }, { chat: '3' }]) {
+    const r = acc({ plan: 'free', action: 'chat', counts })
+    assert.equal(r.allowed, false)
+    assert.equal(r.code, 'quota')
+    assert.equal(r.message, 'No pudimos verificar tu uso. Probá de nuevo.')
+  }
+})
+
+test('falla cerrado: external:true sin conteo external', () => {
+  const r = acc({ plan: 'free', action: 'chat', external: true, counts: { chat: 0 } })
+  assert.equal(r.code, 'quota')
+  assert.equal(r.message, 'No pudimos verificar tu uso. Probá de nuevo.')
+})
+
+test('external: max-1 permite, max deniega (free y premium)', () => {
+  for (const plan of ['free', 'premium']) {
+    const max = LIMITS[plan].external.max
+    const base = { plan, action: 'chat', external: true }
+    assert.equal(acc({ ...base, counts: { chat: 0, external: max - 1 } }).allowed, true)
+    const r = acc({ ...base, counts: { chat: 0, external: max } })
+    assert.equal(r.allowed, false)
+    assert.equal(r.code, 'quota')
+  }
+})
+
+test('external no pedido: no exige conteo external', () => {
+  assert.equal(acc({ plan: 'free', action: 'chat', counts: { chat: 0 } }).allowed, true)
+})
+
+test('free: borde de quiz y summary', () => {
+  for (const [action, key] of [['quiz', 'quiz'], ['summary', 'summary']]) {
+    const max = LIMITS.free[key].max
+    assert.equal(acc({ plan: 'free', action, counts: { [key]: max - 1 } }).allowed, true)
+    assert.equal(acc({ plan: 'free', action, counts: { [key]: max } }).code, 'quota')
+  }
+})
+
+test('free: extras deniega', () => {
+  for (const action of ['study_plan', 'gaps']) {
+    const r = acc({ plan: 'free', action, counts: { extras: 0 } })
+    assert.equal(r.allowed, false)
+  }
+})
+
+test('premium sin tope permite sin conteos; quiz_grade no exige nada', () => {
+  for (const action of ['summary', 'quiz', 'study_plan', 'gaps', 'connections', 'weak_review']) {
+    assert.equal(acc({ plan: 'premium', action }).allowed, true)
+  }
+  assert.equal(acc({ plan: 'free', action: 'quiz_grade' }).allowed, true)
+  assert.equal(acc({ plan: 'free', action: 'quiz_grade', external: true }).allowed, true)
+})
+
+test('periodStart: bordes y período inválido', () => {
+  assert.equal(periodStart('month', new Date('2026-10-31T23:59:59Z')).toISOString(), '2026-10-01T00:00:00.000Z')
+  assert.equal(periodStart('day', new Date('2026-12-31T23:59:59Z')).toISOString(), '2026-12-31T00:00:00.000Z')
+  assert.equal(periodStart('day', new Date('2026-10-19T23:30:00-03:00')).toISOString(), '2026-10-20T00:00:00.000Z')
+  assert.throws(() => periodStart('week', NOW))
 })

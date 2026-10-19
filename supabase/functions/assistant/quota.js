@@ -6,7 +6,8 @@ export function periodStart(period, now) {
   const y = now.getUTCFullYear()
   const m = now.getUTCMonth()
   if (period === 'month') return new Date(Date.UTC(y, m, 1))
-  return new Date(Date.UTC(y, m, now.getUTCDate()))
+  if (period === 'day') return new Date(Date.UTC(y, m, now.getUTCDate()))
+  throw new Error(`Período desconocido: ${period}`)
 }
 
 /** Plan efectivo: cualquier cosa que no sea 'premium' cuenta como 'free'. */
@@ -62,11 +63,16 @@ const QUOTA_MESSAGES = {
   external: 'Llegaste al tope de consultas con búsqueda externa de hoy. Probá mañana o pasate a Premium.',
 }
 
+const UNVERIFIED = 'No pudimos verificar tu uso. Probá de nuevo.'
+
 /**
- * Decide si se puede atender el pedido. `counts` = `{[key]: cantidad usada}`
- * con las claves de `requiredCounts`.
+ * Decide si se puede atender el pedido. Falla CERRADO: si el plan tiene tope y
+ * falta el conteo, se deniega.
+ *
+ * Acople: el llamador debe pasar `counts` con TODAS las claves que devuelve
+ * `requiredCounts` y el mismo `external` con el que llamó a `requiredCounts`.
  */
-export function decideAccess({ plan, action, scope, counts }) {
+export function decideAccess({ plan, action, scope, counts, external = false }) {
   const features = FEATURES[plan] || FEATURES.free
   const limits = LIMITS[plan] || LIMITS.free
   const used = counts || {}
@@ -79,10 +85,16 @@ export function decideAccess({ plan, action, scope, counts }) {
     return { allowed: false, code: 'feature', message: FEATURE_MESSAGES.allScope }
   }
 
-  const keys = [BUCKET_OF[action], 'external']
+  const bucket = BUCKET_OF[action]
+  if (!bucket) return { allowed: true }
+  const keys = [bucket]
+  if (external === true) keys.push('external')
   for (const key of keys) {
-    const limit = key && limits[key]
-    if (!limit || typeof used[key] !== 'number') continue
+    const limit = limits[key]
+    if (!limit) continue
+    if (!Number.isFinite(used[key])) {
+      return { allowed: false, code: 'quota', message: UNVERIFIED }
+    }
     if (used[key] >= limit.max) {
       return { allowed: false, code: 'quota', message: QUOTA_MESSAGES[key] }
     }

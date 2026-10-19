@@ -21,7 +21,7 @@
 - `.env.example`: aclaración de que `GEMINI_API_KEY` y `GEMINI_MODEL` son secrets de la Edge Function (no van en `VITE_*`).
 
 **Config y cuotas (Tarea 2):**
-- `supabase/functions/assistant/config.js` (acciones, baldes, topes por plan **provisorios**, features y máximos) y `quota.js` (`periodStart`, `planOf`, `requiredCounts`, `decideAccess`), puros y con tests.
+- `supabase/functions/assistant/config.js` (acciones, baldes, topes por plan **provisorios**, features y máximos) y `quota.js` (`periodStart`, `planOf`, `requiredCounts`, `decideAccess`), puros y con tests; `decideAccess` falla cerrado si falta un conteo.
 
 ## [0.16.0] — 2026-10-15
 
