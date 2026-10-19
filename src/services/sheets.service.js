@@ -93,16 +93,18 @@ export const sheetsService = {
     if (!text) return { data: [], error: null }
 
     try {
+      // `!inner` + filtro en la materia: tampoco hojas de una materia en la papelera.
       const { data, error } = await getSupabase()
         .from('sheets')
-        .select('id, subject_id, content_md, created_at')
+        .select('id, subject_id, content_md, created_at, subjects!inner(deleted_at)')
         .ilike('content_md', `%${escapeLike(text)}%`)
         .is('deleted_at', null)
+        .is('subjects.deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(SEARCH_LIMIT)
 
       if (error) return { data: [], error: translateError(error, 'No se pudo buscar.') }
-      return { data, error: null }
+      return { data: data.map((row) => ({ id: row.id, subject_id: row.subject_id, content_md: row.content_md, created_at: row.created_at })), error: null }
     } catch (error) {
       return { data: [], error: translateError(error, 'No se pudo buscar.') }
     }

@@ -29,8 +29,11 @@ export const homeService = {
     try {
       const { data, error } = await getSupabase()
         .from('sheets')
-        .select('id, subject_id, updated_at, content_md, subjects(name, color)')
+        // `!inner` + filtro en la materia: una hoja viva dentro de una materia en
+        // la papelera (ej. autosave desde otra pestaña) no aparece.
+        .select('id, subject_id, updated_at, content_md, subjects!inner(name, color)')
         .is('deleted_at', null)
+        .is('subjects.deleted_at', null)
         .order('updated_at', { ascending: false })
         .order('id', { ascending: true })
         .limit(1)
