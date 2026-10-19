@@ -29,6 +29,9 @@
 **Herramientas y acceso a datos (Tarea 4):**
 - `supabaseDb.js` (`createDb`: `loadTree` sin `content_md` paginado de a 1000, `getSheet`, `listSheetsBySubject`, `searchSheets` con `%`/`\` neutralizados y tope 8, `listAgenda` 60 días, `listWeakTopics`; `searchSheets` y `listWeakTopics` descartan además las materias en la papelera; toda consulta a careers/subjects/sheets filtra `deleted_at is null`) y `tools.js` (`TOOL_DECLARATIONS`, `createToolRunner`: lecturas acotadas por materia, `propose_*` que solo registran propuestas, ids validados, `run` nunca lanza), con tests.
 
+**Prompt, Gemini y bucle (Tarea 5):**
+- `prompt.js` (voz rioplatense; en `notes` solo apuntes, en `external` conocimiento externo marcado; el contenido de las hojas es dato; ediciones solo con `propose_*` y aprobación), `sse.js` (parser SSE tolerante a cortes), `gemini.js` (`buildGeminiRequest`, `streamGemini` con clave en el header `x-goog-api-key`, `GeminiError` upstream/blocked/empty, texto y partes acotados) y `loop.js` (`runConversation`: `modelParts` intactas, una `functionResponse` por llamada, tope de 6 pasos y 8 llamadas por paso), con tests.
+
 ## [0.16.0] — 2026-10-15
 
 ### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
