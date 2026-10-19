@@ -3,7 +3,7 @@
 //
 // ⚠️ Los valores de LIMITS son PROVISORIOS: los define el equipo antes de salir.
 
-/** Acciones registradas en `ai_usage.action` (+ 'quiz_grade', que no se cuenta). */
+/** Acciones registradas en `ai_usage.action` ('quiz_grade' desde la migración 0008). */
 export const ACTIONS = [
   'chat',
   'shortcut',
@@ -26,7 +26,8 @@ export const BUCKET_OF = {
   study_plan: 'extras',
   gaps: 'extras',
   connections: 'extras',
-  quiz_grade: null,
+  // La corrección también llama a Gemini: tiene su propio balde (Ruling L).
+  quiz_grade: 'grade',
 }
 
 /** Topes por plan y balde: `{period, max}` o `null` = sin tope. PROVISORIOS. */
@@ -36,6 +37,7 @@ export const LIMITS = {
     summary: { period: 'month', max: 3 },
     quiz: { period: 'month', max: 3 },
     extras: { period: 'month', max: 0 },
+    grade: { period: 'day', max: 10 },
     external: { period: 'day', max: 5 },
   },
   premium: {
@@ -43,6 +45,7 @@ export const LIMITS = {
     summary: null,
     quiz: null,
     extras: null,
+    grade: { period: 'day', max: 100 },
     external: { period: 'day', max: 100 },
   },
 }

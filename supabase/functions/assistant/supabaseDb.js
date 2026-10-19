@@ -114,13 +114,16 @@ export function createDb(client) {
     /**
      * Temas flojos del usuario. `weak_topics` no tiene `deleted_at` (ni se borra en
      * cascada con la papelera): se descartan los de materias en la papelera.
+     * `subjectIds` filtra en la base, ANTES del tope (sin lista = todas).
+     * @param {string[]} [subjectIds]
      */
-    async listWeakTopics(subjectId) {
+    async listWeakTopics(subjectIds) {
+      if (Array.isArray(subjectIds) && subjectIds.length === 0) return []
       let q = client
         .from('weak_topics')
         .select('subject_id,sheet_id,topic,misses,subjects!inner(deleted_at)')
         .is('subjects.deleted_at', null)
-      if (subjectId) q = q.eq('subject_id', subjectId)
+      if (subjectIds) q = q.in('subject_id', subjectIds)
       const rows = check(await q.order('misses', { ascending: false }).limit(WEAK_LIMIT)) ?? []
       return rows.map(({ subject_id, sheet_id, topic, misses }) => ({ subject_id, sheet_id, topic, misses }))
     },

@@ -236,7 +236,8 @@ Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nu
   cambia a mano en el panel de Supabase.** Sin fila = `free`.
 - **`ai_usage`** (`id`, `user_id`, `action`, `external`, `created_at`). `action` en
   `chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
-  `connections`. Políticas `select` e `insert` propios; **sin update ni delete**. Índice
+  `connections` y, desde la `0008`, `quiz_grade` (la corrección de pruebas tiene su balde
+  `grade`). Políticas `select` e `insert` propios; **sin update ni delete**. Índice
   `(user_id, action, created_at desc)` para contar el uso diario.
 - **`quiz_attempts`** (`id`, `user_id`, `scope_type` `sheet|subject|career|all`,
   `scope_id` nullable, `total` ≥ 0, `correct` ≥ 0, `created_at`). Política `_owner`.
@@ -251,7 +252,7 @@ Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nu
 
 > **La implementación de referencia son los archivos de `supabase/migrations/`, en orden**:
 > `0001_init.sql`, `0002_manual_layout_and_prereq_toggle.sql`,
-> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`, `0006_fase13.sql`, `0007_asistente.sql`. Lo de abajo es el **estado
+> `0003_three_levels_and_sheet_links.sql`, `0004_carpeta.sql`, `0005_home.sql`, `0006_fase13.sql`, `0007_asistente.sql`, `0008_quiz_grade_usage.sql`. Lo de abajo es el **estado
 > resultante**; si difiere, manda el `.sql`.
 
 Además de las tablas, las migraciones incluyen:
@@ -267,7 +268,7 @@ Además de las tablas, las migraciones incluyen:
 
 ### Cómo aplicarla
 
-Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0007`. La
+Supabase Dashboard → **SQL Editor** → correr en orden `0001` a `0008`. La
 `0004` es **destructiva** (borra `sheet_links`, `units`, `topics` y columnas): autorizada
 por el usuario el 2026-10-14.
 
@@ -427,3 +428,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-14 | **Inicio**: `important_dates`, `tasks`, `quick_notes` + RLS `_owner` + `set_updated_at` | ✅ `0005` (aplicada el 2026-10-15) |
 | 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ✅ `0006` (aplicada 2026-10-15 vía Management API, tras probarla con `begin … rollback`) |
 | 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | ✅ Aplicada el 2026-10-19 (`0007`) |
+| 2026-10-19 | `ai_usage.action` admite `quiz_grade` (CHECK `ai_usage_action_check` reemplazado) | ⏳ Pendiente de aplicar (`0008_quiz_grade_usage.sql`) |

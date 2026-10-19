@@ -77,8 +77,8 @@ Cada evento es una línea `data: <json>` seguida de una línea vacía.
 | `proposal` | `proposal: {id, status:'pending', kind:'append'\|'replace_selection'\|'new_sheet', sheetId?, subjectId?, markdown, source:'notes'\|'external'}` | Una propuesta de edición; el usuario la acepta o la rechaza. |
 | `quiz` | `questions: Question[]` (`{id, type:'mcq'\|'tf'\|'open', prompt, options?, answer, explanation, topic, sheetId?}`) | `quiz` y `weak_review`. |
 | `grades` | `grades: Array<{id, correct, feedback}>` | `quiz_grade` (una por pregunta abierta). |
-| `usage` | `action, bucket, used, max, period` (+ `external: {used, max, period}` en modo externo); `used`/`max` son `null` si el plan no tiene tope | La acción se registró en `ai_usage`. No aparece en `quiz_grade`. |
-| `error` | `code, message` | `upstream`, `blocked`, `empty`, `aborted` (timeout de `GEMINI_TIMEOUT_MS` o desconexión), `invalid_output` (JSON del modelo inválido), `steps` (demasiados pasos), `no_notes`, `no_weak_topics`, `server`. Es el último evento: no hay `done` y **no se descuenta uso**. |
+| `usage` | `action, bucket, used, max, period` (+ `external: {used, max, period}` en modo externo); `used`/`max` son `null` si el plan no tiene tope | La acción se registró en `ai_usage` (también `quiz_grade`, en su balde `grade`). |
+| `error` | `code, message` | `upstream`, `blocked`, `empty`, `aborted` (timeout de `GEMINI_TIMEOUT_MS` o desconexión), `invalid_output` (JSON del modelo inválido), `steps` (demasiados pasos), `no_notes`, `no_weak_topics`, `server`. No hay `done` después. Solo tras `steps` puede venir un `usage` (ver "Cuándo se descuenta uso"); con los demás **no se descuenta uso**. |
 | `done` | `truncated?: true`, `finishReason?: string` (si no fue `STOP`, p. ej. `SAFETY` tras texto parcial o `MAX_TOKENS`) | Fin normal. |
 
 Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`grades` → `usage` → `done`.
@@ -91,11 +91,32 @@ Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`grades` → `usage` → `do
 - `quiz`, `weak_review`: salida JSON (`QUIZ_SCHEMA`) sin herramientas; el servidor junta el contenido
   de las hojas del alcance (tope `MAX.quizSourceChars`, repartido entre hasta `MAX.quizSourceSubjects`
   materias) y lo manda como bloque de datos. `weak_review` lee `weak_topics` con el JWT y los pasa al
-  prompt; sin temas flojos → `no_weak_topics`. Por defecto `QUIZ_DEFAULTS` (5 preguntas, los 3 tipos).
-- `quiz_grade`: salida JSON (`GRADES_SCHEMA`); no lee la base ni consume cupo.
+  prompt (filtrados por las materias del alcance en la base, antes del tope de 50); sin temas flojos →
+  `no_weak_topics`. Con alcance `sheet`, el repaso usa las hojas de esa materia que tienen esos temas
+  (primero) y no solo la hoja elegida. Por defecto `QUIZ_DEFAULTS` (5 preguntas, los 3 tipos).
+- `quiz_grade`: salida JSON (`GRADES_SCHEMA`); no lee la base. Descuenta de su balde `grade`
+  (provisorio: free 10/día, premium 100/día; Ruling L, migración `0008`).
 
 Herramientas: premium puede leer todas sus materias vivas; free solo la materia del alcance (con
 alcance `sheet` se resuelve la materia de la hoja).
+
+### Cuándo se descuenta uso (Ruling K)
+
+Se registra una fila en `ai_usage` si la acción terminó bien, **o** si terminó en `steps` después de
+al menos una respuesta exitosa de Gemini y de haber emitido algo útil (`text`, `proposal`, `quiz` o
+`grades`): así no se puede forzar el bucle para tener respuestas gratis. No se descuenta ante errores de
+Gemini (`upstream`, `blocked`, `empty`, `aborted`), `invalid_output` (no llegó nada útil), `no_notes`,
+`no_weak_topics` ni `server`. Los errores de Gemini se loguean con `kind` y `status` (nunca el cuerpo
+del proveedor ni la clave).
+
+### Límites conocidos
+
+- **El conteo no es transaccional:** dos pedidos simultáneos pueden pasar el conteo antes de que
+  cualquiera registre su uso, y superar el tope por uno o dos.
+- **Ventana de abort:** si el cliente se desconecta justo después de que Gemini terminó y antes de
+  `recordUsage`, el uso se registra igual (Gemini ya respondió); si corta durante la llamada, no.
+- **`recordUsage` fallido deja pasar el pedido:** decisión deliberada (el usuario ya recibió la
+  respuesta). Se loguea y no se emite `usage`; ese pedido no cuenta para el tope.
 
 ## Archivos de esta fase
 

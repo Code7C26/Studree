@@ -142,16 +142,27 @@ test('listWeakTopics: sin deleted_at propio, descarta materias en la papelera, p
   const row = { subject_id: ID, sheet_id: null, topic: 't', misses: 3, subjects: { deleted_at: null } }
   const { client, queries } = fakeClient(() => ({ data: [row], error: null }))
   const db = createDb(client)
-  const rows = await db.listWeakTopics(ID)
+  const rows = await db.listWeakTopics([ID])
   assert.deepEqual(rows, [{ subject_id: ID, sheet_id: null, topic: 't', misses: 3 }])
   const q = queries[0]
   assert.equal(q.table, 'weak_topics')
   assert.ok(!q.calls.some(([m, a]) => m === 'is' && a[0] === 'deleted_at'))
   assert.ok(has(q, 'is', 'subjects.deleted_at', null))
-  assert.ok(has(q, 'eq', 'subject_id', ID))
+  assert.ok(has(q, 'in', 'subject_id', [ID]))
   assert.ok(has(q, 'order', 'misses', { ascending: false }))
   assert.ok(has(q, 'limit', 50))
 
   await db.listWeakTopics()
-  assert.ok(!queries[1].calls.some(([m]) => m === 'eq'))
+  assert.ok(!queries[1].calls.some(([m]) => m === 'eq' || m === 'in'))
+})
+
+test('listWeakTopics: con lista de materias filtra en la base (antes del tope); lista vacía → [] sin consultar', async () => {
+  const { client, queries } = fakeClient(() => ({ data: [], error: null }))
+  const db = createDb(client)
+  const ID2 = '22222222-2222-4222-8222-222222222222'
+  await db.listWeakTopics([ID, ID2])
+  assert.ok(has(queries[0], 'in', 'subject_id', [ID, ID2]))
+  assert.ok(has(queries[0], 'limit', 50))
+  assert.deepEqual(await db.listWeakTopics([]), [])
+  assert.equal(queries.length, 1)
 })

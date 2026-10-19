@@ -59,8 +59,9 @@ test('requiredCounts: external suma una clave extra', () => {
   assert.equal(r[1].external, true)
 })
 
-test('requiredCounts: quiz_grade no cuenta; premium summary sin tope', () => {
-  assert.deepEqual(requiredCounts({ plan: 'free', action: 'quiz_grade', external: false, now: NOW }), [])
+test('requiredCounts: quiz_grade cuenta en su balde grade (diario); premium summary sin tope', () => {
+  const r = requiredCounts({ plan: 'free', action: 'quiz_grade', external: false, now: NOW })
+  assert.deepEqual(r.map((c) => [c.key, c.actions, c.since]), [['grade', ['quiz_grade'], '2026-10-19T00:00:00.000Z']])
   assert.deepEqual(requiredCounts({ plan: 'premium', action: 'summary', external: false, now: NOW }), [])
 })
 
@@ -112,12 +113,18 @@ test('free: extras deniega', () => {
   }
 })
 
-test('premium sin tope permite sin conteos; quiz_grade no exige nada', () => {
+test('premium sin tope permite sin conteos; quiz_grade exige su conteo y respeta el tope', () => {
   for (const action of ['summary', 'quiz', 'study_plan', 'gaps', 'connections', 'weak_review']) {
     assert.equal(acc({ plan: 'premium', action }).allowed, true)
   }
-  assert.equal(acc({ plan: 'free', action: 'quiz_grade' }).allowed, true)
-  assert.equal(acc({ plan: 'free', action: 'quiz_grade', external: true }).allowed, true)
+  assert.equal(acc({ plan: 'free', action: 'quiz_grade' }).allowed, false, 'sin conteo → falla cerrado')
+  assert.equal(acc({ plan: 'free', action: 'quiz_grade', counts: { grade: 9 } }).allowed, true)
+  const capped = acc({ plan: 'free', action: 'quiz_grade', counts: { grade: 10 } })
+  assert.equal(capped.allowed, false)
+  assert.equal(capped.code, 'quota')
+  assert.match(capped.message, /correc/i)
+  assert.equal(acc({ plan: 'premium', action: 'quiz_grade', counts: { grade: 99 } }).allowed, true)
+  assert.equal(acc({ plan: 'premium', action: 'quiz_grade', counts: { grade: 100 } }).allowed, false)
 })
 
 test('periodStart: bordes y período inválido', () => {

@@ -12,9 +12,10 @@
 // escribe: solo emite propuestas. Los errores del proveedor no se reenvían
 // crudos: el cliente recibe un código y un mensaje propio.
 //
-// Uso: `recordUsage` se llama SOLO si la acción terminó bien (sin error de
-// Gemini, sin salida inválida, sin agotar pasos) y nunca para `quiz_grade`
-// (no tiene balde).
+// Uso (Ruling K): `recordUsage` se llama si la acción terminó bien, o si
+// agotó los pasos (`steps`) después de al menos una respuesta de Gemini y de
+// emitir algo útil (text/proposal/quiz/grades). Nunca ante un error de Gemini
+// ni ante salida inválida. `quiz_grade` descuenta de su balde `grade`.
 
 import { BUCKET_OF, LIMITS, MAX, QUIZ_DEFAULTS, GEMINI_TIMEOUT_MS } from './config.js'
 import { planOf, requiredCounts, decideAccess } from './quota.js'
@@ -25,6 +26,7 @@ import { buildSystemPrompt, actionInstruction, formatDataBlock } from './prompt.
 import { buildGeminiRequest, GeminiError } from './gemini.js'
 import { runConversation } from './loop.js'
 import { QUIZ_SCHEMA, GRADES_SCHEMA, validateQuiz, validateGrades } from './quiz.js'
+import { extractTopics } from './topics.js'
 
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +39,8 @@ const NAME_MAX = 120
 const WEAK_SHEETS_MAX = 10
 const QUIZ_ACTIONS = ['quiz', 'weak_review']
 const WITH_HISTORY = ['chat', 'shortcut']
+/** Eventos que significan que al usuario le llegó algo útil (Ruling K). */
+const USEFUL_EVENTS = ['text', 'proposal', 'quiz', 'grades']
 
 /** Mensajes de las respuestas JSON (antes del stream). */
 const HTTP_MESSAGES = {
@@ -86,6 +90,7 @@ function bearer(header) {
   return m ? m[1] : null
 }
 
+const normalizeTopic = (text) => String(text ?? '').replace(/\s+/g, ' ').trim().toLowerCase()
 const clipName = (text) => String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
 const day = (iso) => String(iso ?? '').slice(0, 10)
 
@@ -162,10 +167,14 @@ async function gatherSources({ db, ctx, weakTopics }) {
     return content.length
   }
 
-  if (ctx.sheet) {
+  // Prueba de una hoja: solo esa. En el repaso de errores, en cambio, se usan
+  // las hojas de la materia que tienen esos temas (aunque se haya elegido otra).
+  if (ctx.sheet && !weakTopics.length) {
     add(ctx.sheet, Infinity)
     return out
   }
+  const weakNames = new Set(weakTopics.map((w) => normalizeTopic(w.topic)))
+  const hasWeakTopic = (sheet) => extractTopics(sheet.content_md).some((t) => weakNames.has(normalizeTopic(t)))
   const weakSheetIds = [...new Set(weakTopics.map((w) => w.sheet_id).filter(Boolean))].slice(0, WEAK_SHEETS_MAX)
   for (const id of weakSheetIds) {
     if (full()) break
@@ -178,9 +187,11 @@ async function gatherSources({ db, ctx, weakTopics }) {
   for (const subjectId of order) {
     if (full()) break
     let subjectUsed = 0
-    // Las más recientes primero (vienen en orden cronológico).
-    const rows = await db.listSheetsBySubject(subjectId)
-    for (let i = rows.length - 1; i >= 0 && !full() && subjectUsed < share; i--) {
+    // Las más recientes primero (vienen en orden cronológico); en un repaso,
+    // antes las que tienen alguno de los temas flojos.
+    const newest = [...(await db.listSheetsBySubject(subjectId))].reverse()
+    const rows = weakNames.size ? [...newest.filter(hasWeakTopic), ...newest.filter((s) => !hasWeakTopic(s))] : newest
+    for (let i = 0; i < rows.length && !full() && subjectUsed < share; i++) {
       subjectUsed += add(rows[i], share - subjectUsed)
     }
   }
@@ -251,7 +262,8 @@ function sseResponse(reqSignal, run, logError) {
 }
 
 /**
- * Ejecuta la acción y emite sus eventos. Devuelve true si terminó bien.
+ * Ejecuta la acción y emite sus eventos. Devuelve true si terminó bien,
+ * 'steps' si el bucle agotó los pasos y false ante otro error ya emitido.
  * Los errores de Gemini se propagan (los atrapa `runAction`).
  */
 async function perform({ request, ctx, db, callModel, emit, emitError, now, logError }) {
@@ -285,8 +297,8 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
     const quiz = request.quiz ?? QUIZ_DEFAULTS
     let weakTopics = []
     if (action === 'weak_review') {
-      const narrow = request.scope.type === 'sheet' || request.scope.type === 'subject'
-      const rows = await db.listWeakTopics(narrow ? ctx.scopeSubjectIds[0] : undefined)
+      // Se filtra por las materias del alcance en la base (antes del tope de 50).
+      const rows = await db.listWeakTopics(ctx.scopeSubjectIds)
       const inScope = new Set(ctx.scopeSubjectIds)
       weakTopics = rows.filter((w) => inScope.has(w.subject_id))
       if (!weakTopics.length) {
@@ -326,7 +338,7 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
   )
   const history = WITH_HISTORY.includes(action) ? historyContents(request.history) : []
   const runner = createToolRunner({ db, mode, allowedSubjectIds: ctx.allowedSubjectIds, selection, now, logError })
-  let failed = false
+  let failedCode = null
   await runConversation({
     callModel: (contents) =>
       callModel(buildGeminiRequest({ systemPrompt, contents, tools: TOOL_DECLARATIONS }), (delta) => emit({ type: 'text', delta })),
@@ -334,14 +346,15 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
     contents: [...history, userTurn(text)],
     emit: (event) => {
       if (event.type === 'error') {
-        failed = true
+        failedCode = event.code
         emitError(event.code)
         return
       }
       emit(event)
     },
   })
-  return !failed
+  if (failedCode === null) return true
+  return failedCode === 'steps' ? 'steps' : false
 }
 
 /**
@@ -427,7 +440,7 @@ export async function handleRequest(req, deps) {
     req.signal,
     async (emit, signal) => {
       const emitError = (code) => emit({ type: 'error', code, message: STREAM_ERRORS[code] ?? STREAM_ERRORS.server })
-      const meta = { truncated: false, finishReason: null }
+      const meta = { truncated: false, finishReason: null, geminiOk: false, useful: false }
       // Cada llamada se corta por tiempo o si el cliente se desconecta.
       const callModel = async (body, onText) => {
         const res = await deps.callGemini({
@@ -437,14 +450,22 @@ export async function handleRequest(req, deps) {
         })
         if (res.truncated) meta.truncated = true
         meta.finishReason = res.finishReason ?? null
+        meta.geminiOk = true
         return res
       }
+      // Ruling K: se recuerda si llegó algo útil al usuario.
+      const emitTracked = (event) => {
+        if (USEFUL_EVENTS.includes(event.type)) meta.useful = true
+        emit(event)
+      }
 
-      let ok
+      let outcome
       try {
-        ok = await perform({ request, ctx, db, callModel, emit, emitError, now, logError })
+        outcome = await perform({ request, ctx, db, callModel, emit: emitTracked, emitError, now, logError })
       } catch (error) {
         if (error instanceof GeminiError && STREAM_ERRORS[error.kind]) {
+          // Solo kind y status: nunca el cuerpo del proveedor ni la clave.
+          logError('[assistant] error de Gemini', action, { kind: error.kind, status: error.status })
           emitError(error.kind)
         } else {
           logError('[assistant] falló la acción', action, error)
@@ -452,7 +473,9 @@ export async function handleRequest(req, deps) {
         }
         return
       }
-      if (!ok) return
+      // Ruling K: agotar los pasos después de responder algo también descuenta.
+      const charge = outcome === true || (outcome === 'steps' && meta.geminiOk && meta.useful)
+      if (!charge) return
 
       if (BUCKET_OF[action]) {
         try {
@@ -462,6 +485,7 @@ export async function handleRequest(req, deps) {
           logError('[assistant] no se pudo registrar el uso', error)
         }
       }
+      if (outcome !== true) return
       const done = { type: 'done' }
       if (meta.truncated) done.truncated = true
       if (meta.finishReason && meta.finishReason !== 'STOP') done.finishReason = meta.finishReason
