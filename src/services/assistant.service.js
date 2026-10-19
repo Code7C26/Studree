@@ -4,7 +4,7 @@
  */
 
 import { getSupabase } from './supabase.client.js'
-import { createSseParser } from '../lib/assistant/sse.js'
+import { readSseStream } from '../lib/assistant/readSseStream.js'
 import { translateAssistantError } from '../lib/assistant/assistantError.js'
 
 export { translateAssistantError }
@@ -13,14 +13,20 @@ export { translateAssistantError }
  * Pide algo al asistente y reenvía cada evento SSE a `onEvent`, tal cual llegan
  * (no asume que `done` sea el último: tras un error `steps` viene `usage`).
  * Si el usuario corta con `signal`, resuelve `{data: null, error: null}`.
+ * Si `onEvent` lanza, se cancela el stream y se devuelve un error propio.
  *
  * @param {{request: Object, signal?: AbortSignal, onEvent: (event: any) => void}} params
  * @returns {Promise<import('../types/models.js').ServiceResult<true>>}
  */
 export async function streamAssistant({ request, signal, onEvent }) {
+  const generic = translateAssistantError(0, null)
   try {
     // Se lee acá adentro (no al importar) para que el módulo sea importable en tests.
     const env = import.meta.env
+    if (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) {
+      console.error('[assistant] Faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY en .env.local.')
+      return { data: null, error: generic }
+    }
     const { data: sessionData } = await getSupabase().auth.getSession()
     const token = sessionData?.session?.access_token
     if (!token) return { data: null, error: translateAssistantError(401, null) }
@@ -41,25 +47,21 @@ export async function streamAssistant({ request, signal, onEvent }) {
       try {
         body = await response.json()
       } catch {
-        // cuerpo que no es JSON: se traduce solo por status
+        // cuerpo que no es JSON (o se abortó): se traduce solo por status
       }
+      if (signal?.aborted) return { data: null, error: null }
       return { data: null, error: translateAssistantError(response.status, body) }
     }
-    if (!response.body) return { data: null, error: translateAssistantError(500, null) }
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!response.body || !contentType.includes('text/event-stream')) return { data: null, error: generic }
 
-    const parser = createSseParser()
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      for (const event of parser.push(decoder.decode(value, { stream: true }))) onEvent(event)
-    }
-    for (const event of parser.push(decoder.decode())) onEvent(event)
-    for (const event of parser.flush()) onEvent(event)
+    const { ended } = await readSseStream(response.body, onEvent, { signal })
+    if (ended === 'aborted' || signal?.aborted) return { data: null, error: null }
+    if (ended === 'callback') return { data: null, error: 'Ocurrió un error inesperado en el Brote.' }
+    if (ended === 'eof') return { data: null, error: generic }
     return { data: true, error: null }
   } catch (error) {
     if (signal?.aborted || /** @type {Error} */ (error)?.name === 'AbortError') return { data: null, error: null }
-    return { data: null, error: translateAssistantError(0, null) }
+    return { data: null, error: generic }
   }
 }

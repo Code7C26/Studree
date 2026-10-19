@@ -29,3 +29,29 @@ test('flush procesa lo que quedó sin salto final', () => {
   p.push('data: {"type":"done"}')
   assert.deepEqual(p.flush(), [{ type: 'done' }])
 })
+
+test('tolera CRLF', () => {
+  const p = createSseParser()
+  assert.deepEqual(p.push('data: {"type":"done"}\r\n\r\n'), [{ type: 'done' }])
+})
+
+test('data: multilínea se une con salto', () => {
+  const p = createSseParser()
+  assert.deepEqual(p.push('data: {"type":\ndata: "done"}\n\n'), [{ type: 'done' }])
+})
+
+test('[DONE] se descarta', () => {
+  const p = createSseParser()
+  assert.deepEqual(p.push('data: [DONE]\n\n'), [])
+})
+
+test('data: sin espacio posterior', () => {
+  const p = createSseParser()
+  assert.deepEqual(p.push('data:{"type":"done"}\n\n'), [{ type: 'done' }])
+})
+
+test('tope de buffer: basura sin salto de línea no crece sin límite y se recupera', () => {
+  const p = createSseParser()
+  assert.deepEqual(p.push('x'.repeat(1_000_001)), [])
+  assert.deepEqual(p.push('data: {"type":"done"}\n\n'), [{ type: 'done' }])
+})
