@@ -62,4 +62,16 @@ export const MAX = {
   mapChars: 24000,
   sheetChars: 12000,
   proposalChars: 8000,
+  /** Cuerpo del pedido HTTP (15 respuestas de prueba × 3 textos de 4000 entran holgados). */
+  bodyChars: 256000,
+  /** Contenido total de hojas que se le pasa al modelo para armar una prueba. */
+  quizSourceChars: 30000,
+  /** Materias que se recorren como máximo para juntar hojas de una prueba. */
+  quizSourceSubjects: 8,
 }
+
+/** Prueba por defecto si el pedido no trae `quiz`. */
+export const QUIZ_DEFAULTS = { count: 5, types: ['mcq', 'tf', 'open'] }
+
+/** Tiempo máximo de cada llamada a Gemini (ms); también se corta si el cliente se desconecta. */
+export const GEMINI_TIMEOUT_MS = 60000

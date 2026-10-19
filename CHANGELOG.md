@@ -32,6 +32,9 @@
 **Prompt, Gemini y bucle (Tarea 5):**
 - `prompt.js` (voz rioplatense; en `notes` solo apuntes, en `external` conocimiento externo marcado; el contenido de las hojas es dato; ediciones solo con `propose_*` y aprobación), `sse.js` (parser SSE tolerante a cortes), `gemini.js` (`buildGeminiRequest`, `streamGemini` con clave en el header `x-goog-api-key`, `GeminiError` upstream/blocked/empty, texto y partes acotados) y `loop.js` (`runConversation`: `modelParts` intactas, una `functionResponse` por llamada, tope de 6 pasos y 8 llamadas por paso), con tests.
 
+**Handler, pruebas y Edge Function (Tarea 6):**
+- `quiz.js` (`QUIZ_SCHEMA`/`GRADES_SCHEMA` para salida estructurada; `validateQuiz` falla cerrado ante una pregunta mal armada, recorta a `count` y los textos, ids `q1..qn` del servidor, descarta `sheetId` ajenos; `validateGrades` exige todas las abiertas), `account.js` (`getUser`, `getPlanRow`, `countUsage` que deja FALTANTE un conteo con error, `recordUsage`), `handler.js` (`handleRequest`: CORS/204, 401, 503 sin config, 400, 403/429 por `decideAccess`, alcance resuelto contra el árbol vivo con `allowedSubjectIds` nunca nulo, stream SSE con eventos `text`/`tool`/`proposal`/`quiz`/`grades`/`usage`/`error`/`done`, corte por timeout de `GEMINI_TIMEOUT_MS` o desconexión, uso registrado solo si la acción terminó bien y nunca para `quiz_grade`) e `index.js` (solo cableado: anon key + JWT del usuario, secrets por `Deno.env`). `prompt.js` suma temas flojos como datos, `actionInstruction` y `formatDataBlock`; `config.js` suma `GEMINI_TIMEOUT_MS`, `QUIZ_DEFAULTS` y topes de cuerpo y de fuentes de prueba. Con tests. Despliegue pendiente (lo hace el estudiante).
+
 ## [0.16.0] — 2026-10-15
 
 ### Added — Papelera, adjuntos, plantillas e importar (FASE 13)
