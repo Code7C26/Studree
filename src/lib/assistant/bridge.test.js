@@ -32,3 +32,29 @@ test('un suscriptor que tira error no corta a los demás', () => {
   b.set(ctx)
   assert.equal(n, 1)
 })
+
+test('request deja un pedido pendiente que se toma una sola vez y avisa a onRequest', () => {
+  const b = createBridge()
+  const seen = []
+  const off = b.onRequest(() => seen.push(b.peekRequest()))
+  assert.equal(b.takeRequest(), null)
+  const item = { request: { action: 'shortcut', message: 'm' }, label: 'Explicar', selection: null }
+  b.request(item)
+  assert.deepEqual(seen, [item])
+  assert.equal(b.takeRequest(), item)
+  assert.equal(b.takeRequest(), null)
+  off()
+  b.request(item)
+  assert.equal(seen.length, 1)
+})
+
+test('un pedido nuevo reemplaza al pendiente y un listener roto no corta a los demás', () => {
+  const b = createBridge()
+  let n = 0
+  b.onRequest(() => { throw new Error('x') })
+  b.onRequest(() => { n++ })
+  b.request({ request: { action: 'shortcut', message: 'a' }, label: 'a', selection: null })
+  b.request({ request: { action: 'shortcut', message: 'b' }, label: 'b', selection: null })
+  assert.equal(n, 2)
+  assert.equal(b.takeRequest().label, 'b')
+})

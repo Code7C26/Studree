@@ -140,11 +140,25 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
   cada hoja.
 - **Importar:** `ImportDialog` desde la cápsula; importa a la materia abierta.
 
+## Fase 14: el Brote en la carpeta (2026-10-19)
+
+- **Contexto del Brote:** la carpeta publica en `assistantBridge` la materia, la carrera
+  (solo el id), la hoja activa (la del editor con foco, si ya está guardada), `getSelection`
+  y `apply`; al irse de la carpeta lo limpia (`set(null)`). Ver `docs/features/assistant.md`.
+- **Atajos sobre el texto:** `SelectionShortcuts` flota junto a la selección no vacía del
+  editor activo (no en modo lectura). En una hoja que todavía no se guardó avisa que hay
+  que esperar.
+- **Aplicar propuestas:** entran **por el editor** (`applyProposalToEditor` → comandos de
+  TipTap → `onUpdate` → `useSheetAutosave`), nunca por el service. Solo sobre hojas montadas
+  de esta carpeta; `new_sheet` solo para esta materia y por `handleAddSheet(contenido)`, el
+  mismo camino que una plantilla (la hoja local con contenido se crea al montarse). No borra
+  hojas ni cambia el flujo de borrado (sigue cancelando el autosave antes).
+
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export |
+| `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export; publica el contexto del Brote y aplica sus propuestas |
 | `src/pages/SheetRedirectPage.jsx` | Redirige `/hojas/:id` a la carpeta |
 | `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + plantilla + papelera + editor + lista de adjuntos |
 | `src/components/features/templates/` · `attachments/` · `import/` | Nueva hoja ▾ y administrador, lista de adjuntos al pie, diálogo de importación |

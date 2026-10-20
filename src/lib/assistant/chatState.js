@@ -16,6 +16,7 @@
  * @property {string} markdown
  * @property {'notes'|'external'} source
  * @property {'pending'|'applied'|'rejected'|'failed'} status
+ * @property {import('./bridge.js').Selection} [selection]  La del atajo que la pidió (verifica un reemplazo).
  */
 
 /**
@@ -97,6 +98,12 @@ function appendText(state, delta) {
   return { ...state, messages: capMessages([...messages, msg]) }
 }
 
+/** Selección con rango y texto (la agrega el cliente, no viene del servidor). */
+function isSelection(sel) {
+  return Boolean(sel) && typeof sel.sheetId === 'string' && Number.isInteger(sel.from)
+    && Number.isInteger(sel.to) && typeof sel.text === 'string'
+}
+
 /** Una propuesta siempre entra pendiente: nunca se aplica sola. */
 function addProposal(state, raw) {
   if (!raw || typeof raw.id !== 'string' || typeof raw.markdown !== 'string') return state
@@ -112,6 +119,7 @@ function addProposal(state, raw) {
   }
   if (typeof raw.sheetId === 'string') proposal.sheetId = raw.sheetId
   if (typeof raw.subjectId === 'string') proposal.subjectId = raw.subjectId
+  if (isSelection(raw.selection)) proposal.selection = { ...raw.selection }
   return { ...state, proposals: [...state.proposals, proposal].slice(-MAX_PROPOSALS) }
 }
 

@@ -13,6 +13,7 @@ import { NewSheetButton } from '../components/features/templates/NewSheetButton'
 import { TemplatesManager } from '../components/features/templates/TemplatesManager'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { ImportDialog } from '../components/features/import/ImportDialog'
+import { SelectionShortcuts } from '../components/features/assistant/SelectionShortcuts'
 import { Icon } from '../components/ui/Icon'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -26,6 +27,10 @@ import { stripAttachmentRefs } from '../lib/attachments/refs.js'
 import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
 import { formatSheetDate } from '../lib/format/sheetDate.js'
 import { isLocalSheet } from '../lib/editor/folderSheets.js'
+import { assistantBridge } from '../lib/assistant/bridge.js'
+import { applyProposalToEditor } from '../lib/assistant/editorApply.js'
+import { withOriginMark } from '../lib/assistant/applyProposal.js'
+import { buildShortcutRequest, shortcutLabel } from '../lib/assistant/shortcuts.js'
 
 /**
  * Margen (px) para que un tema cuente como "el que estás leyendo". Se suma al
@@ -34,6 +39,9 @@ import { isLocalSheet } from '../lib/editor/folderSheets.js'
  */
 const ACTIVE_TOPIC_TOLERANCE = 8
 const NOTICE_MS = 3000
+/** Ruling O: una propuesta solo se aplica sobre la carpeta abierta. */
+const NOT_IN_FOLDER = 'Abrí la materia de esa hoja para aplicar el cambio.'
+const UNSAVED_SHEET = 'Esperá a que la hoja se guarde para usar los atajos del Brote.'
 
 /** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
 const TOOL =
@@ -331,6 +339,81 @@ function SubjectFolder({ subjectId }) {
     window.requestAnimationFrame(() => document.getElementById(`hoja-${id}`)?.scrollIntoView({ block: 'center' }))
   }
 
+  // ---- Brote (asistente) --------------------------------------------------
+  // La carpeta publica en `assistantBridge` la materia, la hoja activa, la
+  // selección y cómo aplicar una propuesta. Toda edición entra por el editor
+  // (onUpdate → autosave), nunca por el service. Ver docs/features/assistant.md.
+
+  const sheetsRef = useRef(sheets)
+  sheetsRef.current = sheets
+  const activeEditorRef = useRef(activeEditor)
+  activeEditorRef.current = activeEditor
+
+  /** Hoja (de las montadas) a la que pertenece un editor. */
+  const sheetOfEditor = useCallback((editor) => {
+    if (!editor || editor.isDestroyed) return null
+    const key = [...editorsRef.current].find(([, candidate]) => candidate === editor)?.[0]
+    return key ? (sheetsRef.current.find((sheet) => sheet.key === key) ?? null) : null
+  }, [])
+
+  const activeSheet = sheetOfEditor(activeEditor)
+  const activeSheetId = activeSheet && !isLocalSheet(activeSheet) ? activeSheet.id : null
+
+  /** Selección no vacía del editor activo, en una hoja ya guardada. */
+  const getSelection = useCallback(() => {
+    const editor = activeEditorRef.current
+    const sheet = sheetOfEditor(editor)
+    if (!sheet || isLocalSheet(sheet)) return null
+    const { from, to, empty } = editor.state.selection
+    if (empty) return null
+    const text = editor.state.doc.textBetween(from, to, '\n')
+    return text.trim() ? { sheetId: sheet.id, from, to, text } : null
+  }, [sheetOfEditor])
+
+  /** La implementación cambia con el estado; el contexto publicado llama siempre a la última. */
+  const applyRef = useRef(/** @type {(proposal: any) => import('../lib/assistant/bridge.js').ApplyResult} */ (() => ({ ok: false, error: NOT_IN_FOLDER })))
+  applyRef.current = (proposal) => {
+    if (proposal?.kind === 'new_sheet') {
+      if (proposal.subjectId !== subjectId) return { ok: false, error: NOT_IN_FOLDER }
+      // Mismo camino que una plantilla: hoja local con contenido, que se crea al montarse.
+      handleAddSheet(withOriginMark(proposal.markdown, proposal.source))
+      return { ok: true }
+    }
+    const sheet = sheetsRef.current.find((candidate) => candidate.id === proposal?.sheetId)
+    const editor = sheet ? editorsRef.current.get(sheet.key) : null
+    if (!editor || editor.isDestroyed) return { ok: false, error: NOT_IN_FOLDER }
+    const result = applyProposalToEditor(editor, proposal, proposal.selection ?? null)
+    if (result.ok) document.getElementById(`hoja-${sheet.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    return result
+  }
+  const apply = useCallback((proposal) => applyRef.current(proposal), [])
+
+  useEffect(() => {
+    if (!subject) return
+    assistantBridge.set({
+      subject: { id: subject.id, name: subject.name },
+      // El nombre de la carrera no se carga en la carpeta; para el alcance alcanza el id.
+      career: subject.career_id ? { id: subject.career_id, name: '' } : null,
+      sheetId: activeSheetId,
+      getSelection,
+      apply,
+    })
+    // Al irse de la carpeta el Brote se queda sin contexto (no puede aplicar nada).
+    return () => assistantBridge.set(null)
+  }, [subject, activeSheetId, getSelection, apply])
+
+  const handleShortcut = useCallback(
+    (id) => {
+      const selection = getSelection()
+      if (!selection) {
+        if (sheetOfEditor(activeEditorRef.current) && isLocalSheet(sheetOfEditor(activeEditorRef.current))) showNotice(UNSAVED_SHEET)
+        return
+      }
+      assistantBridge.request({ request: buildShortcutRequest(id, selection), label: shortcutLabel(id, selection), selection })
+    },
+    [getSelection, sheetOfEditor, showNotice],
+  )
+
   async function removeSheet(sheet) {
     cancelersRef.current.get(sheet.key)?.()
     // Por `key`: si la hoja nueva se creó mientras se confirmaba, su id ya cambió.
@@ -523,6 +606,8 @@ function SubjectFolder({ subjectId }) {
           )}
         </div>
       </div>
+
+      <SelectionShortcuts editor={activeEditor} hidden={reading} onPick={handleShortcut} />
 
       {reading && (
         <button

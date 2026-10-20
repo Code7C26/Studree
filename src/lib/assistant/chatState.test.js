@@ -175,3 +175,12 @@ test('setNotice es una nota neutra: no es error ni pone triste al Brote, y un me
   assert.equal(addUserMessage(s, 'hola').notice, null)
   assert.equal(setNotice(s, null).notice, null)
 })
+
+test('una propuesta conserva la selección válida con la que se pidió (para verificar el reemplazo)', () => {
+  const selection = { sheetId: 'sh1', from: 2, to: 9, text: 'abcdefg' }
+  const raw = { id: 'p9', kind: 'replace_selection', sheetId: 'sh1', markdown: 'x', source: 'notes', selection }
+  const s = reduceEvent(initialChat(), { type: 'proposal', proposal: raw })
+  assert.deepEqual(s.proposals[0].selection, selection)
+  const bad = reduceEvent(initialChat(), { type: 'proposal', proposal: { ...raw, selection: { sheetId: 'sh1', from: 'a' } } })
+  assert.equal('selection' in bad.proposals[0], false)
+})

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { readCache, writeCache } from '../../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../../constants/storageKeys.js'
+import { assistantBridge } from '../../../lib/assistant/bridge.js'
 import { Brote } from './Brote'
 
 /** El panel (hook, chat y servicios) va en un chunk aparte: el principal casi no crece. */
@@ -52,6 +53,19 @@ export function AssistantHost({ hidden = false }) {
       document.removeEventListener('focusout', onFocusOut)
     }
   }, [])
+
+  // Un atajo sobre el texto encoló un pedido: se abre el panel (y se carga si
+  // hacía falta); el panel toma el pedido y lo manda por su conversación.
+  useEffect(
+    () =>
+      assistantBridge.onRequest(() => {
+        setLoaded(true)
+        setOpen(true)
+        writeCache(STORAGE_KEYS.uiAssistantOpen, true)
+        setFocusSignal((n) => n + 1)
+      }),
+    [],
+  )
 
   const close = useCallback(() => {
     setOpen(false)

@@ -168,6 +168,52 @@ del proveedor ni la clave).
   mensaje del usuario y deja el chat ocupado igual. `stop()` corta con `AbortController`; desmontar
   también corta. `useAssistantContext` lee `assistantBridge` con `useSyncExternalStore`.
 
+## Atajos sobre el texto y propuestas en la hoja (Tarea 10)
+
+- **`SelectionShortcuts`** (`components/features/assistant/`): barra flotante
+  (`role="toolbar"`, `.glass`, `z-20`) con **Explicar**, **Refutar**, **Completar** y
+  **Preguntame**. Aparece con una selección no vacía del editor activo, arriba del texto (o
+  abajo si no entra arriba), así nunca lo tapa; se ubica con `editor.view.coordsAtPos` y se
+  reubica con scroll y resize (sin extensión de TipTap ni dependencias nuevas). Se oculta en
+  modo lectura, si la selección se vacía, si la selección salió de la pantalla o si el foco
+  se va del editor y de la barra. Teclado: con texto seleccionado, **Alt+Enter** lleva el
+  foco al primer atajo; ← → se mueven (roving tabindex); **Esc** vuelve al editor con la
+  selección intacta. El click no le saca el foco ni la selección al editor.
+- **`lib/assistant/shortcuts.js`**: `buildShortcutRequest(id, selection)` →
+  `{action:'shortcut', message, selection:{sheetId, text}}`. El texto va recortado a
+  `MAX.selection`; el `message` nombra la acción, cita el texto (recortado para no pasar
+  `MAX.message`) y, en **Completar** y **Refutar**, pide usar `propose_*`. **Preguntame** no.
+  `shortcutLabel` es lo que se ve en el chat ("Explicar: «…»").
+- **Cómo llega el atajo al panel:** el panel (con `useAssistant`) se carga perezoso y puede
+  no estar montado, así que la carpeta no llama al hook: **encola** el pedido en el puente
+  (`assistantBridge.request({request, label, selection})`). `AssistantHost` escucha
+  `onRequest` y abre (y carga) el panel; `useAssistant` toma el pedido con `takeRequest()` al
+  montar o al recibir el aviso (en un `setTimeout(0)`, para que el doble montaje de
+  StrictMode no lo corte) y lo manda con el mismo `start` que el chat: misma conversación,
+  historial, modo y alcance. Si el Brote ya está respondiendo, avisa con una nota y no lo
+  manda. El pedido pendiente es uno solo: uno nuevo reemplaza al anterior.
+- **La selección viaja con sus propuestas:** `useAssistant` agrega a cada propuesta
+  `replace_selection` de ese pedido la selección completa (`sheetId`, `from`, `to`, `text`);
+  lo que diga el servidor sobre la selección se ignora, y si el texto se había recortado
+  (más de `MAX.selection`) no se adjunta (el reemplazo falla en vez de pisar texto que el
+  modelo no vio). `chatState` conserva `selection` si es válida.
+- **`context.apply(proposal)`** (lo implementa `SubjectFolderPage`, Ruling O):
+  - `append` / `replace_selection`: la `sheetId` tiene que ser una hoja **montada de la
+    carpeta abierta**; si no, `Abrí la materia de esa hoja para aplicar el cambio.`
+  - `new_sheet`: la `subjectId` tiene que ser la materia abierta (mismo aviso). Crea la hoja
+    con `handleAddSheet(contenido)`, el camino de las plantillas: hoja local con contenido
+    que se crea al montarse.
+  - Sin carpeta abierta (Inicio, carrera…) el puente está en `null` y `useAssistant` marca
+    la propuesta como fallida con `Abrí la carpeta de la materia para aplicar el cambio.`
+- **`lib/assistant/editorApply.js`** — `applyProposalToEditor(editor, proposal, selection)`:
+  inserta el Markdown con `editor.chain().insertContentAt(...)` (la extensión `Markdown` de
+  tiptap-markdown lo parsea: headings y listas quedan bien), así el cambio pasa por
+  `onUpdate` → Markdown → autosave. `append` va al final del documento; `replace_selection`
+  vuelve a leer `doc.textBetween(from, to, '\n')` y, si `canApplyReplace` no confirma que es
+  el mismo texto, devuelve `La hoja cambió; volvé a seleccionar el texto.` sin tocar nada.
+  Lo de conocimiento externo lleva `withOriginMark` ("Agregado por el Brote"). No roba el
+  foco del panel; la hoja se lleva a la vista.
+
 ## Archivos de esta fase
 
 Se completa en la Tarea 12 del plan.
@@ -176,3 +222,4 @@ Se completa en la Tarea 12 del plan.
 
 - [ ] Implementar las capacidades de la tabla (tareas 1 a 11 del plan).
 - [ ] Verificar en el navegador el panel, el Brote y la propuesta de cambios.
+- [ ] Verificación manual de la Tarea 10 (paso 5 del plan: atajo → propuesta → Aceptar → "Guardado" → recargar; Rechazar; reemplazo tras editar el párrafo; marca externa): requiere la Edge Function desplegada.
