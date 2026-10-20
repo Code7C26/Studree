@@ -238,7 +238,10 @@ Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nu
   `chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
   `connections` y, desde la `0008`, `quiz_grade` (la corrección de pruebas tiene su balde
   `grade`). Políticas `select` e `insert` propios; **sin update ni delete**. Índice
-  `(user_id, action, created_at desc)` para contar el uso diario.
+  `(user_id, action, created_at desc)` para contar el uso diario. Qué acciones comparten
+  balde y los topes por plan no viven en la base: están en
+  `supabase/functions/assistant/config.js` (`BUCKET_OF`, `LIMITS`; p. ej. `study_plan`,
+  `gaps` y `connections` cuentan juntas en `extras`).
 - **`quiz_attempts`** (`id`, `user_id`, `scope_type` `sheet|subject|career|all`,
   `scope_id` nullable, `total` ≥ 0, `correct` ≥ 0, `created_at`). Política `_owner`.
 - **`weak_topics`** (`id`, `user_id`, `subject_id` → `subjects` cascade, `sheet_id` nullable

@@ -6,50 +6,100 @@
 
 ---
 
-## [0.17.0] — 2026-10-19 (borrador)
+## [0.17.0] — 2026-10-19
 
 ### Added — El Brote, asistente de IA (FASE 14)
 
 > Request: "pasar a la fase 14".
 > Spec: `docs/superpowers/specs/2026-10-19-asistente-ia-design.md` · plan:
-> `docs/superpowers/plans/2026-10-19-fase-14-asistente.md`.
-> Doc de la feature: `docs/features/assistant.md` (en desarrollo).
+> `docs/superpowers/plans/2026-10-19-fase-14-asistente.md` · doc de la feature:
+> `docs/features/assistant.md` · decisión: ADR-021.
 
-**Preparación (Tarea 0):**
-- Rama `fase-14` creada desde `fase-13` en su worktree; base verde (`npm test`, `eslint`, `build`).
-- `npm test` incluye `supabase/functions/**/*.test.js` además de `src/**/*.test.js`.
-- `.env.example`: aclaración de que `GEMINI_API_KEY` y `GEMINI_MODEL` son secrets de la Edge Function (no van en `VITE_*`).
+**Decisiones del brainstorming y de la implementación:**
 
-**Config y cuotas (Tarea 2):**
-- `supabase/functions/assistant/config.js` (acciones, baldes, topes por plan **provisorios**, features y máximos) y `quota.js` (`periodStart`, `planOf`, `requiredCounts`, `decideAccess`), puros y con tests; `decideAccess` falla cerrado si falta un conteo.
+| Tema | Decisión |
+|------|----------|
+| Entrada | Un único punto: el Brote flotante, con panel lateral y barra de atajos sobre el texto seleccionado |
+| Proveedor (ADR-021) | Gemini, solo desde la Edge Function `assistant`; `GEMINI_API_KEY` y `GEMINI_MODEL` son secrets de la función |
+| Datos | La función usa la `anon key` + el JWT del usuario (RLS), nunca `service_role`; mapa liviano + herramientas de solo lectura en vez de mandar toda la carrera |
+| Escritura | Nunca directa: propuestas (`append`, `replace_selection`, `new_sheet`) que el usuario acepta; entran por el editor de la carpeta abierta y su autosave. No borra hojas |
+| Fuente | "Mis apuntes" o "Con conocimiento externo" (marcado como externo) |
+| Cuotas | En el servidor, por plan y balde (`config.js`, valores **provisorios**); fallan cerrado si no se puede contar el uso |
+| Uso | Se descuenta si la acción terminó bien o si agotó los pasos (`steps`) después de mostrar algo útil; nunca ante errores de Gemini |
+| Corrección de pruebas | `quiz_grade` con su propio balde `grade` (migración `0008`) |
+| Huecos / conexiones | `gaps` libre dentro del tope `extras` (3/mes, Ruling P); `connections`, `study_plan` y `weak_review` solo Premium |
+| Respuestas | Texto plano (`whitespace-pre-wrap`), nunca HTML ni Markdown renderizado |
+| Historial | No se guarda: vive mientras dure la sesión |
+| Personaje | SVG propio con 6 estados animados por CSS (quieto con `prefers-reduced-motion`); se descartó el 3D real |
 
-**Pedido, temas y mapa (Tarea 3):**
-- `request.js` (`validateRequest`, falla cerrado), `topics.js` (copia deliberada de `extractHeadings`, con test de paridad contra el cliente) y `careerMap.js` (`buildMapMarkdown`, recorta a `MAX.mapChars`), puros y con tests.
+**Datos (`0007_asistente.sql` y `0008_quiz_grade_usage.sql`, aplicadas el 2026-10-19):**
+- Tablas `user_plans` (solo `select` propio: el plan se cambia a mano en Supabase; sin fila =
+  `free`), `ai_usage` (solo `select` e `insert` propios), `quiz_attempts` y `weak_topics`, todas
+  con RLS y `user_id default auth.uid()`. Sin funciones SQL nuevas.
+- `0008`: `ai_usage.action` admite `quiz_grade`.
 
-**Herramientas y acceso a datos (Tarea 4):**
-- `supabaseDb.js` (`createDb`: `loadTree` sin `content_md` paginado de a 1000, `getSheet`, `listSheetsBySubject`, `searchSheets` con `%`/`\` neutralizados y tope 8, `listAgenda` 60 días, `listWeakTopics`; `searchSheets` y `listWeakTopics` descartan además las materias en la papelera; toda consulta a careers/subjects/sheets filtra `deleted_at is null`) y `tools.js` (`TOOL_DECLARATIONS`, `createToolRunner`: lecturas acotadas por materia, `propose_*` que solo registran propuestas, ids validados, `run` nunca lanza), con tests.
+**Edge Function `assistant` (`supabase/functions/assistant/`):**
+- `handler.js` (lógica testeable con dependencias inyectadas): CORS, 401 sin JWT, 503 sin
+  secrets, 400 pedido inválido o alcance inexistente/en la papelera, 403 función de Premium, 429
+  tope agotado; stream SSE con eventos `text`, `tool`, `proposal`, `quiz`, `grades`, `usage`,
+  `error` y `done`; corte por timeout o desconexión. `index.js` solo cablea Deno.
+- `config.js` (acciones, baldes, topes provisorios, funciones por plan, máximos), `quota.js`,
+  `request.js`, `topics.js` (paridad con `extractHeadings`), `careerMap.js` (mapa liviano),
+  `tools.js` + `supabaseDb.js` (`read_sheet`, `list_subject_topics`, `search_notes`,
+  `get_agenda` y `propose_*`; ignoran la papelera; `allowedSubjectIds` nunca es `null`),
+  `prompt.js` (contenido de las hojas como datos), `gemini.js`, `sse.js`, `loop.js` (tope de
+  pasos), `quiz.js` (salida JSON validada) y `account.js`.
+- Acciones: `chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
+  `connections` y `quiz_grade`.
 
-**Prompt, Gemini y bucle (Tarea 5):**
-- `prompt.js` (voz rioplatense; en `notes` solo apuntes, en `external` conocimiento externo marcado; el contenido de las hojas es dato; ediciones solo con `propose_*` y aprobación), `sse.js` (parser SSE tolerante a cortes), `gemini.js` (`buildGeminiRequest`, `streamGemini` con clave en el header `x-goog-api-key`, `GeminiError` upstream/blocked/empty, texto y partes acotados) y `loop.js` (`runConversation`: `modelParts` intactas, una `functionResponse` por llamada, tope de 6 pasos y 8 llamadas por paso), con tests.
+**Cliente:**
+- `AssistantHost` (el Brote flotante; recuerda abierto/cerrado; en modo lectura se oculta sin
+  desmontarse), `AssistantPanel` (lazy; modo, alcance y chips "Resumir materia", "Tomame examen",
+  "Repaso de errores", "Plan de estudio", "Detectar huecos" y "Conexiones entre materias"; los de
+  Premium avisan sin llamar al servidor), `ChatThread`, `ProposalCard`, `SelectionShortcuts`
+  (Explicar, Refutar, Completar, Preguntame) y `QuizRunner` (una pregunta por vez, puntaje y
+  errores con link a la hoja).
+- Hooks `useAssistant` y `useAssistantContext`; lógica pura en `src/lib/assistant/` (`sse`,
+  `readSseStream`, `chatState`, `bridge`, `requestBuilder`, `shortcuts`, `editorApply`,
+  `applyProposal`, `quizSession`, `quizScore`, `weakTopics`, `assistantError`); services
+  `assistant`, `userPlan` y `quizResults`.
+- La carpeta publica su contexto en `assistantBridge` y aplica las propuestas solo si son de la
+  carpeta abierta; `replace_selection` verifica que el texto no haya cambiado. Los atajos se
+  encolan en el puente y la cola se descarta al desmontarse la carpeta.
+- Pruebas: se corrigen y guardan una sola vez (`open` → `grading` → `done`); un error inesperado
+  cierra la prueba en `done` con el error. Los temas fallados alimentan el "Repaso de errores".
+- `Modal`/`ConfirmDialog` y `UndoToast` se renderizan por portal en `document.body` (quedan sobre
+  el Brote). Íconos nuevos en `Icon.jsx`; `extractHeadings` acepta saltos `\r\n`.
 
-**Handler, pruebas y Edge Function (Tarea 6):**
-- `quiz.js` (`QUIZ_SCHEMA`/`GRADES_SCHEMA` para salida estructurada; `validateQuiz` falla cerrado ante una pregunta mal armada, recorta a `count` y los textos, ids `q1..qn` del servidor, descarta `sheetId` ajenos; `validateGrades` exige todas las abiertas), `account.js` (`getUser`, `getPlanRow`, `countUsage` que deja FALTANTE un conteo con error, `recordUsage`), `handler.js` (`handleRequest`: CORS/204, 401, 503 sin config, 400, 403/429 por `decideAccess`, alcance resuelto contra el árbol vivo con `allowedSubjectIds` nunca nulo, stream SSE con eventos `text`/`tool`/`proposal`/`quiz`/`grades`/`usage`/`error`/`done`, corte por timeout de `GEMINI_TIMEOUT_MS` o desconexión, uso registrado solo si la acción terminó bien y nunca para `quiz_grade`) e `index.js` (solo cableado: anon key + JWT del usuario, secrets por `Deno.env`). `prompt.js` suma temas flojos como datos, `actionInstruction` y `formatDataBlock`; `config.js` suma `GEMINI_TIMEOUT_MS`, `QUIZ_DEFAULTS` y topes de cuerpo y de fuentes de prueba. Con tests. Despliegue pendiente (lo hace el estudiante).
-- Ajustes de la revisión: `quiz_grade` tiene balde propio `grade` (free 10/día, premium 100/día, provisorios) y registra uso; migración `0008_quiz_grade_usage.sql` (suma `quiz_grade` al CHECK de `ai_usage.action`; **pendiente de aplicar**). Terminar en `steps` después de responder algo descuenta uso. Los errores de Gemini se loguean (kind/status). `listWeakTopics(subjectIds[])` filtra en la base antes del tope, y el repaso con alcance hoja usa las hojas de la materia que tienen esos temas.
+**Archivos afectados:** `supabase/migrations/0007_asistente.sql`, `0008_quiz_grade_usage.sql`;
+`supabase/functions/assistant/**`; `src/lib/assistant/**`; `src/components/features/assistant/**`;
+`src/hooks/useAssistant.js`, `useAssistantContext.js`; `src/services/assistant.service.js`,
+`userPlan.service.js`, `quizResults.service.js`; `src/components/layout/AppLayout.jsx`;
+`src/pages/SubjectFolderPage.jsx`; `src/components/ui/{Modal,UndoToast,Icon}.jsx`;
+`src/constants/storageKeys.js`; `src/lib/markdown/headings.js`; `src/index.css`; `package.json`
+(`npm test` incluye `supabase/functions/**`); `.env.example`.
 
-**Servicio del cliente (Tarea 7):**
-- `lib/assistant/sse.js` (copia deliberada del parser del servidor), `lib/assistant/assistantError.js` (`translateAssistantError`, pura), `services/assistant.service.js` (`streamAssistant` con streaming SSE, aborto silencioso y errores en castellano) y `services/userPlan.service.js` (`getPlan`, sin fila = `free`), con tests. Documentados en `docs/API_DOCS.md`.
+**Docs:** ADR-021 y árbol de carpetas en `docs/02-architecture.md`; `docs/features/assistant.md`
+(nuevo); `API_DOCS.md` (Edge Function y services), `DB_SCHEMA.md`, `03-security.md` (apartado del
+asistente), `01-project-overview.md` (Fase 14 y **Fase 17: planes y pago simulado**, pendiente
+al final) y las reglas de IA (`CLAUDE.md` y sus 4 copias).
 
-**Estado del chat, puente y propuestas (Tarea 8):**
-- `lib/assistant/chatState.js` (`initialChat`, `reduceEvent`, `addUserMessage`, `setProposalStatus`; una propuesta entra siempre `pending`, `usage` tras `error` no reabre `busy`; tope de 50 mensajes y 60.000 caracteres por mensaje), `bridge.js` (`createBridge`, `assistantBridge`: contexto de la carpeta para el panel) y `applyProposal.js` (`withOriginMark`, `canApplyReplace` que falla cerrado, `proposalTitle`), puros y con tests.
+**Tests:** `npm test` = 369 tests, todos pasan. `npx eslint src supabase` sin salida y
+`npm run build` ok. `grep -ri "AIza" dist src` sin coincidencias; `GEMINI_API_KEY` solo aparece
+en `docs/`, `CHANGELOG.md`, `.env.example` y `supabase/`.
 
-**El Brote, el panel y el chat (Tarea 9):**
-- `AssistantHost` (Brote flotante abajo a la derecha, `aria-label="Abrir el Brote"`, recuerda abierto/cerrado en `studree:ui:assistant-open`, se achica mientras se escribe en una hoja y se duerme tras 5 min sin uso), `AssistantPanel` (cargado con `React.lazy` en un chunk aparte; `.glass`, pantalla completa en el celular; modo apuntes/externo, alcance con los de Premium bloqueados, chips "Resumir materia", "Tomame examen", "Repaso de errores" y "Plan de estudio" —los dos últimos avisan Premium a un usuario free sin llamar al servidor—), `ChatThread` (texto plano, `aria-live`, "La respuesta se cortó."), `ProposalCard` (resaltada en verde, Aceptar/Rechazar) y `Brote` (SVG propio con 6 estados animados por CSS, quietos con `prefers-reduced-motion`). Hooks `useAssistant` y `useAssistantContext`; `lib/assistant/requestBuilder.js` (historial ≤ 20 turnos de ≤ 4000 caracteres, alcances por plan, aviso de Premium) y `chatState.js` suma `truncated`, `finishRequest`, `setError` y `chatMood`, con tests. Íconos `send`, `sparkles`, `stop` y `lock`. Montado en `AppLayout` con sesión y fuera del login; en modo lectura se oculta sin desmontarse (sigue la conversación). `Modal`/`ConfirmDialog` y `UndoToast` pasan a renderizarse por portal en `document.body` para quedar sobre el Brote (el main del workspace es `isolate`).
+**Límites conocidos:**
+- El conteo de uso no es transaccional: dos pedidos simultáneos pueden pasar el tope por uno.
+- `misses` de `weak_topics` se calcula en el cliente: dos pruebas a la vez pueden pisarse.
+- El historial del chat no se guarda; las respuestas son texto plano.
+- Las propuestas solo se aplican con la carpeta de esa materia abierta.
+- Topes y funciones por plan provisorios; no hay pantalla de planes (Fase 17).
 
-**Atajos sobre el texto y propuestas aplicadas por el editor (Tarea 10):**
-- `lib/assistant/shortcuts.js` (`SHORTCUTS` Explicar/Refutar/Completar/Preguntame, `buildShortcutRequest` con la selección recortada a `MAX.selection` y el mensaje a `MAX.message`, `shortcutLabel`) y `lib/assistant/editorApply.js` (`applyProposalToEditor`: `append` al final y `replace_selection` sobre el rango guardado, solo si `canApplyReplace` confirma que el texto no cambió; Markdown insertado con `insertContentAt` de tiptap-markdown, así pasa por `onUpdate` → autosave; marca de origen si es externo), con tests. `SelectionShortcuts` (barra flotante junto a la selección, ubicada con `coordsAtPos`, sin dependencias nuevas; Alt+Enter lleva el foco, ← → y Esc; oculta en modo lectura). La carpeta publica su contexto en `assistantBridge` (materia, carrera por id, hoja activa, `getSelection`, `apply`) y lo limpia al irse; `apply` solo actúa sobre la carpeta abierta (Ruling O) y `new_sheet` usa el camino de la hoja local con contenido (como una plantilla). El puente suma una cola de pedidos (`request`/`takeRequest`/`onRequest`): el atajo abre el panel y el pedido va por la misma conversación de `useAssistant`; las propuestas de ese pedido guardan la selección para verificar el reemplazo.
-
-**Pruebas tipo examen, repaso de errores y resúmenes (Tarea 11):**
-- `lib/assistant/quizScore.js` (`gradeClosed`, `summarize` con `correct ≤ total`, `openAnswers`, `mergeResults`) y `lib/assistant/weakTopics.js` (`planWeakTopicUpdates`: un error por tema y prueba, aciertos borran solo en el repaso; `attachSubjects`: materia viva del alcance, nunca adivinada), puros y con tests. `services/quizResults.service.js` (`saveAttempt`, `listWeakTopics`, `applyWeakTopicUpdates` con upsert por `user_id,subject_id,topic`, `resolveQuizSources`). `QuizRunner` (una pregunta por vez, radios y textarea accesibles, "Pregunta N de M", puntaje y errores explicados con link a la hoja de origen); `useAssistant` suma `quizSession` y `submitQuiz` (las abiertas con `quiz_grade` y el alcance de la prueba; con tope agotado se muestra el error y quedan las cerradas). Ícono `check`. Límite conocido: `misses` no es atómico entre dos pruebas simultáneas. Revisión: la prueba se oculta sin desmontarse al volver al chat y se corrige y guarda una sola vez (`lib/assistant/quizSession.js`, con tests); la entrada del chat se oculta mientras la prueba está a la vista.
+> **Pendiente del estudiante:** desplegar la función y cargar los secrets
+> (`supabase secrets set GEMINI_API_KEY=… GEMINI_MODEL=…` y `supabase functions deploy
+> assistant`, ver `docs/features/assistant.md`). Después, la verificación en el navegador
+> (panel, atajos, propuestas, pruebas) y con dos cuentas (una no ve los apuntes de la otra por
+> el asistente).
 
 ## [0.16.0] — 2026-10-15
 

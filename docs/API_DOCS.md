@@ -2,9 +2,10 @@
 
 **Estado:** Sin API HTTP propia. Studree habla **directamente con Supabase** desde el
 cliente (BaaS), usando `@supabase/supabase-js`. No hay servidor propio ni endpoints
-`/api/*`.
+`/api/*`. La única excepción es la **Edge Function `assistant`** (Fase 14, ADR-021), ver
+"Edge Function `assistant`" más abajo.
 
-**Última actualización:** 2026-10-15 (Fase 13: papelera, adjuntos, plantillas e importar)
+**Última actualización:** 2026-10-19 (Fase 14: asistente de IA, el Brote)
 
 > El rol de "capa de API" lo cumplen los **services** de `src/services/`. La seguridad no
 > la da un backend intermedio sino **RLS en Postgres** — ver `docs/03-security.md`.
@@ -186,6 +187,40 @@ proveedor sin tocar la UI.
 llama a `validateDag()` y, si el alta cerrara un ciclo, **rechaza sin escribir** y
 devuelve el ciclo concreto en `error`. La base refuerza el caso trivial con
 `CHECK (subject_id <> requires_id)`.
+
+---
+
+## Edge Function `assistant` (Fase 14, ADR-021)
+
+Detalle completo (eventos, acciones, cuándo se descuenta uso): `docs/features/assistant.md`.
+
+- **`POST {VITE_SUPABASE_URL}/functions/v1/assistant`** con `Authorization: Bearer <JWT del
+  usuario>`, `apikey: <anon key>` y `content-type: application/json`. `OPTIONS` responde 204
+  (CORS). El cliente la llama solo desde `assistant.service.js` (`streamAssistant`).
+- **Cuerpo** (`AssistantRequest`, validado en `supabase/functions/assistant/request.js`):
+  `action` (`chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
+  `connections`, `quiz_grade`), `message`, `history` (últimos 20 turnos `user`/`model`),
+  `mode` (`notes` | `external`), `scope` (`{type: 'sheet'|'subject'|'career'|'all', id?}`) y,
+  según la acción, `selection`, `quiz` o `answers`.
+- **Errores antes del stream** — JSON `{error, code, message}` (el `message` ya está en
+  castellano y es lo que se muestra):
+
+| Status | `code` | Cuándo |
+|---|---|---|
+| 400 | `invalid` | JSON roto, cuerpo demasiado grande o pedido inválido |
+| 400 | `not_found` | La hoja/materia/carrera del alcance no existe o está en la papelera |
+| 401 | `auth` | Sin token o JWT inválido |
+| 403 | `feature` | Función o alcance de Premium (p. ej. `connections`, `weak_review`, `study_plan` o alcance carrera/todo en free) |
+| 405 | `method` | Método distinto de `POST` |
+| 429 | `quota` | Tope del plan agotado, o no se pudo verificar el uso (falla cerrado) |
+| 500 | `server` | No se pudo leer el plan o el árbol |
+| 503 | `config` | Faltan los secrets `GEMINI_API_KEY` / `GEMINI_MODEL` |
+
+  En ninguno de esos casos se llama a Gemini ni se descuenta uso. Un 404 (la función no está
+  desplegada) se traduce como "El asistente todavía no está disponible".
+- **Stream** (`200`, `text/event-stream`): eventos `data: <json>` con `type` `text`, `tool`,
+  `proposal`, `quiz`, `grades`, `usage`, `error` y `done`. Orden en un éxito: contenido →
+  `usage` → `done`; un `error` corta el stream sin `done`.
 
 ---
 

@@ -73,17 +73,20 @@ Studree/
 │   │       ├── attachments/       # AttachmentList (lista al pie de la hoja)
 │   │       ├── templates/         # NewSheetButton, TemplatesManager
 │   │       ├── import/            # ImportDialog
+│   │       ├── assistant/         # El Brote (Fase 14, ADR-021): AssistantHost, AssistantPanel,
+│   │       │                      # Brote, ChatThread, ProposalCard, SelectionShortcuts, QuizRunner
 │   │       └── home/              # Inicio: HomePanel, ContinueCard, NextDateCard, WeekSummary,
 │   │                              # CalendarPanel, DateFormModal, TaskList, QuickNotes
 │   ├── hooks/                     # useAuth, useCareers, useCareerMap, useFolder,
 │   │                              # useSheetAutosave, useSheetLocation, useReadingMode,
 │   │                              # useExplorerTree, useExportTree, useHotkeys, useFlowCanvas, useHome,
 │   │                              # useTrash, useTrashPurge, useFolderAttachments,
-│   │                              # useSheetTemplates, useImport
+│   │                              # useSheetTemplates, useImport, useAssistant, useAssistantContext
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
 │   │                              # dataEvents, careers, subjects, sheets,
 │   │                              # prerequisites, home, importantDates, tasks,
-│   │                              # quickNotes, trash, attachments, sheetTemplates, import
+│   │                              # quickNotes, trash, attachments, sheetTemplates, import,
+│   │                              # assistant, userPlan, quizResults (Fase 14)
 │   ├── lib/
 │   │   ├── id.js
 │   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera), subjectStatus.js,
@@ -95,14 +98,22 @@ Studree/
 │   │   ├── trash/                 # trashItems.js (textos de la papelera, puras)
 │   │   ├── attachments/           # refs.js (`adjunto:<id>`), files.js (puras)
 │   │   ├── import/                # frontmatter, createdAt, mediaRefs, plan (puras, con tests)
-│   │   └── home/                  # dates.js, calendar.js, preview.js, summary.js, greeting.js (Inicio, puras)
+│   │   ├── home/                  # dates.js, calendar.js, preview.js, summary.js, greeting.js (Inicio, puras)
+│   │   └── assistant/             # El Brote (puras, con tests): sse, readSseStream, chatState, bridge,
+│   │                              # requestBuilder, shortcuts, editorApply, applyProposal,
+│   │                              # quizSession, quizScore, weakTopics, assistantError
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js, subjectTones.js (ADR-018),
 │   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js,
 │   │                              # sheetTemplates.js, attachmentLimits.js (Fase 13)
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
 ├── supabase/
-│   └── migrations/                # SQL versionado del esquema + RLS (0001 a 0006)
+│   ├── migrations/                # SQL versionado del esquema + RLS (0001 a 0008)
+│   └── functions/
+│       └── assistant/             # Edge Function del Brote (Deno, ADR-021): index.js (arranque),
+│                                  # handler.js (lógica testeable), config.js (topes PROVISORIOS),
+│                                  # quota, request, careerMap, topics, tools, supabaseDb, prompt,
+│                                  # gemini, sse, loop, quiz, account (+ *.test.js en Node)
 ├── index.html                     # HTML raíz de la SPA
 ├── vite.config.js                 # Configuración de Vite
 ├── tailwind.config.js             # Design system (colores, fuentes, spacing)
@@ -588,6 +599,49 @@ apuntes; las URLs quedarían clavadas en el Markdown).
   inverso; el `.md` único y "Copiar para IA" los describen como `[imagen: …]`.
 - Borrar archivos siempre con la API de Storage (no con SQL) y antes que las filas.
 - Tope de 20 MB por archivo.
+
+### ADR-021: Asistente de IA en una Edge Function con herramientas de lectura y propuestas aprobadas
+**Fecha:** 2026-10-19
+**Spec:** `docs/superpowers/specs/2026-10-19-asistente-ia-design.md`
+**Contexto:** el asistente (el Brote) tiene que trabajar con los **apuntes privados** del usuario
+(toda su carrera), hablar con un proveedor de IA pago (Gemini) y, a la vez, no poder filtrar
+datos de otra cuenta, no gastar sin control ni romper las reglas de edición (Markdown como
+fuente de verdad, autosave, papelera). La app no tiene servidor propio (Supabase BaaS).
+**Decisión:**
+- **Una sola Edge Function de Supabase** (`supabase/functions/assistant`) es el único lugar que
+  habla con Gemini. La clave (`GEMINI_API_KEY`) y el modelo (`GEMINI_MODEL`) son *secrets* de la
+  función. La lógica vive en `handler.js` con dependencias inyectadas (testeada en Node);
+  `index.js` solo cablea Deno.
+- La función valida el JWT y consulta la base **con la sesión del usuario** (`anon key` + JWT,
+  nunca `service_role`): RLS decide qué ve, igual que en la app.
+- **Mapa liviano + herramientas de solo lectura** (`read_sheet`, `list_subject_topics`,
+  `search_notes`, `get_agenda`) en vez de mandar todo; las herramientas ignoran la papelera y un
+  usuario free solo ve la materia del alcance (`allowedSubjectIds`, nunca `null`).
+- El contenido de las hojas entra como **datos** (resultado de herramienta o bloque JSON marcado),
+  nunca como instrucción.
+- **El asistente nunca escribe:** emite propuestas (`propose_append`, `propose_replace_selection`,
+  `propose_new_sheet`) que el usuario acepta; al aceptar, el cambio entra por el **editor** de la
+  carpeta abierta (`useSheetAutosave`), no por el service. No borra hojas.
+- **Cuotas y plan en el servidor** (`user_plans`, `ai_usage`, `config.js`): falla cerrado si no
+  puede contar el uso; el cliente solo muestra el estado y evita pedidos que sabe bloqueados.
+- Respuesta por **streaming SSE**; el cliente muestra **texto plano** (nunca HTML).
+**Alternativas descartadas:**
+- **Clave de Gemini en el cliente** (un `VITE_*`): sería pública; cualquiera la usaría sin topes.
+- **Mandar toda la carrera en cada pedido:** lento, caro, choca con el contexto del modelo y es
+  menos preciso que leer lo que hace falta.
+- **Escritura directa del modelo en la base:** un apunte con instrucciones maliciosas o un error
+  del modelo podría pisar o borrar apuntes; además saltearía el autosave y el borrador local.
+- **Personaje en 3D real** (three.js o similar): dependencia pesada para un adorno; el Brote es un
+  SVG con animaciones CSS que respetan `prefers-reduced-motion`.
+**Consecuencias:**
+- Hay que **desplegar la función y cargar los secrets** aparte del front (ver
+  `docs/features/assistant.md`); sin eso el panel muestra "no está disponible".
+- Las propuestas solo se aplican en la **carpeta abierta** de esa materia; fuera de ella fallan
+  con un aviso.
+- El conteo de uso no es transaccional (dos pedidos simultáneos pueden pasar el tope por uno).
+- El historial del chat no se guarda: vive mientras dure la sesión.
+- Los topes y precios son **provisorios** (`config.js`); la pantalla de planes y el pago simulado
+  quedan para la Fase 17.
 
 
 ## Rutas

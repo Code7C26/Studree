@@ -1,6 +1,7 @@
 # Feature: Asistente de IA (el Brote)
 
-> **Fase 14** · Estado: 🟡 En desarrollo (rama `fase-14`, versión objetivo 0.17.0).
+> **Fase 14** · Estado: ✅ Implementada (rama `fase-14`, versión 0.17.0, ADR-021) · ⏳ falta que el
+> estudiante despliegue la función y cargue los secrets (ver "Cómo desplegar").
 > Spec: [`docs/superpowers/specs/2026-10-19-asistente-ia-design.md`](../superpowers/specs/2026-10-19-asistente-ia-design.md) ·
 > Plan: [`docs/superpowers/plans/2026-10-19-fase-14-asistente.md`](../superpowers/plans/2026-10-19-fase-14-asistente.md).
 > Leer antes de tocar el asistente, sus servicios, la Edge Function o las claves de Gemini.
@@ -33,8 +34,72 @@ Tabla del spec § 4:
 | Repaso de errores | Arma una prueba solo con lo que el usuario falló antes. |
 | Plan de estudio | Usa las fechas importantes del Inicio para sugerir qué repasar y cuándo. |
 
-Segunda etapa (misma fase, después de cerrar la primera): detector de huecos y conexiones entre
-materias (spec § 5).
+Segunda etapa (spec § 5, Tarea 12):
+
+| Capacidad | Qué hace |
+|---|---|
+| Detectar huecos (`gaps`) | En la materia abierta, lista los temas que se mencionan pero nunca se desarrollan, citando la hoja por su fecha. |
+| Conexiones entre materias (`connections`, Premium) | En la carrera (o en todas las materias), busca conceptos que se repiten entre materias y explica cómo se conectan. |
+
+Ninguna de las dos suma herramientas: usan `list_subject_topics`, `read_sheet` y `search_notes`.
+
+## Arquitectura (ADR-021)
+
+```
+Brote / panel (React) --useAssistant--> assistant.service.js --POST + JWT--> Edge Function `assistant`
+        ^                                  (lee el stream SSE)                 |  handler.js: JWT -> plan
+        | eventos text/proposal/quiz/...                                       |  -> cuota -> alcance -> mapa
+        |                                                                      v
+  carpeta abierta <-- assistantBridge -- propuesta aceptada         Gemini (secret) <-> herramientas de
+  (editor + useSheetAutosave)                                        solo lectura con el JWT (RLS)
+```
+
+- **Servidor** (`supabase/functions/assistant/`): `index.js` arranca en Deno y arma las
+  dependencias reales; `handler.js` tiene toda la lógica (testeada en Node con dependencias
+  falsas); `config.js` es el único lugar con números (topes **provisorios**, funciones por plan,
+  máximos de tamaño).
+- **Cliente**: `useAssistant` (estado, pedidos, pruebas), `useAssistantContext` (lee el puente),
+  `lib/assistant/**` (lógica pura con tests), `components/features/assistant/**` (presentación),
+  `services/assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`.
+
+## Planes y topes (provisorios)
+
+Los números viven en `supabase/functions/assistant/config.js` (`LIMITS`, `FEATURES`) y los define
+el equipo antes de salir. El cliente los lee de ahí solo para no mandar pedidos que sabe
+bloqueados; **el servidor decide**.
+
+| Balde (acciones) | Free | Premium |
+|---|---|---|
+| `chat` (`chat`, `shortcut`) | 20 por día | 200 por día |
+| `summary` | 3 por mes | sin tope |
+| `quiz` (`quiz`, `weak_review`) | 3 por mes | sin tope |
+| `extras` (`study_plan`, `gaps`, `connections`) | 3 por mes (solo `gaps`, Ruling P) | sin tope |
+| `grade` (`quiz_grade`, migración `0008`) | 10 por día | 100 por día |
+| `external` (cualquier acción en modo externo, además de su balde) | 5 por día | 100 por día |
+
+| Función (`FEATURES`) | Free | Premium |
+|---|---|---|
+| Alcance carrera / todas las materias | No (solo la materia o la hoja) | Sí |
+| Repaso de errores (`weak_review`) | No | Sí |
+| Plan de estudio (`study_plan`) | No | Sí |
+| Conexiones entre materias (`connections`) | No | Sí |
+
+Sin fila en `user_plans` = free. El plan se cambia a mano en el panel de Supabase (Fase 17:
+pantalla de planes y pago simulado).
+
+## Cómo desplegar (lo hace el estudiante)
+
+Las migraciones `0007` y `0008` ya están aplicadas (2026-10-19). Falta la función:
+
+1. `supabase login` y `supabase link --project-ref <ref del proyecto>`.
+2. `supabase secrets set GEMINI_API_KEY=<tu clave> GEMINI_MODEL=<modelo>`: la clave la ingresa
+   el estudiante; **nunca** va en un `VITE_*`, en el código ni en `.env.local`.
+3. `supabase functions deploy assistant`.
+4. Verificación: un `curl` sin token a `{VITE_SUPABASE_URL}/functions/v1/assistant` devuelve
+   401; con sesión, el panel responde. Sin desplegar, el panel avisa "El asistente todavía no
+   está disponible (falta desplegar la función)."
+5. Para probar Premium: en el panel de Supabase, crear o editar la fila de `user_plans` del
+   usuario con `plan = 'premium'`.
 
 ## Reglas
 
@@ -87,7 +152,10 @@ Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`grades` → `usage` → `do
 
 - `chat`, `shortcut`: bucle con herramientas y el historial (sin turnos `model` iniciales).
 - `summary`, `study_plan`, `gaps`, `connections`: bucle con herramientas y un pedido por acción
-  (`actionInstruction`); `gaps` y `connections` se afinan en la Tarea 12.
+  (`actionInstruction`). `gaps` pide mirar los temas con `list_subject_topics`, leer con
+  `read_sheet` y citar cada hueco por la fecha de la hoja; `connections` cruza los temas de cada
+  materia y confirma las coincidencias con `search_notes`. El pedido de ninguna de las dos pide
+  propuestas.
 - `quiz`, `weak_review`: salida JSON (`QUIZ_SCHEMA`) sin herramientas; el servidor junta el contenido
   de las hojas del alcance (tope `MAX.quizSourceChars`, repartido entre hasta `MAX.quizSourceSubjects`
   materias) y lo manda como bloque de datos. `weak_review` lee `weak_topics` con el JWT y los pasa al
@@ -142,8 +210,12 @@ del proveedor ni la clave).
 - Controles: **modo** (Mis apuntes / Con conocimiento externo), **alcance** (Esta hoja, Esta
   materia, La carrera, Todas mis materias; según lo que publique la carpeta en `assistantBridge`; los
   de Premium salen deshabilitados con "(Premium)" para un usuario free) y **chips** "Resumir materia"
-  (`summary`), "Tomame examen" (`quiz`), "Repaso de errores" (`weak_review`) y "Plan de estudio"
-  (`study_plan`). Para free, los dos últimos muestran el aviso de Premium **sin llamar al servidor**
+  (`summary`), "Tomame examen" (`quiz`), "Repaso de errores" (`weak_review`), "Plan de estudio"
+  (`study_plan`), "Detectar huecos" (`gaps`) y "Conexiones entre materias" (`connections`).
+  `gaps` va siempre sobre la **materia abierta** y `connections` sobre la **carrera** (o todas
+  las materias si no hay carrera abierta), sin importar el alcance del panel (`actionScope`); sin
+  materia abierta, "Detectar huecos" avisa "Abrí una materia para detectar sus huecos.". Para
+  free, "Repaso de errores", "Plan de estudio" y "Conexiones" muestran el aviso de Premium **sin llamar al servidor**
   (que igual lo rechaza con 403), como **nota neutra** (`notice`, `role="status"`): no es un error
   ni pone triste al Brote. Sin materia abierta, un usuario free no tiene alcance posible y el panel
   lo avisa con la misma nota.
@@ -211,8 +283,10 @@ del proveedor ni la clave).
   `onUpdate` → Markdown → autosave. `append` va al final del documento; `replace_selection`
   vuelve a leer `doc.textBetween(from, to, '\n')` y, si `canApplyReplace` no confirma que es
   el mismo texto, devuelve `La hoja cambió; volvé a seleccionar el texto.` sin tocar nada.
-  Lo de conocimiento externo lleva `withOriginMark` ("Agregado por el Brote"). No roba el
-  foco del panel; la hoja se lleva a la vista.
+  Lo de conocimiento externo lleva `withOriginMark` ("Agregado por el Brote"). En `append` y
+  `replace_selection` el foco se queda en el panel y la hoja se lleva a la vista; en
+  `new_sheet` la hoja nueva se crea como cualquier "Nueva hoja" y **toma el foco** (se vuelve
+  al panel con el Brote).
 
 ## Pruebas tipo examen, repaso de errores y resúmenes (Tarea 11)
 
@@ -268,14 +342,67 @@ del proveedor ni la clave).
 - Un acierto en el repaso solo borra el tema si el modelo reutiliza el texto guardado del tema
   (se compara normalizado: espacios y mayúsculas); si lo parafrasea, el tema no se limpia.
 - La verificación manual (paso 5 del plan) requiere la Edge Function desplegada.
+- **Envío robusto:** si algo lanza un error inesperado entre la corrección y el guardado,
+  `submitQuiz` cierra la prueba igual en `done` con el error (`failedOutcome`): nunca queda
+  trabada en "Corrigiendo…".
+
+## Decisiones que cambiaron respecto del plan (rulings)
+
+- **Cuotas que fallan cerrado:** si el plan tiene tope y no se pudo contar el uso (base caída,
+  conteo faltante), se responde 429 "No pudimos verificar tu uso" y no se llama a Gemini.
+- **`steps` también descuenta** (Ruling K): agotar los pasos después de haber mostrado algo útil
+  cuenta como uso, para que no se pueda forzar el bucle y tener respuestas gratis.
+- **`quiz_grade` tiene su propio balde `grade`** (Ruling L, migración `0008`): corregir las
+  abiertas también llama a Gemini, pero no consume el tope de pruebas.
+- **`allowedSubjectIds` nunca es `null`:** premium = todas sus materias vivas; free = solo las del
+  alcance. Ninguna herramienta lee "sin filtro".
+- **Las propuestas solo se aplican en la carpeta abierta** de esa materia (Ruling O); fuera de
+  ella fallan con "Abrí la materia de esa hoja para aplicar el cambio.".
+- **Modales por portal:** `Modal`, `ConfirmDialog` y `UndoToast` van a `document.body` para
+  quedar encima del Brote (el `<main>` es `isolate`).
+- **Modo lectura:** el Brote se oculta (`hidden`), no se desmonta: la conversación y el pedido en
+  curso siguen.
+- **`gaps` libre con tope `extras` = 3 por mes** (Ruling P, provisorio); `study_plan` y
+  `connections` siguen siendo de Premium.
+- **Atajo encolado:** al desmontarse la carpeta (`key={subjectId}`) se descarta el atajo que el
+  panel todavía no tomó (`assistantBridge.clearRequest`), así no se dispara después en otra
+  materia.
+
+## Límites conocidos (generales)
+
+- **El conteo de uso no es transaccional** (ver "Límites conocidos" de la Edge Function).
+- **El historial del chat no se guarda:** vive en memoria mientras dure la sesión (spec § 8);
+  recargar la página lo borra.
+- **Texto plano:** las respuestas no se renderizan como Markdown (sin negritas ni listas con
+  formato) para no abrir una puerta a XSS.
+- Los topes y las funciones por plan son **provisorios**.
+- La verificación con dos cuentas (que una no vea apuntes de la otra por el asistente) queda
+  pendiente hasta desplegar la función; la cubren RLS y los tests de `tools`/`supabaseDb`.
 
 ## Archivos de esta fase
 
-Se completa en la Tarea 12 del plan.
+- **Base de datos:** `supabase/migrations/0007_asistente.sql`, `0008_quiz_grade_usage.sql`.
+- **Edge Function** (`supabase/functions/assistant/`): `index.js`, `handler.js`, `config.js`,
+  `quota.js`, `request.js`, `careerMap.js`, `topics.js`, `tools.js`, `supabaseDb.js`,
+  `prompt.js`, `gemini.js`, `sse.js`, `loop.js`, `quiz.js`, `account.js` (+ sus `*.test.js`).
+- **Lógica del cliente** (`src/lib/assistant/`): `sse.js`, `readSseStream.js`, `chatState.js`,
+  `bridge.js`, `requestBuilder.js`, `shortcuts.js`, `editorApply.js`, `applyProposal.js`,
+  `quizSession.js`, `quizScore.js`, `weakTopics.js`, `assistantError.js` (+ tests).
+- **Services:** `assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`.
+- **Hooks:** `useAssistant.js`, `useAssistantContext.js`.
+- **Componentes** (`src/components/features/assistant/`): `AssistantHost`, `AssistantPanel`,
+  `Brote`, `ChatThread`, `ProposalCard`, `SelectionShortcuts`, `QuizRunner`.
+- **Tocados:** `AppLayout.jsx` (monta el Brote), `SubjectFolderPage.jsx` (contexto, atajos y
+  propuestas), `Modal`/`UndoToast` (portal), `Icon.jsx` (íconos nuevos), `storageKeys.js`
+  (`studree:ui:assistant-open`), `lib/markdown/headings.js`, `index.css` (animaciones del
+  Brote), `package.json` (tests de `supabase/functions/**`), `.env.example` (comentario de los
+  secrets).
 
 ## Pendiente
 
-- [ ] Implementar las capacidades de la tabla (tareas 1 a 11 del plan).
+- [x] Implementar las capacidades de la tabla (tareas 1 a 12 del plan).
+- [ ] **[ESTUDIANTE]** Desplegar la función y cargar los secrets (ver "Cómo desplegar").
 - [ ] Verificar en el navegador el panel, el Brote y la propuesta de cambios.
+- [ ] Con dos cuentas, comprobar que una no ve apuntes de la otra por el asistente.
 - [ ] Verificación manual de la Tarea 11 (prueba → corrección → fila en `weak_topics`; repaso que borra lo acertado; free sin llamada a Gemini en Repaso/Plan): requiere la Edge Function desplegada.
 - [ ] Verificación manual de la Tarea 10 (paso 5 del plan: atajo → propuesta → Aceptar → "Guardado" → recargar; Rechazar; reemplazo tras editar el párrafo; marca externa): requiere la Edge Function desplegada.

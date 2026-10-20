@@ -167,13 +167,31 @@ Spec: `docs/superpowers/specs/2026-10-15-fase-13-design.md` · plan:
 > Migración `0006_fase13.sql` aplicada el 2026-10-15. Dependencia nueva:
 > `@tiptap/extension-image@3.31.3`.
 
+### Fase 14: Asistente de IA — el Brote (2026-10-19, ADR-021)
+
+Spec: `docs/superpowers/specs/2026-10-19-asistente-ia-design.md` · plan:
+`docs/superpowers/plans/2026-10-19-fase-14-asistente.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| El Brote flotante, panel lateral y chat en streaming (texto plano), modo "Mis apuntes" / "Con conocimiento externo" | `features/assistant.md` | ✅ |
+| Edge Function `assistant` (Gemini): herramientas de solo lectura con el JWT del usuario, mapa liviano, cuotas en el servidor (ADR-021) | `features/assistant.md`, `API_DOCS.md` | ✅ |
+| Atajos sobre el texto (Explicar, Refutar, Completar, Preguntame) y propuestas que el usuario acepta o rechaza | `features/assistant.md` | ✅ |
+| Pruebas tipo examen, repaso de errores, resúmenes, plan de estudio, detector de huecos y conexiones entre materias | `features/assistant.md` | ✅ |
+| Tablas `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | `DB_SCHEMA.md` | ✅ |
+| Desplegar la función y cargar los secrets de Gemini | `features/assistant.md` (Cómo desplegar) | ⏳ pendiente (lo hace el estudiante) |
+| Verificación en el navegador (con la función desplegada y dos cuentas) | `features/assistant.md` | ⏳ pendiente (prueba manual) |
+
+> Migraciones `0007_asistente.sql` y `0008_quiz_grade_usage.sql` aplicadas el 2026-10-19.
+> Los topes de uso son **provisorios** (`supabase/functions/assistant/config.js`).
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| 14 | IA con Gemini vía Edge Function (resúmenes, preguntas, pruebas) | Pendiente |
 | 15 | Compartir por link, flashcards | Pendiente |
 | 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |
+| 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | Pendiente — al final |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

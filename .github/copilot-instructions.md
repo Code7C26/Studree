@@ -100,6 +100,7 @@
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
 | `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
+| `supabase/functions/assistant/**` · `src/lib/assistant/**` · `components/features/assistant/**` · `useAssistant` · `useAssistantContext` · `assistant.service.js` · `userPlan.service.js` · `quizResults.service.js` | `docs/features/assistant.md` + `docs/03-security.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
@@ -137,5 +138,7 @@
 - Los adjuntos van en el bucket **privado** `attachments`. En el Markdown se referencian como
   `adjunto:<id>`, nunca con una URL. Borrar archivos siempre con la API de Storage, antes que
   las filas.
+- El asistente (ADR-021) nunca escribe sin aprobación del usuario ni borra hojas; la clave de
+  Gemini solo vive como secret de la Edge Function.
 - Los archivos `.cursorrules`, `.windsurfrules`, `.clinerules` y
   `.github/copilot-instructions.md` son **copias** de este archivo: al editarlo, copiarlo.

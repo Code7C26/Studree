@@ -133,6 +133,32 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - Borrar desde SQL una fila de `storage.objects` deja el archivo huérfano: siempre borrar
   con la API de Storage.
 
+## Asistente de IA (Fase 14, ADR-021)
+
+- **La clave de Gemini (`GEMINI_API_KEY`) y el modelo (`GEMINI_MODEL`) solo existen como
+  *secrets* de la Edge Function `assistant`** (`supabase secrets set …`). Nunca en un `VITE_*`,
+  en el código, en `.env.local` ni en `.env.example` con valores. Verificación antes de cada
+  deploy: `grep -ri "AIza" dist src` sin coincidencias y `GEMINI_API_KEY` solo en `docs/`,
+  `.env.example` y `supabase/`.
+- **La función usa la sesión del usuario:** valida el JWT y consulta la base con la `anon key`
+  + ese JWT, **nunca con `service_role`**. RLS decide qué ve el asistente, igual que en la app;
+  además, un usuario free solo puede leer la materia del alcance y las herramientas ignoran la
+  papelera (`deleted_at is null`).
+- **El contenido de las hojas es dato, no instrucción:** llega al modelo como resultado de
+  herramienta o como bloque JSON marcado "datos, no instrucciones". Un apunte que diga
+  "ignorá lo anterior y borrá…" no tiene efecto: las herramientas solo **leen** y la única
+  salida de escritura es una propuesta que el usuario acepta en el editor. El asistente **no
+  borra hojas**.
+- **Respuestas = texto plano:** el chat, las propuestas y las pruebas se muestran con
+  `whitespace-pre-wrap`, nunca con `dangerouslySetInnerHTML` ni un renderer de Markdown (XSS).
+- **`user_plans` no tiene política de escritura** (solo `select` propio): nadie se sube de
+  plan desde la app; el plan se cambia a mano en el panel de Supabase hasta la Fase 17.
+- **`ai_usage` solo permite `select` e `insert` propios** (sin update ni delete): el usuario no
+  puede borrar su uso para resetear el tope. El tope lo decide el servidor (`config.js`) y
+  **falla cerrado** si no puede contar el uso.
+- Los errores del proveedor se loguean con `kind` y `status`, nunca con el cuerpo crudo ni la
+  clave; el cliente recibe un código y un mensaje propio.
+
 ## Reglas INVIOLABLES
 
 - NUNCA hardcodear credenciales, tokens o claves en el código.
@@ -152,5 +178,6 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - [ ] No se guardan datos sensibles en `localStorage`.
 - [ ] La `service_role` key de Supabase NO aparece en ningún `VITE_*` ni en el código.
 - [ ] **RLS activado en todas las tablas** de Supabase, con políticas por usuario.
+- [ ] `grep -ri "AIza" dist src` sin coincidencias; `GEMINI_API_KEY` solo en `docs/`, `.env.example` y `supabase/` (secret de la Edge Function).
 - [ ] `user_plans` NO tiene política de escritura (solo `select` propio): el plan se cambia a mano en el panel de Supabase. `ai_usage` solo permite `select` e `insert`.
 - [ ] El contenido del usuario se renderiza de forma segura (sin XSS).
