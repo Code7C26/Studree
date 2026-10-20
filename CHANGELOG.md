@@ -84,20 +84,44 @@
 asistente), `01-project-overview.md` (Fase 14 y **Fase 17: planes y pago simulado**, pendiente
 al final) y las reglas de IA (`CLAUDE.md` y sus 4 copias).
 
-**Tests:** `npm test` = 369 tests, todos pasan. `npx eslint src supabase` sin salida y
-`npm run build` ok. `grep -ri "AIza" dist src` sin coincidencias; `GEMINI_API_KEY` solo aparece
-en `docs/`, `CHANGELOG.md`, `.env.example` y `supabase/`.
+**Fixed — revisión final de la rama:**
+- El mapa que va a Gemini traía todas las hojas "(sin temas)" en producción (`loadTree` no trae
+  `content_md`): ahora `listSheetsContent` lee el contenido **solo de las materias del alcance**.
+- **Ruling Q:** "Detener", cerrar la pestaña o vencer el plazo total después de algo útil
+  descuenta uso (antes era gratis); antes de algo útil, no.
+- Plazo total del pedido `REQUEST_DEADLINE_MS` = 120 s (por debajo del corte de ~150 s de
+  Supabase) → error `timeout`.
+- Sin `SUPABASE_URL` o clave anon (fallback `SUPABASE_PUBLISHABLE_KEY`) → 503 `config` con
+  CORS en vez de un 500 sin CORS; `handleSafely` devuelve JSON 500 con CORS ante cualquier error
+  no previsto. El panel muestra "El asistente todavía no está configurado (faltan las claves de
+  la función)." ante un 503 `config`.
+- `scope.id` y `selection.sheetId` se validan como UUID (400 en vez de un 500 de PostgREST).
+- Con una prueba abierta, "Tomame examen" y "Repaso de errores" quedan deshabilitados con el
+  motivo visible; nuevo "Descartar prueba" (sin red).
+- **Ruling R:** `quiz_grade` siempre viaja en modo `notes` (no gasta el cupo externo).
+- Un free en Inicio ya no pierde la pregunta escrita si el pedido no sale.
+- Se quitaron `bridge.peekRequest` y `ChatState.grades` (sin uso).
+- `supabase/config.toml` con `[functions.assistant]` (`verify_jwt = false`, `entrypoint`);
+  pasos de deploy para Windows y pruebas post-deploy en `docs/features/assistant.md`; aviso de
+  privacidad del nivel gratuito de Gemini en `03-security.md`.
+
+**Tests:** `npm test` = 385 tests, todos pasan. `npx eslint src supabase` sin salida y
+`npm run build` ok. `grep -ri "AIza" dist src` sin coincidencias; el nombre `GEMINI_API_KEY`
+solo aparece en `docs/`, `CHANGELOG.md` (texto), `.env.example` (sin valor) y `supabase/`.
 
 **Límites conocidos:**
-- El conteo de uso no es transaccional: dos pedidos simultáneos pueden pasar el tope por uno.
+- El conteo de uso no es transaccional (chequear y después registrar): pedidos simultáneos
+  pueden pasar el tope por tantos como corran en paralelo.
+- En el nivel gratuito de Gemini, Google puede usar los apuntes enviados para mejorar sus
+  productos: para usuarios reales, clave con facturación.
 - `misses` de `weak_topics` se calcula en el cliente: dos pruebas a la vez pueden pisarse.
 - El historial del chat no se guarda; las respuestas son texto plano.
 - Las propuestas solo se aplican con la carpeta de esa materia abierta.
 - Topes y funciones por plan provisorios; no hay pantalla de planes (Fase 17).
 
 > **Pendiente del estudiante:** desplegar la función y cargar los secrets
-> (`supabase secrets set GEMINI_API_KEY=… GEMINI_MODEL=…` y `supabase functions deploy
-> assistant`, ver `docs/features/assistant.md`). Después, la verificación en el navegador
+> (`npx supabase secrets set GEMINI_API_KEY=… GEMINI_MODEL=…` y `npx supabase functions deploy
+> assistant --no-verify-jwt --use-api`, ver `docs/features/assistant.md`). Después, la verificación en el navegador
 > (panel, atajos, propuestas, pruebas) y con dos cuentas (una no ve los apuntes de la otra por
 > el asistente).
 

@@ -207,20 +207,21 @@ Detalle completo (eventos, acciones, cuándo se descuenta uso): `docs/features/a
 
 | Status | `code` | Cuándo |
 |---|---|---|
-| 400 | `invalid` | JSON roto, cuerpo demasiado grande o pedido inválido |
+| 400 | `invalid` | JSON roto, cuerpo demasiado grande o pedido inválido (incluye `scope.id` / `selection.sheetId` que no son UUID) |
 | 400 | `not_found` | La hoja/materia/carrera del alcance no existe o está en la papelera |
 | 401 | `auth` | Sin token o JWT inválido |
 | 403 | `feature` | Función o alcance de Premium (p. ej. `connections`, `weak_review`, `study_plan` o alcance carrera/todo en free) |
 | 405 | `method` | Método distinto de `POST` |
 | 429 | `quota` | Tope del plan agotado, o no se pudo verificar el uso (falla cerrado) |
-| 500 | `server` | No se pudo leer el plan o el árbol |
-| 503 | `config` | Faltan los secrets `GEMINI_API_KEY` / `GEMINI_MODEL` |
+| 500 | `server` | No se pudo leer el plan o el árbol, o un error no previsto (`handleSafely`; siempre con CORS) |
+| 503 | `config` | Faltan `SUPABASE_URL` / la clave anon (o `SUPABASE_PUBLISHABLE_KEY`), o los secrets `GEMINI_API_KEY` / `GEMINI_MODEL` |
 
   En ninguno de esos casos se llama a Gemini ni se descuenta uso. Un 404 (la función no está
   desplegada) se traduce como "El asistente todavía no está disponible".
 - **Stream** (`200`, `text/event-stream`): eventos `data: <json>` con `type` `text`, `tool`,
   `proposal`, `quiz`, `grades`, `usage`, `error` y `done`. Orden en un éxito: contenido →
-  `usage` → `done`; un `error` corta el stream sin `done`.
+  `usage` → `done`; un `error` corta el stream sin `done`. `error.code = 'timeout'` = se venció
+  el plazo total del pedido (`REQUEST_DEADLINE_MS`, 120 s).
 
 ---
 

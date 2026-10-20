@@ -89,17 +89,46 @@ pantalla de planes y pago simulado).
 
 ## Cómo desplegar (lo hace el estudiante)
 
-Las migraciones `0007` y `0008` ya están aplicadas (2026-10-19). Falta la función:
+Las migraciones `0007` y `0008` ya están aplicadas (2026-10-19). Falta la función. Pasos en
+Windows (PowerShell o Git Bash, desde la raíz del proyecto; `npx` baja la CLI sin instalarla y
+`--use-api` empaqueta en el servidor, sin Docker):
 
-1. `supabase login` y `supabase link --project-ref <ref del proyecto>`.
-2. `supabase secrets set GEMINI_API_KEY=<tu clave> GEMINI_MODEL=<modelo>`: la clave la ingresa
-   el estudiante; **nunca** va en un `VITE_*`, en el código ni en `.env.local`.
-3. `supabase functions deploy assistant`.
-4. Verificación: un `curl` sin token a `{VITE_SUPABASE_URL}/functions/v1/assistant` devuelve
-   401; con sesión, el panel responde. Sin desplegar, el panel avisa "El asistente todavía no
-   está disponible (falta desplegar la función)."
-5. Para probar Premium: en el panel de Supabase, crear o editar la fila de `user_plans` del
+1. `npx supabase login` (abre el navegador para autorizar la CLI).
+2. `npx supabase link --project-ref <ref>`: el `<ref>` es el id del proyecto (lo que va entre
+   `https://` y `.supabase.co` en `VITE_SUPABASE_URL`).
+3. `npx supabase secrets set GEMINI_API_KEY=<clave> GEMINI_MODEL=<modelo>`: la clave la ingresa
+   el estudiante en la terminal; **nunca** va en un `VITE_*`, en el código ni en `.env.local`.
+   `SUPABASE_URL` y `SUPABASE_ANON_KEY` (o `SUPABASE_PUBLISHABLE_KEY`) los inyecta Supabase en
+   toda Edge Function. Para datos de usuarios reales, usar una clave con facturación (ver
+   "Privacidad").
+4. `npx supabase functions deploy assistant --no-verify-jwt --use-api`. `supabase/config.toml`
+   ya trae `[functions.assistant]` con `verify_jwt = false` y
+   `entrypoint = "./functions/assistant/index.js"` (CLI ≥ 1.215.0); el flag repite lo primero.
+   Si la CLI no acepta la entrada `.js`, renombrar `index.js` a `index.ts` sin cambios y ajustar
+   la línea `entrypoint`.
+5. **Pruebas después del deploy:**
+   - Sin token: `curl -i -X POST https://<ref>.supabase.co/functions/v1/assistant` → **401**
+     con `"code":"auth"` y el header `access-control-allow-origin: *`. Un **503** `config`
+     significa que faltan secrets (o la URL/clave de Supabase).
+   - Con sesión, en la carpeta de una materia: preguntarle al Brote por un tema que exista como
+     `#` en una hoja (p. ej. "¿qué dice mi hoja sobre Matrices?") → responde citando esa hoja (el
+     mapa del prompt lista los temas de cada hoja del alcance).
+   - Usuario free: mandar mensajes hasta pasar el tope diario de `chat` (20, provisorio) → el
+     siguiente responde **429** con el aviso de tope y no llama a Gemini.
+   - **Dos cuentas (RLS):** con la cuenta B, pedir un alcance con el id de una materia de la
+     cuenta A → **400** `not_found`; y preguntarle a B por un tema que solo tiene A → el Brote
+     dice que no está en sus apuntes.
+   - Sin desplegar, el panel avisa "El asistente todavía no está disponible (falta desplegar la
+     función)."
+6. Para probar Premium: en el panel de Supabase, crear o editar la fila de `user_plans` del
    usuario con `plan = 'premium'`.
+
+### Privacidad
+
+En el **nivel gratuito** de la API de Gemini, Google puede usar los prompts (o sea, los apuntes
+del usuario que viajan como datos) y las respuestas para mejorar sus productos. Para usuarios
+reales, la clave tiene que ser de un proyecto con **facturación activa (nivel pago)**. Ver
+`docs/03-security.md`.
 
 ## Reglas
 
@@ -121,13 +150,14 @@ usuario), `fetch` y los secrets `GEMINI_API_KEY` / `GEMINI_MODEL`.
 |---|---|---|
 | 204 | — | `OPTIONS` (CORS: `authorization, apikey, content-type, x-client-info`) |
 | 405 | `method` | Método distinto de `POST` |
+| 503 | `config` | Faltan `SUPABASE_URL` o la clave anon/publishable (se chequea antes del JWT: sin eso no se puede verificar) |
 | 401 | `auth` | Sin `Authorization: Bearer …` o JWT inválido |
-| 503 | `config` | Falta `GEMINI_MODEL` o `GEMINI_API_KEY` en los secrets |
-| 400 | `invalid` | JSON roto, cuerpo de más de `MAX.bodyChars` o pedido inválido (`message` = motivo) |
+| 503 | `config` | Falta `GEMINI_MODEL` o `GEMINI_API_KEY` en los secrets (el panel muestra "El asistente todavía no está configurado (faltan las claves de la función).") |
+| 400 | `invalid` | JSON roto, cuerpo de más de `MAX.bodyChars` o pedido inválido (`message` = motivo); `scope.id` y `selection.sheetId` tienen que ser UUID |
 | 403 | `feature` | Función o alcance de Premium (`decideAccess`) |
 | 429 | `quota` | Tope agotado, o no se pudo verificar el uso (falla cerrado) |
 | 400 | `not_found` | La hoja/materia/carrera del alcance no existe o está en la papelera |
-| 500 | `server` | No se pudo leer el plan o el árbol |
+| 500 | `server` | No se pudo leer el plan o el árbol, o un error no previsto (`handleSafely`: JSON con CORS) |
 
 En ninguno de esos casos se llama a Gemini ni se descuenta uso.
 
@@ -143,7 +173,7 @@ Cada evento es una línea `data: <json>` seguida de una línea vacía.
 | `quiz` | `questions: Question[]` (`{id, type:'mcq'\|'tf'\|'open', prompt, options?, answer, explanation, topic, sheetId?}`) | `quiz` y `weak_review`. |
 | `grades` | `grades: Array<{id, correct, feedback}>` | `quiz_grade` (una por pregunta abierta). |
 | `usage` | `action, bucket, used, max, period` (+ `external: {used, max, period}` en modo externo); `used`/`max` son `null` si el plan no tiene tope | La acción se registró en `ai_usage` (también `quiz_grade`, en su balde `grade`). |
-| `error` | `code, message` | `upstream`, `blocked`, `empty`, `aborted` (timeout de `GEMINI_TIMEOUT_MS` o desconexión), `invalid_output` (JSON del modelo inválido), `steps` (demasiados pasos), `no_notes`, `no_weak_topics`, `server`. No hay `done` después. Solo tras `steps` puede venir un `usage` (ver "Cuándo se descuenta uso"); con los demás **no se descuenta uso**. |
+| `error` | `code, message` | `upstream`, `blocked`, `empty`, `aborted` (timeout de `GEMINI_TIMEOUT_MS` o desconexión), `timeout` (se venció el plazo total `REQUEST_DEADLINE_MS` = 120 s, sumando todos los pasos), `invalid_output` (JSON del modelo inválido), `steps` (demasiados pasos), `no_notes`, `no_weak_topics`, `server`. No hay `done` después. Tras `steps`, `aborted` o `timeout` puede venir un `usage` si antes llegó algo útil (ver "Cuándo se descuenta uso"); con los demás **no se descuenta uso**. |
 | `done` | `truncated?: true`, `finishReason?: string` (si no fue `STOP`, p. ej. `SAFETY` tras texto parcial o `MAX_TOKENS`) | Fin normal. |
 
 Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`grades` → `usage` → `done`.
@@ -168,21 +198,36 @@ Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`grades` → `usage` → `do
 Herramientas: premium puede leer todas sus materias vivas; free solo la materia del alcance (con
 alcance `sheet` se resuelve la materia de la hoja).
 
-### Cuándo se descuenta uso (Ruling K)
+**Mapa del prompt:** `loadTree` trae el árbol sin `content_md` (liviano); los temas del mapa salen
+de `listSheetsContent(ids)`, que lee `id, subject_id, created_at, content_md` **solo de las
+materias del alcance** (hoja/materia → esa materia; carrera → sus materias; todas → todas), sin
+papelera, paginado de a 1000 y en tandas de 100 materias. El mapa queda recortado a
+`MAX.mapChars`. El contenido de materias fuera del alcance nunca se lee para el mapa.
+
+### Cuándo se descuenta uso (Ruling K y Ruling Q)
 
 Se registra una fila en `ai_usage` si la acción terminó bien, **o** si terminó en `steps` después de
 al menos una respuesta exitosa de Gemini y de haber emitido algo útil (`text`, `proposal`, `quiz` o
-`grades`): así no se puede forzar el bucle para tener respuestas gratis. No se descuenta ante errores de
-Gemini (`upstream`, `blocked`, `empty`, `aborted`), `invalid_output` (no llegó nada útil), `no_notes`,
-`no_weak_topics` ni `server`. Los errores de Gemini se loguean con `kind` y `status` (nunca el cuerpo
+`grades`): así no se puede forzar el bucle para tener respuestas gratis. **Ruling Q:** cortar (botón
+"Detener" o cerrar la pestaña → `aborted`; vencer el plazo total → `timeout`) **no** es un fallo de
+Gemini: si ya se había emitido algo útil, se descuenta igual; si no llegó nada útil, no. No se
+descuenta ante errores de Gemini (`upstream`, `blocked`, `empty`), `invalid_output` (no llegó nada
+útil), `no_notes`, `no_weak_topics` ni `server`. La corrección (`quiz_grade`) siempre viaja en modo
+`notes` desde el cliente (Ruling R, `requestMode`): nunca consume el cupo externo. Los errores de Gemini se loguean con `kind` y `status` (nunca el cuerpo
 del proveedor ni la clave).
 
 ### Límites conocidos
 
-- **El conteo no es transaccional:** dos pedidos simultáneos pueden pasar el conteo antes de que
-  cualquiera registre su uso, y superar el tope por uno o dos.
-- **Ventana de abort:** si el cliente se desconecta justo después de que Gemini terminó y antes de
-  `recordUsage`, el uso se registra igual (Gemini ya respondió); si corta durante la llamada, no.
+- **El conteo no es transaccional (chequear y después registrar):** `countUsage` se lee antes del
+  stream y `recordUsage` inserta al final. Varios pedidos simultáneos (otra pestaña, otro
+  dispositivo) pueden pasar el chequeo antes de que cualquiera registre su uso y superar el tope
+  por tantos pedidos como hayan corrido en paralelo. Cerrarlo pide una función SQL que cuente e
+  inserte en una sola transacción (pendiente).
+- **Corte del cliente (Ruling Q):** si se corta después de algo útil, se descuenta; si se corta antes
+  de cualquier salida útil, no, aunque Gemini haya llegado a generar algo que no se emitió.
+- **Plazo total:** `REQUEST_DEADLINE_MS` (120 s) queda por debajo del corte de ~150 s de Supabase;
+  `GEMINI_TIMEOUT_MS` (60 s) sigue valiendo para cada llamada. Una herramienta que esté corriendo
+  al vencer el plazo termina, pero no se hace otra llamada a Gemini.
 - **`recordUsage` fallido deja pasar el pedido:** decisión deliberada (el usuario ya recibió la
   respuesta). Se loguea y no se emite `usage`; ese pedido no cuenta para el tope.
 
@@ -218,7 +263,8 @@ del proveedor ni la clave).
   free, "Repaso de errores", "Plan de estudio" y "Conexiones" muestran el aviso de Premium **sin llamar al servidor**
   (que igual lo rechaza con 403), como **nota neutra** (`notice`, `role="status"`): no es un error
   ni pone triste al Brote. Sin materia abierta, un usuario free no tiene alcance posible y el panel
-  lo avisa con la misma nota.
+  lo avisa con la misma nota; **el texto escrito se conserva** en la entrada (`send` devuelve
+  `false` si el pedido no salió y el borrador solo se borra cuando sale).
 - **`ChatThread`**: mensajes como texto plano (`whitespace-pre-wrap`, nunca HTML), estado
   ("Leyendo tus hojas…"), "La respuesta se cortó." si `done` trae `truncated` o un `finishReason`
   distinto de `STOP`, notas, errores, uso ("Usaste 3 de 20 hoy.") y propuestas. `role="log"` con
@@ -302,6 +348,14 @@ del proveedor ni la clave).
   misma prueba no se corrige ni se guarda dos veces (no hay segundo `quiz_attempts` ni misses
   duplicados). Si el usuario vuelve a la prueba terminada, ve el resultado. `QuizRunner` además
   tiene un guard de reentrada en "Terminar".
+- **Una prueba abierta no se pisa:** mientras la sesión está `open` o `grading`
+  (`blocksNewQuiz`), los chips "Tomame examen" y "Repaso de errores" (`QUIZ_ACTIONS`) quedan
+  deshabilitados con el motivo visible debajo de los chips y en `title`/`aria-describedby`
+  ("Terminá o descartá la prueba abierta para pedir otra."); `useAssistant.start` además lo frena
+  con `blockReason` → `quiz_open`. Así no se pierden respuestas ni se gasta otra prueba del cupo.
+  `QuizRunner` tiene **"Descartar prueba"** (mientras se responde): `discardQuiz` la saca del
+  panel **sin red** (no corrige ni guarda nada); una prueba que se está corrigiendo no se
+  descarta. Una prueba terminada (`done`) no bloquea: la siguiente la reemplaza.
 - **`QuizRunner`**: una pregunta por vez con "Pregunta 3 de 10" (el foco va al título al cambiar);
   opción múltiple y verdadero/falso como grupos de radios nativos (`fieldset` + `legend` con el
   enunciado; flechas del teclado), desarrollo con `textarea` etiquetada. Anterior / Siguiente /
@@ -367,6 +421,14 @@ del proveedor ni la clave).
 - **Atajo encolado:** al desmontarse la carpeta (`key={subjectId}`) se descarta el atajo que el
   panel todavía no tomó (`assistantBridge.clearRequest`), así no se dispara después en otra
   materia.
+- **Cortar después de algo útil descuenta** (Ruling Q): "Detener", cerrar la pestaña o vencer el
+  plazo total (`REQUEST_DEADLINE_MS`, error `timeout`) no son fallos de Gemini.
+- **`quiz_grade` siempre en modo `notes`** (Ruling R): la corrección nunca gasta el cupo externo.
+- **Revisión final (2026-10-19):** el mapa del prompt lee el contenido solo de las materias del
+  alcance (antes salía "(sin temas)" en producción); sin URL/clave de Supabase la función
+  responde 503 `config` con CORS (y `handleSafely` da JSON 500 con CORS ante lo imprevisto);
+  `scope.id` y `selection.sheetId` se validan como UUID; `supabase/config.toml` con
+  `[functions.assistant]`.
 
 ## Límites conocidos (generales)
 
@@ -382,6 +444,7 @@ del proveedor ni la clave).
 ## Archivos de esta fase
 
 - **Base de datos:** `supabase/migrations/0007_asistente.sql`, `0008_quiz_grade_usage.sql`.
+- **Deploy:** `supabase/config.toml` (`[functions.assistant]`: `verify_jwt = false`, `entrypoint`).
 - **Edge Function** (`supabase/functions/assistant/`): `index.js`, `handler.js`, `config.js`,
   `quota.js`, `request.js`, `careerMap.js`, `topics.js`, `tools.js`, `supabaseDb.js`,
   `prompt.js`, `gemini.js`, `sse.js`, `loop.js`, `quiz.js`, `account.js` (+ sus `*.test.js`).

@@ -138,8 +138,10 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - **La clave de Gemini (`GEMINI_API_KEY`) y el modelo (`GEMINI_MODEL`) solo existen como
   *secrets* de la Edge Function `assistant`** (`supabase secrets set …`). Nunca en un `VITE_*`,
   en el código, en `.env.local` ni en `.env.example` con valores. Verificación antes de cada
-  deploy: `grep -ri "AIza" dist src` sin coincidencias y `GEMINI_API_KEY` solo en `docs/`,
-  `.env.example` y `supabase/`.
+  deploy: `grep -ri "AIza" dist src` sin coincidencias, y el **nombre** `GEMINI_API_KEY` solo
+  en `docs/`, `CHANGELOG.md` (texto de la documentación), `.env.example` (comentario, sin valor)
+  y `supabase/` (lectura del secret en `index.js`). Nunca un **valor** de la clave en ningún
+  archivo.
 - **La función usa la sesión del usuario:** valida el JWT y consulta la base con la `anon key`
   + ese JWT, **nunca con `service_role`**. RLS decide qué ve el asistente, igual que en la app;
   además, un usuario free solo puede leer la materia del alcance y las herramientas ignoran la
@@ -158,6 +160,16 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
   **falla cerrado** si no puede contar el uso.
 - Los errores del proveedor se loguean con `kind` y `status`, nunca con el cuerpo crudo ni la
   clave; el cliente recibe un código y un mensaje propio.
+- **Privacidad de los apuntes con Gemini:** en el **nivel gratuito** de la API de Gemini, Google
+  puede usar los prompts y las respuestas (o sea, **los apuntes del usuario** que viajan como
+  datos) para mejorar sus productos, con posible revisión humana. Para datos de usuarios reales,
+  usar una clave de un proyecto con **facturación activa (nivel pago)**, donde Google no usa ese
+  contenido para mejorar productos. Revisar los términos vigentes de la API de Gemini antes de
+  abrir el asistente a usuarios.
+- **`verify_jwt = false`** (`supabase/config.toml`, o `--no-verify-jwt` al desplegar): el gateway
+  no valida el token, así el preflight `OPTIONS` llega a la función. **La función valida el JWT
+  ella misma** (`getUser`) antes de leer datos o llamar a Gemini: sin token o con token inválido →
+  401, y sin Supabase configurado → 503, siempre con CORS.
 
 ## Reglas INVIOLABLES
 
@@ -178,6 +190,7 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - [ ] No se guardan datos sensibles en `localStorage`.
 - [ ] La `service_role` key de Supabase NO aparece en ningún `VITE_*` ni en el código.
 - [ ] **RLS activado en todas las tablas** de Supabase, con políticas por usuario.
-- [ ] `grep -ri "AIza" dist src` sin coincidencias; `GEMINI_API_KEY` solo en `docs/`, `.env.example` y `supabase/` (secret de la Edge Function).
+- [ ] `grep -ri "AIza" dist src` sin coincidencias; el nombre `GEMINI_API_KEY` solo en `docs/`, `CHANGELOG.md` (texto), `.env.example` (sin valor) y `supabase/` (lectura del secret); ningún valor de la clave en archivos.
+- [ ] La clave de Gemini es de un proyecto con facturación (nivel pago) antes de abrir el asistente a usuarios reales (en el nivel gratuito Google puede usar los apuntes para mejorar sus productos).
 - [ ] `user_plans` NO tiene política de escritura (solo `select` propio): el plan se cambia a mano en el panel de Supabase. `ai_usage` solo permite `select` e `insert`.
 - [ ] El contenido del usuario se renderiza de forma segura (sin XSS).
