@@ -220,8 +220,14 @@ del proveedor ni la clave).
   aviso de la Tarea 9 se reutiliza, sin llamar al servidor) pide la prueba con el alcance elegido.
   Al llegar el evento `quiz`, `useAssistant` arma una `quizSession` (`key`, `questions`, el
   `scope` del pedido, `scopeSubjectId` —materia del alcance hoja/materia— e `isReview`) y el panel
-  muestra **`QuizRunner`** en lugar del chat ("Volver al chat" la esconde sin perderla; el chat
-  ofrece "Ir a la prueba").
+  muestra **`QuizRunner`** en lugar del chat ("Volver al chat" la esconde con `hidden` sin
+  desmontarla, así no se pierden las respuestas; está deshabilitado mientras se corrige; el chat
+  ofrece "Ir a la prueba"). Mientras la prueba está a la vista, la entrada del chat se oculta.
+- **Una sola vez** (`lib/assistant/quizSession.js`, pura): la sesión pasa `open` → `grading` →
+  `done` y guarda las respuestas y el resultado; `startSubmit` ignora un segundo envío, así la
+  misma prueba no se corrige ni se guarda dos veces (no hay segundo `quiz_attempts` ni misses
+  duplicados). Si el usuario vuelve a la prueba terminada, ve el resultado. `QuizRunner` además
+  tiene un guard de reentrada en "Terminar".
 - **`QuizRunner`**: una pregunta por vez con "Pregunta 3 de 10" (el foco va al título al cambiar);
   opción múltiple y verdadero/falso como grupos de radios nativos (`fieldset` + `legend` con el
   enunciado; flechas del teclado), desarrollo con `textarea` etiquetada. Anterior / Siguiente /
@@ -259,6 +265,8 @@ del proveedor ni la clave).
 - **`misses` no es atómico:** se calcula en el cliente con las filas leídas justo antes del
   upsert. Dos pruebas terminadas a la vez (dos pestañas) pueden pisarse y sumar uno solo.
 - El intento se guarda aunque fallen los temas flojos (y al revés); el error se muestra.
+- Un acierto en el repaso solo borra el tema si el modelo reutiliza el texto guardado del tema
+  (se compara normalizado: espacios y mayúsculas); si lo parafrasea, el tema no se limpia.
 - La verificación manual (paso 5 del plan) requiere la Edge Function desplegada.
 
 ## Archivos de esta fase

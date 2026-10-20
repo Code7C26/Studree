@@ -83,6 +83,10 @@ export async function listWeakTopics(subjectId) {
  * `default auth.uid()`) y borrado de los temas resueltos.
  * `misses` viene calculado en el cliente con las filas leídas justo antes:
  * dos pruebas terminadas a la vez pueden pisarse (límite conocido).
+ * Confía en el llamador: las `subject_id` ya tienen que estar filtradas a
+ * materias vivas y dentro del alcance de la prueba (esa regla vive en
+ * `useAssistant` con `resolveQuizSources` + `attachSubjects`). RLS igual
+ * impide escribir en materias ajenas.
  * @param {{upserts: import('../lib/assistant/weakTopics.js').WeakTopicUpsert[], deletes: string[]}} plan
  * @returns {Promise<import('../types/models.js').ServiceResult<true>>}
  */

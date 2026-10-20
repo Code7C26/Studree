@@ -15,6 +15,7 @@ import {
 } from '../services/quizResults.service.js'
 import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assistant/quizScore.js'
 import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
+import { createQuizSession, startSubmit, finishSubmit } from '../lib/assistant/quizSession.js'
 import {
   initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice,
 } from '../lib/assistant/chatState.js'
@@ -55,14 +56,10 @@ function tagProposal(event, selection) {
  */
 
 /**
- * Prueba en curso: las preguntas y con qué alcance se pidió (para corregir y
- * guardar con ese alcance aunque el usuario se haya movido de carpeta).
- * @typedef {Object} QuizSession
- * @property {number} key  Cambia con cada prueba nueva (reinicia el QuizRunner).
- * @property {import('../lib/assistant/quizScore.js').Question[]} questions
- * @property {{type: ScopeType, id?: string}} scope
- * @property {string|null} scopeSubjectId  Materia del alcance hoja/materia.
- * @property {boolean} isReview  `weak_review`: los aciertos borran el tema flojo.
+ * Prueba en curso: las preguntas, con qué alcance se pidió (para corregir y
+ * guardar con ese alcance aunque el usuario se haya movido de carpeta) y su
+ * estado `open` → `grading` → `done` (se corrige y guarda una sola vez).
+ * @typedef {import('../lib/assistant/quizSession.js').QuizSession} QuizSession
  */
 
 /**
@@ -105,8 +102,14 @@ export function useAssistant() {
   const controllerRef = useRef(null)
   const stateRef = useRef(state)
   const [quizSession, setQuizSession] = useState(/** @type {QuizSession|null} */ (null))
+  /** Copia sincrónica de la sesión: el guard de "una sola vez" no puede esperar al render. */
+  const quizRef = useRef(/** @type {QuizSession|null} */ (null))
+  const putQuiz = useCallback((/** @type {QuizSession|null} */ next) => {
+    quizRef.current = next
+    setQuizSession(next)
+  }, [])
   /** Alcance del pedido de prueba en curso (se asocia al evento `quiz`). */
-  const pendingQuizRef = useRef(/** @type {Omit<QuizSession, 'key'|'questions'>|null} */ (null))
+  const pendingQuizRef = useRef(/** @type {Pick<QuizSession, 'scope'|'scopeSubjectId'|'isReview'>|null} */ (null))
 
   useEffect(() => {
     stateRef.current = state
@@ -177,7 +180,7 @@ export function useAssistant() {
           if (event?.type === 'error') streamError = typeof event.message === 'string' && event.message ? event.message : GRADE_FAILED
           const meta = pendingQuizRef.current
           if (event?.type === 'quiz' && Array.isArray(event.questions) && meta) {
-            setQuizSession((prev) => ({ ...meta, key: (prev?.key ?? 0) + 1, questions: event.questions }))
+            putQuiz(createQuizSession(quizRef.current, meta, event.questions))
           }
           setState((s) => reduceEvent(s, tagProposal(event, selection)))
         },
@@ -190,7 +193,7 @@ export function useAssistant() {
       setState((s) => finishRequest(s, error))
       return { error: error ?? streamError, grades }
     },
-    [scope, context, mode],
+    [scope, context, mode, putQuiz],
   )
 
   const send = useCallback(
@@ -280,12 +283,15 @@ export function useAssistant() {
      * `quiz_grade`, con el alcance de la prueba) y guarda el intento y los
      * temas flojos. Si la corrección de las abiertas falla (p. ej. tope
      * agotado), el error se muestra y las cerradas quedan corregidas igual.
+     * Una prueba se envía UNA vez (`startSubmit`): un segundo envío devuelve
+     * `null` sin corregir ni guardar. El resultado queda en la sesión (`done`).
      * @param {Record<string, number|boolean|string>} given
      * @returns {Promise<QuizOutcome|null>}
      */
     async (given) => {
-      const session = quizSession
+      const session = startSubmit(quizRef.current, given)
       if (!session) return null
+      putQuiz(session)
       const closed = gradeClosed(session.questions, given)
       const answers = openAnswers(session.questions, given)
       let grades = null
@@ -298,9 +304,12 @@ export function useAssistant() {
       const results = mergeResults(session.questions, given, closed, grades)
       const score = summarize(results)
       const saved = await saveQuizOutcome(session, results, score)
-      return { results, score, gradeError, ...saved }
+      /** @type {QuizOutcome} */
+      const outcome = { results, score, gradeError, ...saved }
+      putQuiz(finishSubmit(quizRef.current, session.key, outcome))
+      return outcome
     },
-    [quizSession, start, saveQuizOutcome],
+    [start, saveQuizOutcome, putQuiz],
   )
 
   const stop = useCallback(() => {

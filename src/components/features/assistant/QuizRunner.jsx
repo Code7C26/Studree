@@ -36,47 +36,48 @@ function answerText(question, value) {
  * múltiple y verdadero/falso, textarea con etiqueta para desarrollo), progreso
  * "Pregunta 3 de 10", y al terminar el puntaje y cada error con su
  * explicación y la hoja de origen. La corrección y el guardado los hace
- * `submitQuiz` (useAssistant); acá solo se pinta. Todo lo del modelo va como
- * texto plano.
+ * `submitQuiz` (useAssistant) y el estado de la prueba (`open` → `grading` →
+ * `done`, con el resultado) vive en la sesión: el panel la oculta con `hidden`
+ * sin desmontarla, y una prueba enviada no se puede volver a enviar. Todo lo
+ * del modelo va como texto plano.
  * @param {Object} props
  * @param {QuizSession} props.session
+ * @param {boolean} props.hidden  El usuario volvió al chat (se oculta sin perder nada).
  * @param {boolean} props.busy  El Brote está respondiendo otra cosa (no se puede corregir).
  * @param {(given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>} props.onSubmit
  * @param {() => void} props.onClose  Volver al chat.
  */
-export function QuizRunner({ session, busy, onSubmit, onClose }) {
+export function QuizRunner({ session, hidden, busy, onSubmit, onClose }) {
   const { questions } = session
   const [index, setIndex] = useState(0)
-  const [given, setGiven] = useState(/** @type {Record<string, number|boolean|string>} */ ({}))
-  const [phase, setPhase] = useState(/** @type {'answering'|'grading'|'done'} */ ('answering'))
-  const [outcome, setOutcome] = useState(/** @type {QuizOutcome|null} */ (null))
+  const [answers, setAnswers] = useState(/** @type {Record<string, number|boolean|string>} */ ({}))
   const headingRef = useRef(/** @type {HTMLHeadingElement|null} */ (null))
-  const mounted = useRef(true)
+  const submittingRef = useRef(false)
+  const phase = session.status === 'open' ? 'answering' : session.status
+  /** @type {QuizOutcome|null} */
+  const outcome = session.status === 'done' ? /** @type {QuizOutcome} */ (session.outcome) : null
+  const given = session.given ?? answers
 
+  // Al cambiar de pregunta, terminar o volver a la prueba, el foco va al título (lo anuncia el lector).
   useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-    }
-  }, [])
-
-  // Al cambiar de pregunta o terminar, el foco va al título (lo anuncia el lector).
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [index, phase])
+    if (!hidden) headingRef.current?.focus()
+  }, [index, phase, hidden])
 
   const question = questions[index]
   const total = questions.length
   const pending = questions.filter((q) => !isAnswered(q, given[q.id])).length
 
-  const setAnswer = (id, value) => setGiven((prev) => ({ ...prev, [id]: value }))
+  const setAnswer = (id, value) => setAnswers((prev) => ({ ...prev, [id]: value }))
 
+  // Guard de reentrada (doble click en "Terminar"); el hook además ignora un segundo envío.
   const finish = async () => {
-    setPhase('grading')
-    const result = await onSubmit(given)
-    if (!mounted.current) return
-    setOutcome(result)
-    setPhase(result ? 'done' : 'answering')
+    if (submittingRef.current || session.status !== 'open') return
+    submittingRef.current = true
+    try {
+      await onSubmit(answers)
+    } finally {
+      submittingRef.current = false
+    }
   }
 
   if (phase === 'done' && outcome) {
@@ -84,7 +85,7 @@ export function QuizRunner({ session, busy, onSubmit, onClose }) {
     const wrong = questions.filter((q) => byId.get(q.id)?.correct === false)
     const ungraded = questions.filter((q) => byId.get(q.id)?.correct === null)
     return (
-      <section aria-labelledby="quiz-result-title" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
+      <section hidden={hidden} aria-labelledby="quiz-result-title" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
         <h3 id="quiz-result-title" ref={headingRef} tabIndex={-1} className="font-display text-lg font-bold">
           Sacaste {outcome.score.correct} de {outcome.score.total}
         </h3>
@@ -158,13 +159,18 @@ export function QuizRunner({ session, busy, onSubmit, onClose }) {
   const grading = phase === 'grading'
 
   return (
-    <section aria-labelledby="quiz-progress" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
+    <section hidden={hidden} aria-labelledby="quiz-progress" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
       <div className="flex items-center gap-2">
         <h3 id="quiz-progress" ref={headingRef} tabIndex={-1} className="font-display text-base font-bold">
           Pregunta {index + 1} de {total}
         </h3>
         <span className="text-xs text-text-muted">{TYPE_LABEL[question.type]}</span>
-        <button type="button" onClick={onClose} className="ml-auto text-xs text-text-muted transition-colors hover:text-text">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={grading}
+          className="ml-auto text-xs text-text-muted transition-colors hover:text-text disabled:opacity-50"
+        >
           Volver al chat
         </button>
       </div>

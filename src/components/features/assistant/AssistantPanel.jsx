@@ -69,6 +69,8 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
     }
   }, [state.busy, state.error])
 
+  const showQuiz = Boolean(quizSession && quizVisible)
+
   const base = chatMood(state)
   const mood = happy && base === 'idle' ? 'happy' : base
   useEffect(() => {
@@ -164,15 +166,18 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
         </div>
       </div>
 
-      {quizSession && quizVisible ? (
+      {/* La prueba no se desmonta al volver al chat: se oculta y conserva respuestas y resultado. */}
+      {quizSession && (
         <QuizRunner
           key={quizSession.key}
           session={quizSession}
+          hidden={!showQuiz}
           busy={state.busy}
           onSubmit={submitQuiz}
           onClose={() => setQuizVisible(false)}
         />
-      ) : (
+      )}
+      {!showQuiz && (
         <ChatThread
           state={state}
           onAccept={acceptProposal}
@@ -182,7 +187,8 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
       )}
 
       <form
-        className="flex items-end gap-2 border-t border-border/60 px-4 py-3"
+        hidden={showQuiz}
+        className={`${showQuiz ? 'hidden' : 'flex'} items-end gap-2 border-t border-border/60 px-4 py-3`}
         onSubmit={(event) => {
           event.preventDefault()
           submit()
