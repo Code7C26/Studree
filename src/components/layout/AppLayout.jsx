@@ -25,7 +25,7 @@ export function AppLayout() {
   )
 }
 
-/** El layout en sí; en modo lectura (carpeta) oculta el header y el Brote. */
+/** El layout en sí; en modo lectura (carpeta) oculta el header y el Brote (sin desmontarlo). */
 function AppShell() {
   const location = useLocation()
   const { reading } = useReadingMode()
@@ -44,8 +44,9 @@ function AppShell() {
           <Outlet />
         </main>
       )}
-      {/* El Brote (asistente, Fase 14): con sesión, fuera del login y del modo lectura. */}
-      {user && !reading && location.pathname !== ROUTES.login && <AssistantHost />}
+      {/* El Brote (asistente, Fase 14): con sesión y fuera del login. En modo lectura
+          se oculta sin desmontarse (la conversación y el pedido en curso siguen). */}
+      {user && location.pathname !== ROUTES.login && <AssistantHost hidden={reading} />}
     </div>
   )
 }

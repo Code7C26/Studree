@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, chatMood,
+  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice, chatMood,
   MAX_MESSAGES, MAX_MESSAGE_CHARS,
 } from './chatState.js'
 
@@ -10,7 +10,7 @@ const prop = (over = {}) => ({ id: 'p1', kind: 'append', sheetId: 's1', markdown
 test('estado inicial vacío', () => {
   assert.deepEqual(initialChat(), {
     messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, grades: null, error: null,
-    truncated: false,
+    notice: null, truncated: false,
   })
 })
 
@@ -165,4 +165,13 @@ test('chatMood: pensando, escribiendo, triste y en reposo', () => {
   assert.equal(chatMood(s), 'writing')
   assert.equal(chatMood(reduceEvent(s, { type: 'done' })), 'idle')
   assert.equal(chatMood(reduceEvent(s, { type: 'error', message: 'x' })), 'sad')
+})
+
+test('setNotice es una nota neutra: no es error ni pone triste al Brote, y un mensaje nuevo la limpia', () => {
+  const s = setNotice(initialChat(), 'El plan de estudio es parte de Premium.')
+  assert.equal(s.notice, 'El plan de estudio es parte de Premium.')
+  assert.equal(s.error, null)
+  assert.equal(chatMood(s), 'idle')
+  assert.equal(addUserMessage(s, 'hola').notice, null)
+  assert.equal(setNotice(s, null).notice, null)
 })

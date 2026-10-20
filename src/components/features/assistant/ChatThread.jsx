@@ -15,15 +15,15 @@ const PERIOD = { day: 'hoy', month: 'este mes' }
  */
 export function ChatThread({ state, onAccept, onReject }) {
   const endRef = useRef(/** @type {HTMLDivElement|null} */ (null))
-  const { messages, proposals, busy, status, error, truncated, usage, quiz } = state
+  const { messages, proposals, busy, status, error, notice, truncated, usage, quiz } = state
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end' })
-  }, [messages, proposals, status, error, quiz])
+  }, [messages, proposals, status, error, notice, quiz])
 
   return (
-    <div role="log" aria-live="polite" aria-label="Conversación con el Brote" className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-      {messages.length === 0 && !error && (
+    <div role="log" aria-live="polite" aria-busy={busy} aria-label="Conversación con el Brote" className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+      {messages.length === 0 && !error && !notice && (
         <p className="text-sm text-text-muted">
           Preguntame algo de tus apuntes, o elegí una acción de arriba. Nunca cambio una hoja sin que lo aceptes.
         </p>
@@ -60,6 +60,12 @@ export function ChatThread({ state, onAccept, onReject }) {
       {proposals.map((proposal) => (
         <ProposalCard key={proposal.id} proposal={proposal} onAccept={onAccept} onReject={onReject} />
       ))}
+
+      {notice && (
+        <p role="status" className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-muted">
+          {notice}
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">

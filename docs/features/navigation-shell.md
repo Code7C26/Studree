@@ -125,6 +125,10 @@ semántica/RAG — la vectorización queda fuera de alcance en esta etapa.
   borrar o renombrar), se **cierran las tabs de materias que ya no existen** y se
   **actualizan los nombres y colores**.
 - En **modo lectura** (carpeta) se ocultan el header, el explorador y las tabs.
+- **Capas:** el `<main>` del shell es `lamp relative isolate` (contexto de apilamiento propio). Por
+  eso `Modal` (y `ConfirmDialog`) y `UndoToast` se renderizan **por portal en `document.body`**: así
+  su `z-50` queda sobre el Brote flotante (`z-30`, docs/features/assistant.md). Un overlay nuevo que
+  viva dentro del main tiene que usar esos componentes o su propio portal.
 - Al cerrar sesión o entrar con otra cuenta se borran (`clearAllCache` borra todo
   `studree:`): las tabs guardan títulos de hojas y no pueden verse desde otra cuenta.
 

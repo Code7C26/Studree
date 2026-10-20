@@ -12,22 +12,25 @@ const PANEL_QUERY = '(min-width: 640px)'
 const SLEEP_MS = 5 * 60 * 1000
 
 /**
- * El Brote flotante abajo a la derecha y su panel. Se monta en AppLayout solo
- * con sesión y fuera del modo lectura. Ver docs/features/assistant.md.
+ * El Brote flotante abajo a la derecha y su panel. Se monta en AppLayout con
+ * sesión (fuera del login) y queda montado siempre: en modo lectura se oculta
+ * con `hidden` sin perder la conversación ni cortar el pedido en curso.
+ * Ver docs/features/assistant.md.
+ * @param {Object} props
+ * @param {boolean} [props.hidden=false]  Oculta botón y panel sin desmontarlos (modo lectura).
  */
-export function AssistantHost() {
+export function AssistantHost({ hidden = false }) {
+  // En el celular no se reabre solo (ahí tapa todo), pero tampoco se pisa la
+  // preferencia guardada: solo se escribe cuando el usuario abre o cierra.
   const [open, setOpen] = useState(
     () => readCache(STORAGE_KEYS.uiAssistantOpen, false) === true && window.matchMedia(PANEL_QUERY).matches,
   )
   const [loaded, setLoaded] = useState(open)
+  const [focusSignal, setFocusSignal] = useState(0)
   const [mood, setMood] = useState(/** @type {import('./Brote').BroteState} */ ('idle'))
   const [asleep, setAsleep] = useState(false)
   const [editing, setEditing] = useState(false)
   const buttonRef = useRef(/** @type {HTMLButtonElement|null} */ (null))
-
-  useEffect(() => {
-    writeCache(STORAGE_KEYS.uiAssistantOpen, open)
-  }, [open])
 
   useEffect(() => {
     setAsleep(false)
@@ -52,8 +55,17 @@ export function AssistantHost() {
 
   const close = useCallback(() => {
     setOpen(false)
+    writeCache(STORAGE_KEYS.uiAssistantOpen, false)
     buttonRef.current?.focus()
   }, [])
+
+  const toggle = () => {
+    const next = !open
+    setLoaded(true)
+    setOpen(next)
+    writeCache(STORAGE_KEYS.uiAssistantOpen, next)
+    if (next) setFocusSignal((n) => n + 1)
+  }
 
   return (
     <>
@@ -64,11 +76,9 @@ export function AssistantHost() {
         aria-expanded={open}
         aria-controls={loaded ? 'brote-panel' : undefined}
         title="El Brote, tu asistente"
-        onClick={() => {
-          setLoaded(true)
-          setOpen((current) => !current)
-        }}
-        className={`fixed bottom-4 right-4 z-30 rounded-full transition-[opacity,transform] hover:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none sm:bottom-6 sm:right-6 ${
+        hidden={hidden}
+        onClick={toggle}
+        className={`${hidden ? 'hidden' : ''} fixed bottom-4 right-4 z-30 rounded-full transition-[opacity,transform] hover:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none sm:bottom-6 sm:right-6 ${
           editing && !open ? 'scale-75 opacity-40' : ''
         }`}
       >
@@ -76,7 +86,7 @@ export function AssistantHost() {
       </button>
       {loaded && (
         <Suspense fallback={null}>
-          <AssistantPanel open={open} onClose={close} onMood={setMood} />
+          <AssistantPanel open={open && !hidden} focusSignal={focusSignal} onClose={close} onMood={setMood} />
         </Suspense>
       )}
     </>

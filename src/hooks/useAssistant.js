@@ -9,7 +9,7 @@ import { streamAssistant } from '../services/assistant.service.js'
 import { getPlan } from '../services/userPlan.service.js'
 import { useAssistantContext } from './useAssistantContext.js'
 import {
-  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError,
+  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice,
 } from '../lib/assistant/chatState.js'
 import {
   ACTION_LABELS, MAX_MESSAGE, buildHistory, buildScope, lockedActionMessage, resolveScopeType, scopeOptions,
@@ -82,7 +82,7 @@ export function useAssistant() {
       if (controllerRef.current) return
       const scopeValue = buildScope(scope, context)
       if (!scopeValue) {
-        setState((s) => setError(s, NO_SCOPE))
+        setState((s) => setNotice(s, NO_SCOPE))
         return
       }
       const request = {
@@ -123,7 +123,7 @@ export function useAssistant() {
     (action, extra = {}) => {
       const locked = lockedActionMessage(action, plan)
       if (locked) {
-        setState((s) => setError(s, locked))
+        setState((s) => setNotice(s, locked))
         return
       }
       const { label, ...fields } = extra ?? {}

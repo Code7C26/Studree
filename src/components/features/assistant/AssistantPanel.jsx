@@ -23,10 +23,11 @@ const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
  * aunque se cierre, así la conversación sigue mientras dure la sesión.
  * @param {Object} props
  * @param {boolean} props.open
+ * @param {number} props.focusSignal  Cambia cada vez que el usuario abre el panel: recién ahí se enfoca la entrada (no al cargar la página).
  * @param {() => void} props.onClose
  * @param {(mood: import('./Brote').BroteState) => void} props.onMood
  */
-export function AssistantPanel({ open, onClose, onMood }) {
+export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const {
     state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
   } = useAssistant()
@@ -34,16 +35,23 @@ export function AssistantPanel({ open, onClose, onMood }) {
   const [happy, setHappy] = useState(false)
   const inputRef = useRef(/** @type {HTMLTextAreaElement|null} */ (null))
   const wasBusy = useRef(false)
+  const stoppedRef = useRef(false)
 
+  // Solo cuando el usuario lo abre (si se recordó abierto, no se roba el foco al cargar).
   useEffect(() => {
-    if (open) inputRef.current?.focus()
-  }, [open])
+    if (focusSignal > 0) inputRef.current?.focus()
+  }, [focusSignal])
 
-  // Al terminar bien una respuesta, el Brote se alegra un rato.
+  // Al terminar bien una respuesta, el Brote se alegra un rato (no si el usuario la cortó).
   useEffect(() => {
     const was = wasBusy.current
     wasBusy.current = state.busy
+    if (state.busy && !was) stoppedRef.current = false
     if (!was || state.busy || state.error) return undefined
+    if (stoppedRef.current) {
+      stoppedRef.current = false
+      return undefined
+    }
     setHappy(true)
     const timer = window.setTimeout(() => setHappy(false), HAPPY_MS)
     return () => {
@@ -76,7 +84,7 @@ export function AssistantPanel({ open, onClose, onMood }) {
           onClose()
         }
       }}
-      className={`glass fixed inset-0 z-40 flex-col rounded-none bg-surface/95 shadow-2xl shadow-black/40 sm:inset-auto sm:bottom-24 sm:right-6 sm:top-16 sm:w-96 sm:rounded-xl ${
+      className={`glass fixed inset-0 z-30 flex-col rounded-none bg-surface/95 shadow-2xl shadow-black/40 sm:inset-auto sm:bottom-24 sm:right-6 sm:top-16 sm:w-96 sm:rounded-xl ${
         open ? 'flex' : 'hidden'
       }`}
     >
@@ -167,7 +175,7 @@ export function AssistantPanel({ open, onClose, onMood }) {
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault()
               submit()
             }
@@ -178,7 +186,10 @@ export function AssistantPanel({ open, onClose, onMood }) {
         {state.busy ? (
           <button
             type="button"
-            onClick={stop}
+            onClick={() => {
+              stoppedRef.current = true
+              stop()
+            }}
             aria-label="Detener la respuesta"
             className="rounded-lg border border-border p-2 text-text-muted transition-colors hover:text-text"
           >

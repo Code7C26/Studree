@@ -28,6 +28,7 @@
  * @property {Object[]|null} quiz
  * @property {Object[]|null} grades
  * @property {string|null} error
+ * @property {string|null} notice  Nota informativa neutra (p. ej. "es de Premium"); no es un error.
  * @property {boolean} truncated  La última respuesta se cortó (`done` con `truncated` o un `finishReason` distinto de STOP).
  */
 
@@ -47,6 +48,7 @@ const GENERIC_ERROR = 'No se pudo hablar con el Brote. Probá de nuevo.'
 export function initialChat() {
   return {
     messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, grades: null, error: null,
+    notice: null,
     truncated: false,
   }
 }
@@ -78,6 +80,7 @@ export function addUserMessage(state, text) {
     busy: true,
     status: null,
     error: null,
+    notice: null,
     truncated: false,
   }
 }
@@ -183,6 +186,15 @@ export function finishRequest(state, error = null) {
  */
 export function setError(state, message) {
   return { ...state, error: typeof message === 'string' && message ? message : null }
+}
+
+/**
+ * Nota informativa neutra (no es error: no pone triste al Brote ni se anuncia
+ * como alerta). `null` la limpia.
+ * @param {ChatState} state @param {string|null} message @returns {ChatState}
+ */
+export function setNotice(state, message) {
+  return { ...state, notice: typeof message === 'string' && message ? message : null }
 }
 
 /**
