@@ -11,6 +11,11 @@ import { useAssistantContext } from './useAssistantContext.js'
 import { assistantBridge } from '../lib/assistant/bridge.js'
 import { MAX } from '../../supabase/functions/assistant/config.js'
 import {
+  saveAttempt, listWeakTopics, applyWeakTopicUpdates, resolveQuizSources,
+} from '../services/quizResults.service.js'
+import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assistant/quizScore.js'
+import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
+import {
   initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice,
 } from '../lib/assistant/chatState.js'
 import {
@@ -20,6 +25,9 @@ import {
 const NO_SCOPE = 'Abrí una materia para preguntarle al Brote (o pasate a Premium para preguntar sobre todas).'
 const NO_CONTEXT = 'Abrí la carpeta de la materia para aplicar el cambio.'
 const BUSY = 'El Brote todavía está respondiendo: probá cuando termine.'
+const GRADE_LABEL = 'Corregí mis respuestas de desarrollo'
+const GRADE_FAILED = 'No se pudieron corregir las respuestas de desarrollo.'
+const QUIZ_ACTIONS = ['quiz', 'weak_review']
 
 /**
  * Las propuestas de un pedido con selección llevan esa selección (con su rango),
@@ -47,6 +55,28 @@ function tagProposal(event, selection) {
  */
 
 /**
+ * Prueba en curso: las preguntas y con qué alcance se pidió (para corregir y
+ * guardar con ese alcance aunque el usuario se haya movido de carpeta).
+ * @typedef {Object} QuizSession
+ * @property {number} key  Cambia con cada prueba nueva (reinicia el QuizRunner).
+ * @property {import('../lib/assistant/quizScore.js').Question[]} questions
+ * @property {{type: ScopeType, id?: string}} scope
+ * @property {string|null} scopeSubjectId  Materia del alcance hoja/materia.
+ * @property {boolean} isReview  `weak_review`: los aciertos borran el tema flojo.
+ */
+
+/**
+ * Resultado de terminar una prueba.
+ * @typedef {Object} QuizOutcome
+ * @property {import('../lib/assistant/quizScore.js').QuizResult[]} results
+ * @property {{total: number, correct: number}} score
+ * @property {Record<string, {subject_id: string, created_at: string}>} sheets  Hojas vivas de la prueba (fecha y link).
+ * @property {string|null} gradeError  No se pudieron corregir las de desarrollo (p. ej. tope agotado).
+ * @property {string|null} saveError  No se pudo guardar el intento o los temas flojos.
+ * @property {boolean} savedTopics  Se actualizaron temas flojos.
+ */
+
+/**
  * @returns {{
  *   state: ChatState,
  *   context: AssistantContext|null,
@@ -61,6 +91,8 @@ function tagProposal(event, selection) {
  *   stop: () => void,
  *   acceptProposal: (id: string) => void,
  *   rejectProposal: (id: string) => void,
+ *   quizSession: QuizSession|null,
+ *   submitQuiz: (given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>,
  * }}
  */
 export function useAssistant() {
@@ -72,6 +104,9 @@ export function useAssistant() {
   /** @type {React.MutableRefObject<AbortController|null>} */
   const controllerRef = useRef(null)
   const stateRef = useRef(state)
+  const [quizSession, setQuizSession] = useState(/** @type {QuizSession|null} */ (null))
+  /** Alcance del pedido de prueba en curso (se asocia al evento `quiz`). */
+  const pendingQuizRef = useRef(/** @type {Omit<QuizSession, 'key'|'questions'>|null} */ (null))
 
   useEffect(() => {
     stateRef.current = state
@@ -99,16 +134,26 @@ export function useAssistant() {
      * @param {Object} fields  Campos del pedido además de history/mode/scope.
      * @param {string} visibleText  Lo que se muestra como mensaje del usuario.
      * @param {import('../lib/assistant/bridge.js').Selection|null} [selection]  Selección completa de un atajo.
+     * @param {{type: ScopeType, id?: string}|null} [scopeOverride]  Alcance fijo (la corrección usa el de la prueba).
+     * @returns {Promise<{error: string|null, grades: Array<Object>|null}>}
      */
-    async (fields, visibleText, selection = null) => {
+    async (fields, visibleText, selection = null, scopeOverride = null) => {
       if (controllerRef.current) {
         setState((s) => setNotice(s, BUSY))
-        return
+        return { error: BUSY, grades: null }
       }
-      const scopeValue = buildScope(scope, context)
+      const scopeValue = scopeOverride ?? buildScope(scope, context)
       if (!scopeValue) {
         setState((s) => setNotice(s, NO_SCOPE))
-        return
+        return { error: NO_SCOPE, grades: null }
+      }
+      if (QUIZ_ACTIONS.includes(fields.action)) {
+        let scopeSubjectId = null
+        if (scopeValue.type === 'subject') scopeSubjectId = scopeValue.id ?? null
+        else if (scopeValue.type === 'sheet') scopeSubjectId = context?.subject?.id ?? null
+        pendingQuizRef.current = { scope: scopeValue, scopeSubjectId, isReview: fields.action === 'weak_review' }
+      } else if (fields.action !== 'quiz_grade') {
+        pendingQuizRef.current = null
       }
       const request = {
         message: '',
@@ -120,17 +165,30 @@ export function useAssistant() {
       const controller = new AbortController()
       controllerRef.current = controller
       setState((s) => addUserMessage(s, visibleText))
+      /** @type {Array<Object>|null} */
+      let grades = null
+      /** @type {string|null} */
+      let streamError = null
       const { error } = await streamAssistant({
         request,
         signal: controller.signal,
-        onEvent: (event) => setState((s) => reduceEvent(s, tagProposal(event, selection))),
+        onEvent: (event) => {
+          if (event?.type === 'grades' && Array.isArray(event.grades)) grades = event.grades
+          if (event?.type === 'error') streamError = typeof event.message === 'string' && event.message ? event.message : GRADE_FAILED
+          const meta = pendingQuizRef.current
+          if (event?.type === 'quiz' && Array.isArray(event.questions) && meta) {
+            setQuizSession((prev) => ({ ...meta, key: (prev?.key ?? 0) + 1, questions: event.questions }))
+          }
+          setState((s) => reduceEvent(s, tagProposal(event, selection)))
+        },
       })
       if (controllerRef.current === controller) controllerRef.current = null
       if (controller.signal.aborted) {
         setState((s) => finishRequest(s))
-        return
+        return { error: 'Cortaste la respuesta.', grades: null }
       }
       setState((s) => finishRequest(s, error))
+      return { error: error ?? streamError, grades }
     },
     [scope, context, mode],
   )
@@ -180,6 +238,71 @@ export function useAssistant() {
     }
   }, [])
 
+  /**
+   * Guarda el intento y los temas flojos de una prueba ya corregida. Solo
+   * escribe temas de preguntas cuya materia se resolvió a una viva del alcance
+   * (`attachSubjects`); el resto se saltea.
+   * @param {QuizSession} session
+   * @param {import('../lib/assistant/quizScore.js').QuizResult[]} results
+   * @param {{total: number, correct: number}} score
+   * @returns {Promise<Pick<QuizOutcome, 'sheets'|'saveError'|'savedTopics'>>}
+   */
+  const saveQuizOutcome = useCallback(async (session, results, score) => {
+    const sources = await resolveQuizSources({
+      sheetIds: session.questions.map((q) => q.sheetId).filter(Boolean),
+      subjectIds: session.scopeSubjectId ? [session.scopeSubjectId] : [],
+    })
+    const sheets = sources.data?.sheets ?? {}
+    if (score.total === 0) return { sheets, saveError: null, savedTopics: false }
+    const attempt = await saveAttempt({ scope: session.scope, ...score })
+    if (sources.error) return { sheets, saveError: attempt.error ?? sources.error, savedTopics: false }
+
+    const where = attachSubjects(session.questions, {
+      scope: session.scope, scopeSubjectId: session.scopeSubjectId, sheets, subjects: sources.data.subjects,
+    })
+    const byId = new Map(session.questions.map((q) => [q.id, q]))
+    const topicResults = results
+      .filter((r) => typeof r.correct === 'boolean' && where[r.id])
+      .map((r) => ({ ...where[r.id], topic: byId.get(r.id)?.topic ?? '', correct: /** @type {boolean} */ (r.correct) }))
+    if (topicResults.length === 0) return { sheets, saveError: attempt.error, savedTopics: false }
+
+    const existing = await listWeakTopics([...new Set(topicResults.map((r) => r.subject_id))])
+    if (existing.error) return { sheets, saveError: attempt.error ?? existing.error, savedTopics: false }
+    const plan = planWeakTopicUpdates({ existing: existing.data, results: topicResults, isReview: session.isReview })
+    if (plan.upserts.length === 0 && plan.deletes.length === 0) return { sheets, saveError: attempt.error, savedTopics: false }
+    const applied = await applyWeakTopicUpdates(plan)
+    return { sheets, saveError: attempt.error ?? applied.error, savedTopics: !applied.error }
+  }, [])
+
+  const submitQuiz = useCallback(
+    /**
+     * Corrige la prueba en curso (cerradas acá; las de desarrollo con
+     * `quiz_grade`, con el alcance de la prueba) y guarda el intento y los
+     * temas flojos. Si la corrección de las abiertas falla (p. ej. tope
+     * agotado), el error se muestra y las cerradas quedan corregidas igual.
+     * @param {Record<string, number|boolean|string>} given
+     * @returns {Promise<QuizOutcome|null>}
+     */
+    async (given) => {
+      const session = quizSession
+      if (!session) return null
+      const closed = gradeClosed(session.questions, given)
+      const answers = openAnswers(session.questions, given)
+      let grades = null
+      let gradeError = null
+      if (answers.length) {
+        const res = await start({ action: 'quiz_grade', answers }, GRADE_LABEL, null, session.scope)
+        grades = res.grades
+        gradeError = res.grades ? null : res.error ?? GRADE_FAILED
+      }
+      const results = mergeResults(session.questions, given, closed, grades)
+      const score = summarize(results)
+      const saved = await saveQuizOutcome(session, results, score)
+      return { results, score, gradeError, ...saved }
+    },
+    [quizSession, start, saveQuizOutcome],
+  )
+
   const stop = useCallback(() => {
     controllerRef.current?.abort()
   }, [])
@@ -227,5 +350,7 @@ export function useAssistant() {
     stop,
     acceptProposal,
     rejectProposal,
+    quizSession,
+    submitQuiz,
   }
 }

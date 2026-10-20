@@ -12,8 +12,9 @@ const PERIOD = { day: 'hoy', month: 'este mes' }
  * @param {import('../../../lib/assistant/chatState.js').ChatState} props.state
  * @param {(id: string) => void} props.onAccept
  * @param {(id: string) => void} props.onReject
+ * @param {() => void} [props.onOpenQuiz]  Vuelve a la prueba en curso (la responde `QuizRunner`).
  */
-export function ChatThread({ state, onAccept, onReject }) {
+export function ChatThread({ state, onAccept, onReject, onOpenQuiz }) {
   const endRef = useRef(/** @type {HTMLDivElement|null} */ (null))
   const { messages, proposals, busy, status, error, notice, truncated, usage, quiz } = state
 
@@ -44,16 +45,12 @@ export function ChatThread({ state, onAccept, onReject }) {
       {busy && <p className="text-xs text-text-muted">{status ?? 'Pensando…'}</p>}
       {!busy && truncated && <p className="text-xs text-warn">La respuesta se cortó.</p>}
 
-      {quiz && (
-        <div className="rounded-lg border border-border p-3 text-sm">
+      {quiz && onOpenQuiz && (
+        <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
           <p className="font-medium">La prueba tiene {quiz.length} pregunta{quiz.length === 1 ? '' : 's'}.</p>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-text-muted">
-            {quiz.map((question, index) => (
-              <li key={question?.id ?? index} className="whitespace-pre-wrap break-words">
-                {typeof question?.prompt === 'string' ? question.prompt : ''}
-              </li>
-            ))}
-          </ol>
+          <button type="button" onClick={onOpenQuiz} className="btn-accent ml-auto px-3 py-1 text-sm">
+            Ir a la prueba
+          </button>
         </div>
       )}
 

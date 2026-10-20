@@ -244,7 +244,10 @@ Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nu
 - **`weak_topics`** (`id`, `user_id`, `subject_id` → `subjects` cascade, `sheet_id` nullable
   → `sheets` set null, `topic` 1..200, `misses` ≥ 1 default 1, `last_missed_at`,
   `updated_at`; único `(user_id, subject_id, topic)`). Política `_owner`. Índice
-  `(user_id, subject_id)`.
+  `(user_id, subject_id)`. El cliente escribe con upsert sobre esa clave única
+  (`quizResults.service.js`, `misses` calculado en el cliente) y solo con una materia viva
+  resuelta (nunca adivinada); `quiz_attempts` se guarda con `correct ≤ total` validado en el
+  cliente.
 
 ---
 

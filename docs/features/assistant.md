@@ -150,7 +150,7 @@ del proveedor ni la clave).
 - **`ChatThread`**: mensajes como texto plano (`whitespace-pre-wrap`, nunca HTML), estado
   ("Leyendo tus hojas…"), "La respuesta se cortó." si `done` trae `truncated` o un `finishReason`
   distinto de `STOP`, notas, errores, uso ("Usaste 3 de 20 hoy.") y propuestas. `role="log"` con
-  `aria-live="polite"` y `aria-busy` mientras llega la respuesta (no anuncia cada fragmento). La prueba (`quiz`) por ahora se lista; la responde `QuizRunner` (Tarea 11).
+  `aria-live="polite"` y `aria-busy` mientras llega la respuesta (no anuncia cada fragmento). Si hay una prueba y el panel muestra el chat, aparece "Ir a la prueba" (la responde `QuizRunner`, Tarea 11).
 - **`ProposalCard`**: texto propuesto resaltado en verde (`bg-accent/10`, borde `accent`), marca
   "Agregado desde conocimiento externo" si `source === 'external'`, y **Aceptar** / **Rechazar**.
   Aceptar llama a `context.apply(proposal)` (lo implementa la carpeta en la Tarea 10) y marca
@@ -214,6 +214,53 @@ del proveedor ni la clave).
   Lo de conocimiento externo lleva `withOriginMark` ("Agregado por el Brote"). No roba el
   foco del panel; la hoja se lleva a la vista.
 
+## Pruebas tipo examen, repaso de errores y resúmenes (Tarea 11)
+
+- **Flujo:** el chip "Tomame examen" (`quiz`) o "Repaso de errores" (`weak_review`, Premium: el
+  aviso de la Tarea 9 se reutiliza, sin llamar al servidor) pide la prueba con el alcance elegido.
+  Al llegar el evento `quiz`, `useAssistant` arma una `quizSession` (`key`, `questions`, el
+  `scope` del pedido, `scopeSubjectId` —materia del alcance hoja/materia— e `isReview`) y el panel
+  muestra **`QuizRunner`** en lugar del chat ("Volver al chat" la esconde sin perderla; el chat
+  ofrece "Ir a la prueba").
+- **`QuizRunner`**: una pregunta por vez con "Pregunta 3 de 10" (el foco va al título al cambiar);
+  opción múltiple y verdadero/falso como grupos de radios nativos (`fieldset` + `legend` con el
+  enunciado; flechas del teclado), desarrollo con `textarea` etiquetada. Anterior / Siguiente /
+  Terminar; avisa cuántas quedan sin responder (cuentan como error). Al terminar: puntaje
+  ("Sacaste 7 de 10"), y cada error con tu respuesta, la correcta (o la de referencia), la
+  devolución del servidor (abiertas), la explicación y, si la hoja de origen sigue viva, un link
+  "Hoja del <fecha>" a `subjectFolderPath(materia, hoja)`. Todo texto plano
+  (`whitespace-pre-wrap`); íconos SVG (`check`, `close`, `file-text`), sin animaciones nuevas.
+- **Corrección** (`lib/assistant/quizScore.js`, pura): `gradeClosed` corrige mcq/tf en el cliente
+  sin convertir tipos (sin responder = incorrecta; abiertas → `null`); `openAnswers` arma el
+  `answers` de `quiz_grade` **solo con las abiertas respondidas** (cada texto ≤ `MAX.message`);
+  `mergeResults` suma las notas (abierta vacía = incorrecta; sin nota válida = `null`) y
+  `summarize` cuenta solo lo corregido, con `correct ≤ total`. `quiz_grade` se pide con el
+  **alcance de la prueba** y descuenta de su balde `grade`: si el servidor responde con tope
+  agotado (u otro error), el mensaje se muestra en el chat y en el resultado, y las cerradas
+  quedan corregidas igual (las abiertas sin nota no cuentan en el puntaje).
+- **Guardado** (`useAssistant.submitQuiz` → `services/quizResults.service.js`, con la sesión del
+  usuario y RLS): `resolveQuizSources` trae las hojas y materias **vivas** de la prueba;
+  `saveAttempt` guarda `{scope_type, scope_id, total, correct}` (rechaza `correct > total`);
+  `attachSubjects` (`lib/assistant/weakTopics.js`) decide la materia de cada tema y **nunca
+  adivina**: hoja resuelta → su materia si está viva y en el alcance; sin hoja resuelta → la
+  materia del alcance solo si es hoja/materia (todas las fuentes son de esa materia); en carrera
+  o todas, se saltea. Luego `listWeakTopics(materias)` + `planWeakTopicUpdates` +
+  `applyWeakTopicUpdates` (upsert por `user_id,subject_id,topic`, `last_missed_at` = ahora).
+- **`planWeakTopicUpdates`**: el tema se compara normalizado (espacios y mayúsculas, como el
+  servidor) y reutiliza el texto guardado; un tema fallado suma **un** error por prueba; los
+  aciertos solo borran el tema en un repaso (`isReview`) y si no se falló en esa misma prueba; en
+  un examen normal no tocan nada. Temas recortados a 200.
+- **Resumen y plan de estudio:** van por el chat como cualquier acción (`summary`,
+  `study_plan`); si el resumen termina en una `propose_new_sheet`, se acepta con el mismo
+  `ProposalCard` → `context.apply` de la Tarea 10 (no hay otro camino de guardado).
+
+### Límites conocidos (Tarea 11)
+
+- **`misses` no es atómico:** se calcula en el cliente con las filas leídas justo antes del
+  upsert. Dos pruebas terminadas a la vez (dos pestañas) pueden pisarse y sumar uno solo.
+- El intento se guarda aunque fallen los temas flojos (y al revés); el error se muestra.
+- La verificación manual (paso 5 del plan) requiere la Edge Function desplegada.
+
 ## Archivos de esta fase
 
 Se completa en la Tarea 12 del plan.
@@ -222,4 +269,5 @@ Se completa en la Tarea 12 del plan.
 
 - [ ] Implementar las capacidades de la tabla (tareas 1 a 11 del plan).
 - [ ] Verificar en el navegador el panel, el Brote y la propuesta de cambios.
+- [ ] Verificación manual de la Tarea 11 (prueba → corrección → fila en `weak_topics`; repaso que borra lo acertado; free sin llamada a Gemini en Repaso/Plan): requiere la Edge Function desplegada.
 - [ ] Verificación manual de la Tarea 10 (paso 5 del plan: atajo → propuesta → Aceptar → "Guardado" → recargar; Rechazar; reemplazo tras editar el párrafo; marca externa): requiere la Edge Function desplegada.

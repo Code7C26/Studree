@@ -5,6 +5,7 @@ import { ACTION_LABELS, MAX_MESSAGE, lockedActionMessage } from '../../../lib/as
 import { Icon } from '../../ui/Icon'
 import { Brote } from './Brote'
 import { ChatThread } from './ChatThread'
+import { QuizRunner } from './QuizRunner'
 
 /** Cuánto dura la alegría del Brote al terminar bien una respuesta. */
 const HAPPY_MS = 2500
@@ -30,7 +31,15 @@ const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
 export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const {
     state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
+    quizSession, submitQuiz,
   } = useAssistant()
+  // La prueba se muestra en lugar del chat apenas llega; "Volver al chat" la esconde sin perderla.
+  const [quizVisible, setQuizVisible] = useState(false)
+  const [shownQuizKey, setShownQuizKey] = useState(0)
+  if (quizSession && quizSession.key !== shownQuizKey) {
+    setShownQuizKey(quizSession.key)
+    setQuizVisible(true)
+  }
   const [draft, setDraft] = useState('')
   const [happy, setHappy] = useState(false)
   const inputRef = useRef(/** @type {HTMLTextAreaElement|null} */ (null))
@@ -155,7 +164,22 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
         </div>
       </div>
 
-      <ChatThread state={state} onAccept={acceptProposal} onReject={rejectProposal} />
+      {quizSession && quizVisible ? (
+        <QuizRunner
+          key={quizSession.key}
+          session={quizSession}
+          busy={state.busy}
+          onSubmit={submitQuiz}
+          onClose={() => setQuizVisible(false)}
+        />
+      ) : (
+        <ChatThread
+          state={state}
+          onAccept={acceptProposal}
+          onReject={rejectProposal}
+          onOpenQuiz={quizSession ? () => setQuizVisible(true) : undefined}
+        />
+      )}
 
       <form
         className="flex items-end gap-2 border-t border-border/60 px-4 py-3"
