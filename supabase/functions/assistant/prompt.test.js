@@ -79,8 +79,27 @@ test('actionInstruction: cada acción con su pedido; chat y shortcut no agregan 
   assert.match(actionInstruction('weak_review', { scopeLabel: 'X', quiz: { count: 5, types: ['tf'] } }), /temas flojos/i)
   assert.match(actionInstruction('quiz_grade', { scopeLabel: 'X' }), /correg/i)
   assert.match(actionInstruction('study_plan', { scopeLabel: 'X' }), /get_agenda/)
-  assert.match(actionInstruction('gaps', { scopeLabel: 'X' }), /huecos|nunca se desarrollan/i)
-  assert.match(actionInstruction('connections', { scopeLabel: 'X' }), /search_notes/)
+})
+
+test('gaps: temas mencionados y nunca desarrollados de la materia, con las herramientas que ya existen', () => {
+  const p = actionInstruction('gaps', { scopeLabel: 'la materia Álgebra' })
+  assert.match(p, /la materia Álgebra/)
+  assert.match(p, /mencion/i)
+  assert.match(p, /nunca se desarrollan/i)
+  assert.match(p, /list_subject_topics/)
+  assert.match(p, /read_sheet/)
+  assert.match(p, /fecha/i, 'cita la hoja por su fecha')
+  assert.doesNotMatch(p, /propose_/, 'detectar huecos no escribe nada')
+})
+
+test('connections: conceptos repetidos entre materias con search_notes, citando hojas', () => {
+  const p = actionInstruction('connections', { scopeLabel: 'la carrera Ingeniería' })
+  assert.match(p, /la carrera Ingeniería/)
+  assert.match(p, /entre materias/i)
+  assert.match(p, /search_notes/)
+  assert.match(p, /list_subject_topics/)
+  assert.match(p, /fecha/i)
+  assert.doesNotMatch(p, /propose_/)
 })
 
 test('formatDataBlock: JSON etiquetado como datos (un texto con comillas no rompe el bloque)', () => {

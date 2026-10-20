@@ -10,7 +10,7 @@ import { QuizRunner } from './QuizRunner'
 /** Cuánto dura la alegría del Brote al terminar bien una respuesta. */
 const HAPPY_MS = 2500
 
-const CHIPS = ['summary', 'quiz', 'weak_review', 'study_plan']
+const CHIPS = ['summary', 'quiz', 'weak_review', 'study_plan', 'gaps', 'connections']
 
 const MODES = [
   { value: 'notes', label: 'Mis apuntes' },

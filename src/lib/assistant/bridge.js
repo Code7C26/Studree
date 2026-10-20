@@ -51,6 +51,7 @@ function notify(listeners, value) {
  *   request: (item: QueuedRequest) => void,
  *   peekRequest: () => QueuedRequest|null,
  *   takeRequest: () => QueuedRequest|null,
+ *   clearRequest: () => void,
  *   onRequest: (fn: () => void) => () => void
  * }}
  */
@@ -86,6 +87,10 @@ export function createBridge() {
       const item = pending
       pending = null
       return item
+    },
+    /** Descarta el pendiente sin avisar (la carpeta que lo pidió se fue). */
+    clearRequest() {
+      pending = null
     },
     onRequest(fn) {
       requestListeners.add(fn)

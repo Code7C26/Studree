@@ -48,6 +48,28 @@ export function startSubmit(session, given) {
 }
 
 /**
+ * Resultado de una corrección que lanzó un error inesperado: la prueba igual
+ * termina (`done`) mostrando el error, en vez de quedar trabada en `grading`.
+ * Si ya estaba corregida (`partial`), lo que falló fue el guardado.
+ * @param {{results: Array<Object>, score: {total: number, correct: number}, gradeError: string|null}|null} partial
+ * @param {string} message
+ * @returns {{results: Array<Object>, score: {total: number, correct: number}, sheets: Record<string, never>, gradeError: string|null, saveError: string|null, savedTopics: false}}
+ */
+export function failedOutcome(partial, message) {
+  if (!partial) {
+    return { results: [], score: { total: 0, correct: 0 }, sheets: {}, gradeError: message, saveError: null, savedTopics: false }
+  }
+  return {
+    results: partial.results,
+    score: partial.score,
+    sheets: {},
+    gradeError: partial.gradeError,
+    saveError: message,
+    savedTopics: false,
+  }
+}
+
+/**
  * Guarda el resultado y cierra la sesión (`done`). Solo si sigue siendo la
  * misma prueba (misma `key`) y estaba corrigiéndose; si no, la deja igual.
  * @param {QuizSession|null} session

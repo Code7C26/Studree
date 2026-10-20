@@ -552,3 +552,54 @@ test('el historial se reenvía como turnos user/model, sin turnos model iniciale
   const roles = calls.gemini[0].body.contents.map((c) => c.role)
   assert.deepEqual(roles, ['user', 'model', 'user'])
 })
+
+test('connections de un free → 403 feature (aun en su materia), sin conteos ni Gemini', async () => {
+  for (const scope of [{ type: 'career', id: C1 }, { type: 'subject', id: S1 }]) {
+    const { deps, calls } = makeDeps()
+    const res = await handleRequest(post({ action: 'connections', scope }), deps)
+    assert.equal(res.status, 403)
+    const body = await res.json()
+    assert.equal(body.code, 'feature')
+    assert.match(body.message, /Premium/)
+    assert.equal(calls.gemini.length, 0)
+  }
+})
+
+test('connections premium con alcance carrera: herramientas, pedido de conexiones y uso sin tope', async () => {
+  const { deps, calls } = makeDeps({ plan: 'premium' })
+  const evs = await events(await handleRequest(post({ action: 'connections', scope: { type: 'career', id: C1 } }), deps))
+  assert.ok(calls.gemini[0].body.tools?.length)
+  assert.match(lastUserText(calls.gemini[0]), /search_notes/)
+  assert.match(systemOf(calls.gemini[0]), /Análisis/)
+  assert.deepEqual(calls.record, [{ action: 'connections', external: false }])
+  assert.equal(evs.find((e) => e.type === 'usage').bucket, 'extras')
+  assert.equal(evs.at(-1).type, 'done')
+})
+
+test('gaps de un free en su materia: descuenta del balde extras', async () => {
+  const { deps, calls } = makeDeps({ counts: { extras: 1 } })
+  const evs = await events(await handleRequest(post({ action: 'gaps', scope: { type: 'subject', id: S1 } }), deps))
+  assert.deepEqual(calls.count[0].requests.map((r) => r.key), ['extras'])
+  assert.deepEqual(calls.count[0].requests[0].actions.sort(), ['connections', 'gaps', 'study_plan'])
+  assert.ok(calls.gemini[0].body.tools?.length, 'gaps usa las herramientas de siempre')
+  assert.match(lastUserText(calls.gemini[0]), /nunca se desarrollan/i)
+  assert.deepEqual(calls.record, [{ action: 'gaps', external: false }])
+  assert.deepEqual(evs.find((e) => e.type === 'usage'), {
+    type: 'usage',
+    action: 'gaps',
+    bucket: 'extras',
+    used: 2,
+    max: LIMITS.free.extras.max,
+    period: 'month',
+  })
+  assert.equal(evs.at(-1).type, 'done')
+})
+
+test('gaps de un free con el tope extras agotado → 429 sin Gemini', async () => {
+  const { deps, calls } = makeDeps({ counts: { extras: LIMITS.free.extras.max } })
+  const res = await handleRequest(post({ action: 'gaps', scope: { type: 'subject', id: S1 } }), deps)
+  assert.equal(res.status, 429)
+  assert.equal((await res.json()).code, 'quota')
+  assert.equal(calls.gemini.length, 0)
+  assert.equal(calls.record.length, 0)
+})

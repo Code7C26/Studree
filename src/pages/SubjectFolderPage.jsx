@@ -402,6 +402,10 @@ function SubjectFolder({ subjectId }) {
     return () => assistantBridge.set(null)
   }, [subject, activeSheetId, getSelection, apply])
 
+  // Un atajo encolado que el panel todavía no tomó no puede dispararse después
+  // en otra carpeta (la carpeta se remonta por materia: `key={subjectId}`).
+  useEffect(() => () => assistantBridge.clearRequest(), [])
+
   const handleShortcut = useCallback(
     (id) => {
       const selection = getSelection()

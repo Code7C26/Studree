@@ -16,6 +16,8 @@ export const ACTION_LABELS = Object.freeze({
   quiz: 'Tomame examen',
   weak_review: 'Repaso de errores',
   study_plan: 'Plan de estudio',
+  gaps: 'Detectar huecos',
+  connections: 'Conexiones entre materias',
 })
 
 /** Función de Premium de cada acción (misma tabla que `quota.js`). */
@@ -102,6 +104,21 @@ export function lockedActionMessage(action, plan) {
   const feature = FEATURE_OF_ACTION[action]
   if (!feature || featuresOf(plan)[feature]) return null
   return LOCKED_MESSAGES[feature] ?? 'Es parte de Premium.'
+}
+
+/**
+ * Alcance fijo de las acciones que no usan el del panel: los huecos se buscan
+ * en la materia abierta; las conexiones, en la carrera (o en todo, si no hay
+ * carrera abierta).
+ * @param {string} action
+ * @param {import('./bridge.js').AssistantContext|null} context
+ * @returns {{type: ScopeType, id?: string}|null|undefined}  `undefined` = usar
+ *   el alcance del panel; `null` = la acción necesita una materia abierta.
+ */
+export function actionScope(action, context) {
+  if (action === 'gaps') return buildScope('subject', context)
+  if (action === 'connections') return buildScope('career', context) ?? { type: 'all' }
+  return undefined
 }
 
 /** Largo máximo del mensaje que acepta el servidor. */

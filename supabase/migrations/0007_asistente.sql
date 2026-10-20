@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Studree — 0007: Fase 14 (asistente de IA "el Brote")
--- Spec: docs/superpowers/specs/2026-10-19-fase-14-asistente-design.md
+-- Spec: docs/superpowers/specs/2026-10-19-asistente-ia-design.md
 -- Modelo: docs/DB_SCHEMA.md · Seguridad: docs/03-security.md
 --
 -- ADITIVA e idempotente: no borra datos. Sin funciones nuevas (nada de

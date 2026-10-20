@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createQuizSession, startSubmit, finishSubmit } from './quizSession.js'
+import { createQuizSession, startSubmit, finishSubmit, failedOutcome } from './quizSession.js'
 
 const meta = { scope: { type: 'subject', id: 's1' }, scopeSubjectId: 's1', isReview: false }
 const questions = [{ id: 'q1', type: 'tf', prompt: 'p', answer: true, explanation: 'e', topic: 't' }]
@@ -32,4 +32,23 @@ test('finishSubmit ignora otra prueba y vuelve a open si no hubo resultado', () 
   assert.equal(back.given, null)
   const open = createQuizSession(null, meta, questions)
   assert.equal(finishSubmit(open, open.key, { x: 1 }), open)
+})
+
+test('failedOutcome: un error inesperado cierra la prueba en done con el error (no queda en grading)', () => {
+  const grading = startSubmit(createQuizSession(null, meta, questions), { q1: true })
+  const early = failedOutcome(null, 'boom')
+  assert.deepEqual(early.results, [])
+  assert.deepEqual(early.score, { total: 0, correct: 0 })
+  assert.deepEqual(early.sheets, {})
+  assert.equal(early.gradeError, 'boom')
+  assert.equal(early.saveError, null)
+  assert.equal(early.savedTopics, false)
+  assert.equal(finishSubmit(grading, grading.key, early).status, 'done')
+
+  const results = [{ id: 'q1', correct: true }]
+  const late = failedOutcome({ results, score: { total: 1, correct: 1 }, gradeError: null }, 'boom')
+  assert.deepEqual(late.results, results)
+  assert.deepEqual(late.score, { total: 1, correct: 1 })
+  assert.equal(late.gradeError, null)
+  assert.equal(late.saveError, 'boom', 'si ya estaba corregida, falló el guardado')
 })

@@ -58,3 +58,14 @@ test('un pedido nuevo reemplaza al pendiente y un listener roto no corta a los d
   assert.equal(n, 2)
   assert.equal(b.takeRequest().label, 'b')
 })
+
+test('clearRequest descarta el pedido pendiente sin avisar (la carpeta se desmontó)', () => {
+  const b = createBridge()
+  let n = 0
+  b.onRequest(() => { n++ })
+  b.request({ request: { action: 'shortcut', message: 'a' }, label: 'a', selection: null })
+  b.clearRequest()
+  assert.equal(n, 1)
+  assert.equal(b.peekRequest(), null)
+  assert.equal(b.takeRequest(), null)
+})

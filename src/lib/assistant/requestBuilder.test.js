@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  buildHistory, scopeOptions, resolveScopeType, buildScope, lockedActionMessage, MAX_MESSAGE,
+  buildHistory, scopeOptions, resolveScopeType, buildScope, lockedActionMessage, actionScope, ACTION_LABELS, MAX_MESSAGE,
 } from './requestBuilder.js'
 import { validateRequest } from '../../../supabase/functions/assistant/request.js'
 
@@ -68,4 +68,30 @@ test('lockedActionMessage: free no tiene repaso ni plan; premium sí; el resto n
   assert.equal(lockedActionMessage('weak_review', 'premium'), null)
   assert.equal(lockedActionMessage('summary', 'free'), null)
   assert.equal(lockedActionMessage('chat', 'free'), null)
+})
+
+test('chips de la segunda etapa: huecos libre, conexiones de Premium', () => {
+  assert.equal(typeof ACTION_LABELS.gaps, 'string')
+  assert.equal(typeof ACTION_LABELS.connections, 'string')
+  assert.equal(lockedActionMessage('gaps', 'free'), null)
+  assert.match(lockedActionMessage('connections', 'free'), /Premium/)
+  assert.equal(lockedActionMessage('connections', 'premium'), null)
+})
+
+test('actionScope: huecos va sobre la materia; conexiones sobre la carrera o todo; el resto usa el del panel', () => {
+  assert.deepEqual(actionScope('gaps', ctx), { type: 'subject', id: 'sub1' })
+  assert.equal(actionScope('gaps', null), null, 'sin materia abierta no hay alcance')
+  assert.deepEqual(actionScope('connections', ctx), { type: 'career', id: 'car1' })
+  assert.deepEqual(actionScope('connections', { ...ctx, career: null }), { type: 'all' })
+  assert.deepEqual(actionScope('connections', null), { type: 'all' })
+  for (const action of ['chat', 'summary', 'quiz', 'weak_review', 'study_plan']) {
+    assert.equal(actionScope(action, ctx), undefined)
+  }
+})
+
+test('los pedidos de huecos y conexiones pasan la validación del servidor', () => {
+  for (const action of ['gaps', 'connections']) {
+    const r = validateRequest({ action, message: '', history: [], mode: 'notes', scope: actionScope(action, ctx) })
+    assert.equal(r.ok, true)
+  }
 })

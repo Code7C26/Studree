@@ -59,7 +59,7 @@ const QUOTA_MESSAGES = {
   chat: 'Llegaste al tope de preguntas de hoy. Probá mañana o pasate a Premium.',
   summary: 'Llegaste al tope de resúmenes de este mes. Probá el mes que viene o pasate a Premium.',
   quiz: 'Llegaste al tope de pruebas de este mes. Probá el mes que viene o pasate a Premium.',
-  extras: 'Esta función extra es parte de Premium.',
+  extras: 'Llegaste al tope de funciones extra de este mes. Probá el mes que viene o pasate a Premium.',
   grade: 'Llegaste al tope de correcciones de hoy. Probá mañana o pasate a Premium.',
   external: 'Llegaste al tope de consultas con búsqueda externa de hoy. Probá mañana o pasate a Premium.',
 }

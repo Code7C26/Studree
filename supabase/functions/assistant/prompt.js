@@ -73,9 +73,9 @@ export function actionInstruction(action, { scopeLabel, quiz }) {
     case 'study_plan':
       return `Armá un plan de estudio para ${scopeLabel}: usá get_agenda para ver las fechas importantes y las tareas, y list_subject_topics o read_sheet para ver qué hay que repasar. Sugerí qué repasar y cuándo, día por día hasta la próxima fecha importante.`
     case 'gaps':
-      return `Detectá huecos en ${scopeLabel}: temas que se mencionan en las hojas pero nunca se desarrollan. Para cada uno, decí en qué hoja aparece.`
+      return `Detectá huecos en ${scopeLabel}: temas que se mencionan en las hojas pero nunca se desarrollan (no tienen su propio tema ni una explicación). Mirá los temas con list_subject_topics y leé las hojas con read_sheet. Para cada hueco, decí en qué hoja aparece citándola por su fecha. Si no encontrás huecos, decilo.`
     case 'connections':
-      return `Buscá conceptos que se repiten entre materias de ${scopeLabel} (usá search_notes) y explicá cómo se conectan, citando las hojas.`
+      return `Buscá conceptos que se repiten entre materias de ${scopeLabel}: mirá los temas de cada materia con list_subject_topics, confirmá las coincidencias con search_notes y explicá cómo se conectan, citando las hojas por su fecha y su materia.`
     default:
       return ''
   }

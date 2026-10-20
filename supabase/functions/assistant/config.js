@@ -36,7 +36,9 @@ export const LIMITS = {
     chat: { period: 'day', max: 20 },
     summary: { period: 'month', max: 3 },
     quiz: { period: 'month', max: 3 },
-    extras: { period: 'month', max: 0 },
+    // Ruling P: free usa `gaps` dentro de este tope; `study_plan` y
+    // `connections` siguen bloqueados por FEATURES.
+    extras: { period: 'month', max: 3 },
     grade: { period: 'day', max: 10 },
     external: { period: 'day', max: 5 },
   },

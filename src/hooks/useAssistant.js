@@ -15,12 +15,12 @@ import {
 } from '../services/quizResults.service.js'
 import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assistant/quizScore.js'
 import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
-import { createQuizSession, startSubmit, finishSubmit } from '../lib/assistant/quizSession.js'
+import { createQuizSession, startSubmit, finishSubmit, failedOutcome } from '../lib/assistant/quizSession.js'
 import {
   initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice,
 } from '../lib/assistant/chatState.js'
 import {
-  ACTION_LABELS, MAX_MESSAGE, buildHistory, buildScope, lockedActionMessage, resolveScopeType, scopeOptions,
+  ACTION_LABELS, MAX_MESSAGE, actionScope, buildHistory, buildScope, lockedActionMessage, resolveScopeType, scopeOptions,
 } from '../lib/assistant/requestBuilder.js'
 
 const NO_SCOPE = 'Abrí una materia para preguntarle al Brote (o pasate a Premium para preguntar sobre todas).'
@@ -28,6 +28,8 @@ const NO_CONTEXT = 'Abrí la carpeta de la materia para aplicar el cambio.'
 const BUSY = 'El Brote todavía está respondiendo: probá cuando termine.'
 const GRADE_LABEL = 'Corregí mis respuestas de desarrollo'
 const GRADE_FAILED = 'No se pudieron corregir las respuestas de desarrollo.'
+const SUBMIT_FAILED = 'Algo falló al corregir o guardar la prueba. Probá de nuevo más tarde.'
+const NO_SUBJECT = 'Abrí una materia para detectar sus huecos.'
 const QUIZ_ACTIONS = ['quiz', 'weak_review']
 
 /**
@@ -212,11 +214,17 @@ export function useAssistant() {
         setState((s) => setNotice(s, locked))
         return
       }
+      // Huecos y conexiones tienen su propio alcance (no el del panel).
+      const fixed = actionScope(action, context)
+      if (fixed === null) {
+        setState((s) => setNotice(s, NO_SUBJECT))
+        return
+      }
       const { label, ...fields } = extra ?? {}
       const visible = label ?? ACTION_LABELS[action] ?? fields.message ?? action
-      start({ ...fields, action }, visible)
+      start({ ...fields, action }, visible, null, fixed ?? null)
     },
-    [plan, start],
+    [plan, context, start],
   )
 
   // Atajos sobre el texto: la carpeta encola el pedido en el puente (y el host
@@ -292,21 +300,31 @@ export function useAssistant() {
       const session = startSubmit(quizRef.current, given)
       if (!session) return null
       putQuiz(session)
-      const closed = gradeClosed(session.questions, given)
-      const answers = openAnswers(session.questions, given)
-      let grades = null
-      let gradeError = null
-      if (answers.length) {
-        const res = await start({ action: 'quiz_grade', answers }, GRADE_LABEL, null, session.scope)
-        grades = res.grades
-        gradeError = res.grades ? null : res.error ?? GRADE_FAILED
-      }
-      const results = mergeResults(session.questions, given, closed, grades)
-      const score = summarize(results)
-      const saved = await saveQuizOutcome(session, results, score)
+      /** @type {{results: import('../lib/assistant/quizScore.js').QuizResult[], score: {total: number, correct: number}, gradeError: string|null}|null} */
+      let graded = null
       /** @type {QuizOutcome} */
-      const outcome = { results, score, gradeError, ...saved }
-      putQuiz(finishSubmit(quizRef.current, session.key, outcome))
+      let outcome
+      try {
+        const closed = gradeClosed(session.questions, given)
+        const answers = openAnswers(session.questions, given)
+        let grades = null
+        let gradeError = null
+        if (answers.length) {
+          const res = await start({ action: 'quiz_grade', answers }, GRADE_LABEL, null, session.scope)
+          grades = res.grades
+          gradeError = res.grades ? null : res.error ?? GRADE_FAILED
+        }
+        const results = mergeResults(session.questions, given, closed, grades)
+        graded = { results, score: summarize(results), gradeError }
+        const saved = await saveQuizOutcome(session, graded.results, graded.score)
+        outcome = { ...graded, ...saved }
+      } catch (error) {
+        // Un error inesperado no puede dejar la prueba trabada en `grading`.
+        console.error('[assistant] falló el envío de la prueba:', error)
+        outcome = failedOutcome(graded, SUBMIT_FAILED)
+      } finally {
+        putQuiz(finishSubmit(quizRef.current, session.key, outcome ?? failedOutcome(graded, SUBMIT_FAILED)))
+      }
       return outcome
     },
     [start, saveQuizOutcome, putQuiz],

@@ -106,10 +106,19 @@ test('free: borde de quiz y summary', () => {
   }
 })
 
-test('free: extras deniega', () => {
-  for (const action of ['study_plan', 'gaps']) {
+test('free: gaps entra en el tope extras (Ruling P); study_plan y connections siguen bloqueados por feature', () => {
+  const max = LIMITS.free.extras.max
+  assert.ok(max > 0, 'free tiene algo de extras')
+  assert.equal(LIMITS.free.extras.period, 'month')
+  assert.equal(acc({ plan: 'free', action: 'gaps', counts: { extras: max - 1 } }).allowed, true)
+  const capped = acc({ plan: 'free', action: 'gaps', counts: { extras: max } })
+  assert.equal(capped.allowed, false)
+  assert.equal(capped.code, 'quota')
+  assert.match(capped.message, /tope/i)
+  for (const action of ['study_plan', 'connections']) {
     const r = acc({ plan: 'free', action, counts: { extras: 0 } })
     assert.equal(r.allowed, false)
+    assert.equal(r.code, 'feature')
   }
 })
 
