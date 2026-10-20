@@ -2,13 +2,19 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildHistory, scopeOptions, resolveScopeType, buildScope, lockedActionMessage, actionScope, ACTION_LABELS, MAX_MESSAGE,
+  requestMode, blockReason,
 } from './requestBuilder.js'
 import { validateRequest } from '../../../supabase/functions/assistant/request.js'
 
+// Ids reales: el servidor exige UUID en scope.id y selection.sheetId.
+const SUB = 'a1111111-1111-4111-8111-111111111111'
+const CAR = 'c1111111-1111-4111-8111-111111111111'
+const SH = 'b1111111-1111-4111-8111-111111111111'
+
 const ctx = {
-  subject: { id: 'sub1', name: 'Bio' },
-  career: { id: 'car1', name: 'Medicina' },
-  sheetId: 'sh1',
+  subject: { id: SUB, name: 'Bio' },
+  career: { id: CAR, name: 'Medicina' },
+  sheetId: SH,
   getSelection: () => null,
   apply: () => ({ ok: true }),
 }
@@ -54,9 +60,9 @@ test('resolveScopeType respeta lo elegido si se puede y si no cae en lo preferid
 })
 
 test('buildScope arma el id según el tipo y devuelve null si falta', () => {
-  assert.deepEqual(buildScope('sheet', ctx), { type: 'sheet', id: 'sh1' })
-  assert.deepEqual(buildScope('subject', ctx), { type: 'subject', id: 'sub1' })
-  assert.deepEqual(buildScope('career', ctx), { type: 'career', id: 'car1' })
+  assert.deepEqual(buildScope('sheet', ctx), { type: 'sheet', id: SH })
+  assert.deepEqual(buildScope('subject', ctx), { type: 'subject', id: SUB })
+  assert.deepEqual(buildScope('career', ctx), { type: 'career', id: CAR })
   assert.deepEqual(buildScope('all', null), { type: 'all' })
   assert.equal(buildScope('subject', null), null)
   assert.equal(buildScope(null, ctx), null)
@@ -79,9 +85,9 @@ test('chips de la segunda etapa: huecos libre, conexiones de Premium', () => {
 })
 
 test('actionScope: huecos va sobre la materia; conexiones sobre la carrera o todo; el resto usa el del panel', () => {
-  assert.deepEqual(actionScope('gaps', ctx), { type: 'subject', id: 'sub1' })
+  assert.deepEqual(actionScope('gaps', ctx), { type: 'subject', id: SUB })
   assert.equal(actionScope('gaps', null), null, 'sin materia abierta no hay alcance')
-  assert.deepEqual(actionScope('connections', ctx), { type: 'career', id: 'car1' })
+  assert.deepEqual(actionScope('connections', ctx), { type: 'career', id: CAR })
   assert.deepEqual(actionScope('connections', { ...ctx, career: null }), { type: 'all' })
   assert.deepEqual(actionScope('connections', null), { type: 'all' })
   for (const action of ['chat', 'summary', 'quiz', 'weak_review', 'study_plan']) {
@@ -94,4 +100,28 @@ test('los pedidos de huecos y conexiones pasan la validación del servidor', () 
     const r = validateRequest({ action, message: '', history: [], mode: 'notes', scope: actionScope(action, ctx) })
     assert.equal(r.ok, true)
   }
+})
+
+test('Ruling R: quiz_grade siempre va en modo notes (nunca gasta el cupo externo)', () => {
+  assert.equal(requestMode('quiz_grade', 'external'), 'notes')
+  assert.equal(requestMode('quiz_grade', 'notes'), 'notes')
+  assert.equal(requestMode('chat', 'external'), 'external')
+  assert.equal(requestMode('quiz', 'notes'), 'notes')
+  const r = validateRequest({
+    action: 'quiz_grade', mode: requestMode('quiz_grade', 'external'), scope: { type: 'subject', id: SUB },
+    answers: [{ id: 'q1', question: 'a', expected: 'b', given: 'c' }],
+  })
+  assert.equal(r.ok, true)
+  assert.equal(r.value.mode, 'notes')
+})
+
+test('blockReason: ocupado, sin alcance o prueba abierta frenan el pedido (en ese orden)', () => {
+  const scope = { type: 'subject', id: SUB }
+  assert.equal(blockReason({ running: true, scopeValue: scope, action: 'chat', quizOpen: false }), 'busy')
+  assert.equal(blockReason({ running: false, scopeValue: null, action: 'chat', quizOpen: false }), 'no_scope')
+  assert.equal(blockReason({ running: false, scopeValue: scope, action: 'quiz', quizOpen: true }), 'quiz_open')
+  assert.equal(blockReason({ running: false, scopeValue: scope, action: 'weak_review', quizOpen: true }), 'quiz_open')
+  assert.equal(blockReason({ running: false, scopeValue: scope, action: 'chat', quizOpen: true }), null)
+  assert.equal(blockReason({ running: false, scopeValue: scope, action: 'quiz_grade', quizOpen: true }), null)
+  assert.equal(blockReason({ running: false, scopeValue: scope, action: 'quiz', quizOpen: false }), null)
 })

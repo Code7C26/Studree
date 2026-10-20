@@ -4,6 +4,7 @@
 // pedidos que de antemano se sabe que va a rechazar.
 
 import { FEATURES, MAX } from '../../../supabase/functions/assistant/config.js'
+import { QUIZ_ACTIONS } from './quizSession.js'
 
 /**
  * @typedef {'sheet'|'subject'|'career'|'all'} ScopeType
@@ -123,3 +124,28 @@ export function actionScope(action, context) {
 
 /** Largo máximo del mensaje que acepta el servidor. */
 export const MAX_MESSAGE = MAX.message
+
+/**
+ * Modo del pedido. Ruling R: la corrección (`quiz_grade`) va SIEMPRE en modo
+ * `notes`, así nunca consume el cupo de conocimiento externo.
+ * @param {string} action
+ * @param {'notes'|'external'} mode
+ * @returns {'notes'|'external'}
+ */
+export function requestMode(action, mode) {
+  return action === 'quiz_grade' ? 'notes' : mode
+}
+
+/**
+ * Por qué no se puede mandar un pedido ahora (o `null` si se puede):
+ * `busy` = el Brote está respondiendo; `no_scope` = no hay alcance (free sin
+ * materia abierta); `quiz_open` = pedir otra prueba descartaría la abierta.
+ * @param {{running: boolean, scopeValue: Object|null, action: string, quizOpen: boolean}} input
+ * @returns {'busy'|'no_scope'|'quiz_open'|null}
+ */
+export function blockReason({ running, scopeValue, action, quizOpen }) {
+  if (running) return 'busy'
+  if (!scopeValue) return 'no_scope'
+  if (quizOpen && QUIZ_ACTIONS.includes(action)) return 'quiz_open'
+  return null
+}

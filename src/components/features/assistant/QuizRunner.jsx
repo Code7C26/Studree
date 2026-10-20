@@ -46,8 +46,9 @@ function answerText(question, value) {
  * @param {boolean} props.busy  El Brote está respondiendo otra cosa (no se puede corregir).
  * @param {(given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>} props.onSubmit
  * @param {() => void} props.onClose  Volver al chat.
+ * @param {() => void} props.onDiscard  Descartar la prueba sin terminarla (sin red; libera los chips de prueba).
  */
-export function QuizRunner({ session, hidden, busy, onSubmit, onClose }) {
+export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard }) {
   const { questions } = session
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState(/** @type {Record<string, number|boolean|string>} */ ({}))
@@ -240,6 +241,11 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose }) {
         </p>
       )}
       {busy && !grading && <p className="text-xs text-text-muted">Esperá a que el Brote termine para corregir.</p>}
+      {!grading && (
+        <button type="button" onClick={onDiscard} className="text-xs text-text-muted underline-offset-2 transition-colors hover:text-text hover:underline">
+          Descartar prueba
+        </button>
+      )}
       {grading && (
         <p role="status" className="text-xs text-text-muted">
           Corrigiendo tus respuestas…

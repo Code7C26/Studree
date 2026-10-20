@@ -27,7 +27,6 @@
  * @property {string|null} status  Texto legible de lo que está haciendo el Brote.
  * @property {Object|null} usage
  * @property {Object[]|null} quiz
- * @property {Object[]|null} grades
  * @property {string|null} error
  * @property {string|null} notice  Nota informativa neutra (p. ej. "es de Premium"); no es un error.
  * @property {boolean} truncated  La última respuesta se cortó (`done` con `truncated` o un `finishReason` distinto de STOP).
@@ -48,7 +47,7 @@ const GENERIC_ERROR = 'No se pudo hablar con el Brote. Probá de nuevo.'
 /** @returns {ChatState} */
 export function initialChat() {
   return {
-    messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, grades: null, error: null,
+    messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, error: null,
     notice: null,
     truncated: false,
   }
@@ -138,8 +137,6 @@ export function reduceEvent(state, event) {
       return addProposal(state, event.proposal)
     case 'quiz':
       return Array.isArray(event.questions) ? { ...state, quiz: event.questions } : state
-    case 'grades':
-      return Array.isArray(event.grades) ? { ...state, grades: event.grades } : state
     case 'usage': {
       // Puede llegar después de un `error` (caso `steps`): no toca busy ni error.
       const usage = { ...event }

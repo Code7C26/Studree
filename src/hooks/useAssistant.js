@@ -15,12 +15,15 @@ import {
 } from '../services/quizResults.service.js'
 import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assistant/quizScore.js'
 import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
-import { createQuizSession, startSubmit, finishSubmit, failedOutcome } from '../lib/assistant/quizSession.js'
+import {
+  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON,
+} from '../lib/assistant/quizSession.js'
 import {
   initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice,
 } from '../lib/assistant/chatState.js'
 import {
-  ACTION_LABELS, MAX_MESSAGE, actionScope, buildHistory, buildScope, lockedActionMessage, resolveScopeType, scopeOptions,
+  ACTION_LABELS, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildScope, lockedActionMessage, requestMode,
+  resolveScopeType, scopeOptions,
 } from '../lib/assistant/requestBuilder.js'
 
 const NO_SCOPE = 'Abrí una materia para preguntarle al Brote (o pasate a Premium para preguntar sobre todas).'
@@ -30,7 +33,8 @@ const GRADE_LABEL = 'Corregí mis respuestas de desarrollo'
 const GRADE_FAILED = 'No se pudieron corregir las respuestas de desarrollo.'
 const SUBMIT_FAILED = 'Algo falló al corregir o guardar la prueba. Probá de nuevo más tarde.'
 const NO_SUBJECT = 'Abrí una materia para detectar sus huecos.'
-const QUIZ_ACTIONS = ['quiz', 'weak_review']
+/** Aviso de cada motivo de `blockReason`. */
+const BLOCK_NOTICES = { busy: BUSY, no_scope: NO_SCOPE, quiz_open: QUIZ_OPEN_REASON }
 
 /**
  * Las propuestas de un pedido con selección llevan esa selección (con su rango),
@@ -85,13 +89,14 @@ function tagProposal(event, selection) {
  *   scope: ScopeType|null,
  *   setScope: (scope: ScopeType) => void,
  *   scopeOptions: ScopeOption[],
- *   send: (text: string) => void,
+ *   send: (text: string) => boolean,
  *   runAction: (action: string, extra?: Object) => void,
  *   stop: () => void,
  *   acceptProposal: (id: string) => void,
  *   rejectProposal: (id: string) => void,
  *   quizSession: QuizSession|null,
  *   submitQuiz: (given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>,
+ *   discardOpenQuiz: () => void,
  * }}
  */
 export function useAssistant() {
@@ -106,8 +111,11 @@ export function useAssistant() {
   const [quizSession, setQuizSession] = useState(/** @type {QuizSession|null} */ (null))
   /** Copia sincrónica de la sesión: el guard de "una sola vez" no puede esperar al render. */
   const quizRef = useRef(/** @type {QuizSession|null} */ (null))
+  /** Última `key` usada: una prueba nueva después de descartar no puede repetirla (el panel la usa para mostrarla). */
+  const lastQuizKeyRef = useRef(0)
   const putQuiz = useCallback((/** @type {QuizSession|null} */ next) => {
     quizRef.current = next
+    if (next) lastQuizKeyRef.current = next.key
     setQuizSession(next)
   }, [])
   /** Alcance del pedido de prueba en curso (se asocia al evento `quiz`). */
@@ -143,14 +151,14 @@ export function useAssistant() {
      * @returns {Promise<{error: string|null, grades: Array<Object>|null}>}
      */
     async (fields, visibleText, selection = null, scopeOverride = null) => {
-      if (controllerRef.current) {
-        setState((s) => setNotice(s, BUSY))
-        return { error: BUSY, grades: null }
-      }
       const scopeValue = scopeOverride ?? buildScope(scope, context)
-      if (!scopeValue) {
-        setState((s) => setNotice(s, NO_SCOPE))
-        return { error: NO_SCOPE, grades: null }
+      const blocked = blockReason({
+        running: Boolean(controllerRef.current), scopeValue, action: fields.action, quizOpen: blocksNewQuiz(quizRef.current),
+      })
+      if (blocked) {
+        const notice = BLOCK_NOTICES[blocked]
+        setState((s) => setNotice(s, notice))
+        return { error: notice, grades: null }
       }
       if (QUIZ_ACTIONS.includes(fields.action)) {
         let scopeSubjectId = null
@@ -164,7 +172,8 @@ export function useAssistant() {
         message: '',
         ...fields,
         history: buildHistory(stateRef.current.messages),
-        mode,
+        // Ruling R: la corrección nunca gasta el cupo externo.
+        mode: requestMode(fields.action, mode),
         scope: scopeValue,
       }
       const controller = new AbortController()
@@ -182,7 +191,7 @@ export function useAssistant() {
           if (event?.type === 'error') streamError = typeof event.message === 'string' && event.message ? event.message : GRADE_FAILED
           const meta = pendingQuizRef.current
           if (event?.type === 'quiz' && Array.isArray(event.questions) && meta) {
-            putQuiz(createQuizSession(quizRef.current, meta, event.questions))
+            putQuiz(createQuizSession(quizRef.current ?? { key: lastQuizKeyRef.current }, meta, event.questions))
           }
           setState((s) => reduceEvent(s, tagProposal(event, selection)))
         },
@@ -199,12 +208,26 @@ export function useAssistant() {
   )
 
   const send = useCallback(
+    /**
+     * Manda un mensaje de chat. Devuelve `false` si no se mandó (ocupado o sin
+     * alcance): el panel conserva el borrador para no perder lo escrito.
+     * @param {string} text
+     * @returns {boolean}
+     */
     (text) => {
       const message = String(text ?? '').trim().slice(0, MAX_MESSAGE)
-      if (!message) return
+      if (!message) return false
+      const blocked = blockReason({
+        running: Boolean(controllerRef.current), scopeValue: buildScope(scope, context), action: 'chat', quizOpen: false,
+      })
+      if (blocked) {
+        setState((s) => setNotice(s, BLOCK_NOTICES[blocked]))
+        return false
+      }
       start({ action: 'chat', message }, message)
+      return true
     },
-    [start],
+    [start, scope, context],
   )
 
   const runAction = useCallback(
@@ -330,6 +353,11 @@ export function useAssistant() {
     [start, saveQuizOutcome, putQuiz],
   )
 
+  /** "Descartar prueba": la saca del panel sin red (una que se está corrigiendo no se descarta). */
+  const discardOpenQuiz = useCallback(() => {
+    putQuiz(discardQuiz(quizRef.current))
+  }, [putQuiz])
+
   const stop = useCallback(() => {
     controllerRef.current?.abort()
   }, [])
@@ -379,5 +407,6 @@ export function useAssistant() {
     rejectProposal,
     quizSession,
     submitQuiz,
+    discardOpenQuiz,
   }
 }

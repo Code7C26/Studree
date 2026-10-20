@@ -49,7 +49,6 @@ function notify(listeners, value) {
  *   get: () => AssistantContext|null,
  *   subscribe: (fn: (ctx: AssistantContext|null) => void) => () => void,
  *   request: (item: QueuedRequest) => void,
- *   peekRequest: () => QueuedRequest|null,
  *   takeRequest: () => QueuedRequest|null,
  *   clearRequest: () => void,
  *   onRequest: (fn: () => void) => () => void
@@ -78,9 +77,6 @@ export function createBridge() {
     request(item) {
       pending = item ?? null
       notify(requestListeners)
-    },
-    peekRequest() {
-      return pending
     },
     /** Devuelve el pedido pendiente y lo saca (se manda una sola vez). */
     takeRequest() {

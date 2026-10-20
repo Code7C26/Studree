@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAssistant } from '../../../hooks/useAssistant.js'
 import { chatMood } from '../../../lib/assistant/chatState.js'
 import { ACTION_LABELS, MAX_MESSAGE, lockedActionMessage } from '../../../lib/assistant/requestBuilder.js'
+import { QUIZ_ACTIONS, QUIZ_OPEN_REASON, blocksNewQuiz } from '../../../lib/assistant/quizSession.js'
 import { Icon } from '../../ui/Icon'
 import { Brote } from './Brote'
 import { ChatThread } from './ChatThread'
@@ -31,8 +32,10 @@ const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
 export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const {
     state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
-    quizSession, submitQuiz,
+    quizSession, submitQuiz, discardOpenQuiz,
   } = useAssistant()
+  // Con una prueba sin terminar no se puede pedir otra: la reemplazaría (respuestas perdidas y cupo gastado).
+  const quizOpen = blocksNewQuiz(quizSession)
   // La prueba se muestra en lugar del chat apenas llega; "Volver al chat" la esconde sin perderla.
   const [quizVisible, setQuizVisible] = useState(false)
   const [shownQuizKey, setShownQuizKey] = useState(0)
@@ -77,10 +80,10 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
     onMood(mood)
   }, [mood, onMood])
 
+  // El borrador solo se borra si el pedido salió (sin alcance, p. ej. free en Inicio, se conserva).
   const submit = () => {
     if (state.busy || !draft.trim()) return
-    send(draft)
-    setDraft('')
+    if (send(draft)) setDraft('')
   }
 
   return (
@@ -149,11 +152,14 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
         <div className="flex flex-wrap gap-1.5">
           {CHIPS.map((action) => {
             const locked = lockedActionMessage(action, plan) != null
+            const quizBlocked = quizOpen && QUIZ_ACTIONS.includes(action)
             return (
               <button
                 key={action}
                 type="button"
-                disabled={state.busy}
+                disabled={state.busy || quizBlocked}
+                title={quizBlocked ? QUIZ_OPEN_REASON : undefined}
+                aria-describedby={quizBlocked ? 'brote-quiz-open-hint' : undefined}
                 onClick={() => runAction(action)}
                 className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-text-muted transition-colors hover:border-accent/60 hover:text-text disabled:opacity-50"
               >
@@ -164,6 +170,11 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
             )
           })}
         </div>
+        {quizOpen && (
+          <p id="brote-quiz-open-hint" className="text-xs text-text-muted">
+            {QUIZ_OPEN_REASON}
+          </p>
+        )}
       </div>
 
       {/* La prueba no se desmonta al volver al chat: se oculta y conserva respuestas y resultado. */}
@@ -175,6 +186,7 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
           busy={state.busy}
           onSubmit={submitQuiz}
           onClose={() => setQuizVisible(false)}
+          onDiscard={discardOpenQuiz}
         />
       )}
       {!showQuiz && (

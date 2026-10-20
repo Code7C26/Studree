@@ -36,11 +36,11 @@ test('un suscriptor que tira error no corta a los demás', () => {
 test('request deja un pedido pendiente que se toma una sola vez y avisa a onRequest', () => {
   const b = createBridge()
   const seen = []
-  const off = b.onRequest(() => seen.push(b.peekRequest()))
+  const off = b.onRequest(() => seen.push('aviso'))
   assert.equal(b.takeRequest(), null)
   const item = { request: { action: 'shortcut', message: 'm' }, label: 'Explicar', selection: null }
   b.request(item)
-  assert.deepEqual(seen, [item])
+  assert.deepEqual(seen, ['aviso'])
   assert.equal(b.takeRequest(), item)
   assert.equal(b.takeRequest(), null)
   off()
@@ -66,6 +66,5 @@ test('clearRequest descarta el pedido pendiente sin avisar (la carpeta se desmon
   b.request({ request: { action: 'shortcut', message: 'a' }, label: 'a', selection: null })
   b.clearRequest()
   assert.equal(n, 1)
-  assert.equal(b.peekRequest(), null)
   assert.equal(b.takeRequest(), null)
 })

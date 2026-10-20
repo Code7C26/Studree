@@ -9,7 +9,7 @@ const prop = (over = {}) => ({ id: 'p1', kind: 'append', sheetId: 's1', markdown
 
 test('estado inicial vacío', () => {
   assert.deepEqual(initialChat(), {
-    messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, grades: null, error: null,
+    messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, error: null,
     notice: null, truncated: false,
   })
 })
@@ -77,11 +77,12 @@ test('proposal malformada o repetida se ignora', () => {
   assert.equal(s.proposals[0].markdown, 'hola')
 })
 
-test('quiz y grades se guardan', () => {
-  let s = reduceEvent(initialChat(), { type: 'quiz', questions: [{ id: 'q1' }] })
+test('quiz se guarda; grades no toca el chat (las notas las junta useAssistant)', () => {
+  const s = reduceEvent(initialChat(), { type: 'quiz', questions: [{ id: 'q1' }] })
   assert.deepEqual(s.quiz, [{ id: 'q1' }])
-  s = reduceEvent(s, { type: 'grades', grades: [{ id: 'q1', correct: true, feedback: 'ok' }] })
-  assert.equal(s.grades.length, 1)
+  const after = reduceEvent(s, { type: 'grades', grades: [{ id: 'q1', correct: true, feedback: 'ok' }] })
+  assert.equal(after, s)
+  assert.ok(!('grades' in after))
 })
 
 test('error deja busy false, el mensaje y limpia status', () => {

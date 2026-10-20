@@ -4,7 +4,10 @@ import { SHORTCUTS, buildShortcutRequest, shortcutLabel } from './shortcuts.js'
 import { MAX } from '../../../supabase/functions/assistant/config.js'
 import { validateRequest } from '../../../supabase/functions/assistant/request.js'
 
-const sel = { sheetId: 'sh1', from: 3, to: 20, text: 'La mitocondria produce energía.' }
+// Ids reales: el servidor exige UUID en selection.sheetId y scope.id.
+const SH = 'b1111111-1111-4111-8111-111111111111'
+const SUB = 'a1111111-1111-4111-8111-111111111111'
+const sel = { sheetId: SH, from: 3, to: 20, text: 'La mitocondria produce energía.' }
 
 test('SHORTCUTS tiene los cuatro atajos en orden', () => {
   assert.deepEqual(
@@ -21,7 +24,7 @@ test('los 4 ids producen action shortcut con la selección {sheetId, text}', () 
   for (const { id } of SHORTCUTS) {
     const req = buildShortcutRequest(id, sel)
     assert.equal(req.action, 'shortcut')
-    assert.deepEqual(req.selection, { sheetId: 'sh1', text: sel.text })
+    assert.deepEqual(req.selection, { sheetId: SH, text: sel.text })
     assert.ok(req.message.length > 0)
   }
 })
@@ -48,7 +51,7 @@ test('selection.text se recorta a MAX.selection y el message no pasa MAX.message
 
 test('el pedido armado pasa la validación del servidor', () => {
   for (const { id } of SHORTCUTS) {
-    const body = { ...buildShortcutRequest(id, sel), history: [], mode: 'notes', scope: { type: 'subject', id: 'sub1' } }
+    const body = { ...buildShortcutRequest(id, sel), history: [], mode: 'notes', scope: { type: 'subject', id: SUB } }
     const result = validateRequest(body)
     assert.equal(result.ok, true, JSON.stringify(result))
   }
@@ -57,7 +60,7 @@ test('el pedido armado pasa la validación del servidor', () => {
 test('un id desconocido o sin selección tira error', () => {
   assert.throws(() => buildShortcutRequest('raro', sel))
   assert.throws(() => buildShortcutRequest('explain', null))
-  assert.throws(() => buildShortcutRequest('explain', { sheetId: 'sh1', text: '   ' }))
+  assert.throws(() => buildShortcutRequest('explain', { sheetId: SH, text: '   ' }))
 })
 
 test('shortcutLabel arma el texto visible con la etiqueta y un pedazo del texto', () => {

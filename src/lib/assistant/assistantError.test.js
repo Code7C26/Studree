@@ -26,8 +26,16 @@ test('404 avisa que falta desplegar', () => {
   assert.equal(translateAssistantError(404, null), 'El asistente todavía no está disponible (falta desplegar la función).')
 })
 
-test('500, 503 y red caen en el genérico', () => {
+test('503 config avisa que faltan las claves de la función', () => {
+  assert.equal(
+    translateAssistantError(503, { code: 'config' }),
+    'El asistente todavía no está configurado (faltan las claves de la función).',
+  )
+})
+
+test('500, 503 sin code config y red caen en el genérico', () => {
   assert.equal(translateAssistantError(500, { code: 'server' }), GENERIC)
-  assert.equal(translateAssistantError(503, { code: 'config' }), GENERIC)
+  assert.equal(translateAssistantError(503, { code: 'otro' }), GENERIC)
+  assert.equal(translateAssistantError(503, null), GENERIC)
   assert.equal(translateAssistantError(0, undefined), GENERIC)
 })

@@ -23,5 +23,8 @@ export function translateAssistantError(status, body) {
     return data.code === 'not_found' ? 'Esa hoja o materia ya no existe (¿está en la papelera?).' : 'No se pudo procesar el pedido.'
   }
   if (status === 404) return 'El asistente todavía no está disponible (falta desplegar la función).'
+  if (status === 503 && data.code === 'config') {
+    return 'El asistente todavía no está configurado (faltan las claves de la función).'
+  }
   return GENERIC
 }

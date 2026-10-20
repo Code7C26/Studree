@@ -17,6 +17,33 @@
  * @property {Object|null} outcome  Resultado (en `done`).
  */
 
+/** Acciones que arman una prueba nueva (y reemplazarían la abierta). */
+export const QUIZ_ACTIONS = Object.freeze(['quiz', 'weak_review'])
+
+/** Por qué no se puede pedir otra prueba (se muestra en los chips deshabilitados). */
+export const QUIZ_OPEN_REASON = 'Terminá o descartá la prueba abierta para pedir otra.'
+
+/**
+ * ¿Hay una prueba sin terminar? Pedir otra la reemplazaría: se perderían las
+ * respuestas y se gastaría una prueba del cupo mensual.
+ * @param {QuizSession|null} session
+ * @returns {boolean}
+ */
+export function blocksNewQuiz(session) {
+  return session?.status === 'open' || session?.status === 'grading'
+}
+
+/**
+ * "Descartar prueba": sin red, la saca del panel. Una que se está corrigiendo
+ * no se descarta (la corrección y el guardado ya están en curso).
+ * @param {QuizSession|null} session
+ * @returns {QuizSession|null}
+ */
+export function discardQuiz(session) {
+  if (session?.status === 'grading') return session
+  return null
+}
+
 /**
  * Sesión nueva para las preguntas que llegaron en el evento `quiz`.
  * @param {QuizSession|null} prev
