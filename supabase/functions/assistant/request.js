@@ -12,6 +12,9 @@ const NEEDS_MESSAGE = ['chat', 'shortcut']
 const fail = (error) => ({ ok: false, error })
 const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim() !== ''
+/** UUID canónico (cualquier versión): un id raro termina en 400 acá y no en un 500 de PostgREST. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v)
 
 /**
  * @typedef {Object} AssistantRequest
@@ -46,6 +49,7 @@ export function validateRequest(body) {
   const { scope } = body
   if (!isObject(scope) || !SCOPE_TYPES.includes(scope.type)) return fail('Alcance inválido.')
   if (scope.type !== 'all' && !isNonEmptyString(scope.id)) return fail('Falta el id del alcance.')
+  if (scope.type !== 'all' && !isUuid(scope.id)) return fail('El id del alcance no es válido.')
 
   const rawHistory = body.history ?? []
   if (!Array.isArray(rawHistory)) return fail('El historial tiene que ser una lista.')
@@ -68,7 +72,7 @@ export function validateRequest(body) {
 
   if (body.selection !== undefined) {
     const sel = body.selection
-    if (!isObject(sel) || !isNonEmptyString(sel.sheetId) || typeof sel.text !== 'string') {
+    if (!isObject(sel) || !isUuid(sel.sheetId) || typeof sel.text !== 'string') {
       return fail('Selección inválida.')
     }
     if (sel.text.length > MAX.selection) return fail(`La selección supera los ${MAX.selection} caracteres.`)

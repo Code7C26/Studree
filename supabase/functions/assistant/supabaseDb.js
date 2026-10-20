@@ -10,6 +10,8 @@ const WEAK_LIMIT = 50
 const AGENDA_DAYS = 60
 const AGENDA_LIMIT = 50
 const SHEET_COLS = 'id,subject_id,created_at,updated_at'
+/** Materias por consulta en `listSheetsContent` (para que la URL de `.in()` no crezca sin tope). */
+const IN_CHUNK = 100
 
 /** Igual que `escapeLike` de `sheets.service.js`: `%` y `\` pasan a `_` (comodín de un carácter). */
 const escapeLike = (text) => text.replace(/[\\%]/g, '_')
@@ -51,6 +53,31 @@ export function createDb(client) {
         fetchAll(live('sheets', SHEET_COLS)),
       ])
       return { careers, subjects, sheets }
+    },
+
+    /**
+     * Hojas vivas (con `content_md`) SOLO de las materias pedidas: el mapa del
+     * alcance necesita sus temas, y `loadTree` no trae contenido a propósito.
+     * Pide en tandas de materias y pagina de a 1000.
+     * @param {string[]} subjectIds
+     */
+    async listSheetsContent(subjectIds) {
+      const ids = Array.isArray(subjectIds) ? subjectIds : []
+      const rows = []
+      for (let i = 0; i < ids.length; i += IN_CHUNK) {
+        const chunk = ids.slice(i, i + IN_CHUNK)
+        rows.push(
+          ...(await fetchAll(() =>
+            client
+              .from('sheets')
+              .select('id,subject_id,created_at,content_md')
+              .in('subject_id', chunk)
+              .is('deleted_at', null)
+              .order('id', { ascending: true }),
+          )),
+        )
+      }
+      return rows
     },
 
     async getSheet(id) {

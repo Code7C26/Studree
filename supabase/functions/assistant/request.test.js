@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { MAX } from './config.js'
 import { validateRequest } from './request.js'
 
-const base = { action: 'chat', message: 'hola', scope: { type: 'subject', id: 's1' } }
+const UUID = '11111111-1111-4111-8111-111111111111'
+const base = { action: 'chat', message: 'hola', scope: { type: 'subject', id: UUID } }
 const answer = { id: 'q1', question: '¿Qué es?', expected: 'Algo', given: 'Algo' }
 
 test('pedido válido: ok y mode por defecto notes', () => {
@@ -79,7 +80,7 @@ test('message: exactamente en el tope pasa, uno de más falla', () => {
 })
 
 test('selection: en el tope pasa, uno de más falla, forma inválida falla', () => {
-  const sel = (text) => ({ ...base, selection: { sheetId: 'h1', text } })
+  const sel = (text) => ({ ...base, selection: { sheetId: UUID, text } })
   assert.equal(validateRequest(sel('a'.repeat(MAX.selection))).ok, true)
   assert.equal(validateRequest(sel('a'.repeat(MAX.selection + 1))).ok, false)
   assert.equal(validateRequest({ ...base, selection: { text: 'x' } }).ok, false)
@@ -108,4 +109,15 @@ test('quiz_grade: 15 respuestas ok, 16 error, item inválido error', () => {
   assert.equal(g([{ ...answer, given: 7 }]).ok, false)
   assert.equal(g([{ id: 'q1' }]).ok, false)
   assert.equal(g([{ ...answer, given: 'a'.repeat(MAX.message + 1) }]).ok, false)
+})
+
+test('scope.id y selection.sheetId tienen que ser UUID (si no, 400 y no un 500 de PostgREST)', () => {
+  for (const id of ['s1', '11111111-1111-4111-8111-11111111111', '11111111-1111-4111-8111-111111111111x', "1' or 1=1", ' 11111111-1111-4111-8111-111111111111']) {
+    for (const type of ['sheet', 'subject', 'career']) {
+      assert.equal(validateRequest({ ...base, scope: { type, id } }).ok, false, `${type} ${id}`)
+    }
+    assert.equal(validateRequest({ ...base, selection: { sheetId: id, text: 'x' } }).ok, false, `sheetId ${id}`)
+  }
+  assert.equal(validateRequest({ ...base, scope: { type: 'career', id: 'ABCDEF01-1111-4111-8111-111111111111' } }).ok, true)
+  assert.equal(validateRequest({ ...base, selection: { sheetId: UUID, text: 'x' } }).ok, true)
 })

@@ -2,8 +2,8 @@
 // vive acá, con las dependencias inyectadas (`deps`) para poder testearla en
 // Node sin red: `index.js` solo arma las dependencias reales.
 //
-// Orden (falla cerrado en cada paso): CORS → método → JWT (401) → config (503)
-// → pedido (400) → plan → conteos de uso → decideAccess (403/429) → alcance
+// Orden (falla cerrado en cada paso): CORS → método → config de Supabase (503)
+// → JWT (401) → config de Gemini (503) → pedido (400) → plan → conteos de uso → decideAccess (403/429) → alcance
 // (400) → stream SSE. Gemini NUNCA se llama si algo de lo anterior falla.
 //
 // Seguridad: la base se consulta con el JWT del usuario (RLS; nunca
@@ -16,8 +16,11 @@
 // agotó los pasos (`steps`) después de al menos una respuesta de Gemini y de
 // emitir algo útil (text/proposal/quiz/grades). Nunca ante un error de Gemini
 // ni ante salida inválida. `quiz_grade` descuenta de su balde `grade`.
+// Ruling Q: cortar (botón "Detener", cerrar la pestaña o vencer el plazo total
+// REQUEST_DEADLINE_MS) NO es un fallo de Gemini: si ya se emitió algo útil,
+// se descuenta igual; si no llegó nada útil, no.
 
-import { BUCKET_OF, LIMITS, MAX, QUIZ_DEFAULTS, GEMINI_TIMEOUT_MS } from './config.js'
+import { BUCKET_OF, LIMITS, MAX, QUIZ_DEFAULTS, GEMINI_TIMEOUT_MS, REQUEST_DEADLINE_MS } from './config.js'
 import { planOf, requiredCounts, decideAccess } from './quota.js'
 import { validateRequest } from './request.js'
 import { buildMapMarkdown } from './careerMap.js'
@@ -58,6 +61,7 @@ const STREAM_ERRORS = {
   blocked: 'El modelo no quiso responder eso. Probá decirlo de otra forma.',
   empty: 'El Brote no devolvió nada. Probá de nuevo.',
   aborted: 'Se cortó la respuesta (tardó demasiado o se cerró la conexión).',
+  timeout: 'El Brote tardó demasiado y cortamos la respuesta. Probá con algo más concreto.',
   invalid_output: 'La respuesta del modelo vino mal armada. Probá de nuevo.',
   steps: 'El Brote dio demasiadas vueltas sin llegar a una respuesta. Probá con algo más concreto.',
   no_notes: 'No hay apuntes en este alcance para armar una prueba.',
@@ -74,8 +78,9 @@ const STREAM_ERRORS = {
  * @property {(jwt: string) => any} makeDb
  * @property {(args: {body: object, onText: (t: string) => void, signal: AbortSignal}) => Promise<{text: string, calls: object[], modelParts: object[], finishReason: string|null, truncated: boolean}>} callGemini
  * @property {() => Date} now
- * @property {{model?: string, hasApiKey?: boolean}} env
+ * @property {{model?: string, hasApiKey?: boolean, hasSupabase?: boolean}} env
  * @property {(...args: any[]) => void} [logError]
+ * @property {(ms: number) => AbortSignal} [makeDeadline] plazo total del pedido (por defecto `AbortSignal.timeout`)
  */
 
 const json = (status, body) =>
@@ -115,7 +120,8 @@ async function resolveScope({ db, scope, plan }) {
 
   let scopeSubjectIds
   let scopeLabel
-  let mapMd
+  /** Recorte del árbol que va al mapa (carreras y, si aplica, una sola materia). */
+  let mapTree
   let sheet = null
   if (scope.type === 'sheet' || scope.type === 'subject') {
     if (scope.type === 'sheet') {
@@ -128,18 +134,23 @@ async function resolveScope({ db, scope, plan }) {
     scopeLabel = sheet
       ? `la hoja del ${day(sheet.created_at)} de la materia ${clipName(subject.name)}`
       : `la materia ${clipName(subject.name)}`
-    mapMd = buildMapMarkdown({ ...tree, onlySubjectId: subject.id })
+    mapTree = { ...tree, onlySubjectId: subject.id }
   } else if (scope.type === 'career') {
     const career = careerById.get(scope.id)
     if (!career) return null
     scopeSubjectIds = subjects.filter((s) => s.career_id === career.id).map((s) => s.id)
     scopeLabel = `la carrera ${clipName(career.name)}`
-    mapMd = buildMapMarkdown({ ...tree, careers: [career] })
+    mapTree = { ...tree, careers: [career] }
   } else {
     scopeSubjectIds = subjects.map((s) => s.id)
     scopeLabel = 'todas tus materias'
-    mapMd = buildMapMarkdown(tree)
+    mapTree = tree
   }
+  // `loadTree` no trae `content_md`: los temas del mapa salen de leer el
+  // contenido SOLO de las materias del alcance (nunca de las de afuera). El
+  // mapa en sí queda acotado por MAX.mapChars en `buildMapMarkdown`.
+  const withContent = await db.listSheetsContent(scopeSubjectIds)
+  const mapMd = buildMapMarkdown({ ...mapTree, sheets: withContent })
   const allowedSubjectIds = plan === 'premium' ? subjects.map((s) => s.id) : scopeSubjectIds
   return { scopeSubjectIds, allowedSubjectIds, scopeLabel, mapMd, sheet }
 }
@@ -368,6 +379,12 @@ export async function handleRequest(req, deps) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== 'POST') return errorResponse(405, 'method', HTTP_MESSAGES.method)
 
+  // Sin URL/clave de Supabase no se puede ni verificar el JWT: 503 con CORS.
+  if (deps.env?.hasSupabase !== true) {
+    logError('[assistant] falta configurar SUPABASE_URL o la clave anon/publishable')
+    return errorResponse(503, 'config', HTTP_MESSAGES.config)
+  }
+
   const jwt = bearer(req.headers.get('authorization'))
   if (!jwt) return errorResponse(401, 'auth', HTTP_MESSAGES.auth)
   let user = null
@@ -441,12 +458,15 @@ export async function handleRequest(req, deps) {
     async (emit, signal) => {
       const emitError = (code) => emit({ type: 'error', code, message: STREAM_ERRORS[code] ?? STREAM_ERRORS.server })
       const meta = { truncated: false, finishReason: null, geminiOk: false, useful: false }
-      // Cada llamada se corta por tiempo o si el cliente se desconecta.
+      // Plazo total del pedido (todos los pasos juntos): se suma a la señal de cada llamada.
+      const deadline = (deps.makeDeadline ?? ((ms) => AbortSignal.timeout(ms)))(REQUEST_DEADLINE_MS)
+      // Cada llamada se corta por tiempo, por el plazo total o si el cliente se desconecta.
       const callModel = async (body, onText) => {
+        if (deadline.aborted || signal.aborted) throw new GeminiError('aborted', 0, 'Pedido cancelado')
         const res = await deps.callGemini({
           body,
           onText: onText ?? (() => {}),
-          signal: AbortSignal.any([signal, AbortSignal.timeout(GEMINI_TIMEOUT_MS)]),
+          signal: AbortSignal.any([signal, deadline, AbortSignal.timeout(GEMINI_TIMEOUT_MS)]),
         })
         if (res.truncated) meta.truncated = true
         meta.finishReason = res.finishReason ?? null
@@ -465,16 +485,20 @@ export async function handleRequest(req, deps) {
       } catch (error) {
         if (error instanceof GeminiError && STREAM_ERRORS[error.kind]) {
           // Solo kind y status: nunca el cuerpo del proveedor ni la clave.
-          logError('[assistant] error de Gemini', action, { kind: error.kind, status: error.status })
-          emitError(error.kind)
+          const kind = error.kind === 'aborted' && deadline.aborted ? 'timeout' : error.kind
+          logError('[assistant] error de Gemini', action, { kind, status: error.status })
+          emitError(kind)
+          // Ruling Q: cortar después de algo útil no es un fallo de Gemini → descuenta.
+          outcome = error.kind === 'aborted' && meta.useful ? 'aborted' : false
         } else {
           logError('[assistant] falló la acción', action, error)
           emitError('server')
+          return
         }
-        return
       }
       // Ruling K: agotar los pasos después de responder algo también descuenta.
-      const charge = outcome === true || (outcome === 'steps' && meta.geminiOk && meta.useful)
+      const charge =
+        outcome === true || (outcome === 'steps' && meta.geminiOk && meta.useful) || outcome === 'aborted'
       if (!charge) return
 
       if (BUCKET_OF[action]) {
@@ -493,4 +517,22 @@ export async function handleRequest(req, deps) {
     },
     logError,
   )
+}
+
+/**
+ * Envoltorio de último recurso para `Deno.serve`: si armar las dependencias o
+ * el handler lanzan algo no previsto, igual responde JSON 500 CON CORS (sin
+ * CORS el navegador solo vería un error de red opaco).
+ * @param {Request} req
+ * @param {(req: Request) => Deps} buildDeps
+ * @param {(...args: any[]) => void} [logError]
+ * @returns {Promise<Response>}
+ */
+export async function handleSafely(req, buildDeps, logError = (...args) => console.error(...args)) {
+  try {
+    return await handleRequest(req, buildDeps(req))
+  } catch (error) {
+    logError('[assistant] error no atrapado en la función', error)
+    return errorResponse(500, 'server', HTTP_MESSAGES.server)
+  }
 }

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { handleRequest } from './handler.js'
+import { handleRequest, handleSafely } from './handler.js'
 import { GeminiError } from './gemini.js'
 import { LIMITS } from './config.js'
 
@@ -24,10 +24,19 @@ const textReply = (text = 'Hola') => ({ text, calls: [], modelParts: [{ text }],
 
 /** Dependencias falsas; `gemini` es una lista de respuestas (o errores) en orden. */
 function makeDeps({ plan = 'free', counts, tree = TREE, gemini = [textReply()], weak = [], extraSheets = [], env, ...over } = {}) {
-  const calls = { gemini: [], record: [], count: [], getSheet: [], weak: [], logs: [] }
+  const calls = { gemini: [], record: [], count: [], getSheet: [], weak: [], logs: [], content: [] }
   const queue = [...gemini]
   const db = {
-    loadTree: async () => structuredClone(tree),
+    // Igual que en producción: `loadTree` NO trae content_md.
+    loadTree: async () => {
+      const copy = structuredClone(tree)
+      for (const sheet of copy.sheets) delete sheet.content_md
+      return copy
+    },
+    listSheetsContent: async (ids) => {
+      calls.content.push(ids)
+      return [{ ...SHEET }, ...extraSheets].filter((s) => ids.includes(s.subject_id))
+    },
     getSheet: async (id) => {
       calls.getSheet.push(id)
       return id === H1 ? { ...SHEET } : null
@@ -59,7 +68,7 @@ function makeDeps({ plan = 'free', counts, tree = TREE, gemini = [textReply()], 
       return structuredClone(next)
     },
     now: () => new Date('2026-10-19T12:00:00Z'),
-    env: env ?? { model: 'gemini-test', hasApiKey: true },
+    env: env ?? { model: 'gemini-test', hasApiKey: true, hasSupabase: true },
     logError: (...a) => calls.logs.push(a),
     ...over,
   }
@@ -150,7 +159,7 @@ test('JSON roto o pedido inválido → 400 con code invalid', async () => {
 })
 
 test('función sin GEMINI_MODEL o sin clave → 503 y Gemini no se llama', async () => {
-  for (const env of [{ model: '', hasApiKey: true }, { model: 'm', hasApiKey: false }]) {
+  for (const env of [{ model: '', hasApiKey: true, hasSupabase: true }, { model: 'm', hasApiKey: false, hasSupabase: true }]) {
     const { deps, calls } = makeDeps({ env })
     const res = await handleRequest(post(chat()), deps)
     assert.equal(res.status, 503)
@@ -265,7 +274,7 @@ test('error inesperado dentro del stream → error server, se registra y no se d
   assert.equal(calls.logs.length, 1)
 })
 
-test('desconexión del cliente: la señal a Gemini se aborta; aborted → error sin uso', async () => {
+test('Ruling Q: desconexión antes de algo útil → la señal a Gemini se aborta; error aborted sin uso', async () => {
   const ctrl = new AbortController()
   let seen
   const { deps, calls } = makeDeps({
@@ -279,6 +288,93 @@ test('desconexión del cliente: la señal a Gemini se aborta; aborted → error 
   assert.equal(seen.aborted, true)
   assert.deepEqual(evs.map((e) => [e.type, e.code]), [['error', 'aborted']])
   assert.equal(calls.record.length, 0)
+})
+
+test('Ruling Q: "Detener" después de recibir texto → igual descuenta una vez (cortar no es un fallo de Gemini)', async () => {
+  const first = { text: 'Empiezo… ', calls: [{ name: 'read_sheet', args: { sheet_id: H1 } }], modelParts: [], finishReason: 'STOP', truncated: false }
+  const { deps, calls } = makeDeps({ gemini: [first, new GeminiError('aborted')] })
+  const evs = await events(await handleRequest(post(chat()), deps))
+  assert.ok(evs.some((e) => e.type === 'text'))
+  assert.ok(evs.some((e) => e.type === 'error' && e.code === 'aborted'))
+  assert.deepEqual(calls.record, [{ action: 'chat', external: false }])
+  assert.ok(!evs.some((e) => e.type === 'done'))
+})
+
+test('plazo total del pedido: se suma a la señal de Gemini; vencido después de texto → error timeout y descuenta', async () => {
+  const deadline = new AbortController()
+  const seen = []
+  const first = { text: 'Empiezo… ', calls: [{ name: 'read_sheet', args: { sheet_id: H1 } }], modelParts: [], finishReason: 'STOP', truncated: false }
+  let n = 0
+  const { deps, calls } = makeDeps({
+    makeDeadline: (ms) => {
+      seen.push(ms)
+      return deadline.signal
+    },
+    callGemini: async (args) => {
+      n++
+      if (n === 1) {
+        args.onText(first.text)
+        deadline.abort()
+        assert.equal(args.signal.aborted, true, 'el plazo total aborta la llamada en curso')
+        return structuredClone(first)
+      }
+      throw new Error('no debería llamarse otra vez con el plazo vencido')
+    },
+  })
+  const evs = await events(await handleRequest(post(chat()), deps))
+  assert.deepEqual(seen, [120000])
+  assert.equal(n, 1)
+  const err = evs.find((e) => e.type === 'error')
+  assert.equal(err.code, 'timeout')
+  assert.equal(typeof err.message, 'string')
+  assert.deepEqual(calls.record, [{ action: 'chat', external: false }])
+})
+
+test('plazo total vencido antes de algo útil → error timeout sin uso', async () => {
+  const deadline = new AbortController()
+  const { deps, calls } = makeDeps({
+    makeDeadline: () => deadline.signal,
+    callGemini: async () => {
+      deadline.abort()
+      throw new GeminiError('aborted')
+    },
+  })
+  const evs = await events(await handleRequest(post(chat()), deps))
+  assert.deepEqual(evs.map((e) => [e.type, e.code]), [['error', 'timeout']])
+  assert.equal(calls.record.length, 0)
+})
+
+test('sin URL o clave de Supabase → 503 config con CORS, antes de tocar el JWT', async () => {
+  const { deps, calls } = makeDeps({
+    env: { model: 'm', hasApiKey: true, hasSupabase: false },
+    getUser: async () => {
+      throw new Error('no debería llamarse')
+    },
+  })
+  for (const token of ['tok', null]) {
+    const res = await handleRequest(post(chat(), { token }), deps)
+    assert.equal(res.status, 503)
+    assert.equal(res.headers.get('access-control-allow-origin'), '*')
+    assert.equal((await res.json()).code, 'config')
+  }
+  assert.equal(calls.gemini.length, 0)
+})
+
+test('handleSafely: si armar las dependencias o el handler lanza → 500 JSON con CORS', async () => {
+  const logs = []
+  const boom = await handleSafely(post(chat()), () => {
+    throw new Error('createClient explotó')
+  }, (...a) => logs.push(a))
+  assert.equal(boom.status, 500)
+  assert.equal(boom.headers.get('access-control-allow-origin'), '*')
+  const body = await boom.json()
+  assert.equal(body.code, 'server')
+  assert.ok(!JSON.stringify(body).includes('explotó'))
+  assert.equal(logs.length, 1)
+
+  const { deps } = makeDeps()
+  const ok = await handleSafely(new Request('http://localhost/x', { method: 'OPTIONS' }), () => deps)
+  assert.equal(ok.status, 204)
 })
 
 test('respuesta truncada o cortada por seguridad: termina en done con el aviso', async () => {
@@ -300,6 +396,18 @@ test('el texto de cada paso con herramientas llega como eventos text', async () 
     ['Busco… ', 'Listo.'],
   )
   assert.ok(evs.some((e) => e.type === 'tool' && e.name === 'read_sheet'))
+})
+
+test('el mapa del prompt trae los temas de las hojas, leídos solo para las materias del alcance', async () => {
+  const { deps, calls } = makeDeps()
+  await events(await handleRequest(post(chat()), deps))
+  assert.match(systemOf(calls.gemini[0]), new RegExp(`hoja ${H1} · [^\n]*temas: Matrices`))
+  assert.deepEqual(calls.content, [[S1]], 'solo se lee el contenido de la materia del alcance')
+
+  const career = makeDeps({ plan: 'premium' })
+  await events(await handleRequest(post(chat({ scope: { type: 'career', id: C1 } })), career.deps))
+  assert.deepEqual(career.calls.content, [[S1, S2]])
+  assert.match(systemOf(career.calls.gemini[0]), /temas: Matrices/)
 })
 
 test('cuenta sin apuntes: el prompt dice "Todavía no hay apuntes." y responde igual', async () => {
@@ -602,4 +710,16 @@ test('gaps de un free con el tope extras agotado → 429 sin Gemini', async () =
   assert.equal((await res.json()).code, 'quota')
   assert.equal(calls.gemini.length, 0)
   assert.equal(calls.record.length, 0)
+})
+
+test('scope.id o selection.sheetId que no son UUID → 400 invalid, sin tocar la base ni Gemini', async () => {
+  for (const body of [chat({ scope: { type: 'subject', id: 'no-es-uuid' } }), chat({ selection: { sheetId: 'h1', text: 'x' } })]) {
+    let dbMade = false
+    const { deps, calls } = makeDeps({ makeDb: () => { dbMade = true } })
+    const res = await handleRequest(post(body), deps)
+    assert.equal(res.status, 400)
+    assert.equal((await res.json()).code, 'invalid')
+    assert.equal(dbMade, false)
+    assert.equal(calls.gemini.length, 0)
+  }
 })

@@ -166,3 +166,39 @@ test('listWeakTopics: con lista de materias filtra en la base (antes del tope); 
   assert.deepEqual(await db.listWeakTopics([]), [])
   assert.equal(queries.length, 1)
 })
+
+test('listSheetsContent: solo las materias pedidas, filtra papelera, trae content_md y pagina de a 1000', async () => {
+  const ID2 = '22222222-2222-4222-8222-222222222222'
+  const { client, queries } = fakeClient((q) => {
+    const [from] = callsOf(q, 'range')[0][1]
+    const n = from === 0 ? 1000 : 2
+    return { data: Array.from({ length: n }, (_, i) => ({ id: `h${from + i}`, content_md: '# T' })), error: null }
+  })
+  const rows = await createDb(client).listSheetsContent([ID, ID2])
+  assert.equal(rows.length, 1002)
+  assert.equal(queries.length, 2)
+  for (const q of queries) {
+    assert.equal(q.table, 'sheets')
+    assert.equal(callsOf(q, 'select')[0][1][0], 'id,subject_id,created_at,content_md')
+    assert.ok(has(q, 'in', 'subject_id', [ID, ID2]))
+    assert.ok(has(q, 'is', 'deleted_at', null))
+  }
+  assert.deepEqual(queries.map((q) => callsOf(q, 'range')[0][1]), [[0, 999], [1000, 1999]])
+})
+
+test('listSheetsContent: lista vacía → [] sin consultar; muchas materias se piden en tandas', async () => {
+  const { client, queries } = fakeClient(() => ({ data: [], error: null }))
+  const db = createDb(client)
+  assert.deepEqual(await db.listSheetsContent([]), [])
+  assert.equal(queries.length, 0)
+  const ids = Array.from({ length: 150 }, (_, i) => `${String(i).padStart(8, '0')}-1111-4111-8111-111111111111`)
+  await db.listSheetsContent(ids)
+  const sent = queries.map((q) => callsOf(q, 'in')[0][1][1])
+  assert.ok(sent.every((chunk) => chunk.length <= 100))
+  assert.deepEqual(sent.flat(), ids)
+})
+
+test('listSheetsContent: un error de la base se propaga', async () => {
+  const { client } = fakeClient(() => ({ data: null, error: { message: 'boom' } }))
+  await assert.rejects(() => createDb(client).listSheetsContent([ID]))
+})

@@ -80,3 +80,10 @@ export const QUIZ_DEFAULTS = { count: 5, types: ['mcq', 'tf', 'open'] }
 
 /** Tiempo máximo de cada llamada a Gemini (ms); también se corta si el cliente se desconecta. */
 export const GEMINI_TIMEOUT_MS = 60000
+
+/**
+ * Plazo total de un pedido (ms), sumando todos los pasos con herramientas.
+ * Supabase corta la función cerca de los 150 s de reloj: sin este plazo, 6
+ * pasos × GEMINI_TIMEOUT_MS podían pasarse y el stream moría sin aviso.
+ */
+export const REQUEST_DEADLINE_MS = 120000
