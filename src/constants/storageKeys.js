@@ -23,4 +23,6 @@ export const STORAGE_KEYS = Object.freeze({
   uiExplorer: 'studree:ui:explorer',
   /** Explorador lateral abierto/cerrado (ADR-018: arranca cerrado). */
   uiExplorerOpen: 'studree:ui:explorer-open',
+  /** Panel del Brote (asistente) abierto/cerrado (Fase 14). */
+  uiAssistantOpen: 'studree:ui:assistant-open',
 })

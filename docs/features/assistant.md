@@ -118,6 +118,48 @@ del proveedor ni la clave).
 - **`recordUsage` fallido deja pasar el pedido:** decisión deliberada (el usuario ya recibió la
   respuesta). Se loguea y no se emite `usage`; ese pedido no cuenta para el tope.
 
+## Interfaz: el Brote, el panel y el chat (Tarea 9)
+
+- **`AssistantHost`** (`src/components/features/assistant/`): botón flotante abajo a la derecha
+  (`fixed`, `z-30`: debajo de modales, drawer y aviso "Deshacer", que usan `z-40`/`z-50`), con
+  `aria-label="Abrir el Brote"` y `aria-expanded`. Se monta en `AppLayout` solo con sesión, fuera de
+  `/entrar` y fuera del modo lectura (al entrar al modo lectura se desmonta y la conversación se
+  pierde; el pedido en curso se corta). Recuerda abierto/cerrado en `studree:ui:assistant-open`; en el
+  celular no se reabre solo (ahí el panel tapa todo). Mientras el foco está en el editor de una hoja
+  (`.ProseMirror`) se achica y se aclara para no tapar lo que se escribe. La carpeta ya deja `pb-24`
+  al final, así el botón no tapa la última línea ni "Nueva hoja".
+- **`AssistantPanel`** se carga con `React.lazy` (chunk propio, con el hook, el chat y los
+  servicios). Una vez abierto queda montado aunque se cierre: la conversación vive mientras dure la
+  sesión (no se guarda, spec § 8). Es un `role="dialog"` no modal con `.glass` casi opaca: lateral
+  (`w-96`) desde `sm`, pantalla completa en el celular. Al abrir enfoca la entrada; `Esc` cierra y el
+  foco vuelve al Brote.
+- Controles: **modo** (Mis apuntes / Con conocimiento externo), **alcance** (Esta hoja, Esta
+  materia, La carrera, Todas mis materias; según lo que publique la carpeta en `assistantBridge`; los
+  de Premium salen deshabilitados con "(Premium)" para un usuario free) y **chips** "Resumir materia"
+  (`summary`), "Tomame examen" (`quiz`), "Repaso de errores" (`weak_review`) y "Plan de estudio"
+  (`study_plan`). Para free, los dos últimos muestran el aviso de Premium **sin llamar al servidor**
+  (que igual lo rechaza con 403). Sin materia abierta, un usuario free no tiene alcance posible y el
+  panel lo avisa.
+- **`ChatThread`**: mensajes como texto plano (`whitespace-pre-wrap`, nunca HTML), estado
+  ("Leyendo tus hojas…"), "La respuesta se cortó." si `done` trae `truncated` o un `finishReason`
+  distinto de `STOP`, errores, uso ("Usaste 3 de 20 hoy.") y propuestas. `role="log"` con
+  `aria-live="polite"`. La prueba (`quiz`) por ahora se lista; la responde `QuizRunner` (Tarea 11).
+- **`ProposalCard`**: texto propuesto resaltado en verde (`bg-accent/10`, borde `accent`), marca
+  "Agregado desde conocimiento externo" si `source === 'external'`, y **Aceptar** / **Rechazar**.
+  Aceptar llama a `context.apply(proposal)` (lo implementa la carpeta en la Tarea 10) y marca
+  `applied` o `failed` con el motivo.
+- **`Brote`**: SVG propio (brote verde redondo con dos hojas, ojos, sonrisa y cachetes). Estados
+  `idle`, `thinking`, `writing`, `happy`, `sad`, `sleeping` con clases `.brote--*` y keyframes en
+  `index.css`; con `prefers-reduced-motion` no se anima. El ánimo sale de `chatMood` (pensando,
+  escribiendo, triste por error); `happy` dura 2,5 s al terminar bien y `sleeping` llega tras 5 min
+  sin uso con el panel cerrado.
+- **`useAssistant`** arma el `AssistantRequest` (`history` con `buildHistory`: últimos 20 turnos,
+  cada uno recortado a 4000 caracteres), llama a `streamAssistant`, pasa cada evento por
+  `reduceEvent` y al terminar aplica `finishRequest` (cubre corte del usuario, `usage` después de
+  `error` sin `done` y streams que terminan sin `done`). Una acción de chip muestra su etiqueta como
+  mensaje del usuario y deja el chat ocupado igual. `stop()` corta con `AbortController`; desmontar
+  también corta. `useAssistantContext` lee `assistantBridge` con `useSyncExternalStore`.
+
 ## Archivos de esta fase
 
 Se completa en la Tarea 12 del plan.

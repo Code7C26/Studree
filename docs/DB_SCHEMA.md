@@ -396,6 +396,7 @@ create index on quick_notes (user_id, created_at);
 | `studree:ui:tabs` | Tabs abiertas (una por materia) |
 | `studree:ui:explorer` | Carreras expandidas en el explorador |
 | `studree:ui:explorer-open` | Explorador abierto/cerrado (arranca cerrado, ADR-018) |
+| `studree:ui:assistant-open` | Panel del Brote abierto/cerrado (Fase 14; en el celular no se reabre solo) |
 | `studree:cache:important_dates` · `studree:cache:tasks` · `studree:cache:quick_notes` | Colecciones del Inicio (0005) |
 | `studree:cache:home:lastSheet` | "Seguí donde dejaste": `{id, subject_id, updated_at, subject_name, subject_color, preview}`. Guarda solo el preview, no el contenido de la hoja |
 

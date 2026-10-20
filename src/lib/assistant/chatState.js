@@ -28,6 +28,7 @@
  * @property {Object[]|null} quiz
  * @property {Object[]|null} grades
  * @property {string|null} error
+ * @property {boolean} truncated  La última respuesta se cortó (`done` con `truncated` o un `finishReason` distinto de STOP).
  */
 
 /** Cuántos mensajes se guardan como máximo (los más nuevos). */
@@ -46,6 +47,7 @@ const GENERIC_ERROR = 'No se pudo hablar con el Brote. Probá de nuevo.'
 export function initialChat() {
   return {
     messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, grades: null, error: null,
+    truncated: false,
   }
 }
 
@@ -63,7 +65,10 @@ function toolStatus(name) {
 }
 
 /**
- * Suma el mensaje del usuario y deja el chat ocupado.
+ * Suma el mensaje del usuario y deja el chat ocupado. También se usa para las
+ * acciones lanzadas desde un chip (sin texto escrito): el texto es la etiqueta
+ * visible del chip ("Resumir materia"), así el pedido queda a la vista y el
+ * chat queda ocupado igual.
  * @param {ChatState} state @param {string} text @returns {ChatState}
  */
 export function addUserMessage(state, text) {
@@ -73,6 +78,7 @@ export function addUserMessage(state, text) {
     busy: true,
     status: null,
     error: null,
+    truncated: false,
   }
 }
 
@@ -136,8 +142,11 @@ export function reduceEvent(state, event) {
         status: null,
         error: typeof event.message === 'string' && event.message ? event.message : GENERIC_ERROR,
       }
-    case 'done':
-      return { ...state, busy: false, status: null }
+    case 'done': {
+      const reason = event.finishReason
+      const truncated = event.truncated === true || (typeof reason === 'string' && reason !== '' && reason !== 'STOP')
+      return { ...state, busy: false, status: null, truncated }
+    }
     default:
       return state
   }
@@ -154,4 +163,36 @@ export function setProposalStatus(state, id, status) {
     ...state,
     proposals: state.proposals.map((p) => (p.id === id ? { ...p, status } : p)),
   }
+}
+
+/**
+ * Cierra el pedido cuando `streamAssistant` termina, haya llegado `done` o no
+ * (corte del usuario, error de red, stream que terminó sin `done`). Si viene un
+ * `error` lo muestra; si no, conserva el que haya puesto el stream.
+ * @param {ChatState} state @param {string|null} [error] @returns {ChatState}
+ */
+export function finishRequest(state, error = null) {
+  const next = state.busy || state.status ? { ...state, busy: false, status: null } : state
+  return typeof error === 'string' && error ? { ...next, error } : next
+}
+
+/**
+ * Muestra un aviso en el panel sin tocar el resto (p. ej. "es de Premium",
+ * "no se pudo aplicar"). `null` lo limpia.
+ * @param {ChatState} state @param {string|null} message @returns {ChatState}
+ */
+export function setError(state, message) {
+  return { ...state, error: typeof message === 'string' && message ? message : null }
+}
+
+/**
+ * Ánimo del Brote según el chat: triste si hubo error, escribiendo si ya está
+ * llegando la respuesta, pensando si todavía no llegó nada. `happy` y
+ * `sleeping` son pasajeros y los decide la interfaz.
+ * @param {ChatState} state
+ * @returns {'idle'|'thinking'|'writing'|'sad'}
+ */
+export function chatMood(state) {
+  if (state.busy) return state.messages.at(-1)?.role === 'assistant' ? 'writing' : 'thinking'
+  return state.error ? 'sad' : 'idle'
 }

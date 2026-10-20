@@ -1,0 +1,195 @@
+import { useEffect, useRef, useState } from 'react'
+import { useAssistant } from '../../../hooks/useAssistant.js'
+import { chatMood } from '../../../lib/assistant/chatState.js'
+import { ACTION_LABELS, MAX_MESSAGE, lockedActionMessage } from '../../../lib/assistant/requestBuilder.js'
+import { Icon } from '../../ui/Icon'
+import { Brote } from './Brote'
+import { ChatThread } from './ChatThread'
+
+/** Cuánto dura la alegría del Brote al terminar bien una respuesta. */
+const HAPPY_MS = 2500
+
+const CHIPS = ['summary', 'quiz', 'weak_review', 'study_plan']
+
+const MODES = [
+  { value: 'notes', label: 'Mis apuntes' },
+  { value: 'external', label: 'Con conocimiento externo' },
+]
+
+const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
+
+/**
+ * Panel del Brote (se carga con React.lazy desde AssistantHost). Queda montado
+ * aunque se cierre, así la conversación sigue mientras dure la sesión.
+ * @param {Object} props
+ * @param {boolean} props.open
+ * @param {() => void} props.onClose
+ * @param {(mood: import('./Brote').BroteState) => void} props.onMood
+ */
+export function AssistantPanel({ open, onClose, onMood }) {
+  const {
+    state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
+  } = useAssistant()
+  const [draft, setDraft] = useState('')
+  const [happy, setHappy] = useState(false)
+  const inputRef = useRef(/** @type {HTMLTextAreaElement|null} */ (null))
+  const wasBusy = useRef(false)
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus()
+  }, [open])
+
+  // Al terminar bien una respuesta, el Brote se alegra un rato.
+  useEffect(() => {
+    const was = wasBusy.current
+    wasBusy.current = state.busy
+    if (!was || state.busy || state.error) return undefined
+    setHappy(true)
+    const timer = window.setTimeout(() => setHappy(false), HAPPY_MS)
+    return () => {
+      window.clearTimeout(timer)
+      setHappy(false)
+    }
+  }, [state.busy, state.error])
+
+  const base = chatMood(state)
+  const mood = happy && base === 'idle' ? 'happy' : base
+  useEffect(() => {
+    onMood(mood)
+  }, [mood, onMood])
+
+  const submit = () => {
+    if (state.busy || !draft.trim()) return
+    send(draft)
+    setDraft('')
+  }
+
+  return (
+    <section
+      id="brote-panel"
+      role="dialog"
+      aria-labelledby="brote-panel-title"
+      hidden={!open}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation()
+          onClose()
+        }
+      }}
+      className={`glass fixed inset-0 z-40 flex-col rounded-none bg-surface/95 shadow-2xl shadow-black/40 sm:inset-auto sm:bottom-24 sm:right-6 sm:top-16 sm:w-96 sm:rounded-xl ${
+        open ? 'flex' : 'hidden'
+      }`}
+    >
+      <header className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+        <Brote state={mood} size={32} />
+        <h2 id="brote-panel-title" className="font-display text-lg font-bold">
+          El Brote
+        </h2>
+        {plan === 'premium' && (
+          <span className="rounded-full border border-accent/50 px-2 py-0.5 text-[11px] text-accent-soft">Premium</span>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto rounded p-1 text-text-muted transition-colors hover:text-text"
+          aria-label="Cerrar el Brote"
+        >
+          <Icon name="close" />
+        </button>
+      </header>
+
+      <div className="space-y-2 border-b border-border/60 px-4 py-3">
+        <div role="group" aria-label="Fuente de las respuestas" className="flex gap-1 rounded-lg bg-surface-2 p-1">
+          {MODES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={mode === option.value}
+              onClick={() => setMode(/** @type {'notes'|'external'} */ (option.value))}
+              className={`${SEGMENT} ${mode === option.value ? 'bg-surface-lit text-accent-soft' : 'text-text-muted hover:text-text'}`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-xs text-text-muted">
+          Alcance
+          <select
+            value={scope ?? ''}
+            onChange={(event) => setScope(/** @type {any} */ (event.target.value))}
+            className="flex-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-text"
+          >
+            {scope == null && <option value="">Abrí una materia</option>}
+            {scopeOptions.map((option) => (
+              <option key={option.value} value={option.value} disabled={option.locked}>
+                {option.locked ? `${option.label} (Premium)` : option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex flex-wrap gap-1.5">
+          {CHIPS.map((action) => {
+            const locked = lockedActionMessage(action, plan) != null
+            return (
+              <button
+                key={action}
+                type="button"
+                disabled={state.busy}
+                onClick={() => runAction(action)}
+                className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-text-muted transition-colors hover:border-accent/60 hover:text-text disabled:opacity-50"
+              >
+                {locked ? <Icon name="lock" size={12} /> : <Icon name="sparkles" size={12} />}
+                {ACTION_LABELS[action]}
+                {locked && <span className="text-[10px] text-accent-soft">Premium</span>}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <ChatThread state={state} onAccept={acceptProposal} onReject={rejectProposal} />
+
+      <form
+        className="flex items-end gap-2 border-t border-border/60 px-4 py-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          submit()
+        }}
+      >
+        <label htmlFor="brote-input" className="sr-only">
+          Mensaje para el Brote
+        </label>
+        <textarea
+          id="brote-input"
+          ref={inputRef}
+          rows={2}
+          maxLength={MAX_MESSAGE}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              submit()
+            }
+          }}
+          placeholder="Preguntale algo a tus apuntes…"
+          className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-muted"
+        />
+        {state.busy ? (
+          <button
+            type="button"
+            onClick={stop}
+            aria-label="Detener la respuesta"
+            className="rounded-lg border border-border p-2 text-text-muted transition-colors hover:text-text"
+          >
+            <Icon name="stop" />
+          </button>
+        ) : (
+          <button type="submit" aria-label="Enviar" disabled={!draft.trim()} className="btn-accent p-2 disabled:opacity-50">
+            <Icon name="send" />
+          </button>
+        )}
+      </form>
+    </section>
+  )
+}

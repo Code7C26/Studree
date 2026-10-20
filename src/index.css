@@ -176,3 +176,90 @@
     --tw-ring-color: var(--subject, theme('colors.accent.DEFAULT'));
   }
 }
+
+/*
+ * El Brote (asistente, Fase 14): una animación por estado. Ver
+ * docs/features/assistant.md. Con `prefers-reduced-motion` queda quieto.
+ */
+.brote-body,
+.brote-leaves {
+  transform-box: view-box;
+}
+.brote-body {
+  transform-origin: 32px 58px;
+}
+.brote-leaves {
+  transform-origin: 32px 24px;
+}
+.brote--idle .brote-leaves {
+  animation: brote-sway 4s ease-in-out infinite;
+}
+.brote--thinking .brote-body {
+  animation: brote-bob 1.4s ease-in-out infinite;
+}
+.brote--thinking .brote-leaves {
+  animation: brote-sway 1.4s ease-in-out infinite;
+}
+.brote--writing .brote-body {
+  animation: brote-bob 0.6s ease-in-out infinite;
+}
+.brote--happy .brote-body {
+  animation: brote-hop 0.5s ease-out 3;
+}
+.brote--sad .brote-leaves {
+  transform: rotate(8deg) translateY(2px);
+}
+.brote--sad .brote-body {
+  transform: translateY(1px);
+}
+.brote--sleeping .brote-body {
+  animation: brote-breathe 3.5s ease-in-out infinite;
+}
+.brote--sleeping .brote-leaves {
+  transform: rotate(-10deg);
+}
+
+@keyframes brote-sway {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+@keyframes brote-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes brote-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  40% {
+    transform: translateY(-6px) scale(0.97, 1.03);
+  }
+}
+@keyframes brote-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03, 0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brote,
+  .brote * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

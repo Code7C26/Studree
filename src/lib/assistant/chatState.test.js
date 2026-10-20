@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  initialChat, reduceEvent, addUserMessage, setProposalStatus, MAX_MESSAGES, MAX_MESSAGE_CHARS,
+  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, chatMood,
+  MAX_MESSAGES, MAX_MESSAGE_CHARS,
 } from './chatState.js'
 
 const prop = (over = {}) => ({ id: 'p1', kind: 'append', sheetId: 's1', markdown: 'hola', source: 'notes', status: 'pending', ...over })
@@ -9,6 +10,7 @@ const prop = (over = {}) => ({ id: 'p1', kind: 'append', sheetId: 's1', markdown
 test('estado inicial vacío', () => {
   assert.deepEqual(initialChat(), {
     messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, grades: null, error: null,
+    truncated: false,
   })
 })
 
@@ -112,4 +114,55 @@ test('setProposalStatus cambia solo esa propuesta y valida el estado', () => {
   const t = setProposalStatus(s, 'a', 'applied')
   assert.deepEqual(t.proposals.map((p) => p.status), ['applied', 'pending'])
   assert.equal(setProposalStatus(s, 'a', 'pending'), s)
+})
+
+test('una acción de chip sin texto usa la etiqueta visible y deja busy', () => {
+  const s = addUserMessage({ ...initialChat(), truncated: true }, 'Resumir materia')
+  assert.deepEqual(s.messages, [{ role: 'user', text: 'Resumir materia' }])
+  assert.equal(s.busy, true)
+  assert.equal(s.truncated, false)
+})
+
+test('done marca truncated si viene truncated o un finishReason distinto de STOP', () => {
+  const busy = addUserMessage(initialChat(), 'x')
+  assert.equal(reduceEvent(busy, { type: 'done' }).truncated, false)
+  assert.equal(reduceEvent(busy, { type: 'done', finishReason: 'STOP' }).truncated, false)
+  assert.equal(reduceEvent(busy, { type: 'done', truncated: true }).truncated, true)
+  assert.equal(reduceEvent(busy, { type: 'done', finishReason: 'MAX_TOKENS' }).truncated, true)
+})
+
+test('finishRequest libera el chat (corte o stream sin done) y conserva el error del stream', () => {
+  let s = addUserMessage(initialChat(), 'x')
+  s = reduceEvent(s, { type: 'tool', name: 'read_sheet' })
+  const cut = finishRequest(s)
+  assert.equal(cut.busy, false)
+  assert.equal(cut.status, null)
+  assert.equal(cut.error, null)
+  const withError = finishRequest(s, 'Se cortó.')
+  assert.equal(withError.error, 'Se cortó.')
+  const afterStreamError = finishRequest(reduceEvent(s, { type: 'error', message: 'Del stream.' }), null)
+  assert.equal(afterStreamError.error, 'Del stream.')
+})
+
+test('finishRequest sin nada que cambiar devuelve el mismo estado', () => {
+  const s = initialChat()
+  assert.equal(finishRequest(s), s)
+})
+
+test('setError pone y limpia el aviso sin tocar busy', () => {
+  const busy = addUserMessage(initialChat(), 'x')
+  const s = setError(busy, 'Es de Premium.')
+  assert.equal(s.error, 'Es de Premium.')
+  assert.equal(s.busy, true)
+  assert.equal(setError(s, null).error, null)
+  assert.equal(setError(s, '').error, null)
+})
+
+test('chatMood: pensando, escribiendo, triste y en reposo', () => {
+  let s = addUserMessage(initialChat(), 'x')
+  assert.equal(chatMood(s), 'thinking')
+  s = reduceEvent(s, { type: 'text', delta: 'Ho' })
+  assert.equal(chatMood(s), 'writing')
+  assert.equal(chatMood(reduceEvent(s, { type: 'done' })), 'idle')
+  assert.equal(chatMood(reduceEvent(s, { type: 'error', message: 'x' })), 'sad')
 })

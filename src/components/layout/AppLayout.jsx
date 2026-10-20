@@ -2,6 +2,8 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { ReadingModeProvider } from './ReadingModeProvider'
 import { useReadingMode } from '../../hooks/useReadingMode.js'
+import { useAuth } from '../../hooks/useAuth.js'
+import { AssistantHost } from '../features/assistant/AssistantHost'
 import { ROUTES } from '../../constants/routes'
 
 /** Rutas que viven dentro del shell (WorkspaceLayout: explorador + tabs + palette). */
@@ -23,10 +25,11 @@ export function AppLayout() {
   )
 }
 
-/** El layout en sí; en modo lectura (carpeta) oculta el header. */
+/** El layout en sí; en modo lectura (carpeta) oculta el header y el Brote. */
 function AppShell() {
   const location = useLocation()
   const { reading } = useReadingMode()
+  const { user } = useAuth()
   // "/" (exacta) es el Inicio, que también vive en el shell (docs/features/home.md).
   const isWorkspace =
     location.pathname === ROUTES.home || WORKSPACE_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))
@@ -41,6 +44,8 @@ function AppShell() {
           <Outlet />
         </main>
       )}
+      {/* El Brote (asistente, Fase 14): con sesión, fuera del login y del modo lectura. */}
+      {user && !reading && location.pathname !== ROUTES.login && <AssistantHost />}
     </div>
   )
 }
