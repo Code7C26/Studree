@@ -7,6 +7,7 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { CareersPage } from './pages/CareersPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { LandingGate } from './features/landing/LandingGate'
 import { ROUTES } from './constants/routes'
 
 // Páginas pesadas en chunks aparte: React Flow + dagre (canvas) y TipTap
@@ -17,6 +18,8 @@ const CareerMapPage = lazyPage(() => import('./pages/CareerMapPage'), 'CareerMap
 const SubjectFolderPage = lazyPage(() => import('./pages/SubjectFolderPage'), 'SubjectFolderPage')
 const SheetRedirectPage = lazyPage(() => import('./pages/SheetRedirectPage'), 'SheetRedirectPage')
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
+// Landing pública: chunk aparte, solo se descarga en "/" sin sesión (docs/features/landing.md).
+const LandingPage = lazyPage(() => import('./pages/LandingPage'), 'LandingPage')
 
 /**
  * Suspense por ruta (no global): mientras baja el chunk, el header y el
@@ -30,6 +33,8 @@ const withSuspense = (element) => (
 export default function App() {
   return (
     <Routes>
+      {/* En "/" sin sesión muestra la landing; en el resto no hace nada (landing.md). */}
+      <Route element={<LandingGate page={<LandingPage />} />}>
       <Route element={<AppLayout />}>
         {/* Única ruta pública (más el catch-all). */}
         <Route path={ROUTES.login} element={<LoginPage />} />
@@ -51,6 +56,7 @@ export default function App() {
 
         {/* Catch-all: evita la pantalla en blanco de una ruta sin registrar. */}
         <Route path="*" element={<NotFoundPage />} />
+      </Route>
       </Route>
     </Routes>
   )
