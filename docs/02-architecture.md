@@ -47,6 +47,7 @@ Studree/
 │   ├── index.css                  # Tailwind + variables de tema globales
 │   ├── pages/                     # Páginas/vistas (una por ruta)
 │   │   ├── HomePage.jsx           # Inicio (`/`): seguí donde dejaste, calendario, tareas, notas
+│   │   ├── LandingPage.jsx        # Landing pública (`/bienvenida`), fuera del layout de la app
 │   │   ├── LoginPage.jsx          # Acceso (email + contraseña)
 │   │   ├── CareersPage.jsx        # Workspace: panel de inicio con las carreras
 │   │   ├── CareerMapPage.jsx      # Canvas de materias + correlativas
@@ -68,6 +69,7 @@ Studree/
 │   │       ├── folder/            # FolderSheet, TopicIndex, FolderSearchBar (La Carpeta)
 │   │       ├── sheetEditor/       # SheetEditor, EditorToolbar
 │   │       ├── export/            # ExportDialog
+│   │       ├── landing/           # Landing pública: un componente por bloque + landingCopy.js (textos)
 │   │       └── home/              # Inicio: HomePanel, ContinueCard, NextDateCard, WeekSummary,
 │   │                              # CalendarPanel, DateFormModal, TaskList, QuickNotes
 │   ├── hooks/                     # useAuth, useCareers, useCareerMap, useFolder,

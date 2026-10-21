@@ -149,6 +149,14 @@ Spec: `docs/superpowers/specs/2026-10-15-rediseno-visual-design.md`.
 | Shell: logo original, buscador `Ctrl K` en el header, tabs como pastillas con color, explorador cerrado por defecto | `features/navigation-shell.md` | ✅ |
 | Estilo: luz de lámpara, Bricolage Grotesque + Inter, íconos SVG, foco visible | `02-architecture.md` (ADR-018) | ✅ |
 
+### Landing pública (2026-10-21)
+
+Spec: `docs/superpowers/specs/2026-10-21-landing-design.md` · plan: `docs/superpowers/plans/2026-10-21-landing.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Landing en `/bienvenida`, fuera del layout de la app; presenta la idea "tus apuntes + una IA que los conoce" y el Brote (Fase 14) | `features/landing.md` | ✅ (verificación visual en navegador pendiente del estudiante) |
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
