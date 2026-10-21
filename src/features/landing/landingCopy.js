@@ -1,7 +1,10 @@
 import { ROUTES } from '../../constants/routes.js'
 
-/** Ruta del registro: el login abre directo en "Crear cuenta" (LoginPage, `?modo=registro`). */
-export const SIGNUP_PATH = `${ROUTES.login}?modo=registro`
+/**
+ * "Empezar gratis" entra directo a la app: AuthProvider abre una sesión de invitado y la cuenta
+ * con email se agrega después desde el Perfil (el login rebota a quien ya tiene sesión).
+ */
+export const START_PATH = ROUTES.home
 
 export const HERO = {
   title: ['El conocimiento', 'no se guarda.', 'Crece.'],
@@ -18,5 +21,3 @@ export const NAV_LINKS = [
   { label: 'El Brote', href: '#brote' },
   { label: 'Planes', href: '#planes' },
 ]
-
-export const NAV_LOGIN = 'Entrar'

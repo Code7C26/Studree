@@ -26,7 +26,7 @@ estudiante.
 - Que en el hero se entienda la idea: el conocimiento crece como un árbol y una IA lo cuida con vos.
 - Que el visitante entienda en segundos la diferencia entre una IA genérica y una IA con *sus*
   apuntes.
-- Llevar a crear la cuenta (CTA "Empezar gratis" → login/registro).
+- Llevar a empezar a usar la app (CTA "Empezar gratis" → `/`).
 - Verse como Studree: mismo sistema visual de la app (ADR-018), no una plantilla genérica de SaaS.
 
 **No-objetivos**
@@ -79,9 +79,7 @@ reales.
 
 ## 5. Decisiones que tomó el diseño (el estudiante no las pidió)
 
-1. **Ruta:** la landing vive en `/` cuando **no hay sesión**; con sesión, `/` sigue siendo el
-   Inicio (como hoy, Fase 12). Hoy `/` está detrás de `RequireAuth`; el cambio consiste en que, sin
-   sesión, en vez de redirigir a `/entrar` se muestre la landing. El CTA lleva a `/entrar`.
+1. **Ruta:** la landing vive en `/bienvenida`, pública y fuera del layout de la app (sin header ni explorador). `/` sigue siendo el Inicio. Al hacer el deploy se puede decidir qué mostrar en la raíz del dominio.
 2. **Estructura de carpetas:** `src/pages/LandingPage.jsx` y `src/features/landing/` con un
    componente por bloque. **Requiere permiso** (Mandamiento VI) y actualizar
    `docs/02-architecture.md` y la tabla de lookup de `CLAUDE.md` (y sus copias).
@@ -96,13 +94,8 @@ reales.
 8. **Calidad base:** contraste AA, foco visible, HTML semántico, sin dependencias nuevas, imágenes
    perezosas, mismo bundle principal (landing en chunk aparte con `lazy`).
 
-9. **Sesión cargando:** `useAuth` ya expone `loading`. Mientras carga no se muestra ni la landing
-   ni el Inicio (el mismo "Cargando…" neutro de `RequireAuth`), para que quien tiene sesión no
-   vea un destello de la landing al recargar. El chunk de la landing se pide recién cuando se
-   sabe que no hay sesión.
-10. **CTA a registro:** `LoginPage` ya tiene modos `signin`/`signup`, pero sin parámetro de URL.
-    Se agrega `?modo=registro` para que "Empezar gratis" abra directo en "Crear cuenta"; el enlace
-    "Entrar" del menú abre el modo normal. Es un cambio mínimo en `LoginPage.jsx`.
+9. **Por qué `/bienvenida` y no `/` (hallazgo durante la implementación, 2026-10-21):** `AuthProvider` crea una sesión anónima (modo invitado) a todo visitante nuevo, así que nunca hay "sin sesión" y una landing condicionada a eso no aparecería jamás. Se evaluaron mostrarla en `/` a los invitados (obliga a cambiar el login, que hoy rebota a quien ya tiene sesión, y quita el Inicio a los invitados con datos) y diferir la sesión anónima (toca `AuthProvider`). El estudiante eligió la ruta propia: cero riesgo para la app.
+10. **CTA:** "Empezar gratis" lleva a `/` (la app abre una sesión de invitado y la cuenta con email se agrega después desde el Perfil). No hay botón "Entrar" en la landing: la app misma lo oculta a los invitados y `/entrar` los rebota. `LoginPage` no se toca. Consecuencia conocida: abrir `/bienvenida` también crea una sesión de invitado (es el comportamiento de cualquier URL de la app, no algo nuevo de la landing).
 11. **Hero, referencia visual:** las maquetas viven en `.superpowers/` (ignorado por git). Lo
     normativo es esta descripción: a la izquierda titular de tres líneas ("El conocimiento / no
     se guarda. / Crece." con "Crece." en verde), bajada y CTA; a la derecha un árbol en SVG con
@@ -131,18 +124,15 @@ reales.
 - Chunk aparte (`lazy`): quien usa la app con sesión nunca descarga la landing.
 - Sin dependencias nuevas.
 
-**Únicos puntos de contacto con código existente (los tres cambios mínimos):**
-1. `src/App.jsx` y `constants/routes.js`: la ruta `/` pasa a decidir entre landing e Inicio.
-2. `src/pages/LoginPage.jsx`: leer `?modo=registro` para abrir en "Crear cuenta".
-3. `index.html`: `<title>` y metadatos.
+**Únicos puntos de contacto con código existente (los dos cambios mínimos):**
+1. `src/App.jsx` y `constants/routes.js`: una ruta nueva, `/bienvenida`, fuera del layout de la app.
+2. `index.html`: `<title>` y metadatos.
 
 **Cómo se verifica antes de entregar** (no basta con que compile):
-- `npm run build` y `npm run lint` sin errores nuevos; tamaño del chunk principal igual al de antes.
-- Con sesión: `/` muestra el Inicio exactamente como hoy; recargar con sesión no muestra la landing.
-- Sin sesión: `/` muestra la landing; `/carreras`, `/materias/:id` y `/hojas/:id` siguen
-  redirigiendo a `/entrar` y, al entrar, vuelven a donde iba.
-- Login, registro (con y sin `?modo=registro`), cerrar sesión y volver a entrar funcionan.
-- Si hay tests (`npm test`), pasan sin cambios.
+- `npm run build` y `npx eslint src` sin errores nuevos; tamaño del chunk principal igual al de antes.
+- `/` muestra el Inicio exactamente como hoy; `/carreras`, `/materias/:id`, `/hojas/:id`, `/entrar` y `/perfil` no cambian.
+- `/bienvenida` se ve con y sin sesión, y "Empezar gratis" lleva a `/`.
+- Diff contra el punto de partida: solo `App.jsx`, `constants/routes.js`, `index.html` y documentación tocan lo existente.
 
 ## 7. Fuera del código que se toca
 
@@ -152,7 +142,7 @@ reales.
 
 ## 8. Criterios de éxito
 
-- Sin sesión, `/` muestra la landing; con sesión, el Inicio de siempre. `/entrar` sigue igual.
+- `/bienvenida` muestra la landing, con o sin sesión; `/` y el resto de la app siguen exactamente igual.
 - Un visitante que lee solo el hero y el bloque 2 puede explicar "mis apuntes → una IA que los usa".
 - Ningún dato, testimonio o cifra inventado como real; los ejemplos están claramente armados a mano.
 - Se ve bien en 375, 768, 1024 y 1440 px, sin scroll horizontal.

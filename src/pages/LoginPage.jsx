@@ -14,10 +14,7 @@ export function LoginPage() {
   const { user, loading, configured, signIn, signUp } = useAuth()
   const location = useLocation()
 
-  // `?modo=registro` (CTA de la landing) abre directo en "Crear cuenta".
-  const [mode, setMode] = useState(
-    /** @type {'signin'|'signup'} */ (new URLSearchParams(location.search).get('modo') === 'registro' ? 'signup' : 'signin'),
-  )
+  const [mode, setMode] = useState(/** @type {'signin'|'signup'} */ ('signin'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)

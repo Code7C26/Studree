@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { HERO, SIGNUP_PATH } from './landingCopy.js'
+import { HERO, START_PATH } from './landingCopy.js'
 import { HeroTree } from './HeroTree.jsx'
 
 /** Hero: el titular de la idea central y el árbol de materias con el Brote. */
@@ -21,7 +21,7 @@ export function HeroSection() {
           </h1>
           <p className="mt-5 max-w-[44ch] text-base leading-relaxed text-text-muted">{HERO.subtitle}</p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to={SIGNUP_PATH} className="btn-accent rounded-full px-6 py-3 text-sm">
+            <Link to={START_PATH} className="btn-accent rounded-full px-6 py-3 text-sm">
               {HERO.cta}
             </Link>
             <a href="#como-funciona" className="px-3 py-3 text-sm text-text-muted transition-colors hover:text-text">

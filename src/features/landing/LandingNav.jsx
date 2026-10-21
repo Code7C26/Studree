@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom'
-import { ROUTES } from '../../constants/routes.js'
-import { NAV_LINKS, NAV_LOGIN } from './landingCopy.js'
+import { HERO, NAV_LINKS, START_PATH } from './landingCopy.js'
 
-/** Barra superior de la landing: marca, anclas a los bloques y acceso. */
+/** Barra superior de la landing: marca, anclas a los bloques y CTA. */
 export function LandingNav() {
   return (
     <header className="relative z-10">
@@ -20,11 +19,8 @@ export function LandingNav() {
             </a>
           ))}
         </nav>
-        <Link
-          to={ROUTES.login}
-          className="rounded-full border border-border px-4 py-1.5 text-sm transition-colors hover:border-text-muted/60"
-        >
-          {NAV_LOGIN}
+        <Link to={START_PATH} className="btn-accent rounded-full px-4 py-1.5 text-sm">
+          {HERO.cta}
         </Link>
       </div>
     </header>

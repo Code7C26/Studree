@@ -8,6 +8,7 @@
 export const ROUTES = Object.freeze({
   home: '/',
   login: '/entrar',
+  welcome: '/bienvenida', // landing pública (docs/features/landing.md); fuera del layout de la app
   careers: '/carreras', // workspace: panel de inicio con las carreras
   careerMap: '/carreras/:careerId', // canvas de materias + correlativas
   subjectFolder: '/materias/:subjectId', // la carpeta de la materia (ADR-017); acepta ?hoja=:sheetId
