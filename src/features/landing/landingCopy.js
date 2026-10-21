@@ -108,3 +108,46 @@ export const FOLDER = {
     text: 'Calendario con fechas importantes, tareas con fecha límite y notas rápidas.',
   },
 }
+
+export const OWNERSHIP = {
+  title: 'Tu conocimiento es tuyo',
+  text: 'Exportás todas tus hojas a un único archivo Markdown, o a un .zip con una hoja por archivo. Con "Copiar para IA" lo pegás en cualquier asistente y le das de una vez todo lo que sabés.',
+  fileName: 'mi-carrera.md',
+  sample: ['# Biología celular', '', '## Mitocondria', 'La mitocondria produce ATP en la respiración celular.', '', '## Ribosomas', 'Sintetizan proteínas.'],
+  points: [
+    'Cada cuenta ve solo lo suyo: los datos están separados por usuario.',
+    'La clave de la IA vive en el servidor y nunca llega a tu navegador.',
+    'El Brote no borra nada de lo que escribiste.',
+  ],
+}
+
+export const PLANS = {
+  title: 'Gratis y Premium',
+  intro: 'Los apuntes son tuyos en los dos planes. Lo que cambia es cuánto trabaja el Brote con ellos.',
+  freeLabel: 'Gratis',
+  premiumLabel: 'Premium',
+  free: [
+    'Carreras, materias, hojas, Inicio y exportar: todo.',
+    'Preguntas y atajos en el texto, con un tope diario.',
+    'Resúmenes y pruebas tipo examen: pocos por mes, de una hoja.',
+    'El Brote lee la materia que tenés abierta.',
+    'Conocimiento externo limitado.',
+  ],
+  premium: [
+    'Todo lo de Gratis.',
+    'Un tope diario mucho mayor para preguntas y atajos.',
+    'Resúmenes y pruebas sin límite, de materias enteras.',
+    'El Brote lee toda tu carrera.',
+    'Repaso de errores y plan de estudio.',
+    'Conocimiento externo completo.',
+  ],
+}
+
+export const CLOSING = {
+  title: 'Empezá a hacer crecer tu árbol',
+  text: 'Escribí tu primera hoja hoy. El Brote se encarga del resto.',
+}
+
+export const FOOTER = {
+  tagline: 'Tu conocimiento, clonado en una IA que te ayuda a llegar más lejos.',
+}

@@ -4,6 +4,10 @@ import { ProblemSection } from '../features/landing/ProblemSection'
 import { HowItWorksSection } from '../features/landing/HowItWorksSection'
 import { BroteSection } from '../features/landing/BroteSection'
 import { FolderSection } from '../features/landing/FolderSection'
+import { OwnershipSection } from '../features/landing/OwnershipSection'
+import { PlansSection } from '../features/landing/PlansSection'
+import { ClosingSection } from '../features/landing/ClosingSection'
+import { LandingFooter } from '../features/landing/LandingFooter'
 
 /**
  * Landing pública de Studree (pública, en /bienvenida). Ver docs/features/landing.md.
@@ -20,7 +24,11 @@ export function LandingPage() {
         <HowItWorksSection />
         <BroteSection />
         <FolderSection />
+        <OwnershipSection />
+        <PlansSection />
+        <ClosingSection />
       </main>
+      <LandingFooter />
     </div>
   )
 }
