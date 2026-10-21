@@ -5,7 +5,9 @@
  */
 
 const ISO_LOCAL = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/
-const FILE_NAME = /^(\d{4})-(\d{2})-(\d{2})[ T_](\d{2})[-:.](\d{2})/
+// El guion va al final de la clase de caracteres: con el guion primero, Tailwind (que escanea
+// el código) lo tomaba por una clase suya y generaba CSS inválido. Significa lo mismo.
+const FILE_NAME = /^(\d{4})-(\d{2})-(\d{2})[ T_](\d{2})[:.-](\d{2})/
 
 /** @param {RegExpMatchArray|null} match @returns {Date|null} */
 function localDate(match) {
