@@ -117,7 +117,7 @@ export const OWNERSHIP = {
   points: [
     'Cada cuenta ve solo lo suyo: los datos están separados por usuario.',
     'La clave de la IA vive en el servidor y nunca llega a tu navegador.',
-    'El Brote no borra nada de lo que escribiste.',
+    'El Brote no borra hojas ni cambia nada sin tu Aceptar.',
   ],
 }
 
@@ -129,7 +129,8 @@ export const PLANS = {
   free: [
     'Carreras, materias, hojas, Inicio y exportar: todo.',
     'Preguntas y atajos en el texto, con un tope diario.',
-    'Resúmenes y pruebas tipo examen: pocos por mes, de una hoja.',
+    'Resúmenes de materia: pocos por mes.',
+    'Pruebas tipo examen: pocas por mes, de una hoja.',
     'El Brote lee la materia que tenés abierta.',
     'Conocimiento externo limitado.',
   ],

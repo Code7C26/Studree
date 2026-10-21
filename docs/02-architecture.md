@@ -54,6 +54,9 @@ Studree/
 │   │   ├── SubjectFolderPage.jsx  # La Carpeta de una materia (ADR-017)
 │   │   ├── SheetRedirectPage.jsx  # /hojas/:id → carpeta en esa hoja
 │   │   └── ProfilePage.jsx
+│   ├── features/                  # EXCEPCIÓN autorizada (2026-10-21): carpeta de primer nivel, fuera de
+│   │   └── landing/               #   components/features/. Landing pública: un componente por bloque,
+│   │                              #   landingCopy.js (textos) y paperTones.js; con sus tests (node --test)
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
 │   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker,
@@ -69,7 +72,6 @@ Studree/
 │   │       ├── folder/            # FolderSheet, TopicIndex, FolderSearchBar (La Carpeta)
 │   │       ├── sheetEditor/       # SheetEditor, EditorToolbar
 │   │       ├── export/            # ExportDialog
-│   │       ├── landing/           # Landing pública: un componente por bloque + landingCopy.js (textos)
 │   │       └── home/              # Inicio: HomePanel, ContinueCard, NextDateCard, WeekSummary,
 │   │                              # CalendarPanel, DateFormModal, TaskList, QuickNotes
 │   ├── hooks/                     # useAuth, useCareers, useCareerMap, useFolder,

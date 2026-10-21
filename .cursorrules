@@ -96,7 +96,7 @@
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
 | `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
-| `pages/LandingPage.jsx` · `features/landing/**` · ruta `ROUTES.welcome` (`/bienvenida`) · metadatos de `index.html` | `docs/features/landing.md` |
+| `pages/LandingPage.jsx` · `src/features/landing/**` (carpeta de primer nivel, no `components/features/`) · ruta `ROUTES.welcome` (`/bienvenida`) · metadatos de `index.html` | `docs/features/landing.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |

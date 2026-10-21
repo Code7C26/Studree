@@ -1,5 +1,5 @@
 import { FOLDER } from './landingCopy.js'
-import { PaperSheet } from './PaperSheet.jsx'
+import { PaperHeading, PaperSheet } from './PaperSheet.jsx'
 
 /** Mapa de correlativas en miniatura: tres materias y dos conectores. Decorativo. */
 function MiniMap() {
@@ -47,9 +47,9 @@ export function FolderSection() {
           <p className="mt-2 max-w-[48ch] text-sm leading-relaxed text-text-muted">{sheets.text}</p>
           <div className="mt-5 grid items-start gap-4 sm:grid-cols-[1fr_9rem]">
             <PaperSheet date={sheets.date}>
-              <p className="font-display font-bold text-accent-hover"># {sheets.topics[0]}</p>
+              <PaperHeading># {sheets.topics[0]}</PaperHeading>
               <p>La mitocondria produce ATP.</p>
-              <p className="font-display font-bold text-accent-hover"># {sheets.topics[1]}</p>
+              <PaperHeading># {sheets.topics[1]}</PaperHeading>
               <p>Sintetizan proteínas.</p>
             </PaperSheet>
             <ul aria-label="Índice de temas" className="space-y-1.5 border-l border-border pl-3 text-sm text-text-muted">

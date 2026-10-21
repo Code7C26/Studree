@@ -1,5 +1,5 @@
 import { PROBLEM } from './landingCopy.js'
-import { PaperSheet } from './PaperSheet.jsx'
+import { PaperHeading, PaperSheet } from './PaperSheet.jsx'
 import { Brote } from './Brote.jsx'
 
 /** El problema: la misma pregunta a un chat genérico y al Brote con las hojas del usuario. Ejemplo ilustrativo. */
@@ -25,7 +25,7 @@ export function ProblemSection() {
             {PROBLEM.brote.label}
           </h3>
           <PaperSheet date={PROBLEM.sheet.date} className="mt-4 max-w-sm -rotate-1">
-            <p className="font-display font-bold text-accent-hover">{PROBLEM.sheet.title}</p>
+            <PaperHeading>{PROBLEM.sheet.title}</PaperHeading>
             {PROBLEM.sheet.lines.map((line) => (
               <p key={line}>{line}</p>
             ))}

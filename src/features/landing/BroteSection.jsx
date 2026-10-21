@@ -1,6 +1,6 @@
 import { BROTE } from './landingCopy.js'
 import { Brote } from './Brote.jsx'
-import { PaperSheet } from './PaperSheet.jsx'
+import { PaperHeading, PaperSheet } from './PaperSheet.jsx'
 
 /** El Brote: qué hace con el conocimiento del usuario y cómo se mantiene el control. La demo es ilustrativa. */
 export function BroteSection() {
@@ -28,7 +28,7 @@ export function BroteSection() {
         <div>
           <figure aria-label={demo.label} className="rounded-2xl border border-accent/40 bg-surface-lit p-5">
             <PaperSheet date={demo.date}>
-              <p className="font-display font-bold text-accent-hover">{demo.heading}</p>
+              <PaperHeading>{demo.heading}</PaperHeading>
               <p>{demo.kept}</p>
               <p className="rounded-sm bg-accent/20 px-1 ring-1 ring-accent/50">{demo.proposed}</p>
             </PaperSheet>

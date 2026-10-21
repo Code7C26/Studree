@@ -39,6 +39,15 @@ test('la landing no promete que el Brote escriba solo', () => {
   assert.ok(copy.BROTE.guarantees.some((text) => /nunca escribe/i.test(text)))
 })
 
+test('la landing no dice que el Brote "no borra nada" (al aceptar puede reemplazar texto)', () => {
+  for (const text of strings) assert.doesNotMatch(text, /no borra nada/i, text)
+})
+
+test('en Gratis solo las pruebas son "de una hoja"; los resúmenes no', () => {
+  assert.ok(copy.PLANS.free.some((text) => /pruebas/i.test(text) && /de una hoja/i.test(text)))
+  assert.ok(copy.PLANS.free.every((text) => !(/res[uú]menes/i.test(text) && /de una hoja/i.test(text))))
+})
+
 test('los planes tienen las dos columnas con contenido', () => {
   assert.ok(copy.PLANS.free.length >= 4)
   assert.ok(copy.PLANS.premium.length >= 4)

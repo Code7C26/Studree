@@ -23,8 +23,9 @@ como terminado.
 
 | Archivo | Responsabilidad |
 |---|---|
-| `pages/LandingPage.jsx` | Compone los bloques; scrollea sola (`h-full overflow-y-auto`). |
-| `features/landing/landingCopy.js` | **Todos los textos** y `START_PATH` (Mandamiento II). |
+| `pages/LandingPage.jsx` | Compone los bloques; scrollea el documento (sin contenedor interno, para que Espacio y RePág funcionen). |
+| `src/features/landing/landingCopy.js` | Casi todos los textos y `START_PATH` (Mandamiento II). Carpeta de primer nivel, no `components/features/`. |
+| `paperTones.js` | Verde de los títulos sobre el papel (AA, de `getSubjectTones`). |
 | `LandingNav`, `HeroSection`, `HeroTree`, `Brote` | Barra, hero y el árbol de materias con el Brote (SVG). |
 | `ProblemSection`, `HowItWorksSection`, `BroteSection`, `FolderSection`, `OwnershipSection`, `PlansSection`, `ClosingSection`, `LandingFooter` | Un bloque cada uno. |
 | `PaperSheet` | Hoja de papel crema con renglones, como la carpeta de la app. |

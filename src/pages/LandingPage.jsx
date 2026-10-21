@@ -15,8 +15,8 @@ import { LandingFooter } from '../features/landing/LandingFooter'
  */
 export function LandingPage() {
   return (
-    // El layout de la app no la envuelve: scrollea por sí sola (body y #root tienen height:100%).
-    <div className="h-full overflow-y-auto bg-bg text-text">
+    // El layout de la app no la envuelve; scrollea el documento (así funcionan Espacio y RePág).
+    <div className="min-h-full bg-bg text-text">
       <LandingNav />
       <main>
         <HeroSection />
