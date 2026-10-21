@@ -1,8 +1,10 @@
 import { LandingNav } from '../features/landing/LandingNav'
 import { HeroSection } from '../features/landing/HeroSection'
+import { ProblemSection } from '../features/landing/ProblemSection'
+import { HowItWorksSection } from '../features/landing/HowItWorksSection'
 
 /**
- * Landing pública de Studree (visible en "/" sin sesión). Ver docs/features/landing.md.
+ * Landing pública de Studree (pública, en /bienvenida). Ver docs/features/landing.md.
  * Solo compone los bloques de `features/landing/`; no lee ni escribe datos.
  */
 export function LandingPage() {
@@ -12,6 +14,8 @@ export function LandingPage() {
       <LandingNav />
       <main>
         <HeroSection />
+        <ProblemSection />
+        <HowItWorksSection />
       </main>
     </div>
   )
