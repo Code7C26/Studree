@@ -1,11 +1,18 @@
+import { LandingNav } from '../features/landing/LandingNav'
+import { HeroSection } from '../features/landing/HeroSection'
+
 /**
  * Landing pública de Studree (visible en "/" sin sesión). Ver docs/features/landing.md.
- * Se completa bloque por bloque; los bloques viven en `features/landing/`.
+ * Solo compone los bloques de `features/landing/`; no lee ni escribe datos.
  */
 export function LandingPage() {
   return (
-    <main className="min-h-screen bg-bg text-text">
-      <h1 className="font-display text-4xl font-extrabold">Studree</h1>
-    </main>
+    // El layout de la app no la envuelve: scrollea por sí sola (body y #root tienen height:100%).
+    <div className="h-full overflow-y-auto bg-bg text-text">
+      <LandingNav />
+      <main>
+        <HeroSection />
+      </main>
+    </div>
   )
 }
