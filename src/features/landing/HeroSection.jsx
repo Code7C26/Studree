@@ -6,13 +6,9 @@ import { HeroTree } from './HeroTree.jsx'
 export function HeroSection() {
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-[10%] top-[10%] -z-10 h-[40rem] w-[40rem] max-w-full rounded-full bg-[radial-gradient(closest-side,theme(colors.accent.DEFAULT/0.2),transparent)]"
-      />
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-2 lg:pb-24 lg:pt-14">
         <div>
-          <h1 id="hero-title" className="font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
+          <h1 id="hero-title" className="font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
             {HERO.title[0]}
             <br />
             {HERO.title[1]}
@@ -29,7 +25,13 @@ export function HeroSection() {
             </a>
           </div>
         </div>
-        <HeroTree className="mx-auto w-full max-w-md" />
+        <div className="relative mx-auto w-full max-w-lg">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,theme(colors.accent.DEFAULT/0.2),transparent)]"
+          />
+          <HeroTree />
+        </div>
       </div>
     </section>
   )

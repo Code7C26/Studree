@@ -15,9 +15,9 @@ const BRANCHES = [
 
 /** Nodos-píldora: materia, posición de la píldora y del texto. */
 const NODES = [
-  { x: 55, y: 88, tx: 80, ty: 105 },
-  { x: 155, y: 68, tx: 180, ty: 85 },
-  { x: 262, y: 84, tx: 287, ty: 101 },
+  { x: 52, y: 88, tx: 80, ty: 105 },
+  { x: 152, y: 68, tx: 180, ty: 85 },
+  { x: 259, y: 84, tx: 287, ty: 101 },
 ]
 
 const LEAVES = [
@@ -52,8 +52,8 @@ export function HeroTree({ className = '' }) {
         </g>
         {NODES.map((node, i) => (
           <g key={HERO.subjects[i]} className="lt-node">
-            <rect x={node.x} y={node.y} width="50" height="26" rx="13" className="fill-surface-lit stroke-accent" strokeWidth="1.6" />
-            <text x={node.tx} y={node.ty} textAnchor="middle" fontSize="10" className="fill-accent-soft font-sans">
+            <rect x={node.x} y={node.y} width="56" height="26" rx="13" className="fill-surface-lit stroke-accent" strokeWidth="1.6" />
+            <text x={node.tx} y={node.ty} textAnchor="middle" fontSize="11" className="fill-accent-soft font-sans">
               {HERO.subjects[i]}
             </text>
           </g>
