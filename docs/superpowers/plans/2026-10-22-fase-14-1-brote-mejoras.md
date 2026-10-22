@@ -83,7 +83,7 @@ InlineCommand = {type:'close'} | {type:'accept', proposalId: string} | {type:'di
 
 ---
 
-### Tarea 1: Migración 0009 y documentación de datos
+### Task 1: Migración 0009 y documentación de datos
 
 **Files:**
 - Create: `supabase/migrations/0009_mi_estudio.sql`
@@ -104,7 +104,7 @@ InlineCommand = {type:'close'} | {type:'accept', proposalId: string} | {type:'di
 
 ---
 
-### Tarea 2: Resumen estructurado en la Edge Function
+### Task 2: Resumen estructurado en la Edge Function
 
 **Files:**
 - Create: `supabase/functions/assistant/summary.js`, `supabase/functions/assistant/summary.test.js`
@@ -170,7 +170,7 @@ test('summary de alcance hoja: totalSheets 1', async () => { /* scope {type:'she
 
 ---
 
-### Tarea 3: Utilidades puras de resúmenes, registros y rutas
+### Task 3: Utilidades puras de resúmenes, registros y rutas
 
 **Files:**
 - Create: `src/lib/assistant/summaryBlocks.js` (+ `.test.js`), `src/lib/assistant/summaryDoc.js` (+ `.test.js`), `src/lib/assistant/quizRecord.js` (+ `.test.js`), `src/lib/assistant/studyItems.js` (+ `.test.js`)
@@ -233,7 +233,7 @@ assert.equal(formatSheetDay('2026-10-17T12:00:00'), '17/10')
 
 ---
 
-### Tarea 4: Services de "Mi estudio" y guardado completo del intento
+### Task 4: Services de "Mi estudio" y guardado completo del intento
 
 **Files:**
 - Create: `src/services/study.service.js`
@@ -254,7 +254,7 @@ assert.equal(formatSheetDay('2026-10-17T12:00:00'), '17/10')
 
 ---
 
-### Tarea 5: Propuestas junto a su respuesta y achicadas al resolverse
+### Task 5: Propuestas junto a su respuesta y achicadas al resolverse
 
 **Files:**
 - Modify: `src/lib/assistant/chatState.js` (+ `chatState.test.js`), `src/lib/assistant/bridge.js` (typedef `ApplyResult`), `src/components/features/assistant/ChatThread.jsx`, `src/components/features/assistant/ProposalCard.jsx`, `src/hooks/useAssistant.js` (`acceptProposal` pasa `sheetCreatedAt`), `src/pages/SubjectFolderPage.jsx` (`applyRef` devuelve `sheetCreatedAt`)
@@ -295,7 +295,7 @@ test('evento summary válido queda en state.summary; uno sin sections se ignora'
 
 ---
 
-### Tarea 6: Motor de la tarjeta de atajos (conversación "inline")
+### Task 6: Motor de la tarjeta de atajos (conversación "inline")
 
 **Files:**
 - Create: `src/lib/assistant/inlineAnswer.js` (+ `.test.js`), `src/hooks/useInlineAnswer.js`
@@ -332,7 +332,7 @@ test('bridge: sendInline llega a onInlineCommand; requestOpen a onOpenRequest', 
 
 ---
 
-### Tarea 7: Tarjeta del atajo dentro de la hoja
+### Task 7: Tarjeta del atajo dentro de la hoja
 
 **Files:**
 - Create: `src/lib/editor/broteAnchor.js` (+ `broteAnchor.test.js`), `src/components/features/assistant/InlineAnswerCard.jsx`
@@ -363,7 +363,7 @@ test('escribir dentro del párrafo no cierra el ancla', () => { /* insertText en
 
 ---
 
-### Tarea 8: Examen en ventana grande y su registro
+### Task 8: Examen en ventana grande y su registro
 
 **Files:**
 - Create: `src/components/features/assistant/QuizWindow.jsx`, `src/components/features/study/QuizRecordView.jsx`, `src/hooks/useLeaveWarning.js`
@@ -390,7 +390,7 @@ test('escribir dentro del párrafo no cierra el ancla', () => { /* insertText en
 
 ---
 
-### Tarea 9: Resumen en ventana, PDF y "Guardar como hoja"
+### Task 9: Resumen en ventana, PDF y "Guardar como hoja"
 
 **Files:**
 - Create: `src/components/features/study/SummaryDocument.jsx`, `src/components/features/study/SummaryPrint.jsx`, `src/components/features/assistant/SummaryWindow.jsx`, `src/hooks/usePrintSummary.js`, `src/hooks/useSaveSummaryAsSheet.js`
@@ -414,7 +414,7 @@ test('escribir dentro del párrafo no cierra el ancla', () => { /* insertText en
 
 ---
 
-### Tarea 10: Sección "Mi estudio"
+### Task 10: Sección "Mi estudio"
 
 **Files:**
 - Create: `docs/features/study.md` (**primero**, antes de codear), `src/pages/StudyPage.jsx`, `src/pages/StudySummaryPage.jsx`, `src/pages/StudyQuizPage.jsx`, `src/hooks/useStudy.js`
@@ -436,7 +436,7 @@ test('escribir dentro del párrafo no cierra el ancla', () => { /* insertText en
 
 ---
 
-### Tarea 11: Cierre de documentación
+### Task 11: Cierre de documentación
 
 **Files:**
 - Modify: `docs/features/assistant.md`, `docs/02-architecture.md` (ADR-022 "Mi estudio" y PDF por impresión del navegador; estructura de carpetas con `components/features/study/` y las páginas nuevas), `docs/01-project-overview.md` (Fase 14.1 en el estado), `CHANGELOG.md` (completar 0.18.0 con tabla de decisiones como la 0.17.0), `CLAUDE.md` + `.cursorrules`, `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md` (filas de lookup de los archivos nuevos del asistente si faltan)
