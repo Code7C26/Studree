@@ -59,6 +59,58 @@ test('un pedido nuevo reemplaza al pendiente y un listener roto no corta a los d
   assert.equal(b.takeRequest().label, 'b')
 })
 
+test('bridge: onRequest recibe el item; takePendingApply solo devuelve si coincide la materia', () => {
+  const b = createBridge()
+  const seen = []
+  b.onRequest((item) => seen.push(item))
+  const item = { request: { action: 'shortcut', message: 'm' }, label: 'Completar: «x»', selection: null, target: 'inline' }
+  b.request(item)
+  assert.deepEqual(seen, [item])
+
+  const proposal = { id: 'summary-1', kind: 'new_sheet', subjectId: 's1', markdown: '# R', source: 'notes', status: 'pending' }
+  assert.equal(b.takePendingApply('s1'), null)
+  b.setPendingApply({ subjectId: 's1', proposal })
+  assert.equal(b.takePendingApply('otra'), null) // otra materia: no la saca
+  assert.equal(b.takePendingApply('s1'), proposal)
+  assert.equal(b.takePendingApply('s1'), null) // se toma una sola vez
+  b.setPendingApply({ subjectId: 's1', proposal })
+  b.setPendingApply(null)
+  assert.equal(b.takePendingApply('s1'), null)
+})
+
+test('bridge: sendInline llega a onInlineCommand; requestOpen a onOpenRequest', () => {
+  const b = createBridge()
+  const commands = []
+  const offCmd = b.onInlineCommand((cmd) => commands.push(cmd))
+  b.sendInline({ type: 'accept', proposalId: 'p1' })
+  b.sendInline({ type: 'close' })
+  offCmd()
+  b.sendInline({ type: 'discard' })
+  assert.deepEqual(commands, [{ type: 'accept', proposalId: 'p1' }, { type: 'close' }])
+
+  let opens = 0
+  const offOpen = b.onOpenRequest(() => { opens++ })
+  b.requestOpen()
+  offOpen()
+  b.requestOpen()
+  assert.equal(opens, 1)
+})
+
+test('bridge: setInline publica la vista de la tarjeta y avisa a subscribeInline', () => {
+  const b = createBridge()
+  const seen = []
+  assert.equal(b.getInline(), null)
+  const off = b.subscribeInline((view) => seen.push(view))
+  const view = { id: 1, label: 'Explicar', replies: [], busy: true, status: null, error: null, notice: null, proposal: null, external: false, canAnswer: false }
+  b.setInline(view)
+  assert.equal(b.getInline(), view)
+  b.setInline(null)
+  assert.equal(b.getInline(), null)
+  off()
+  b.setInline(view)
+  assert.deepEqual(seen, [view, null])
+})
+
 test('clearRequest descarta el pedido pendiente sin avisar (la carpeta se desmontó)', () => {
   const b = createBridge()
   let n = 0

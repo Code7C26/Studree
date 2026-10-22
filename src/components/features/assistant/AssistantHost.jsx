@@ -54,18 +54,28 @@ export function AssistantHost({ hidden = false }) {
     }
   }, [])
 
-  // Un atajo sobre el texto encoló un pedido: se abre el panel (y se carga si
-  // hacía falta); el panel toma el pedido y lo manda por su conversación.
+  /** Abre el panel como el botón: lo carga, guarda la preferencia y enfoca la entrada. */
+  const openPanel = useCallback(() => {
+    setLoaded(true)
+    setOpen(true)
+    writeCache(STORAGE_KEYS.uiAssistantOpen, true)
+    setFocusSignal((n) => n + 1)
+  }, [])
+
+  // Un atajo sobre el texto encoló un pedido: el panel se carga (ahí vive el
+  // motor, que toma el pedido). Si responde en la tarjeta debajo del texto, el
+  // panel no se abre; si va al chat, sí.
   useEffect(
     () =>
-      assistantBridge.onRequest(() => {
-        setLoaded(true)
-        setOpen(true)
-        writeCache(STORAGE_KEYS.uiAssistantOpen, true)
-        setFocusSignal((n) => n + 1)
+      assistantBridge.onRequest((item) => {
+        if (item?.target === 'inline') setLoaded(true)
+        else openPanel()
       }),
-    [],
+    [openPanel],
   )
+
+  // "Seguir en el chat" desde la tarjeta.
+  useEffect(() => assistantBridge.onOpenRequest(openPanel), [openPanel])
 
   const close = useCallback(() => {
     setOpen(false)

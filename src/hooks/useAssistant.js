@@ -19,8 +19,12 @@ import {
   createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON,
 } from '../lib/assistant/quizSession.js'
 import {
-  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice,
+  initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice, appendExchange,
 } from '../lib/assistant/chatState.js'
+import {
+  createInline, reduceInline, addInlineAnswer, inlineHistory, inlineView,
+} from '../lib/assistant/inlineAnswer.js'
+import { createRequestSlot } from '../lib/assistant/requestSlot.js'
 import {
   ACTION_LABELS, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildScope, lockedActionMessage, requestMode,
   resolveScopeType, scopeOptions,
@@ -29,6 +33,10 @@ import {
 const NO_SCOPE = 'Abrí una materia para preguntarle al Brote (o pasate a Premium para preguntar sobre todas).'
 const NO_CONTEXT = 'Abrí la carpeta de la materia para aplicar el cambio.'
 const BUSY = 'El Brote todavía está respondiendo: probá cuando termine.'
+/** Aviso de la tarjeta de un atajo cuando el que está respondiendo es el chat. */
+const INLINE_BUSY = 'El Brote está respondiendo en el chat: probá cuando termine.'
+const CANCELLED = 'Cortaste la respuesta.'
+const APPLY_FAILED = 'No se pudo aplicar el cambio.'
 const GRADE_LABEL = 'Corregí mis respuestas de desarrollo'
 const GRADE_FAILED = 'No se pudieron corregir las respuestas de desarrollo.'
 const SUBMIT_FAILED = 'Algo falló al corregir o guardar la prueba. Probá de nuevo más tarde.'
@@ -55,7 +63,30 @@ function tagProposal(event, selection) {
 }
 
 /**
+ * Aplica una propuesta en la carpeta abierta (`context.apply`). Sin carpeta, o
+ * si `apply` falla o lanza, devuelve el motivo.
+ * @param {import('../lib/assistant/bridge.js').AssistantContext|null} context
+ * @param {import('../lib/assistant/chatState.js').Proposal} proposal
+ * @returns {{ok: true, sheetCreatedAt?: string}|{ok: false, error: string}}
+ */
+function applyInFolder(context, proposal) {
+  if (!context) return { ok: false, error: NO_CONTEXT }
+  let result
+  try {
+    result = context.apply(proposal)
+  } catch (error) {
+    console.error('[assistant] apply lanzó un error:', error)
+    return { ok: false, error: APPLY_FAILED }
+  }
+  if (result?.ok) return result
+  return { ok: false, error: result && 'error' in result ? result.error : APPLY_FAILED }
+}
+
+/**
  * @typedef {import('../lib/assistant/chatState.js').ChatState} ChatState
+ * @typedef {import('../lib/assistant/inlineAnswer.js').InlineState} InlineState
+ * @typedef {import('../lib/assistant/bridge.js').InlineCommand} InlineCommand
+ * @typedef {import('../lib/assistant/bridge.js').QueuedRequest} QueuedRequest
  * @typedef {import('../lib/assistant/bridge.js').AssistantContext} AssistantContext
  * @typedef {import('../lib/assistant/requestBuilder.js').ScopeOption} ScopeOption
  * @typedef {import('../lib/assistant/requestBuilder.js').ScopeType} ScopeType
@@ -97,6 +128,7 @@ function tagProposal(event, selection) {
  *   quizSession: QuizSession|null,
  *   submitQuiz: (given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>,
  *   discardOpenQuiz: () => void,
+ *   inlineBusy: boolean,
  * }}
  */
 export function useAssistant() {
@@ -105,9 +137,19 @@ export function useAssistant() {
   const [plan, setPlan] = useState(/** @type {'free'|'premium'} */ ('free'))
   const [mode, setMode] = useState(/** @type {'notes'|'external'} */ ('notes'))
   const [chosenScope, setScope] = useState(/** @type {ScopeType} */ ('subject'))
-  /** @type {React.MutableRefObject<AbortController|null>} */
-  const controllerRef = useRef(null)
+  /** Un solo pedido a la vez en todo el Brote (un `AbortController` con dueño: chat o tarjeta). */
+  const [slot] = useState(createRequestSlot)
   const stateRef = useRef(state)
+  /** Conversación "inline": la tarjeta del atajo (una a la vez). Se publica en el puente. */
+  const [inline, setInlineState] = useState(/** @type {InlineState|null} */ (null))
+  /** Copia sincrónica de la tarjeta para los comandos (como `stateRef`). */
+  const inlineRef = useRef(/** @type {InlineState|null} */ (null))
+  /** Id de la última tarjeta: los eventos de un pedido cortado traen otro. */
+  const inlineSeqRef = useRef(0)
+  const putInline = useCallback((/** @type {InlineState|null} */ next) => {
+    inlineRef.current = next
+    setInlineState(next)
+  }, [])
   const [quizSession, setQuizSession] = useState(/** @type {QuizSession|null} */ (null))
   /** Copia sincrónica de la sesión: el guard de "una sola vez" no puede esperar al render. */
   const quizRef = useRef(/** @type {QuizSession|null} */ (null))
@@ -125,6 +167,14 @@ export function useAssistant() {
     stateRef.current = state
   }, [state])
 
+  // La carpeta dibuja la tarjeta con lo que se publica acá, en cada cambio.
+  useEffect(() => {
+    inlineRef.current = inline
+    assistantBridge.setInline(inlineView(inline))
+  }, [inline])
+  // Sin motor no hay tarjeta (su pedido lo corta el efecto de desmontar de abajo).
+  useEffect(() => () => assistantBridge.setInline(null), [])
+
   // Ante un error se queda en 'free': el servidor decide igual.
   useEffect(() => {
     let alive = true
@@ -137,48 +187,61 @@ export function useAssistant() {
   }, [])
 
   // Al desmontar se corta lo que esté en curso (el servidor deja de generar).
-  useEffect(() => () => controllerRef.current?.abort(), [])
+  useEffect(() => () => {
+    slot.abort()
+  }, [slot])
 
   const options = useMemo(() => scopeOptions(context, plan), [context, plan])
   const scope = resolveScopeType(chosenScope, options)
 
-  const start = useCallback(
+  const run = useCallback(
     /**
-     * @param {Object} fields  Campos del pedido además de history/mode/scope.
-     * @param {string} visibleText  Lo que se muestra como mensaje del usuario.
-     * @param {import('../lib/assistant/bridge.js').Selection|null} [selection]  Selección completa de un atajo.
-     * @param {{type: ScopeType, id?: string}|null} [scopeOverride]  Alcance fijo (la corrección usa el de la prueba).
+     * Manda un pedido y pasa sus eventos al chat o a la tarjeta del atajo.
+     * Para la tarjeta no se toca el chat, ni la prueba, ni `pendingQuizRef`, y
+     * el historial lo arma quien llama (`[]` en el primer pedido del atajo).
+     * @param {Object} input
+     * @param {Object} input.fields  Campos del pedido además de history/mode/scope.
+     * @param {string} [input.visibleText]  Lo que se muestra como mensaje del usuario (solo chat).
+     * @param {import('../lib/assistant/bridge.js').Selection|null} [input.selection]  Selección completa de un atajo.
+     * @param {{type: ScopeType, id?: string}|null} [input.scopeOverride]  Alcance fijo (la corrección usa el de la prueba).
+     * @param {'chat'|{inlineId: number}} [input.target]
+     * @param {Array<{role: 'user'|'model', text: string}>} [input.history]  Solo para la tarjeta.
      * @returns {Promise<{error: string|null, grades: Array<Object>|null}>}
      */
-    async (fields, visibleText, selection = null, scopeOverride = null) => {
+    async ({ fields, visibleText = '', selection = null, scopeOverride = null, target = 'chat', history = [] }) => {
+      const inlineId = target === 'chat' ? null : target.inlineId
       const scopeValue = scopeOverride ?? buildScope(scope, context)
-      const blocked = blockReason({
-        running: Boolean(controllerRef.current), scopeValue, action: fields.action, quizOpen: blocksNewQuiz(quizRef.current),
-      })
-      if (blocked) {
-        const notice = BLOCK_NOTICES[blocked]
-        setState((s) => setNotice(s, notice))
-        return { error: notice, grades: null }
-      }
-      if (QUIZ_ACTIONS.includes(fields.action)) {
-        let scopeSubjectId = null
-        if (scopeValue.type === 'subject') scopeSubjectId = scopeValue.id ?? null
-        else if (scopeValue.type === 'sheet') scopeSubjectId = context?.subject?.id ?? null
-        pendingQuizRef.current = { scope: scopeValue, scopeSubjectId, isReview: fields.action === 'weak_review' }
-      } else if (fields.action !== 'quiz_grade') {
-        pendingQuizRef.current = null
+      if (inlineId === null) {
+        const blocked = blockReason({
+          running: slot.running(), scopeValue, action: fields.action, quizOpen: blocksNewQuiz(quizRef.current),
+        })
+        if (blocked) {
+          const notice = BLOCK_NOTICES[blocked]
+          setState((s) => setNotice(s, notice))
+          return { error: notice, grades: null }
+        }
+        if (QUIZ_ACTIONS.includes(fields.action)) {
+          let scopeSubjectId = null
+          if (scopeValue.type === 'subject') scopeSubjectId = scopeValue.id ?? null
+          else if (scopeValue.type === 'sheet') scopeSubjectId = context?.subject?.id ?? null
+          pendingQuizRef.current = { scope: scopeValue, scopeSubjectId, isReview: fields.action === 'weak_review' }
+        } else if (fields.action !== 'quiz_grade') {
+          pendingQuizRef.current = null
+        }
+      } else if (slot.running()) {
+        // Quien llama ya cortó la tarjeta anterior o avisó: nunca se pisa un pedido en curso.
+        return { error: BUSY, grades: null }
       }
       const request = {
         message: '',
         ...fields,
-        history: buildHistory(stateRef.current.messages),
+        history: inlineId === null ? buildHistory(stateRef.current.messages) : history,
         // Ruling R: la corrección nunca gasta el cupo externo.
         mode: requestMode(fields.action, mode),
         scope: scopeValue,
       }
-      const controller = new AbortController()
-      controllerRef.current = controller
-      setState((s) => addUserMessage(s, visibleText))
+      const controller = slot.claim(inlineId === null ? 'chat' : 'inline')
+      if (inlineId === null) setState((s) => addUserMessage(s, visibleText))
       /** @type {Array<Object>|null} */
       let grades = null
       /** @type {string|null} */
@@ -187,6 +250,11 @@ export function useAssistant() {
         request,
         signal: controller.signal,
         onEvent: (event) => {
+          if (inlineId !== null) {
+            // Solo la tarjeta: si ya es otra (o se cerró), `reduceInline` lo ignora.
+            setInlineState((i) => reduceInline(i, inlineId, tagProposal(event, selection)))
+            return
+          }
           if (event?.type === 'grades' && Array.isArray(event.grades)) grades = event.grades
           if (event?.type === 'error') streamError = typeof event.message === 'string' && event.message ? event.message : GRADE_FAILED
           const meta = pendingQuizRef.current
@@ -196,15 +264,34 @@ export function useAssistant() {
           setState((s) => reduceEvent(s, tagProposal(event, selection)))
         },
       })
-      if (controllerRef.current === controller) controllerRef.current = null
+      // Solo lo suelta si sigue siendo suyo (un atajo nuevo pudo haberlo reemplazado).
+      slot.release(controller)
+      if (inlineId !== null) {
+        const message = controller.signal.aborted ? null : error
+        setInlineState((i) => (i?.id === inlineId ? { ...i, chat: finishRequest(i.chat, message) } : i))
+        return { error: controller.signal.aborted ? CANCELLED : error, grades: null }
+      }
       if (controller.signal.aborted) {
         setState((s) => finishRequest(s))
-        return { error: 'Cortaste la respuesta.', grades: null }
+        return { error: CANCELLED, grades: null }
       }
       setState((s) => finishRequest(s, error))
       return { error: error ?? streamError, grades }
     },
-    [scope, context, mode, putQuiz],
+    [scope, context, mode, putQuiz, slot],
+  )
+
+  const start = useCallback(
+    /**
+     * Pedido por el chat (mensajes, chips, corrección de la prueba y atajos sin `target: 'inline'`).
+     * @param {Object} fields  Campos del pedido además de history/mode/scope.
+     * @param {string} visibleText  Lo que se muestra como mensaje del usuario.
+     * @param {import('../lib/assistant/bridge.js').Selection|null} [selection]  Selección completa de un atajo.
+     * @param {{type: ScopeType, id?: string}|null} [scopeOverride]  Alcance fijo (la corrección usa el de la prueba).
+     * @returns {Promise<{error: string|null, grades: Array<Object>|null}>}
+     */
+    (fields, visibleText, selection = null, scopeOverride = null) => run({ fields, visibleText, selection, scopeOverride }),
+    [run],
   )
 
   const send = useCallback(
@@ -218,7 +305,7 @@ export function useAssistant() {
       const message = String(text ?? '').trim().slice(0, MAX_MESSAGE)
       if (!message) return false
       const blocked = blockReason({
-        running: Boolean(controllerRef.current), scopeValue: buildScope(scope, context), action: 'chat', quizOpen: false,
+        running: slot.running(), scopeValue: buildScope(scope, context), action: 'chat', quizOpen: false,
       })
       if (blocked) {
         setState((s) => setNotice(s, BLOCK_NOTICES[blocked]))
@@ -227,7 +314,7 @@ export function useAssistant() {
       start({ action: 'chat', message }, message)
       return true
     },
-    [start, scope, context],
+    [start, scope, context, slot],
   )
 
   const runAction = useCallback(
@@ -250,16 +337,123 @@ export function useAssistant() {
     [plan, context, start],
   )
 
-  // Atajos sobre el texto: la carpeta encola el pedido en el puente (y el host
-  // abre el panel). Se toma acá, al montar o al recibir el aviso, y va por la
-  // misma conversación. El `setTimeout` evita que el doble montaje de
-  // StrictMode lo arranque y lo corte enseguida.
+  /**
+   * Corta el pedido de la tarjeta si es el que está en curso (el del chat no se
+   * toca). Se suelta ya: la limpieza del `run` cortado solo suelta lo suyo y
+   * `reduceInline` descarta sus eventos tardíos.
+   */
+  const abortInline = () => {
+    slot.abort('inline', { free: true })
+  }
+
+  /** Cierra la tarjeta (y corta su pedido si estaba respondiendo). */
+  const dropInline = () => {
+    abortInline()
+    putInline(null)
+  }
+
+  /** Aviso en la tarjeta `id` sin tocar lo demás. */
+  const noticeInline = (/** @type {number} */ id, /** @type {string} */ notice) => {
+    setInlineState((i) => (i?.id === id ? { ...i, chat: setNotice(i.chat, notice) } : i))
+  }
+
+  /**
+   * Atajo que responde en la tarjeta: corta y reemplaza a la anterior. Si el que
+   * responde es el chat, la tarjeta se crea con el aviso y sin pedido.
+   * @param {QueuedRequest} item
+   */
+  const runInline = (item) => {
+    abortInline()
+    inlineSeqRef.current += 1
+    const id = inlineSeqRef.current
+    const scopeValue = buildScope(scope, context)
+    const created = createInline(id, item, { mode, scope: scopeValue })
+    const blocked = blockReason({
+      running: slot.running(), scopeValue, action: item.request?.action ?? 'shortcut', quizOpen: false,
+    })
+    if (blocked) {
+      const notice = blocked === 'busy' ? INLINE_BUSY : BLOCK_NOTICES[blocked]
+      putInline({ ...created, chat: setNotice(finishRequest(created.chat), notice) })
+      return
+    }
+    putInline(created)
+    // El pedido del atajo no manda el historial del chat (spec § 3).
+    run({ fields: item.request, selection: item.selection ?? null, scopeOverride: scopeValue, target: { inlineId: id }, history: [] })
+  }
+
+  // Atajos sobre el texto: la carpeta encola el pedido en el puente. Con
+  // `target: 'inline'` responde la tarjeta (el host solo carga el panel); si
+  // no, el host abre el panel y va por la misma conversación. Se toma acá, al
+  // montar o al recibir el aviso. El `setTimeout` evita que el doble montaje
+  // de StrictMode lo arranque y lo corte enseguida.
   const runQueuedRef = useRef(/** @type {() => void} */ (() => {}))
   runQueuedRef.current = () => {
     const item = assistantBridge.takeRequest()
     if (!item) return
-    start(item.request, item.label, item.selection ?? null)
+    if (item.target === 'inline') runInline(item)
+    else start(item.request, item.label, item.selection ?? null)
   }
+
+  // Comandos de la tarjeta (la carpeta los manda por el puente).
+  const inlineCommandRef = useRef(/** @type {(cmd: InlineCommand) => void} */ (() => {}))
+  inlineCommandRef.current = (cmd) => {
+    const current = inlineRef.current
+    if (!current || !cmd) return
+    switch (cmd.type) {
+      case 'close':
+      case 'discard':
+        dropInline()
+        return
+      case 'accept': {
+        const proposal = current.chat.proposals.find((p) => p.id === cmd.proposalId)
+        if (!proposal || proposal.status !== 'pending') return
+        const result = applyInFolder(context, proposal)
+        if (result.ok) {
+          dropInline()
+          return
+        }
+        const message = /** @type {{error: string}} */ (result).error
+        setInlineState((i) =>
+          i?.id === current.id ? { ...i, chat: setError(setProposalStatus(i.chat, proposal.id, 'failed'), message) } : i,
+        )
+        return
+      }
+      case 'continue': {
+        if (current.chat.busy) return
+        // Con el chat respondiendo, el intercambio no se mete en medio de su respuesta.
+        if (slot.running()) {
+          noticeInline(current.id, INLINE_BUSY)
+          return
+        }
+        // Solo si hubo intercambio: un aviso o un error sin respuesta no se pasa al chat.
+        if (current.chat.messages.length > 1) {
+          setState((s) => appendExchange(s, { messages: current.chat.messages, proposals: current.chat.proposals }))
+        }
+        putInline(null)
+        assistantBridge.requestOpen()
+        return
+      }
+      case 'answer': {
+        const message = String(cmd.text ?? '').trim().slice(0, MAX_MESSAGE)
+        if (!message || !inlineView(current)?.canAnswer) return
+        if (slot.running()) {
+          // Un doble envío encuentra su propio pedido en curso: no avisa nada.
+          if (slot.owner() === 'chat') noticeInline(current.id, INLINE_BUSY)
+          return
+        }
+        const history = inlineHistory(current)
+        putInline(addInlineAnswer(current, message))
+        run({
+          fields: { action: 'chat', message },
+          selection: current.selection,
+          scopeOverride: current.scope,
+          target: { inlineId: current.id },
+          history,
+        })
+      }
+    }
+  }
+  useEffect(() => assistantBridge.onInlineCommand((cmd) => inlineCommandRef.current(cmd)), [])
   useEffect(() => {
     let timer = window.setTimeout(() => runQueuedRef.current(), 0)
     const off = assistantBridge.onRequest(() => {
@@ -358,29 +552,20 @@ export function useAssistant() {
     putQuiz(discardQuiz(quizRef.current))
   }, [putQuiz])
 
+  // "Detener" es del chat: la tarjeta se corta con su ✕.
   const stop = useCallback(() => {
-    controllerRef.current?.abort()
-  }, [])
+    slot.abort('chat')
+  }, [slot])
 
   const acceptProposal = useCallback(
     (id) => {
       const proposal = stateRef.current.proposals.find((p) => p.id === id)
       if (!proposal || proposal.status !== 'pending') return
-      if (!context) {
-        setState((s) => setError(setProposalStatus(s, id, 'failed'), NO_CONTEXT))
-        return
-      }
-      let result
-      try {
-        result = context.apply(proposal)
-      } catch (error) {
-        console.error('[assistant] apply lanzó un error:', error)
-        result = { ok: false, error: 'No se pudo aplicar el cambio.' }
-      }
-      if (result?.ok) {
+      const result = applyInFolder(context, proposal)
+      if (result.ok) {
         setState((s) => setProposalStatus(s, id, 'applied', { sheetCreatedAt: result.sheetCreatedAt }))
       } else {
-        const message = result && 'error' in result ? result.error : 'No se pudo aplicar el cambio.'
+        const message = /** @type {{error: string}} */ (result).error
         setState((s) => setError(setProposalStatus(s, id, 'failed'), message))
       }
     },
@@ -408,5 +593,7 @@ export function useAssistant() {
     quizSession,
     submitQuiz,
     discardOpenQuiz,
+    // La tarjeta de un atajo está respondiendo: la prueba no se puede corregir mientras tanto.
+    inlineBusy: Boolean(inline?.chat.busy),
   }
 }

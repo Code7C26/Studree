@@ -38,6 +38,15 @@
   turnos (`turn`) y `threadItems` pone cada propuesta tras la respuesta que la trajo; aplicada o
   rechazada se achica a una línea ("Agregado a tu hoja del dd/mm", "Descartado"). `applyRef`
   devuelve `sheetCreatedAt`; `appendExchange` y el evento `summary` quedan en `chatState`.
+- **Tarea 6 — Motor de la tarjeta de atajos (conversación "inline"):** `inlineAnswer.js`
+  (`createInline`, `reduceInline` que ignora eventos de otra tarjeta, `inlineHistory`,
+  `inlineView`); el puente avisa con el item (`target: 'chat'|'inline'`) y suma los canales de la
+  tarjeta (`setInline`/`subscribeInline`, `sendInline`/`onInlineCommand`), `requestOpen` y
+  `setPendingApply`/`takePendingApply`. `useAssistant` pasa de `start` a `run` con un solo
+  `AbortController` con dueño (`requestSlot.js`: un atajo nuevo corta y reemplaza la tarjeta;
+  chat y tarjeta se avisan entre sí si el otro responde) y atiende `close`, `discard`, `accept`,
+  `continue` y `answer`; mientras responde la tarjeta, la prueba no se corrige. Nuevo `useInlineAnswer`; `AssistantHost` solo carga el panel para la tarjeta y lo
+  abre con `onOpenRequest`. Documentado en `docs/features/assistant.md`.
 
 ---
 

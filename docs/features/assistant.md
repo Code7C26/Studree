@@ -321,7 +321,9 @@ del proveedor ni la clave).
   montar o al recibir el aviso (en un `setTimeout(0)`, para que el doble montaje de
   StrictMode no lo corte) y lo manda con el mismo `start` que el chat: misma conversación,
   historial, modo y alcance. Si el Brote ya está respondiendo, avisa con una nota y no lo
-  manda. El pedido pendiente es uno solo: uno nuevo reemplaza al anterior.
+  manda. El pedido pendiente es uno solo: uno nuevo reemplaza al anterior. Desde la Fase 14.1
+  el pedido puede ir a la **tarjeta** (`target: 'inline'`, ver la sección siguiente); sin
+  `target` sigue yendo al chat.
 - **La selección viaja con sus propuestas:** `useAssistant` agrega a cada propuesta
   `replace_selection` de ese pedido la selección completa (`sheetId`, `from`, `to`, `text`);
   lo que diga el servidor sobre la selección se ignora, y si el texto se había recortado
@@ -345,6 +347,70 @@ del proveedor ni la clave).
   `replace_selection` el foco se queda en el panel y la hoja se lleva a la vista; en
   `new_sheet` la hoja nueva se crea como cualquier "Nueva hoja" y **toma el foco** (se vuelve
   al panel con el Brote).
+
+## Tarjeta de los atajos: la conversación "inline" (Fase 14.1, Tarea 6)
+
+Los atajos responden en una **tarjeta debajo del texto** sin abrir el panel (spec 14.1 § 3). El
+motor sigue siendo uno solo (`useAssistant`, dentro del panel perezoso): la tarjeta es una
+**segunda conversación** del mismo hook, con su propio `ChatState`, que se publica en el puente.
+Esta tarea arma el motor y el contrato; la tarjeta y su ancla en el editor son de la Tarea 7
+(hasta entonces la carpeta sigue encolando sin `target` y todo va al chat).
+
+**Contrato del puente (`lib/assistant/bridge.js`):**
+
+| Canal | Quién lo usa | Qué hace |
+|---|---|---|
+| `request(item)` / `onRequest(fn(item))` / `takeRequest()` / `clearRequest()` | carpeta → host y motor | Encola el atajo y avisa **con el item**. `QueuedRequest.target?: 'chat'\|'inline'` (por defecto `'chat'`) y `shortcutId?` (si falta, se deduce de la etiqueta "Completar: «…»"). |
+| `setInline(view)` / `getInline()` / `subscribeInline(fn)` | motor → carpeta | Vista de la tarjeta (`InlineView` o `null` = no hay tarjeta). El motor la publica en cada cambio y `null` al desmontarse. |
+| `sendInline(cmd)` / `onInlineCommand(fn)` | carpeta → motor | `InlineCommand`: `close`, `discard`, `accept` (`proposalId`), `continue`, `answer` (`text`). |
+| `requestOpen()` / `onOpenRequest(fn)` | motor → host | Abre el panel como el botón ("Seguir en el chat"). |
+| `setPendingApply({subjectId, proposal}\|null)` / `takePendingApply(subjectId)` | otra página → carpeta | Propuesta que se aplica al abrir la carpeta de esa materia (resumen guardado como hoja, Tarea 9). `takePendingApply` solo la devuelve (y la saca) si coincide la materia. |
+
+**`InlineView`** (`lib/assistant/inlineAnswer.js`, `inlineView`): `{id, label, replies, busy,
+status, error, notice, proposal, external, canAnswer}`. `label` es el nombre del atajo
+("Completar"); `replies` son los mensajes sin el pedido; `proposal` es la última pendiente;
+`external` sale del modo con que se pidió; `canAnswer` vale solo en **Preguntame** con la
+pregunta ya llegada, sin responder todavía y sin `busy` (se responde una vez; para seguir, el
+chat).
+
+**Lógica pura (`inlineAnswer.js`):** `createInline(id, item, {mode, scope})` (tarjeta ocupada
+con la etiqueta como primer mensaje y el alcance guardado), `reduceInline(inline, id, event)`
+(si la tarjeta actual no es la `id` —un pedido cortado o una tarjeta cerrada— la devuelve
+igual), `addInlineAnswer`, `inlineHistory` (el primer turno es el **pedido completo**, no la
+etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
+
+**Motor (`useAssistant`):**
+- `start` pasa a ser `run({fields, visibleText, selection, scopeOverride, target, history})`
+  con `target` `'chat'` o `{inlineId}`; `start(...)` queda como atajo del chat (mensajes,
+  chips y corrección de la prueba no cambian). Para la tarjeta no se suma nada al chat, no se
+  toca la prueba ni `pendingQuizRef`, y el historial lo pasa quien llama: `[]` en el pedido
+  del atajo (no manda el historial del chat).
+- **Un solo pedido a la vez en todo el Brote:** un único `AbortController` con dueño
+  (`'chat'|'inline'`), en `lib/assistant/requestSlot.js` (`claim`, `release`, `abort(owner,
+  {free})`, puro y con tests). Un atajo nuevo **corta y reemplaza** la tarjeta anterior (el
+  controlador se suelta enseguida con `free`; la limpieza del pedido cortado solo suelta el
+  suyo, y sus eventos tardíos los descarta `reduceInline`). "Detener" del chat corta sin
+  soltar: el chat queda ocupado hasta que su stream termina, como antes. Si el que responde es el
+  chat, la tarjeta se crea con el aviso "El Brote está respondiendo en el chat: probá cuando
+  termine." y sin pedido; si responde la tarjeta, el chat avisa como siempre
+  ("El Brote todavía está respondiendo…"). "Detener" del panel solo corta al chat. Mientras la
+  tarjeta responde, la prueba no se puede corregir (`inlineBusy` → `QuizRunner busy`).
+- Usa el **modo** y el **alcance** del panel (por defecto "Mis apuntes" y la materia, aunque el
+  panel nunca se haya abierto).
+- **Comandos:** `close` y `discard` cortan el pedido si es de la tarjeta y la borran;
+  `accept` aplica con `context.apply` (el mismo camino que "Aceptar" del panel): si sale bien la
+  tarjeta desaparece (y si todavía estaba llegando la respuesta, se corta); si falla, el error
+  queda en la tarjeta y la propuesta `failed`. `continue` (solo sin `busy`) pasa el intercambio
+  al chat con `appendExchange` (la etiqueta como mensaje del usuario, las respuestas y las
+  propuestas pendientes), borra la tarjeta y pide abrir el panel; si no hubo respuesta (solo un
+  aviso o un error) no suma nada al chat; si el chat está respondiendo, la tarjeta avisa que
+  espere. `answer` (solo con `canAnswer`) suma la respuesta y manda `{action:'chat', message}`
+  con el historial de la tarjeta y el alcance guardado.
+- **`useInlineAnswer()`** (para la carpeta): `{view, close, accept, discard, continueInChat,
+  answer}`; lee `getInline` con `useSyncExternalStore` y manda los comandos por el puente.
+- **`AssistantHost`:** con `item.target === 'inline'` solo **carga** el panel (ahí vive el
+  motor), no lo abre; `onOpenRequest` lo abre como el botón (guarda la preferencia y enfoca la
+  entrada).
 
 ## Pruebas tipo examen, repaso de errores y resúmenes (Tarea 11)
 
@@ -462,9 +528,10 @@ del proveedor ni la clave).
   `prompt.js`, `gemini.js`, `sse.js`, `loop.js`, `quiz.js`, `account.js` (+ sus `*.test.js`).
 - **Lógica del cliente** (`src/lib/assistant/`): `sse.js`, `readSseStream.js`, `chatState.js`,
   `bridge.js`, `requestBuilder.js`, `shortcuts.js`, `editorApply.js`, `applyProposal.js`,
-  `quizSession.js`, `quizScore.js`, `weakTopics.js`, `assistantError.js` (+ tests).
+  `quizSession.js`, `quizScore.js`, `weakTopics.js`, `assistantError.js`, `inlineAnswer.js` y
+  `requestSlot.js` (Fase 14.1) (+ tests).
 - **Services:** `assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`.
-- **Hooks:** `useAssistant.js`, `useAssistantContext.js`.
+- **Hooks:** `useAssistant.js`, `useAssistantContext.js`, `useInlineAnswer.js` (Fase 14.1).
 - **Componentes** (`src/components/features/assistant/`): `AssistantHost`, `AssistantPanel`,
   `Brote`, `ChatThread`, `ProposalCard`, `SelectionShortcuts`, `QuizRunner`.
 - **Tocados:** `AppLayout.jsx` (monta el Brote), `SubjectFolderPage.jsx` (contexto, atajos y

@@ -32,7 +32,7 @@ const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
 export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const {
     state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
-    quizSession, submitQuiz, discardOpenQuiz,
+    quizSession, submitQuiz, discardOpenQuiz, inlineBusy,
   } = useAssistant()
   // Con una prueba sin terminar no se puede pedir otra: la reemplazaría (respuestas perdidas y cupo gastado).
   const quizOpen = blocksNewQuiz(quizSession)
@@ -183,7 +183,7 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
           key={quizSession.key}
           session={quizSession}
           hidden={!showQuiz}
-          busy={state.busy}
+          busy={state.busy || inlineBusy}
           onSubmit={submitQuiz}
           onClose={() => setQuizVisible(false)}
           onDiscard={discardOpenQuiz}
