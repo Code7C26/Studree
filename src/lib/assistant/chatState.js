@@ -5,6 +5,7 @@
  * @typedef {Object} Message
  * @property {'user'|'assistant'} role
  * @property {string} text  Texto plano (el modelo no devuelve HTML).
+ * @property {number} [turn]  Turno al que pertenece (lo abre cada mensaje del usuario).
  */
 
 /**
@@ -17,6 +18,8 @@
  * @property {'notes'|'external'} source
  * @property {'pending'|'applied'|'rejected'|'failed'} status
  * @property {import('./bridge.js').Selection} [selection]  La del atajo que la pidió (verifica un reemplazo).
+ * @property {number} [turn]  Turno de la respuesta que la trajo.
+ * @property {string} [appliedSheetCreatedAt]  `created_at` de la hoja donde se aplicó (para decir "hoja del dd/mm").
  */
 
 /**
@@ -29,6 +32,8 @@
  * @property {Object[]|null} quiz
  * @property {string|null} error
  * @property {string|null} notice  Nota informativa neutra (p. ej. "es de Premium"); no es un error.
+ * @property {number} turn  Turno actual (0 al inicio; cada mensaje del usuario suma uno).
+ * @property {Object|null} summary  Resumen estructurado (`SummaryPayload`) de la última respuesta.
  * @property {boolean} truncated  La última respuesta se cortó (`done` con `truncated` o un `finishReason` distinto de STOP).
  */
 
@@ -50,6 +55,8 @@ export function initialChat() {
     messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, error: null,
     notice: null,
     truncated: false,
+    turn: 0,
+    summary: null,
   }
 }
 
@@ -74,9 +81,11 @@ function toolStatus(name) {
  * @param {ChatState} state @param {string} text @returns {ChatState}
  */
 export function addUserMessage(state, text) {
+  const turn = (state.turn ?? 0) + 1
   return {
     ...state,
-    messages: capMessages([...state.messages, { role: 'user', text: String(text) }]),
+    turn,
+    messages: capMessages([...state.messages, { role: 'user', text: String(text), turn }]),
     busy: true,
     status: null,
     error: null,
@@ -91,9 +100,9 @@ function appendText(state, delta) {
   const last = messages[messages.length - 1]
   if (last && last.role === 'assistant') {
     const text = (last.text + delta).slice(0, MAX_MESSAGE_CHARS)
-    return { ...state, messages: [...messages.slice(0, -1), { role: 'assistant', text }] }
+    return { ...state, messages: [...messages.slice(0, -1), { role: 'assistant', text, turn: last.turn ?? state.turn }] }
   }
-  const msg = { role: 'assistant', text: delta.slice(0, MAX_MESSAGE_CHARS) }
+  const msg = { role: 'assistant', text: delta.slice(0, MAX_MESSAGE_CHARS), turn: state.turn }
   return { ...state, messages: capMessages([...messages, msg]) }
 }
 
@@ -115,6 +124,7 @@ function addProposal(state, raw) {
     markdown: raw.markdown,
     source: raw.source,
     status: 'pending',
+    turn: state.turn,
   }
   if (typeof raw.sheetId === 'string') proposal.sheetId = raw.sheetId
   if (typeof raw.subjectId === 'string') proposal.subjectId = raw.subjectId
@@ -135,6 +145,12 @@ export function reduceEvent(state, event) {
       return { ...state, status: toolStatus(event.name) }
     case 'proposal':
       return addProposal(state, event.proposal)
+    case 'summary': {
+      const sm = event.summary
+      return sm && typeof sm === 'object' && typeof sm.title === 'string' && Array.isArray(sm.sections)
+        ? { ...state, summary: sm }
+        : state
+    }
     case 'quiz':
       return Array.isArray(event.questions) ? { ...state, quiz: event.questions } : state
     case 'usage': {
@@ -163,13 +179,69 @@ export function reduceEvent(state, event) {
 /**
  * Cambia el estado de una sola propuesta.
  * @param {ChatState} state @param {string} id @param {'applied'|'rejected'|'failed'} status
+ * @param {{sheetCreatedAt?: string}} [extra]  Al aplicar: `created_at` de la hoja tocada.
  * @returns {ChatState}
  */
-export function setProposalStatus(state, id, status) {
+export function setProposalStatus(state, id, status, extra) {
   if (!SETTABLE.includes(status)) return state
+  const date = status === 'applied' && typeof extra?.sheetCreatedAt === 'string' ? extra.sheetCreatedAt : null
   return {
     ...state,
-    proposals: state.proposals.map((p) => (p.id === id ? { ...p, status } : p)),
+    proposals: state.proposals.map((p) => {
+      if (p.id !== id) return p
+      return date ? { ...p, status, appliedSheetCreatedAt: date } : { ...p, status }
+    }),
+  }
+}
+
+/**
+ * Items del hilo en orden de lectura: cada propuesta va después del último
+ * mensaje de su turno. Las de turnos ya recortados (sin mensajes) van primero.
+ * @param {ChatState} state
+ * @returns {Array<{type: 'message', message: Message}|{type: 'proposal', proposal: Proposal}>}
+ */
+export function threadItems(state) {
+  const lastIndexOfTurn = new Map()
+  state.messages.forEach((m, i) => lastIndexOfTurn.set(m.turn, i))
+  const items = []
+  for (const proposal of state.proposals) {
+    if (!lastIndexOfTurn.has(proposal.turn)) items.push({ type: 'proposal', proposal })
+  }
+  state.messages.forEach((message, i) => {
+    items.push({ type: 'message', message })
+    if (lastIndexOfTurn.get(message.turn) === i) {
+      for (const proposal of state.proposals) {
+        if (proposal.turn === message.turn) items.push({ type: 'proposal', proposal })
+      }
+    }
+  })
+  return items
+}
+
+/**
+ * Suma al chat un intercambio hecho aparte (atajo de selección): cada mensaje
+ * del usuario abre un turno nuevo; entran solo las propuestas pendientes, en
+ * el último turno del intercambio.
+ * @param {ChatState} state
+ * @param {{messages: Message[], proposals: Proposal[]}} exchange
+ * @returns {ChatState}
+ */
+export function appendExchange(state, exchange) {
+  let turn = state.turn ?? 0
+  const added = []
+  for (const m of exchange?.messages ?? []) {
+    if (m.role === 'user') turn += 1
+    added.push({ ...m, turn })
+  }
+  const known = new Set(state.proposals.map((p) => p.id))
+  const pending = (exchange?.proposals ?? [])
+    .filter((p) => p.status === 'pending' && !known.has(p.id))
+    .map((p) => ({ ...p, turn }))
+  return {
+    ...state,
+    turn,
+    messages: capMessages([...state.messages, ...added]),
+    proposals: [...state.proposals, ...pending].slice(-MAX_PROPOSALS),
   }
 }
 

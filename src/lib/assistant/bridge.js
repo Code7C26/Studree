@@ -10,7 +10,7 @@
  */
 
 /**
- * @typedef {{ok: true}|{ok: false, error: string}} ApplyResult
+ * @typedef {{ok: true, sheetCreatedAt?: string}|{ok: false, error: string}} ApplyResult
  */
 
 /**

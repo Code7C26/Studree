@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { threadItems } from '../../../lib/assistant/chatState.js'
 import { ProposalCard } from './ProposalCard'
 
 /** Período legible del uso que informa el servidor. */
@@ -30,17 +31,23 @@ export function ChatThread({ state, onAccept, onReject, onOpenQuiz }) {
         </p>
       )}
 
-      {messages.map((message, index) => (
-        <p
-          key={index}
-          className={`whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm ${
-            message.role === 'user' ? 'ml-8 bg-surface-2 text-text' : 'mr-4 bg-surface-lit text-text'
-          }`}
-        >
-          <span className="sr-only">{message.role === 'user' ? 'Vos: ' : 'El Brote: '}</span>
-          {message.text}
-        </p>
-      ))}
+      {threadItems(state).map((item, index) => {
+        if (item.type === 'proposal') {
+          return <ProposalCard key={item.proposal.id} proposal={item.proposal} onAccept={onAccept} onReject={onReject} />
+        }
+        const { message } = item
+        return (
+          <p
+            key={index}
+            className={`whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm ${
+              message.role === 'user' ? 'ml-8 bg-surface-2 text-text' : 'mr-4 bg-surface-lit text-text'
+            }`}
+          >
+            <span className="sr-only">{message.role === 'user' ? 'Vos: ' : 'El Brote: '}</span>
+            {message.text}
+          </p>
+        )
+      })}
 
       {busy && <p className="text-xs text-text-muted">{status ?? 'Pensando…'}</p>}
       {!busy && truncated && <p className="text-xs text-warn">La respuesta se cortó.</p>}
@@ -53,10 +60,6 @@ export function ChatThread({ state, onAccept, onReject, onOpenQuiz }) {
           </button>
         </div>
       )}
-
-      {proposals.map((proposal) => (
-        <ProposalCard key={proposal.id} proposal={proposal} onAccept={onAccept} onReject={onReject} />
-      ))}
 
       {notice && (
         <p role="status" className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-muted">

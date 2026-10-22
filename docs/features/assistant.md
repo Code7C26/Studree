@@ -271,6 +271,16 @@ del proveedor ni la clave).
   ("Leyendo tus hojas…"), "La respuesta se cortó." si `done` trae `truncated` o un `finishReason`
   distinto de `STOP`, notas, errores, uso ("Usaste 3 de 20 hoy.") y propuestas. `role="log"` con
   `aria-live="polite"` y `aria-busy` mientras llega la respuesta (no anuncia cada fragmento). Si hay una prueba y el panel muestra el chat, aparece "Ir a la prueba" (la responde `QuizRunner`, Tarea 11).
+- **Propuestas junto a su respuesta (Fase 14.1, Tarea 5):** cada mensaje lleva `turn` (lo abre
+  cada mensaje del usuario; `ChatState.turn` cuenta) y cada propuesta toma el turno de la respuesta
+  que la trajo. `threadItems(state)` ordena el hilo: la propuesta va después del último mensaje de
+  su turno; las de turnos ya recortados por `MAX_MESSAGES` van al principio. `appendExchange` suma
+  al chat un intercambio hecho aparte (atajo de selección): turnos nuevos y solo propuestas
+  pendientes. El estado también guarda `summary` (evento `summary` del servidor, solo si trae
+  `title` y `sections`). Una propuesta resuelta se achica a una línea: aplicada, "Agregado a tu
+  hoja del dd/mm" (con `appliedSheetCreatedAt`, que devuelve `applyRef` como
+  `ApplyResult.sheetCreatedAt`), "Agregado a una hoja nueva" o "Agregado a tu hoja"; rechazada,
+  "Descartado". Pendiente y fallida se ven completas.
 - **`ProposalCard`**: texto propuesto resaltado en verde (`bg-accent/10`, borde `accent`), marca
   "Agregado desde conocimiento externo" si `source === 'external'`, y **Aceptar** / **Rechazar**.
   Aceptar llama a `context.apply(proposal)` (lo implementa la carpeta en la Tarea 10) y marca

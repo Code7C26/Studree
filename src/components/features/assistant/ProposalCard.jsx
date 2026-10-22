@@ -1,10 +1,16 @@
 import { proposalTitle } from '../../../lib/assistant/applyProposal.js'
+import { formatSheetDay } from '../../../lib/format/sheetDate.js'
+import { Icon } from '../../ui/Icon'
 
-/** Texto del estado de una propuesta que ya no está pendiente. */
-const STATUS_TEXT = {
-  applied: 'Aplicado en la hoja.',
-  rejected: 'Rechazado.',
-  failed: 'No se pudo aplicar.',
+/** Texto del estado de una propuesta que falló (sigue a la vista completa). */
+const FAILED_TEXT = 'No se pudo aplicar.'
+
+/** Línea de una propuesta aplicada: dónde quedó. */
+function appliedText(proposal) {
+  if (proposal.kind === 'new_sheet') return 'Agregado a una hoja nueva'
+  return proposal.appliedSheetCreatedAt
+    ? `Agregado a tu hoja del ${formatSheetDay(proposal.appliedSheetCreatedAt)}`
+    : 'Agregado a tu hoja'
 }
 
 /**
@@ -17,6 +23,16 @@ const STATUS_TEXT = {
  */
 export function ProposalCard({ proposal, onAccept, onReject }) {
   const pending = proposal.status === 'pending'
+  // Resuelta: una sola línea, sin el texto propuesto.
+  if (proposal.status === 'applied') {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-text-muted">
+        <Icon name="check" size={14} className="text-accent-soft" />
+        {appliedText(proposal)}
+      </p>
+    )
+  }
+  if (proposal.status === 'rejected') return <p className="text-xs text-text-muted">Descartado</p>
   return (
     <article className="rounded-lg border border-accent bg-accent/10 p-3 text-sm" aria-label={proposalTitle(proposal)}>
       <h3 className="font-medium text-accent-soft">{proposalTitle(proposal)}</h3>
@@ -38,7 +54,7 @@ export function ProposalCard({ proposal, onAccept, onReject }) {
           </button>
         </div>
       ) : (
-        <p className="mt-2 text-xs text-text-muted">{STATUS_TEXT[proposal.status]}</p>
+        <p className="mt-2 text-xs text-text-muted">{FAILED_TEXT}</p>
       )}
     </article>
   )

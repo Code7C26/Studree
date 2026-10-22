@@ -383,8 +383,9 @@ function SubjectFolder({ subjectId }) {
     const editor = sheet ? editorsRef.current.get(sheet.key) : null
     if (!editor || editor.isDestroyed) return { ok: false, error: NOT_IN_FOLDER }
     const result = applyProposalToEditor(editor, proposal, proposal.selection ?? null)
-    if (result.ok) document.getElementById(`hoja-${sheet.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    return result
+    if (!result.ok) return result
+    document.getElementById(`hoja-${sheet.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    return { ok: true, sheetCreatedAt: sheet.created_at }
   }
   const apply = useCallback((proposal) => applyRef.current(proposal), [])
 

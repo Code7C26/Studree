@@ -34,6 +34,10 @@
   `getQuizAttempt`, `deleteQuizAttempt`; listas con materia/carrera embebidas, paginadas y sin
   filas de la papelera); `saveAttempt` acepta `subjectId`, `careerId`, `title` y `detail`.
   Documentado en `docs/API_DOCS.md`.
+- **Tarea 5 — Propuestas junto a su respuesta y achicadas al resolverse:** el chat numera
+  turnos (`turn`) y `threadItems` pone cada propuesta tras la respuesta que la trajo; aplicada o
+  rechazada se achica a una línea ("Agregado a tu hoja del dd/mm", "Descartado"). `applyRef`
+  devuelve `sheetCreatedAt`; `appendExchange` y el evento `summary` quedan en `chatState`.
 
 ---
 

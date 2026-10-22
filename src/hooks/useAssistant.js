@@ -378,7 +378,7 @@ export function useAssistant() {
         result = { ok: false, error: 'No se pudo aplicar el cambio.' }
       }
       if (result?.ok) {
-        setState((s) => setProposalStatus(s, id, 'applied'))
+        setState((s) => setProposalStatus(s, id, 'applied', { sheetCreatedAt: result.sheetCreatedAt }))
       } else {
         const message = result && 'error' in result ? result.error : 'No se pudo aplicar el cambio.'
         setState((s) => setError(setProposalStatus(s, id, 'failed'), message))

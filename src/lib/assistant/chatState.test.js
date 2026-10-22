@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice, chatMood,
-  MAX_MESSAGES, MAX_MESSAGE_CHARS,
+  threadItems, appendExchange, MAX_MESSAGES, MAX_MESSAGE_CHARS,
 } from './chatState.js'
 
 const prop = (over = {}) => ({ id: 'p1', kind: 'append', sheetId: 's1', markdown: 'hola', source: 'notes', status: 'pending', ...over })
@@ -10,13 +10,13 @@ const prop = (over = {}) => ({ id: 'p1', kind: 'append', sheetId: 's1', markdown
 test('estado inicial vacío', () => {
   assert.deepEqual(initialChat(), {
     messages: [], proposals: [], busy: false, status: null, usage: null, quiz: null, error: null,
-    notice: null, truncated: false,
+    notice: null, truncated: false, turn: 0, summary: null,
   })
 })
 
 test('addUserMessage agrega el mensaje, marca busy y limpia error y status', () => {
   const s = addUserMessage({ ...initialChat(), error: 'x', status: 'y' }, 'hola')
-  assert.deepEqual(s.messages, [{ role: 'user', text: 'hola' }])
+  assert.deepEqual(s.messages, [{ role: 'user', text: 'hola', turn: 1 }])
   assert.equal(s.busy, true)
   assert.equal(s.error, null)
   assert.equal(s.status, null)
@@ -26,7 +26,7 @@ test('text crea el mensaje del asistente si no hay y después concatena', () => 
   let s = addUserMessage(initialChat(), 'hola')
   s = reduceEvent(s, { type: 'text', delta: 'Ho' })
   s = reduceEvent(s, { type: 'text', delta: 'la!' })
-  assert.deepEqual(s.messages, [{ role: 'user', text: 'hola' }, { role: 'assistant', text: 'Hola!' }])
+  assert.deepEqual(s.messages, [{ role: 'user', text: 'hola', turn: 1 }, { role: 'assistant', text: 'Hola!', turn: 1 }])
 })
 
 test('text con delta inválido se ignora', () => {
@@ -119,7 +119,7 @@ test('setProposalStatus cambia solo esa propuesta y valida el estado', () => {
 
 test('una acción de chip sin texto usa la etiqueta visible y deja busy', () => {
   const s = addUserMessage({ ...initialChat(), truncated: true }, 'Resumir materia')
-  assert.deepEqual(s.messages, [{ role: 'user', text: 'Resumir materia' }])
+  assert.deepEqual(s.messages, [{ role: 'user', text: 'Resumir materia', turn: 1 }])
   assert.equal(s.busy, true)
   assert.equal(s.truncated, false)
 })
@@ -184,4 +184,57 @@ test('una propuesta conserva la selección válida con la que se pidió (para ve
   assert.deepEqual(s.proposals[0].selection, selection)
   const bad = reduceEvent(initialChat(), { type: 'proposal', proposal: { ...raw, selection: { sheetId: 'sh1', from: 'a' } } })
   assert.equal('selection' in bad.proposals[0], false)
+})
+
+const P1 = prop({ id: 'p-turn-1' })
+const labels = (s) => threadItems(s).map((i) => (i.type === 'message' ? i.message.text : i.proposal.id))
+
+test('threadItems: cada propuesta va después del último mensaje de su turno', () => {
+  let s = addUserMessage(initialChat(), 'a')
+  s = reduceEvent(s, { type: 'text', delta: 'r1' })
+  s = reduceEvent(s, { type: 'proposal', proposal: P1 })
+  s = finishRequest(s)
+  s = addUserMessage(s, 'b')
+  s = reduceEvent(s, { type: 'text', delta: 'r2' })
+  assert.deepEqual(labels(s), ['a', 'r1', P1.id, 'b', 'r2'])
+})
+
+test('threadItems: propuestas de turnos ya recortados van al principio', () => {
+  let s = addUserMessage(initialChat(), 'a')
+  s = reduceEvent(s, { type: 'proposal', proposal: P1 })
+  for (let i = 0; i < MAX_MESSAGES + 5; i++) s = addUserMessage(s, `m${i}`)
+  const items = threadItems(s)
+  assert.equal(items[0].type, 'proposal')
+  assert.equal(items[0].proposal.id, P1.id)
+  assert.equal(items.length, MAX_MESSAGES + 1)
+})
+
+test('setProposalStatus guarda sheetCreatedAt al aplicar', () => {
+  let s = reduceEvent(initialChat(), { type: 'proposal', proposal: prop({ id: 'a' }) })
+  s = setProposalStatus(s, 'a', 'applied', { sheetCreatedAt: '2026-10-17T12:00:00Z' })
+  assert.equal(s.proposals[0].appliedSheetCreatedAt, '2026-10-17T12:00:00Z')
+  const r = setProposalStatus(s, 'a', 'rejected')
+  assert.equal(r.proposals[0].status, 'rejected')
+})
+
+test('appendExchange suma el intercambio en turnos nuevos y solo propuestas pendientes', () => {
+  let s = addUserMessage(initialChat(), 'hola')
+  s = finishRequest(s)
+  const exchange = {
+    messages: [{ role: 'user', text: 'Resumir' }, { role: 'assistant', text: 'Listo' }],
+    proposals: [prop({ id: 'x', status: 'pending' }), prop({ id: 'y', status: 'applied' })],
+  }
+  const t = appendExchange(s, exchange)
+  assert.deepEqual(t.messages.map((m) => [m.text, m.turn]), [['hola', 1], ['Resumir', 2], ['Listo', 2]])
+  assert.deepEqual(t.proposals.map((p) => [p.id, p.turn]), [['x', 2]])
+  assert.equal(t.turn, 2)
+  assert.deepEqual(labels(t), ['hola', 'Resumir', 'Listo', 'x'])
+})
+
+test('evento summary válido queda en state.summary; uno sin sections se ignora', () => {
+  const summary = { title: 'T', sections: [{ heading: 'h', bullets: ['a'] }] }
+  const s = reduceEvent(initialChat(), { type: 'summary', summary })
+  assert.deepEqual(s.summary, summary)
+  assert.equal(reduceEvent(initialChat(), { type: 'summary', summary: { title: 'T' } }).summary, null)
+  assert.equal(reduceEvent(initialChat(), { type: 'summary', summary: { sections: [] } }).summary, null)
 })
