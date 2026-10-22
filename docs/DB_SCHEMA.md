@@ -227,9 +227,9 @@ Tabla `attachments` (solo cuelgan de hojas) y bucket **privado** `attachments` d
 Tabla `sheet_templates`: plantillas propias del usuario (`name`, `content_md`). Las de
 fábrica viven en `src/constants/sheetTemplates.js`, no en la base.
 
-## Asistente de IA (0007)
+## Asistente de IA (0007, 0009)
 
-Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nunca lo manda).
+Cinco tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nunca lo manda).
 
 - **`user_plans`** (`user_id` PK, `plan` `'free'|'premium'` default `'free'`, `updated_at`).
   Política **solo `select` propio**: nadie se sube de plan desde la app. **El plan se
@@ -243,7 +243,22 @@ Cuatro tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nu
   `supabase/functions/assistant/config.js` (`BUCKET_OF`, `LIMITS`; p. ej. `study_plan`,
   `gaps` y `connections` cuentan juntas en `extras`).
 - **`quiz_attempts`** (`id`, `user_id`, `scope_type` `sheet|subject|career|all`,
-  `scope_id` nullable, `total` ≥ 0, `correct` ≥ 0, `created_at`). Política `_owner`.
+  `scope_id` nullable, `total` ≥ 0, `correct` ≥ 0, `created_at`). Política `_owner`. Desde la
+  `0009` suma `subject_id` y `career_id` (nullable, → `subjects`/`careers` cascade), `title`
+  (nullable, 1..200) y `detail` (`jsonb` nullable, ≤ 256 KB): el registro del examen para
+  "Mi estudio". Los intentos viejos quedan con todo en NULL. Índice `(user_id, created_at desc)`.
+  `detail` es un `QuizDetail`: `{ version: 1, questions: RecordQuestion[] }`, donde cada
+  pregunta guarda `id`, `type` (`mcq|tf|open`), `prompt`, `options?`, `given` (lo que
+  respondió el usuario), `answer`, `correct` (`true|false|null` si la abierta no se corrigió),
+  `explanation`, `feedback?`, `topic` y, si se conoce, `sheetId`, `subjectId` y `sheetDate`.
+- **`summaries`** (0009; `id`, `user_id`, `scope_type` `sheet|subject|career|all`, `scope_id`
+  nullable, `subject_id`/`career_id` nullable → `subjects`/`careers` cascade, `title` 1..200,
+  `external` default false, `sheet_count` ≥ 0 (hojas usadas), `total_sheets` ≥ 0 (hojas con
+  contenido en el alcance), `content` `jsonb` ≤ 256 KB, `created_at`). RLS con políticas
+  separadas `summaries_select`, `summaries_insert` y `summaries_delete` (propias); **sin
+  update**. Índice `(user_id, created_at desc)`. `content` tiene la forma
+  `{ sections: [{heading, body}], keyConcepts: [{term, definition}], sheets: [{sheetId,
+  subjectId, date}] }` (`body` es Markdown liviano que la interfaz muestra como texto).
 - **`weak_topics`** (`id`, `user_id`, `subject_id` → `subjects` cascade, `sheet_id` nullable
   → `sheets` set null, `topic` 1..200, `misses` ≥ 1 default 1, `last_missed_at`,
   `updated_at`; único `(user_id, subject_id, topic)`). Política `_owner`. Índice
@@ -436,3 +451,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ✅ `0006` (aplicada 2026-10-15 vía Management API, tras probarla con `begin … rollback`) |
 | 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | ✅ Aplicada el 2026-10-19 (`0007`) |
 | 2026-10-19 | `ai_usage.action` admite `quiz_grade` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada el 2026-10-19 (`0008_quiz_grade_usage.sql`) |
+| 2026-10-22 | **Fase 14.1**: `summaries` + RLS; `quiz_attempts` suma `subject_id`, `career_id`, `title`, `detail` | Pendiente de aplicar (`0009_mi_estudio.sql`) |

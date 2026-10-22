@@ -6,6 +6,23 @@
 
 ---
 
+## [0.18.0] — 2026-10-22
+
+### Added — Fase 14.1: el Brote, mejoras de uso
+
+> Request: "mejoras del Brote: respuestas debajo del texto, exámenes en ventana grande con
+> registro, resúmenes en PDF y Mi estudio".
+> Spec: `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md` · plan:
+> `docs/superpowers/plans/2026-10-22-fase-14-1-brote-mejoras.md`.
+
+- **Tarea 1 — Migración `0009_mi_estudio.sql` y documentación de datos:** `quiz_attempts` suma
+  `subject_id`, `career_id`, `title` y `detail` (registro del examen); nueva tabla `summaries`
+  con RLS (`select`, `insert` y `delete` propios, sin update); índices por `(user_id, created_at
+  desc)`. Aditiva e idempotente, sin funciones nuevas. Documentado en `docs/DB_SCHEMA.md` y
+  `docs/03-security.md`. La aplica el controlador.
+
+---
+
 ## [0.17.0] — 2026-10-19
 
 ### Added — El Brote, asistente de IA (FASE 14)

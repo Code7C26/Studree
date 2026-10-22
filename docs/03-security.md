@@ -158,6 +158,12 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - **`ai_usage` solo permite `select` e `insert` propios** (sin update ni delete): el usuario no
   puede borrar su uso para resetear el tope. El tope lo decide el servidor (`config.js`) y
   **falla cerrado** si no puede contar el uso.
+- **`summaries` (0009):** RLS con `select`, `insert` y `delete` propios (`auth.uid() = user_id`),
+  sin `update`; `user_id default auth.uid()`. `quiz_attempts` conserva su política `_owner` y
+  suma columnas (`subject_id`, `career_id`, `title`, `detail`) con tope de tamaño (256 KB) en
+  los `jsonb`. **Lo que guardan (`content`, `detail`) viene del modelo y de las respuestas del
+  usuario: es dato no confiable y se muestra siempre como texto o elementos de React, nunca con
+  `dangerouslySetInnerHTML`** (ni el Markdown liviano de los resúmenes se convierte a HTML).
 - Los errores del proveedor se loguean con `kind` y `status`, nunca con el cuerpo crudo ni la
   clave; el cliente recibe un código y un mensaje propio.
 - **Privacidad de los apuntes con Gemini:** en el **nivel gratuito** de la API de Gemini, Google
