@@ -413,6 +413,34 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
   motor), no lo abre; `onOpenRequest` lo abre como el botón (guarda la preferencia y enfoca la
   entrada).
 
+## El examen en ventana grande y su registro (Fase 14.1, Tarea 8)
+
+> Reemplaza lo de abajo sobre mostrar la prueba dentro del panel.
+
+- **Ventana:** al llegar la prueba se abre sola en **`QuizWindow`** (portal a `document.body`,
+  `role="dialog"`, `aria-modal`, z-50 sobre el panel y el botón del Brote; pantalla completa
+  debajo de `sm`). **Salir** (o Esc) la cierra con `hidden` **sin desmontar** `QuizRunner`: las
+  respuestas y el resultado se conservan. `AssistantPanel` la monta; el chat muestra "Tenés una
+  prueba abierta · Seguir" (abierta o corrigiéndose) o "Tu examen: N de M · Ver resultado".
+- **Encabezado:** título de la sesión (`quizTitle`), "Pregunta 3 de 10" con barra
+  (`role="progressbar"`), **Salir** y **Descartar prueba**; desarrollo con `textarea` de 8 filas.
+- **Sesión:** `QuizSession` suma `title` y `careerId` (del pedido; `careerId` = `scope.id` si el
+  alcance es carrera, si no la carrera del contexto). `QuizOutcome` suma `attemptId` y `record`
+  (`QuizDetail` de `buildQuizRecord`).
+- **Registro:** al corregir, `saveAttempt` guarda puntaje, `subject_id`, `career_id`, `title` y
+  `detail` en `quiz_attempts`. Al terminar, `QuizRecordView` (presentacional, la reusa Mi estudio)
+  muestra **todas** las preguntas con check / cruz / "Sin corregir"; en las falladas y sin
+  corregir: tu respuesta, la correcta o de referencia, devolución, explicación y link a la hoja.
+  Con `questions === null` muestra "Sin detalle (prueba anterior)". Botones **Ver en Mi estudio**
+  (si hay `attemptId`) y **Cerrar**.
+- **Reintentar guardado:** si falla, se ve el resultado igual con el error y **Reintentar**
+  (`retryQuizSave`). `canRetrySave` (`done`, sin `attemptId`, total > 0) evita duplicar la fila;
+  `withSavedAttempt` anota el resultado solo si es la misma `key`. Un doble click no reintenta dos
+  veces en paralelo.
+- **Aviso al salir:** `useLeaveWarning(blocksNewQuiz(quizSession))` en el panel: con una prueba
+  abierta o corrigiéndose, cerrar o recargar la pestaña pregunta antes (no se guarda a medias).
+- **Carrera:** `submitQuiz` devuelve `null` si hay un pedido en curso (`slot.running()`).
+
 ## Pruebas tipo examen, repaso de errores y resúmenes (Tarea 11)
 
 - **Flujo:** el chip "Tomame examen" (`quiz`) o "Repaso de errores" (`weak_review`, Premium: el

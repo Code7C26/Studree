@@ -17,6 +17,7 @@ import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assist
 import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
 import {
   createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON,
+  canRetrySave, withSavedAttempt,
 } from '../lib/assistant/quizSession.js'
 import {
   initialChat, reduceEvent, addUserMessage, setProposalStatus, finishRequest, setError, setNotice, appendExchange,
@@ -24,6 +25,7 @@ import {
 import {
   createInline, reduceInline, addInlineAnswer, inlineHistory, inlineView,
 } from '../lib/assistant/inlineAnswer.js'
+import { buildQuizRecord, quizTitle } from '../lib/assistant/quizRecord.js'
 import { createRequestSlot } from '../lib/assistant/requestSlot.js'
 import {
   ACTION_LABELS, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildScope, lockedActionMessage, requestMode,
@@ -108,6 +110,8 @@ function applyInFolder(context, proposal) {
  * @property {string|null} gradeError  No se pudieron corregir las de desarrollo (p. ej. tope agotado).
  * @property {string|null} saveError  No se pudo guardar el intento o los temas flojos.
  * @property {boolean} savedTopics  Se actualizaron temas flojos.
+ * @property {string|null} attemptId  Id de la fila de `quiz_attempts` (null si no se guardó).
+ * @property {import('../lib/assistant/quizRecord.js').QuizDetail} record  Registro completo del examen.
  */
 
 /**
@@ -128,6 +132,7 @@ function applyInFolder(context, proposal) {
  *   quizSession: QuizSession|null,
  *   submitQuiz: (given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>,
  *   discardOpenQuiz: () => void,
+ *   retryQuizSave: () => Promise<void>,
  *   inlineBusy: boolean,
  * }}
  */
@@ -161,7 +166,10 @@ export function useAssistant() {
     setQuizSession(next)
   }, [])
   /** Alcance del pedido de prueba en curso (se asocia al evento `quiz`). */
-  const pendingQuizRef = useRef(/** @type {Pick<QuizSession, 'scope'|'scopeSubjectId'|'isReview'>|null} */ (null))
+  const pendingQuizRef = useRef(/** @type {Pick<QuizSession, 'scope'|'scopeSubjectId'|'isReview'|'title'|'careerId'>|null} */ (null))
+
+  /** Un reintento de guardado a la vez (un doble click no puede duplicar la fila). */
+  const retryingRef = useRef(false)
 
   useEffect(() => {
     stateRef.current = state
@@ -224,7 +232,14 @@ export function useAssistant() {
           let scopeSubjectId = null
           if (scopeValue.type === 'subject') scopeSubjectId = scopeValue.id ?? null
           else if (scopeValue.type === 'sheet') scopeSubjectId = context?.subject?.id ?? null
-          pendingQuizRef.current = { scope: scopeValue, scopeSubjectId, isReview: fields.action === 'weak_review' }
+          const isReview = fields.action === 'weak_review'
+          pendingQuizRef.current = {
+            scope: scopeValue,
+            scopeSubjectId,
+            isReview,
+            title: quizTitle({ isReview, scopeType: scopeValue.type, subjectName: context?.subject?.name ?? null }),
+            careerId: scopeValue.type === 'career' ? scopeValue.id ?? null : context?.career?.id ?? null,
+          }
         } else if (fields.action !== 'quiz_grade') {
           pendingQuizRef.current = null
         }
@@ -473,7 +488,7 @@ export function useAssistant() {
    * @param {QuizSession} session
    * @param {import('../lib/assistant/quizScore.js').QuizResult[]} results
    * @param {{total: number, correct: number}} score
-   * @returns {Promise<Pick<QuizOutcome, 'sheets'|'saveError'|'savedTopics'>>}
+   * @returns {Promise<Pick<QuizOutcome, 'sheets'|'saveError'|'savedTopics'|'attemptId'|'record'>>}
    */
   const saveQuizOutcome = useCallback(async (session, results, score) => {
     const sources = await resolveQuizSources({
@@ -481,9 +496,18 @@ export function useAssistant() {
       subjectIds: session.scopeSubjectId ? [session.scopeSubjectId] : [],
     })
     const sheets = sources.data?.sheets ?? {}
-    if (score.total === 0) return { sheets, saveError: null, savedTopics: false }
-    const attempt = await saveAttempt({ scope: session.scope, ...score })
-    if (sources.error) return { sheets, saveError: attempt.error ?? sources.error, savedTopics: false }
+    const record = buildQuizRecord(session, { results, sheets })
+    if (score.total === 0) return { sheets, record, attemptId: null, saveError: null, savedTopics: false }
+    const attempt = await saveAttempt({
+      scope: session.scope,
+      ...score,
+      subjectId: session.scopeSubjectId,
+      careerId: session.careerId,
+      title: session.title,
+      detail: record,
+    })
+    const attemptId = attempt.data?.id ?? null
+    if (sources.error) return { sheets, record, attemptId, saveError: attempt.error ?? sources.error, savedTopics: false }
 
     const where = attachSubjects(session.questions, {
       scope: session.scope, scopeSubjectId: session.scopeSubjectId, sheets, subjects: sources.data.subjects,
@@ -492,14 +516,14 @@ export function useAssistant() {
     const topicResults = results
       .filter((r) => typeof r.correct === 'boolean' && where[r.id])
       .map((r) => ({ ...where[r.id], topic: byId.get(r.id)?.topic ?? '', correct: /** @type {boolean} */ (r.correct) }))
-    if (topicResults.length === 0) return { sheets, saveError: attempt.error, savedTopics: false }
+    if (topicResults.length === 0) return { sheets, record, attemptId, saveError: attempt.error, savedTopics: false }
 
     const existing = await listWeakTopics([...new Set(topicResults.map((r) => r.subject_id))])
-    if (existing.error) return { sheets, saveError: attempt.error ?? existing.error, savedTopics: false }
+    if (existing.error) return { sheets, record, attemptId, saveError: attempt.error ?? existing.error, savedTopics: false }
     const plan = planWeakTopicUpdates({ existing: existing.data, results: topicResults, isReview: session.isReview })
-    if (plan.upserts.length === 0 && plan.deletes.length === 0) return { sheets, saveError: attempt.error, savedTopics: false }
+    if (plan.upserts.length === 0 && plan.deletes.length === 0) return { sheets, record, attemptId, saveError: attempt.error, savedTopics: false }
     const applied = await applyWeakTopicUpdates(plan)
-    return { sheets, saveError: attempt.error ?? applied.error, savedTopics: !applied.error }
+    return { sheets, record, attemptId, saveError: attempt.error ?? applied.error, savedTopics: !applied.error }
   }, [])
 
   const submitQuiz = useCallback(
@@ -514,6 +538,8 @@ export function useAssistant() {
      * @returns {Promise<QuizOutcome|null>}
      */
     async (given) => {
+      // Hay un pedido en curso (p. ej. una tarjeta respondiendo): no se corrige encima.
+      if (slot.running()) return null
       const session = startSubmit(quizRef.current, given)
       if (!session) return null
       putQuiz(session)
@@ -544,8 +570,33 @@ export function useAssistant() {
       }
       return outcome
     },
-    [start, saveQuizOutcome, putQuiz],
+    [start, saveQuizOutcome, putQuiz, slot],
   )
+
+  /**
+   * Reintenta guardar el intento de una prueba terminada cuyo guardado falló.
+   * Solo si todavía no hay fila (`attemptId`): reintentar no duplica.
+   * @returns {Promise<void>}
+   */
+  const retryQuizSave = useCallback(async () => {
+    const session = quizRef.current
+    if (!session || !canRetrySave(session) || retryingRef.current) return
+    retryingRef.current = true
+    try {
+      const { outcome } = session
+      const attempt = await saveAttempt({
+        scope: session.scope,
+        ...outcome.score,
+        subjectId: session.scopeSubjectId,
+        careerId: session.careerId,
+        title: session.title,
+        detail: outcome.record,
+      })
+      putQuiz(withSavedAttempt(quizRef.current, session.key, { attemptId: attempt.data?.id ?? null, error: attempt.error ?? SUBMIT_FAILED }))
+    } finally {
+      retryingRef.current = false
+    }
+  }, [putQuiz])
 
   /** "Descartar prueba": la saca del panel sin red (una que se está corrigiendo no se descarta). */
   const discardOpenQuiz = useCallback(() => {
@@ -593,6 +644,7 @@ export function useAssistant() {
     quizSession,
     submitQuiz,
     discardOpenQuiz,
+    retryQuizSave,
     // La tarjeta de un atajo está respondiendo: la prueba no se puede corregir mientras tanto.
     inlineBusy: Boolean(inline?.chat.busy),
   }

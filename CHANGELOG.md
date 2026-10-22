@@ -58,6 +58,13 @@
   borrarse el bloque o la hoja y al irse de la carpeta, y aplica `takePendingApply` al cargar.
   `SheetEditor` registra la extensión (`onBroteRemoved`, pasado por `FolderSheet`). Documentado
   en `docs/features/folder.md`, `docs/features/sheet-editor.md` y `docs/features/assistant.md`.
+- **Tarea 8 — Examen en ventana grande y su registro:** `QuizWindow` (portal, queda montada al
+  cerrarse), `QuizRunner` con encabezado, barra de progreso, Salir y Descartar, y
+  `study/QuizRecordView` con todas las preguntas. `useAssistant` guarda el detalle con
+  `saveAttempt` (`attemptId`, `record`, título y carrera de la sesión) y suma `retryQuizSave`
+  (`canRetrySave`, `withSavedAttempt` en `quizSession.js`, con tests); `submitQuiz` no corrige con
+  un pedido en curso. `useLeaveWarning` avisa al cerrar la pestaña con una prueba sin terminar.
+  El chat muestra "Seguir" / "Ver resultado". Documentado en `docs/features/assistant.md`.
 
 ---
 

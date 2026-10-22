@@ -12,6 +12,8 @@
  * @property {{type: 'sheet'|'subject'|'career'|'all', id?: string}} scope
  * @property {string|null} scopeSubjectId  Materia del alcance hoja/materia.
  * @property {boolean} isReview  `weak_review`: los aciertos borran el tema flojo.
+ * @property {string} title  Título del examen (se guarda en `quiz_attempts.title`).
+ * @property {string|null} careerId  Carrera del examen (para Mi estudio).
  * @property {QuizStatus} status
  * @property {Record<string, number|boolean|string>|null} given  Respuestas enviadas (desde `grading`).
  * @property {Object|null} outcome  Resultado (en `done`).
@@ -47,7 +49,7 @@ export function discardQuiz(session) {
 /**
  * Sesión nueva para las preguntas que llegaron en el evento `quiz`.
  * @param {QuizSession|null} prev
- * @param {{scope: QuizSession['scope'], scopeSubjectId: string|null, isReview: boolean}} meta
+ * @param {{scope: QuizSession['scope'], scopeSubjectId: string|null, isReview: boolean, title: string, careerId: string|null}} meta
  * @param {import('./quizScore.js').Question[]} questions
  * @returns {QuizSession}
  */
@@ -108,4 +110,30 @@ export function finishSubmit(session, key, outcome) {
   if (!session || session.key !== key || session.status !== 'grading') return session
   if (!outcome) return { ...session, status: 'open', given: null }
   return { ...session, status: 'done', outcome }
+}
+
+/**
+ * ¿Se puede reintentar el guardado? Solo una prueba terminada, con preguntas
+ * corregidas y sin fila guardada (así reintentar nunca duplica).
+ * @param {QuizSession|null} session
+ * @returns {boolean}
+ */
+export function canRetrySave(session) {
+  return session?.status === 'done' && !session.outcome?.attemptId && (session.outcome?.score?.total ?? 0) > 0
+}
+
+/**
+ * Anota el resultado de un (re)intento de guardado. Solo si sigue siendo la
+ * misma prueba; con `attemptId` limpia el error de guardado.
+ * @param {QuizSession|null} session
+ * @param {number} key
+ * @param {{attemptId: string|null, error: string|null}} result
+ * @returns {QuizSession|null}
+ */
+export function withSavedAttempt(session, key, { attemptId, error }) {
+  if (!session || session.key !== key || session.status !== 'done') return session
+  return {
+    ...session,
+    outcome: { ...session.outcome, attemptId: attemptId ?? null, saveError: attemptId ? null : error },
+  }
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../ui/Icon'
-import { subjectFolderPath } from '../../../constants/routes'
-import { formatSheetDateLong } from '../../../lib/format/sheetDate.js'
-import { answerText } from '../../../lib/assistant/quizRecord.js'
+import { studyQuizPath } from '../../../constants/routes'
+import { canRetrySave } from '../../../lib/assistant/quizSession.js'
+import { QuizRecordView } from '../study/QuizRecordView'
 
 const TYPE_LABEL = { mcq: 'Opción múltiple', tf: 'Verdadero o falso', open: 'Desarrollo' }
 const TF_OPTIONS = [
@@ -25,23 +25,23 @@ function isAnswered(question, value) {
 }
 
 /**
- * Una prueba tipo examen del Brote: una pregunta por vez (radios para opción
- * múltiple y verdadero/falso, textarea con etiqueta para desarrollo), progreso
- * "Pregunta 3 de 10", y al terminar el puntaje y cada error con su
- * explicación y la hoja de origen. La corrección y el guardado los hace
- * `submitQuiz` (useAssistant) y el estado de la prueba (`open` → `grading` →
- * `done`, con el resultado) vive en la sesión: el panel la oculta con `hidden`
- * sin desmontarla, y una prueba enviada no se puede volver a enviar. Todo lo
- * del modelo va como texto plano.
+ * Contenido del examen dentro de `QuizWindow`: una pregunta por vez (radios
+ * para opción múltiple y verdadero/falso, textarea con etiqueta para
+ * desarrollo), encabezado con título, "Pregunta 3 de 10" y barra de progreso,
+ * y al terminar el registro completo (`QuizRecordView`). La corrección y el
+ * guardado los hace `submitQuiz` (useAssistant); el estado (`open` → `grading`
+ * → `done`) vive en la sesión. Queda montado aunque la ventana se cierre
+ * (`hidden`), así no se pierden las respuestas. Todo lo del modelo va como texto.
  * @param {Object} props
  * @param {QuizSession} props.session
- * @param {boolean} props.hidden  El usuario volvió al chat (se oculta sin perder nada).
+ * @param {boolean} props.hidden  La ventana está cerrada (no se roba el foco).
  * @param {boolean} props.busy  El Brote está respondiendo otra cosa (no se puede corregir).
  * @param {(given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>} props.onSubmit
- * @param {() => void} props.onClose  Volver al chat.
+ * @param {() => void} props.onClose  Salir / Cerrar: cierra la ventana sin perder la prueba.
  * @param {() => void} props.onDiscard  Descartar la prueba sin terminarla (sin red; libera los chips de prueba).
+ * @param {() => void} props.onRetrySave  Reintentar el guardado del resultado.
  */
-export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard }) {
+export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard, onRetrySave }) {
   const { questions } = session
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState(/** @type {Record<string, number|boolean|string>} */ ({}))
@@ -75,75 +75,55 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
   }
 
   if (phase === 'done' && outcome) {
-    const byId = new Map(outcome.results.map((r) => [r.id, r]))
-    const wrong = questions.filter((q) => byId.get(q.id)?.correct === false)
-    const ungraded = questions.filter((q) => byId.get(q.id)?.correct === null)
+    const ungraded = outcome.record.questions.filter((q) => q.correct === null).length
+    const retry = canRetrySave(session)
     return (
-      <section hidden={hidden} aria-labelledby="quiz-result-title" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
-        <h3 id="quiz-result-title" ref={headingRef} tabIndex={-1} className="font-display text-lg font-bold">
-          Sacaste {outcome.score.correct} de {outcome.score.total}
-        </h3>
-        {ungraded.length > 0 && (
-          <p className="text-xs text-text-muted">
-            {ungraded.length === 1 ? 'Una pregunta de desarrollo no se pudo corregir' : `${ungraded.length} preguntas de desarrollo no se pudieron corregir`} y no cuenta en el puntaje.
-          </p>
-        )}
-        {outcome.gradeError && (
-          <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-red-300">
-            {outcome.gradeError}
-          </p>
-        )}
-        {outcome.saveError && (
-          <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-red-300">
-            No se pudo guardar el resultado: {outcome.saveError}
-          </p>
-        )}
-        {!outcome.saveError && outcome.savedTopics && (
-          <p className="text-xs text-text-muted">
-            {session.isReview ? 'Actualicé tus temas flojos.' : 'Guardé lo que fallaste para el Repaso de errores.'}
-          </p>
-        )}
-
-        {wrong.length === 0 ? (
-          <p className="text-text-muted">No tuviste errores.</p>
-        ) : (
-          <ol className="space-y-3">
-            {wrong.map((q) => {
-              const sheet = q.sheetId ? outcome.sheets[q.sheetId] : null
-              const feedback = byId.get(q.id)?.feedback
-              return (
-                <li key={q.id} className="rounded-lg border border-border p-3">
-                  <p className="flex items-start gap-1.5 font-medium">
-                    <Icon name="close" size={14} className="mt-0.5 text-red-300" />
-                    <span className="sr-only">Incorrecta: </span>
-                    <span className="whitespace-pre-wrap break-words">{q.prompt}</span>
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap break-words text-text-muted">
-                    Tu respuesta: {answerText(q, given[q.id])}
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap break-words">
-                    {q.type === 'open' ? 'Respuesta de referencia' : 'Respuesta correcta'}: {answerText(q, q.answer)}
-                  </p>
-                  {feedback && <p className="mt-2 whitespace-pre-wrap break-words text-text-muted">{feedback}</p>}
-                  <p className="mt-2 whitespace-pre-wrap break-words text-text-muted">{q.explanation}</p>
-                  {sheet && (
-                    <Link
-                      to={subjectFolderPath(sheet.subject_id, /** @type {string} */ (q.sheetId))}
-                      className="mt-2 inline-flex items-center gap-1 text-xs text-accent-soft hover:underline"
-                    >
-                      <Icon name="file-text" size={12} />
-                      Hoja del {formatSheetDateLong(sheet.created_at)}
-                    </Link>
-                  )}
-                </li>
-              )
-            })}
-          </ol>
-        )}
-        <button type="button" onClick={onClose} className={BUTTON}>
-          Volver al chat
-        </button>
-      </section>
+      <>
+        <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
+          {ungraded > 0 && (
+            <p className="text-xs text-text-muted">
+              {ungraded === 1 ? 'Una pregunta de desarrollo no se pudo corregir' : `${ungraded} preguntas de desarrollo no se pudieron corregir`} y no cuenta en el puntaje.
+            </p>
+          )}
+          {outcome.gradeError && (
+            <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-red-300">
+              {outcome.gradeError}
+            </p>
+          )}
+          {outcome.saveError && (
+            <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-red-300">
+              <span>No se pudo guardar el resultado: {outcome.saveError}</span>
+              {retry && (
+                <button type="button" onClick={onRetrySave} className={`${BUTTON} ml-auto`}>
+                  Reintentar
+                </button>
+              )}
+            </div>
+          )}
+          {!outcome.saveError && outcome.savedTopics && (
+            <p className="text-xs text-text-muted">
+              {session.isReview ? 'Actualicé tus temas flojos.' : 'Guardé lo que fallaste para el Repaso de errores.'}
+            </p>
+          )}
+          <QuizRecordView
+            title={session.title}
+            score={outcome.score}
+            questions={outcome.record.questions}
+            headingRef={headingRef}
+            onNavigate={onClose}
+          />
+        </div>
+        <footer className="flex items-center gap-2 border-t border-border/60 px-5 py-3">
+          {outcome.attemptId && (
+            <Link to={studyQuizPath(outcome.attemptId)} onClick={onClose} className={BUTTON}>
+              Ver en Mi estudio
+            </Link>
+          )}
+          <button type="button" onClick={onClose} className="btn-accent ml-auto px-3 py-1 text-sm">
+            Cerrar
+          </button>
+        </footer>
+      </>
     )
   }
 
@@ -153,22 +133,42 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
   const grading = phase === 'grading'
 
   return (
-    <section hidden={hidden} aria-labelledby="quiz-progress" className="flex-1 space-y-3 overflow-y-auto px-4 py-3 text-sm">
-      <div className="flex items-center gap-2">
-        <h3 id="quiz-progress" ref={headingRef} tabIndex={-1} className="font-display text-base font-bold">
-          Pregunta {index + 1} de {total}
-        </h3>
-        <span className="text-xs text-text-muted">{TYPE_LABEL[question.type]}</span>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={grading}
-          className="ml-auto text-xs text-text-muted transition-colors hover:text-text disabled:opacity-50"
-        >
-          Volver al chat
-        </button>
-      </div>
+    <>
+      <header className="space-y-2 border-b border-border/60 px-5 py-3">
+        <div className="flex items-center gap-2">
+          <h2 className="truncate font-display text-lg font-bold">{session.title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto rounded-lg border border-border px-3 py-1 text-sm text-text-muted transition-colors hover:text-text"
+          >
+            Salir
+          </button>
+          {!grading && (
+            <button type="button" onClick={onDiscard} className="rounded-lg border border-border px-3 py-1 text-sm text-text-muted transition-colors hover:text-text">
+              Descartar prueba
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <h3 id="quiz-progress" ref={headingRef} tabIndex={-1} className="text-sm font-medium">
+            Pregunta {index + 1} de {total}
+          </h3>
+          <span className="text-xs text-text-muted">{TYPE_LABEL[question.type]}</span>
+          <div
+            role="progressbar"
+            aria-labelledby="quiz-progress"
+            aria-valuemin={1}
+            aria-valuemax={total}
+            aria-valuenow={index + 1}
+            className="ml-auto h-1.5 w-32 overflow-hidden rounded-full bg-surface-2"
+          >
+            <div className="h-full bg-accent transition-all" style={{ width: `${((index + 1) / total) * 100}%` }} />
+          </div>
+        </div>
+      </header>
 
+      <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
       <fieldset disabled={grading} className="space-y-2">
         <legend className="whitespace-pre-wrap break-words font-medium text-text">{question.prompt}</legend>
         {question.type === 'mcq' &&
@@ -204,7 +204,7 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
             </label>
             <textarea
               id={`quiz-${session.key}-${question.id}`}
-              rows={5}
+              rows={8}
               value={typeof value === 'string' ? value : ''}
               onChange={(event) => setAnswer(question.id, event.target.value)}
               className="w-full resize-y rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text"
@@ -234,16 +234,12 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
         </p>
       )}
       {busy && !grading && <p className="text-xs text-text-muted">Esperá a que el Brote termine para corregir.</p>}
-      {!grading && (
-        <button type="button" onClick={onDiscard} className="text-xs text-text-muted underline-offset-2 transition-colors hover:text-text hover:underline">
-          Descartar prueba
-        </button>
-      )}
       {grading && (
         <p role="status" className="text-xs text-text-muted">
           Corrigiendo tus respuestas…
         </p>
       )}
-    </section>
+      </div>
+    </>
   )
 }

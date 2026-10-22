@@ -7,6 +7,8 @@ import { Icon } from '../../ui/Icon'
 import { Brote } from './Brote'
 import { ChatThread } from './ChatThread'
 import { QuizRunner } from './QuizRunner'
+import { QuizWindow } from './QuizWindow'
+import { useLeaveWarning } from '../../../hooks/useLeaveWarning.js'
 
 /** Cuánto dura la alegría del Brote al terminar bien una respuesta. */
 const HAPPY_MS = 2500
@@ -21,6 +23,16 @@ const MODES = [
 const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
 
 /**
+ * Línea de la prueba en el chat: abierta o corrigiéndose ("Seguir") o terminada ("Ver resultado").
+ * @param {import('../../../hooks/useAssistant.js').QuizSession} session
+ * @returns {{done: boolean, correct: number, total: number}}
+ */
+function quizLine(session) {
+  const score = session.outcome?.score
+  return { done: session.status === 'done', correct: score?.correct ?? 0, total: score?.total ?? session.questions.length }
+}
+
+/**
  * Panel del Brote (se carga con React.lazy desde AssistantHost). Queda montado
  * aunque se cierre, así la conversación sigue mientras dure la sesión.
  * @param {Object} props
@@ -32,11 +44,11 @@ const SEGMENT = 'flex-1 rounded-md px-2 py-1 text-xs transition-colors'
 export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const {
     state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
-    quizSession, submitQuiz, discardOpenQuiz, inlineBusy,
+    quizSession, submitQuiz, discardOpenQuiz, retryQuizSave, inlineBusy,
   } = useAssistant()
   // Con una prueba sin terminar no se puede pedir otra: la reemplazaría (respuestas perdidas y cupo gastado).
   const quizOpen = blocksNewQuiz(quizSession)
-  // La prueba se muestra en lugar del chat apenas llega; "Volver al chat" la esconde sin perderla.
+  // La prueba se abre sola en su ventana apenas llega; "Salir" la esconde sin perderla.
   const [quizVisible, setQuizVisible] = useState(false)
   const [shownQuizKey, setShownQuizKey] = useState(0)
   if (quizSession && quizSession.key !== shownQuizKey) {
@@ -73,6 +85,8 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   }, [state.busy, state.error])
 
   const showQuiz = Boolean(quizSession && quizVisible)
+  // Una prueba sin terminar no se guarda a medias: cerrar o recargar la pestaña pregunta antes.
+  useLeaveWarning(quizOpen)
 
   const base = chatMood(state)
   const mood = happy && base === 'idle' ? 'happy' : base
@@ -177,30 +191,32 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
         )}
       </div>
 
-      {/* La prueba no se desmonta al volver al chat: se oculta y conserva respuestas y resultado. */}
+      <ChatThread
+        state={state}
+        onAccept={acceptProposal}
+        onReject={rejectProposal}
+        quiz={quizSession ? quizLine(quizSession) : null}
+        onOpenQuiz={quizSession ? () => setQuizVisible(true) : undefined}
+      />
+
+      {/* La prueba no se desmonta al cerrar la ventana: se oculta y conserva respuestas y resultado. */}
       {quizSession && (
-        <QuizRunner
-          key={quizSession.key}
-          session={quizSession}
-          hidden={!showQuiz}
-          busy={state.busy || inlineBusy}
-          onSubmit={submitQuiz}
-          onClose={() => setQuizVisible(false)}
-          onDiscard={discardOpenQuiz}
-        />
-      )}
-      {!showQuiz && (
-        <ChatThread
-          state={state}
-          onAccept={acceptProposal}
-          onReject={rejectProposal}
-          onOpenQuiz={quizSession ? () => setQuizVisible(true) : undefined}
-        />
+        <QuizWindow open={showQuiz} title={quizSession.title} onClose={() => setQuizVisible(false)}>
+          <QuizRunner
+            key={quizSession.key}
+            session={quizSession}
+            hidden={!showQuiz}
+            busy={state.busy || inlineBusy}
+            onSubmit={submitQuiz}
+            onClose={() => setQuizVisible(false)}
+            onDiscard={discardOpenQuiz}
+            onRetrySave={retryQuizSave}
+          />
+        </QuizWindow>
       )}
 
       <form
-        hidden={showQuiz}
-        className={`${showQuiz ? 'hidden' : 'flex'} items-end gap-2 border-t border-border/60 px-4 py-3`}
+        className="flex items-end gap-2 border-t border-border/60 px-4 py-3"
         onSubmit={(event) => {
           event.preventDefault()
           submit()

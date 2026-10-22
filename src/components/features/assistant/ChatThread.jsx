@@ -13,9 +13,10 @@ const PERIOD = { day: 'hoy', month: 'este mes' }
  * @param {import('../../../lib/assistant/chatState.js').ChatState} props.state
  * @param {(id: string) => void} props.onAccept
  * @param {(id: string) => void} props.onReject
- * @param {() => void} [props.onOpenQuiz]  Vuelve a la prueba en curso (la responde `QuizRunner`).
+ * @param {{done: boolean, correct: number, total: number}|null} [props.quiz]  La prueba de la sesión (abierta, corrigiéndose o terminada).
+ * @param {() => void} [props.onOpenQuiz]  Abre la ventana del examen.
  */
-export function ChatThread({ state, onAccept, onReject, onOpenQuiz }) {
+export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQuiz }) {
   const endRef = useRef(/** @type {HTMLDivElement|null} */ (null))
   const { messages, proposals, busy, status, error, notice, truncated, usage, quiz } = state
 
@@ -52,11 +53,13 @@ export function ChatThread({ state, onAccept, onReject, onOpenQuiz }) {
       {busy && <p className="text-xs text-text-muted">{status ?? 'Pensando…'}</p>}
       {!busy && truncated && <p className="text-xs text-warn">La respuesta se cortó.</p>}
 
-      {quiz && onOpenQuiz && (
+      {quizLine && onOpenQuiz && (
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
-          <p className="font-medium">La prueba tiene {quiz.length} pregunta{quiz.length === 1 ? '' : 's'}.</p>
+          <p className="font-medium">
+            {quizLine.done ? `Tu examen: ${quizLine.correct} de ${quizLine.total}` : 'Tenés una prueba abierta'}
+          </p>
           <button type="button" onClick={onOpenQuiz} className="btn-accent ml-auto px-3 py-1 text-sm">
-            Ir a la prueba
+            {quizLine.done ? 'Ver resultado' : 'Seguir'}
           </button>
         </div>
       )}

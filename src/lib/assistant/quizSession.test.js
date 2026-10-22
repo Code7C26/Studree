@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON,
+  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON, canRetrySave, withSavedAttempt,
 } from './quizSession.js'
 
 const meta = { scope: { type: 'subject', id: 's1' }, scopeSubjectId: 's1', isReview: false }
@@ -75,4 +75,30 @@ test('discardQuiz: descarta una prueba open o done; una que se está corrigiendo
   const done = finishSubmit(grading, grading.key, { score: { total: 1, correct: 1 } })
   assert.equal(discardQuiz(done), null)
   assert.equal(discardQuiz(null), null)
+})
+
+function doneSession(outcome) {
+  const grading = startSubmit(createQuizSession(null, meta, questions), { q1: true })
+  return finishSubmit(grading, grading.key, outcome)
+}
+
+test('canRetrySave: solo en done, sin attemptId y con total > 0', () => {
+  const base = { score: { total: 1, correct: 1 }, attemptId: null }
+  assert.equal(canRetrySave(doneSession(base)), true)
+  assert.equal(canRetrySave(doneSession({ ...base, attemptId: 'a1' })), false)
+  assert.equal(canRetrySave(doneSession({ ...base, score: { total: 0, correct: 0 } })), false)
+  assert.equal(canRetrySave(createQuizSession(null, meta, questions)), false)
+  assert.equal(canRetrySave(null), false)
+})
+
+test('withSavedAttempt: ignora otra key; con id limpia saveError; con error lo conserva', () => {
+  const done = doneSession({ score: { total: 1, correct: 1 }, attemptId: null, saveError: 'mal' })
+  assert.equal(withSavedAttempt(done, 99, { attemptId: 'a1', error: null }), done)
+  const ok = withSavedAttempt(done, done.key, { attemptId: 'a1', error: null })
+  assert.equal(ok.outcome.attemptId, 'a1')
+  assert.equal(ok.outcome.saveError, null)
+  const fail = withSavedAttempt(done, done.key, { attemptId: null, error: 'otra vez' })
+  assert.equal(fail.outcome.attemptId, null)
+  assert.equal(fail.outcome.saveError, 'otra vez')
+  assert.equal(withSavedAttempt(null, 1, { attemptId: 'a', error: null }), null)
 })
