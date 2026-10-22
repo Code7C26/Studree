@@ -92,7 +92,7 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
           )}
           {outcome.saveError && (
             <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-red-300">
-              <span>No se pudo guardar el resultado: {outcome.saveError}</span>
+              <span>{outcome.attemptId ? outcome.saveError : `No se pudo guardar el resultado: ${outcome.saveError}`}</span>
               {retry && (
                 <button type="button" onClick={onRetrySave} className={`${BUTTON} ml-auto`}>
                   Reintentar

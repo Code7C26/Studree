@@ -59,3 +59,9 @@ test('mientras guarda no se puede reintentar', () => {
   assert.equal(canRetrySummarySave(createSummarySession(1, payload, meta, NOW)), false)
   assert.equal(canRetrySummarySave(null), false)
 })
+
+test('el título se arma en el cliente según el alcance, no con el del modelo', () => {
+  assert.equal(summaryRowFor({ ...payload, title: 'Otro título' }, meta).title, 'Resumen · Biología')
+  const all = { scope: { type: 'all' }, subjectId: null, careerId: null, subjectName: null }
+  assert.equal(summaryRowFor(payload, all).title, 'Resumen · Todas mis materias')
+})

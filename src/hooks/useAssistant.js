@@ -27,6 +27,7 @@ import {
   createInline, reduceInline, addInlineAnswer, inlineHistory, inlineView,
 } from '../lib/assistant/inlineAnswer.js'
 import { buildQuizRecord, quizTitle } from '../lib/assistant/quizRecord.js'
+import { requestMeta } from '../lib/assistant/requestMeta.js'
 import {
   createSummarySession, finishSummarySave, canRetrySummarySave, startSummaryRetry, summaryRowFor, SUMMARY_SAVE_FAILED,
 } from '../lib/assistant/summarySession.js'
@@ -45,6 +46,7 @@ const CANCELLED = 'Cortaste la respuesta.'
 const APPLY_FAILED = 'No se pudo aplicar el cambio.'
 const GRADE_LABEL = 'Corregí mis respuestas de desarrollo'
 const GRADE_FAILED = 'No se pudieron corregir las respuestas de desarrollo.'
+const TOPICS_NOT_UPDATED = 'Guardé el examen, pero no pude actualizar tus temas flojos.'
 const SUBMIT_FAILED = 'Algo falló al corregir o guardar la prueba. Probá de nuevo más tarde.'
 const NO_SUBJECT = 'Abrí una materia para detectar sus huecos.'
 /** Aviso de cada motivo de `blockReason`. */
@@ -310,24 +312,19 @@ export function useAssistant() {
           if (scopeValue.type === 'subject') scopeSubjectId = scopeValue.id ?? null
           else if (scopeValue.type === 'sheet') scopeSubjectId = context?.subject?.id ?? null
           const isReview = fields.action === 'weak_review'
+          const meta = requestMeta(scopeValue, context)
           pendingQuizRef.current = {
             scope: scopeValue,
             scopeSubjectId,
             isReview,
-            title: quizTitle({ isReview, scopeType: scopeValue.type, subjectName: context?.subject?.name ?? null }),
-            careerId: scopeValue.type === 'career' ? scopeValue.id ?? null : context?.career?.id ?? null,
+            title: quizTitle({ isReview, scopeType: scopeValue.type, subjectName: meta.subjectName }),
+            careerId: meta.careerId,
           }
         } else if (fields.action !== 'quiz_grade') {
           pendingQuizRef.current = null
         }
         if (fields.action === 'summary') {
-          const bySubject = scopeValue.type === 'sheet' || scopeValue.type === 'subject'
-          summaryMeta = {
-            scope: scopeValue,
-            subjectId: bySubject ? context?.subject?.id ?? (scopeValue.type === 'subject' ? scopeValue.id ?? null : null) : null,
-            careerId: scopeValue.type === 'career' ? scopeValue.id ?? null : context?.career?.id ?? null,
-            subjectName: context?.subject?.name ?? null,
-          }
+          summaryMeta = requestMeta(scopeValue, context)
         }
       } else if (slot.running()) {
         // Quien llama ya cortó la tarjeta anterior o avisó: nunca se pisa un pedido en curso.
@@ -601,7 +598,9 @@ export function useAssistant() {
       detail: record,
     })
     const attemptId = attempt.data?.id ?? null
-    if (sources.error) return { sheets, record, attemptId, saveError: attempt.error ?? sources.error, savedTopics: false }
+    // Con el intento ya guardado, un fallo posterior es solo de los temas flojos.
+    const laterError = (error) => attempt.error ?? (error ? (attemptId ? TOPICS_NOT_UPDATED : error) : null)
+    if (sources.error) return { sheets, record, attemptId, saveError: laterError(sources.error), savedTopics: false }
 
     const where = attachSubjects(session.questions, {
       scope: session.scope, scopeSubjectId: session.scopeSubjectId, sheets, subjects: sources.data.subjects,
@@ -613,11 +612,11 @@ export function useAssistant() {
     if (topicResults.length === 0) return { sheets, record, attemptId, saveError: attempt.error, savedTopics: false }
 
     const existing = await listWeakTopics([...new Set(topicResults.map((r) => r.subject_id))])
-    if (existing.error) return { sheets, record, attemptId, saveError: attempt.error ?? existing.error, savedTopics: false }
+    if (existing.error) return { sheets, record, attemptId, saveError: laterError(existing.error), savedTopics: false }
     const plan = planWeakTopicUpdates({ existing: existing.data, results: topicResults, isReview: session.isReview })
     if (plan.upserts.length === 0 && plan.deletes.length === 0) return { sheets, record, attemptId, saveError: attempt.error, savedTopics: false }
     const applied = await applyWeakTopicUpdates(plan)
-    return { sheets, record, attemptId, saveError: attempt.error ?? applied.error, savedTopics: !applied.error }
+    return { sheets, record, attemptId, saveError: laterError(applied.error), savedTopics: !applied.error }
   }, [])
 
   const submitQuiz = useCallback(

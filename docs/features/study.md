@@ -26,7 +26,7 @@ abre la sección filtrada por esa materia.
   ítems, el vacío lo aclara ("Todavía no tenés resúmenes de esta materia. Pedile uno al Brote con
   «Resumir materia»."; en exámenes, «Tomame examen»). Los ítems de
   alcance carrera o todo (sin `subject_id`) solo aparecen sin filtro (`filterBySubject`).
-- Cada ítem: título, materia (o "Varias materias"), fecha (`formatSheetDateLong`), y en
+- Cada ítem: título (los exámenes anteriores a la migración 0009 no lo tienen: `itemTitle` arma «Examen anterior · una materia» según el alcance, también para el aria-label de borrar), materia (o "Varias materias"), fecha (`formatSheetDateLong`), y en
   exámenes "7 de 10"; link a su página y botón de borrar con confirmación.
 
 ## Papelera
@@ -49,7 +49,7 @@ impresión del navegador; hint «Guardar como PDF») y **Guardar como hoja**
 ## Archivos
 
 - `src/pages/StudyPage.jsx`, `StudySummaryPage.jsx`, `StudyQuizPage.jsx`
-- `src/hooks/useStudy.js` (lista + `remove`), `useStudyItem.js` (un ítem por id)
+- `src/hooks/useStudy.js` (lista + `remove`; exporta también `useStudyItem`, un ítem por id)
 - `src/components/features/study/` (`SummaryDocument`, `SummaryPrint`, `QuizRecordView`, `StudyItemRow`)
 - `src/lib/assistant/studyItems.js` (filtros puros), `src/constants/routes.js`
 

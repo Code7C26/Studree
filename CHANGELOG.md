@@ -111,6 +111,15 @@ todo en el navegador. La migración `0009` quedó aplicada el 2026-10-22. Sin de
 `docs/DB_SCHEMA.md`, resumen de uso y límites conocidos en `docs/features/assistant.md` y filas de
 lookup en `CLAUDE.md` y sus copias.
 
+### Fixed — Correcciones de la revisión final (Fase 14.1)
+
+- **Correcciones de la revisión final:** el título del examen y el `career_id` salen de la helper pura
+  `requestMeta` (exámenes de carrera/todas sin la materia de la carpeta; «todas mis materias» sin carrera);
+  exámenes viejos sin título muestran «Examen anterior · …» (`itemTitle`); la tarjeta de atajos se trae a
+  la vista y devuelve el foco al editor; «Guardar como hoja» cierra la ventana (no duplica); el encabezado
+  entra en pantallas de 375px; aviso al salir si falló el guardado; mensaje propio si solo fallaron los
+  temas flojos; título y alcance del resumen armados en el cliente (`summaryTitle`); `study.md` corregido.
+
 ---
 
 ## [0.17.0] — 2026-10-19

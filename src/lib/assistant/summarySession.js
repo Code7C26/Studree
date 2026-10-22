@@ -1,7 +1,7 @@
 // Ciclo de vida del resumen que acaba de armar el Brote. Puro: sin React ni services.
 // Se guarda UNA sola vez: `saving` → `saved` | `error`; reintentar solo desde `error`.
 
-import { buildSummaryRow, rowToSummary } from './summaryDoc.js'
+import { buildSummaryRow, rowToSummary, summaryTitle } from './summaryDoc.js'
 
 /**
  * @typedef {import('./summaryDoc.js').SummaryDoc} SummaryDoc
@@ -28,12 +28,13 @@ import { buildSummaryRow, rowToSummary } from './summaryDoc.js'
 export const SUMMARY_SAVE_FAILED = 'No se pudo guardar el resumen.'
 
 /**
- * Fila a insertar para un resumen recién llegado (título de respaldo si vino vacío).
+ * Fila a insertar para un resumen recién llegado. El título se arma acá según
+ * el alcance (no se usa el del modelo).
  * @param {SummaryPayload} payload
  * @param {SummaryMeta} meta
  */
 export function summaryRowFor(payload, meta) {
-  const title = String(payload.title ?? '').trim() || `Resumen${meta.subjectName ? ` · ${meta.subjectName}` : ''}`
+  const title = summaryTitle({ scopeType: meta.scope.type, subjectName: meta.subjectName })
   return buildSummaryRow({ ...payload, title }, meta)
 }
 

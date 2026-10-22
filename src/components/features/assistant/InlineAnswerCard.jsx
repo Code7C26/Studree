@@ -32,7 +32,7 @@ function lastReplyText(replies) {
  * @param {() => void} props.onDiscard
  * @param {() => void} props.onContinue  "Seguir en el chat".
  * @param {(text: string) => void} props.onAnswer  Respuesta del Preguntame.
- * @param {() => void} [props.onEscape]  Después de Esc: devuelve el foco al editor.
+ * @param {() => void} [props.onEscape]  Después de Esc, ✕, Descartar o Agregar: devuelve el foco al editor de la hoja.
  */
 export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinue, onAnswer, onEscape }) {
   const { label, replies, busy, status, error, notice, proposal, external, canAnswer } = view
@@ -40,6 +40,13 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
   // Lectores de pantalla: se anuncia la respuesta al terminar, no letra por letra.
   const [announcement, setAnnouncement] = useState('')
   const wasBusyRef = useRef(busy)
+  const rootRef = useRef(/** @type {HTMLDivElement|null} */ (null))
+
+  // La tarjeta se dibuja debajo de la selección, que puede estar al borde de la pantalla:
+  // al montarse (una vez por tarjeta, la carpeta la remonta por `id`) se trae a la vista.
+  useEffect(() => {
+    rootRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [])
 
   useEffect(() => {
     if (wasBusyRef.current && !busy) setAnnouncement(lastReplyText(replies))
@@ -54,6 +61,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
 
   return (
     <div
+      ref={rootRef}
       role="region"
       aria-label="Respuesta del Brote"
       aria-busy={busy}
@@ -75,7 +83,10 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
         )}
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            onClose()
+            onEscape?.()
+          }}
           aria-label="Cerrar la respuesta del Brote"
           className="ml-auto rounded p-1 text-text-muted transition-colors hover:text-text"
         >
@@ -151,10 +162,24 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
       <div className="mt-3 flex flex-wrap gap-1.5">
         {proposal && (
           <>
-            <button type="button" onClick={() => onAccept(proposal.id)} className="btn-accent px-3 py-1 text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                onAccept(proposal.id)
+                onEscape?.()
+              }}
+              className="btn-accent px-3 py-1 text-sm"
+            >
               Agregar a la hoja
             </button>
-            <button type="button" onClick={onDiscard} className={SECONDARY}>
+            <button
+              type="button"
+              onClick={() => {
+                onDiscard()
+                onEscape?.()
+              }}
+              className={SECONDARY}
+            >
               Descartar
             </button>
           </>

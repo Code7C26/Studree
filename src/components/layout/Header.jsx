@@ -14,7 +14,7 @@ const NAV_ITEMS = [
 /** Rutas con command palette (las del workspace, ver AppLayout). */
 const PALETTE_PREFIXES = ['/carreras', '/materias', '/hojas']
 
-const LINK = 'rounded-lg px-2 py-1.5 text-sm transition-colors sm:px-3'
+const LINK = 'shrink-0 whitespace-nowrap rounded-lg px-1.5 py-1.5 text-sm transition-colors sm:px-3'
 const LINK_IDLE = `${LINK} text-text-muted hover:bg-surface-2 hover:text-text`
 
 /**
@@ -28,10 +28,10 @@ export function Header() {
 
   return (
     <header className="border-b border-border/60">
-      <div className="flex items-center gap-3 px-3 py-2.5 sm:px-5">
-        <span className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 px-3 sm:gap-3 py-2.5 sm:px-5">
+        <span className="flex shrink-0 items-center gap-2.5">
           <img src="/logo.jpg" alt="" width="28" height="28" className="h-7 w-7 rounded-md" />
-          <span className="font-display text-lg font-bold tracking-tight text-text" translate="no">
+          <span className="hidden font-display sm:inline text-lg font-bold tracking-tight text-text" translate="no">
             Studree
           </span>
         </span>
@@ -48,7 +48,8 @@ export function Header() {
           </button>
         )}
 
-        <nav className={`flex items-center gap-0.5 ${hasPalette ? 'sm:ml-0 ml-auto' : 'ml-auto'}`}>
+        {/* min-w-0 + overflow-x-auto: si no entra (≤ 375px), la navegación se desliza y la página no. */}
+        <nav className={`flex min-w-0 items-center gap-0.5 overflow-x-auto ${hasPalette ? 'sm:ml-0 ml-auto' : 'ml-auto'}`}>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}

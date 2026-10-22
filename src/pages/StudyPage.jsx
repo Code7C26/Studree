@@ -6,7 +6,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Icon } from '../components/ui/Icon'
 import { studyPath, studyQuizPath, studySummaryPath } from '../constants/routes'
-import { filterBySubject, filterOptions } from '../lib/assistant/studyItems.js'
+import { filterBySubject, filterOptions, itemTitle } from '../lib/assistant/studyItems.js'
 
 const TABS = [
   { id: 'resumenes', label: 'Resúmenes' },
@@ -119,11 +119,11 @@ export function StudyPage() {
               <StudyItemRow
                 key={row.id}
                 to={isSummaries ? studySummaryPath(row.id) : studyQuizPath(row.id)}
-                title={row.title}
+                title={isSummaries ? row.title : itemTitle(row)}
                 subjectName={row.subject?.name}
                 createdAt={row.created_at}
                 detail={isSummaries ? undefined : `${row.correct} de ${row.total}`}
-                deleteLabel={`Borrar ${noun}: ${row.title}`}
+                deleteLabel={`Borrar ${noun}: ${isSummaries ? row.title : itemTitle(row)}`}
                 onDelete={() => setConfirm({ kind, id: row.id })}
               />
             ))}

@@ -55,3 +55,18 @@ export function filterOptions(summaries, attempts, activeId) {
   if (activeId && !options.some((o) => o.id === activeId)) options.push({ id: activeId, name: 'Esta materia' })
   return options
 }
+
+const SCOPE_FALLBACK = { sheet: 'una hoja', subject: 'una materia', career: 'toda la carrera', all: 'todas mis materias' }
+
+/**
+ * Título para mostrar de un examen. Los anteriores a la migración 0009 no lo
+ * tienen: se arma uno según el alcance.
+ * @param {{title?: string|null, scope_type?: string|null}} row
+ * @returns {string}
+ */
+export function itemTitle(row) {
+  const title = String(row?.title ?? '').trim()
+  if (title) return title
+  const where = SCOPE_FALLBACK[/** @type {keyof typeof SCOPE_FALLBACK} */ (row?.scope_type ?? '')]
+  return where ? `Examen anterior · ${where}` : 'Examen anterior'
+}

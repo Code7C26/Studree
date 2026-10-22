@@ -5,6 +5,7 @@ import { QuizRecordView } from '../components/features/study/QuizRecordView'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Icon } from '../components/ui/Icon'
 import { studyPath } from '../constants/routes'
+import { itemTitle } from '../lib/assistant/studyItems.js'
 
 /** `/estudio/examenes/:attemptId`: el registro de un examen. Ver docs/features/study.md. */
 export function StudyQuizPage() {
@@ -60,7 +61,7 @@ export function StudyQuizPage() {
         </p>
       )}
       <QuizRecordView
-        title={item.title}
+        title={itemTitle(item)}
         createdAt={item.created_at}
         score={{ total: item.total, correct: item.correct }}
         questions={questions}

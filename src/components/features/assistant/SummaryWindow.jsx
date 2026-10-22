@@ -9,7 +9,6 @@ import { SummaryPrint } from '../study/SummaryPrint'
 import { QuizWindow } from './QuizWindow'
 
 const BUTTON = 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-50'
-const SAVED_AS_SHEET = 'Agregué el resumen como hoja nueva.'
 
 /**
  * Ventana grande del resumen (reusa `QuizWindow`): el documento sobre papel,
@@ -36,9 +35,14 @@ export function SummaryWindow({ summaryDoc, open, onClose, onRetry }) {
 
   const saveAsSheet = () => {
     const result = save(doc)
-    if (!result.ok) setSheetMessage({ ok: false, text: result.error ?? 'No se pudo agregar el resumen como hoja.' })
-    else if (result.inFolder) setSheetMessage({ ok: true, text: SAVED_AS_SHEET })
-    else onClose()
+    if (!result.ok) {
+      setSheetMessage({ ok: false, text: result.error ?? 'No se pudo agregar el resumen como hoja.' })
+      return
+    }
+    // Ya está agregada (en la carpeta abierta o al navegar a ella): se cierra la ventana,
+    // así no se puede tocar de nuevo y duplicar la hoja, y el foco queda en la hoja nueva.
+    setSheetMessage(null)
+    onClose()
   }
 
   return (

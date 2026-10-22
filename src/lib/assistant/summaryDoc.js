@@ -127,3 +127,24 @@ export function formatUtcDate(date) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date))
   return match ? `${match[3]}/${match[2]}/${match[1]}` : String(date)
 }
+
+const SCOPE_LABELS = { sheet: 'Una hoja', subject: 'Una materia', career: 'Toda la carrera', all: 'Todas mis materias' }
+
+/**
+ * @param {'sheet'|'subject'|'career'|'all'} scopeType
+ * @returns {string}
+ */
+export function summaryScopeLabel(scopeType) {
+  return SCOPE_LABELS[scopeType] ?? ''
+}
+
+/**
+ * Título del resumen, armado en el cliente: "Resumen · Biología" (hoja/materia),
+ * "Resumen · Toda la carrera" o "Resumen · Todas mis materias".
+ * @param {{scopeType: 'sheet'|'subject'|'career'|'all', subjectName: string|null}} args
+ * @returns {string}
+ */
+export function summaryTitle({ scopeType, subjectName }) {
+  const bySubject = scopeType === 'sheet' || scopeType === 'subject'
+  return `Resumen · ${bySubject && subjectName ? subjectName : summaryScopeLabel(scopeType)}`
+}

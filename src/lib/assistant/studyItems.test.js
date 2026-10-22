@@ -48,3 +48,13 @@ test('filterOptions junta resúmenes y exámenes y suma la materia de la URL', a
   assert.deepEqual(filterOptions(s, q, 'b').map((o) => o.id), ['a', 'b'])
   assert.deepEqual(filterOptions([], [], 'z'), [{ id: 'z', name: 'Esta materia' }])
 })
+
+test('itemTitle: respeta el título y, si falta, usa un respaldo según el alcance', async () => {
+  const { itemTitle } = await import('./studyItems.js')
+  assert.equal(itemTitle({ title: 'Examen · Bio', scope_type: 'subject' }), 'Examen · Bio')
+  assert.equal(itemTitle({ title: null, scope_type: 'subject' }), 'Examen anterior · una materia')
+  assert.equal(itemTitle({ title: '  ', scope_type: 'sheet' }), 'Examen anterior · una hoja')
+  assert.equal(itemTitle({ title: null, scope_type: 'career' }), 'Examen anterior · toda la carrera')
+  assert.equal(itemTitle({ title: null, scope_type: 'all' }), 'Examen anterior · todas mis materias')
+  assert.equal(itemTitle({ title: null }), 'Examen anterior')
+})

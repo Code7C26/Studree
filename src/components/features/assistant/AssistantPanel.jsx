@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAssistant } from '../../../hooks/useAssistant.js'
 import { chatMood } from '../../../lib/assistant/chatState.js'
 import { ACTION_LABELS, MAX_MESSAGE, lockedActionMessage } from '../../../lib/assistant/requestBuilder.js'
-import { QUIZ_ACTIONS, QUIZ_OPEN_REASON, blocksNewQuiz } from '../../../lib/assistant/quizSession.js'
+import { QUIZ_ACTIONS, QUIZ_OPEN_REASON, blocksNewQuiz, canRetrySave } from '../../../lib/assistant/quizSession.js'
 import { Icon } from '../../ui/Icon'
 import { Brote } from './Brote'
 import { ChatThread } from './ChatThread'
@@ -95,7 +95,7 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const showQuiz = Boolean(quizSession && quizVisible)
   // Una prueba sin terminar no se guarda a medias: cerrar o recargar la pestaña pregunta antes.
   // Ni un resumen que todavía se está armando o guardando.
-  useLeaveWarning(quizOpen || summaryPending)
+  useLeaveWarning(quizOpen || summaryPending || canRetrySave(quizSession) || summaryDoc?.status === 'error')
 
   const base = chatMood(state)
   const mood = happy && base === 'idle' ? 'happy' : base

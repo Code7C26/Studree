@@ -88,3 +88,16 @@ test('formatUtcDate parte el string sin pasar por Date (sin corrimiento de día)
 test('formatUtcDate devuelve el texto tal cual si no es una fecha', () => {
   assert.equal(formatUtcDate('ayer'), 'ayer')
 })
+
+test('summaryTitle y summaryScopeLabel', async () => {
+  const { summaryTitle, summaryScopeLabel } = await import('./summaryDoc.js')
+  assert.equal(summaryTitle({ scopeType: 'subject', subjectName: 'Biología' }), 'Resumen · Biología')
+  assert.equal(summaryTitle({ scopeType: 'sheet', subjectName: 'Biología' }), 'Resumen · Biología')
+  assert.equal(summaryTitle({ scopeType: 'sheet', subjectName: null }), 'Resumen · Una hoja')
+  assert.equal(summaryTitle({ scopeType: 'career', subjectName: 'Biología' }), 'Resumen · Toda la carrera')
+  assert.equal(summaryTitle({ scopeType: 'all', subjectName: null }), 'Resumen · Todas mis materias')
+  assert.equal(summaryScopeLabel('sheet'), 'Una hoja')
+  assert.equal(summaryScopeLabel('subject'), 'Una materia')
+  assert.equal(summaryScopeLabel('career'), 'Toda la carrera')
+  assert.equal(summaryScopeLabel('all'), 'Todas mis materias')
+})

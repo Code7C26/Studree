@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { subjectFolderPath } from '../../../constants/routes'
 import { parseSummaryBody } from '../../../lib/assistant/summaryBlocks.js'
-import { basedOnLabel, formatUtcDate } from '../../../lib/assistant/summaryDoc.js'
+import { basedOnLabel, formatUtcDate, summaryScopeLabel } from '../../../lib/assistant/summaryDoc.js'
 
 /** @typedef {import('../../../lib/assistant/summaryBlocks.js').Inline} Inline */
 
@@ -59,7 +59,7 @@ export function SummaryDocument({ doc, print = false, onNavigate }) {
         <h3 className="font-display text-2xl font-bold">{doc.title}</h3>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
           <span>
-            {date} · {basedOnLabel(doc.sheetCount, doc.totalSheets)}
+            {date} · {summaryScopeLabel(doc.scopeType)} · {basedOnLabel(doc.sheetCount, doc.totalSheets)}
           </span>
           {doc.external && (
             <span className="rounded-full border border-ink-muted/50 px-2 py-0.5">Incluye conocimiento externo</span>

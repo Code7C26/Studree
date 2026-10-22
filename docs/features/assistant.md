@@ -355,9 +355,8 @@ del proveedor ni la clave).
   **tarjeta debajo del bloque** donde termina la selección (widget del editor, no entra en el
   Markdown), sin abrir el panel. Es **un pedido a la vez** en todo el Brote y **sin historial**: el
   atajo no manda la conversación del chat. En **Preguntame** la tarjeta trae un cuadro para
-  responder (una vez) y corrige ahí. La tarjeta se cierra con la ✕, con Esc (vuelve el foco al
-  editor), al aceptar o descartar la propuesta, al borrarse el bloque o la hoja y al irse de la
-  carpeta; un atajo nuevo la reemplaza. **Seguir en el chat** pasa el intercambio al panel.
+  responder (una vez) y corrige ahí. La tarjeta se cierra con la ✕, con Esc, al aceptar o descartar la propuesta, al borrarse el bloque o la hoja y al irse de la
+  carpeta (✕, Esc, Descartar y Agregar devuelven el foco al editor de esa hoja; al montarse la tarjeta se trae a la vista con `scrollIntoView({block:'nearest'})`); un atajo nuevo la reemplaza. **Seguir en el chat** pasa el intercambio al panel.
 - **Propuestas:** en el chat van junto a la respuesta que las trajo y, resueltas, se achican a una
   línea ("Agregado a tu hoja del dd/mm" o "Descartado").
 - **Examen:** se abre en una ventana grande; **Salir** no pierde nada; al corregir se guarda el
@@ -443,8 +442,10 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
   prueba abierta · Seguir" (abierta o corrigiéndose) o "Tu examen: N de M · Ver resultado".
 - **Encabezado:** título de la sesión (`quizTitle`), "Pregunta 3 de 10" con barra
   (`role="progressbar"`), **Salir** y **Descartar prueba**; desarrollo con `textarea` de 8 filas.
-- **Sesión:** `QuizSession` suma `title` y `careerId` (del pedido; `careerId` = `scope.id` si el
-  alcance es carrera, si no la carrera del contexto). `QuizOutcome` suma `attemptId` y `record`
+- **Sesión:** `QuizSession` suma `title` y `careerId` (del pedido; `careerId` sale de `requestMeta`: `scope.id` si el
+  alcance es carrera, `null` en «todas mis materias» (no depende de ninguna carrera: no se oculta ni se
+  borra en cascada con la de la carpeta donde se pidió), si no la carrera del contexto; el título usa el
+  nombre de la materia solo en hoja/materia). `QuizOutcome` suma `attemptId` y `record`
   (`QuizDetail` de `buildQuizRecord`).
 - **Registro:** al corregir, `saveAttempt` guarda puntaje, `subject_id`, `career_id`, `title` y
   `detail` en `quiz_attempts`. Al terminar, `QuizRecordView` (presentacional, la reusa Mi estudio)
@@ -465,8 +466,10 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
 > Reemplaza lo de abajo sobre mostrar el resumen en el chat.
 
 - **Guardado automático:** `useAssistant.run` toma la meta del pedido al lanzar `runAction('summary')`
-  (alcance, `subjectId` de `context.subject` si es hoja/materia, `careerId` como el examen, nombre
-  de la materia para el título de respaldo) y captura el evento `summary`. Al terminar el pedido
+  (alcance, `subjectId` de `context.subject` si es hoja/materia, `careerId` como el examen —ambos por la helper pura `requestMeta`—, nombre
+  de la materia solo en hoja/materia). El **título** lo arma el cliente (`summaryTitle`: «Resumen · Biología»,
+  «Resumen · Toda la carrera», «Resumen · Todas mis materias»), no el del modelo; vale para la fila y el nombre del PDF, y el
+  encabezado del documento muestra el alcance (`summaryScopeLabel`) y captura el evento `summary`. Al terminar el pedido
   guarda **una vez** con `saveSummary(summaryRowFor(...))`. `summaryDoc` =
   `{key, doc, status: 'saving'|'saved'|'error', savedId, saveError}` (`lib/assistant/summarySession.js`,
   puro y con tests). `retrySummarySave` solo actúa con `status === 'error'` y sin fila
@@ -486,7 +489,7 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
   Ayuda junto al botón: "Elegí «Guardar como PDF»".
 - **Guardar como hoja** (solo con `doc.subjectId`): `useSaveSummaryAsSheet` arma una propuesta
   `new_sheet` (`summaryToMarkdown`, `source` externo/notas). Con la carpeta de esa materia abierta la
-  aplica (`context.apply`) y la ventana confirma "Agregué el resumen como hoja nueva."; si no, `setPendingApply`
+  aplica (`context.apply`) y la ventana se **cierra** al agregarla (no queda botón para duplicarla); si no, `setPendingApply`
   + navegar a la carpeta, que la aplica al cargar.
 - **Pie de la ventana:** Descargar PDF, Guardar como hoja, Ver en Mi estudio (con `savedId`),
   "Guardando…" / error + Reintentar, Cerrar.
