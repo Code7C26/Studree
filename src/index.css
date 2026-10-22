@@ -256,6 +256,46 @@
   }
 }
 
+/* Impresión del resumen ("Descargar PDF"): solo `#print-root`, sobre blanco. */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 18mm;
+  }
+
+  html.printing,
+  html.printing body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  html.printing body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  html.printing #print-root {
+    display: block;
+    font-size: 11pt;
+  }
+
+  html.printing #print-root * {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  html.printing #print-root .summary-heading {
+    break-after: avoid;
+  }
+
+  html.printing #print-root .summary-section {
+    break-inside: avoid-page;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brote,
   .brote * {

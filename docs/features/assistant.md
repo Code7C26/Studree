@@ -441,6 +441,37 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
   abierta o corrigiéndose, cerrar o recargar la pestaña pregunta antes (no se guarda a medias).
 - **Carrera:** `submitQuiz` devuelve `null` si hay un pedido en curso (`slot.running()`).
 
+## El resumen en ventana, PDF y "Guardar como hoja" (Fase 14.1, Tarea 9)
+
+> Reemplaza lo de abajo sobre mostrar el resumen en el chat.
+
+- **Guardado automático:** `useAssistant.run` toma la meta del pedido al lanzar `runAction('summary')`
+  (alcance, `subjectId` de `context.subject` si es hoja/materia, `careerId` como el examen, nombre
+  de la materia para el título de respaldo) y captura el evento `summary`. Al terminar el pedido
+  guarda **una vez** con `saveSummary(summaryRowFor(...))`. `summaryDoc` =
+  `{key, doc, status: 'saving'|'saved'|'error', savedId, saveError}` (`lib/assistant/summarySession.js`,
+  puro y con tests). `retrySummarySave` solo actúa con `status === 'error'` y sin fila
+  (`canRetrySummarySave`) y un doble click no corre dos veces: nunca inserta dos filas.
+  `summaryPending` (pedido en curso o guardándose) alimenta `useLeaveWarning` del panel.
+- **Ventana:** `AssistantPanel` abre `SummaryWindow` sola al llegar un `summaryDoc` nuevo (`key`).
+  Reusa `QuizWindow`; el documento (`study/SummaryDocument`) va sobre papel crema: título, fecha,
+  `basedOnLabel`, chip "Incluye conocimiento externo", secciones numeradas (`parseSummaryBody`: p, ul,
+  ol, `strong`; todo como elementos de React, nunca HTML), "Conceptos clave" (`<dl>`) y "Hojas usadas"
+  con link a cada hoja. La fecha de cada hoja (UTC `YYYY-MM-DD`) se formatea partiendo el texto
+  (`formatUtcDate`), nunca con `new Date()`. El chat muestra "Tu resumen «…» está listo · Abrir".
+- **Descargar PDF:** `usePrintSummary` monta `SummaryPrint` (portal `#print-root` con el documento sin
+  links), agrega `html.printing`, cambia `document.title` a `pdfFileName` y llama `window.print()`
+  en el próximo frame; en `afterprint` (o al desmontar) restaura título y clase. El CSS de
+  `index.css` (`@media print`) oculta todo menos `#print-root`, fondo blanco, texto negro,
+  `@page{margin:18mm}`, títulos con `break-after: avoid` y secciones con `break-inside: avoid-page`.
+  Ayuda junto al botón: "Elegí «Guardar como PDF»".
+- **Guardar como hoja** (solo con `doc.subjectId`): `useSaveSummaryAsSheet` arma una propuesta
+  `new_sheet` (`summaryToMarkdown`, `source` externo/notas). Con la carpeta de esa materia abierta la
+  aplica (`context.apply`) y la ventana confirma "Agregué el resumen como hoja nueva."; si no, `setPendingApply`
+  + navegar a la carpeta, que la aplica al cargar.
+- **Pie de la ventana:** Descargar PDF, Guardar como hoja, Ver en Mi estudio (con `savedId`),
+  "Guardando…" / error + Reintentar, Cerrar.
+
 ## Pruebas tipo examen, repaso de errores y resúmenes (Tarea 11)
 
 - **Flujo:** el chip "Tomame examen" (`quiz`) o "Repaso de errores" (`weak_review`, Premium: el

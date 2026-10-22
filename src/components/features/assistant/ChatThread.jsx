@@ -15,14 +15,15 @@ const PERIOD = { day: 'hoy', month: 'este mes' }
  * @param {(id: string) => void} props.onReject
  * @param {{done: boolean, correct: number, total: number}|null} [props.quiz]  La prueba de la sesión (abierta, corrigiéndose o terminada).
  * @param {() => void} [props.onOpenQuiz]  Abre la ventana del examen.
+ * @param {() => void} [props.onOpenSummary]  Abre la ventana del resumen.
  */
-export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQuiz }) {
+export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQuiz, onOpenSummary }) {
   const endRef = useRef(/** @type {HTMLDivElement|null} */ (null))
-  const { messages, proposals, busy, status, error, notice, truncated, usage, quiz } = state
+  const { messages, proposals, busy, status, error, notice, truncated, usage, quiz, summary } = state
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end' })
-  }, [messages, proposals, status, error, notice, quiz])
+  }, [messages, proposals, status, error, notice, quiz, summary])
 
   return (
     <div role="log" aria-live="polite" aria-busy={busy} aria-label="Conversación con el Brote" className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
@@ -60,6 +61,15 @@ export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQu
           </p>
           <button type="button" onClick={onOpenQuiz} className="btn-accent ml-auto px-3 py-1 text-sm">
             {quizLine.done ? 'Ver resultado' : 'Seguir'}
+          </button>
+        </div>
+      )}
+
+      {summary && onOpenSummary && (
+        <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
+          <p className="min-w-0 break-words font-medium">Tu resumen «{summary.title}» está listo</p>
+          <button type="button" onClick={onOpenSummary} className="btn-accent ml-auto shrink-0 px-3 py-1 text-sm">
+            Abrir
           </button>
         </div>
       )}

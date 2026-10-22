@@ -65,6 +65,15 @@
   (`canRetrySave`, `withSavedAttempt` en `quizSession.js`, con tests); `submitQuiz` no corrige con
   un pedido en curso. `useLeaveWarning` avisa al cerrar la pestaña con una prueba sin terminar.
   El chat muestra "Seguir" / "Ver resultado". Documentado en `docs/features/assistant.md`.
+- **Tarea 9 — Resumen en ventana, PDF y "Guardar como hoja":** al llegar el evento `summary`
+  `useAssistant` lo guarda solo (`saveSummary`, una vez; `summarySession.js` con tests: `saving` →
+  `saved`/`error`, `retrySummarySave` nunca duplica) y el panel abre `SummaryWindow` (reusa
+  `QuizWindow`) con `study/SummaryDocument` (secciones numeradas, conceptos clave, "Hojas usadas"
+  con fecha UTC sin `new Date`). **Descargar PDF** (`usePrintSummary` + `SummaryPrint` +
+  CSS de impresión en `index.css`, sin dependencias), **Guardar como hoja** (`useSaveSummaryAsSheet`:
+  aplica en la carpeta o deja `setPendingApply` y navega), **Ver en Mi estudio**, **Reintentar**.
+  El chat muestra "Tu resumen «…» está listo · Abrir"; `useLeaveWarning` también con un resumen
+  pendiente. Documentado en `docs/features/assistant.md`.
 
 ---
 

@@ -8,6 +8,7 @@ import { Brote } from './Brote'
 import { ChatThread } from './ChatThread'
 import { QuizRunner } from './QuizRunner'
 import { QuizWindow } from './QuizWindow'
+import { SummaryWindow } from './SummaryWindow'
 import { useLeaveWarning } from '../../../hooks/useLeaveWarning.js'
 
 /** Cuánto dura la alegría del Brote al terminar bien una respuesta. */
@@ -44,7 +45,7 @@ function quizLine(session) {
 export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   const {
     state, plan, mode, setMode, scope, setScope, scopeOptions, send, runAction, stop, acceptProposal, rejectProposal,
-    quizSession, submitQuiz, discardOpenQuiz, retryQuizSave, inlineBusy,
+    quizSession, submitQuiz, discardOpenQuiz, retryQuizSave, inlineBusy, summaryDoc, retrySummarySave, summaryPending,
   } = useAssistant()
   // Con una prueba sin terminar no se puede pedir otra: la reemplazaría (respuestas perdidas y cupo gastado).
   const quizOpen = blocksNewQuiz(quizSession)
@@ -54,6 +55,13 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
   if (quizSession && quizSession.key !== shownQuizKey) {
     setShownQuizKey(quizSession.key)
     setQuizVisible(true)
+  }
+  // El resumen también se abre solo en su ventana al llegar uno nuevo (`key`).
+  const [summaryVisible, setSummaryVisible] = useState(false)
+  const [shownSummaryKey, setShownSummaryKey] = useState(0)
+  if (summaryDoc && summaryDoc.key !== shownSummaryKey) {
+    setShownSummaryKey(summaryDoc.key)
+    setSummaryVisible(true)
   }
   const [draft, setDraft] = useState('')
   const [happy, setHappy] = useState(false)
@@ -86,7 +94,8 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
 
   const showQuiz = Boolean(quizSession && quizVisible)
   // Una prueba sin terminar no se guarda a medias: cerrar o recargar la pestaña pregunta antes.
-  useLeaveWarning(quizOpen)
+  // Ni un resumen que todavía se está armando o guardando.
+  useLeaveWarning(quizOpen || summaryPending)
 
   const base = chatMood(state)
   const mood = happy && base === 'idle' ? 'happy' : base
@@ -197,7 +206,12 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
         onReject={rejectProposal}
         quiz={quizSession ? quizLine(quizSession) : null}
         onOpenQuiz={quizSession ? () => setQuizVisible(true) : undefined}
+        onOpenSummary={summaryDoc ? () => setSummaryVisible(true) : undefined}
       />
+
+      {summaryDoc && (
+        <SummaryWindow key={summaryDoc.key} summaryDoc={summaryDoc} open={summaryVisible} onClose={() => setSummaryVisible(false)} onRetry={retrySummarySave} />
+      )}
 
       {/* La prueba no se desmonta al cerrar la ventana: se oculta y conserva respuestas y resultado. */}
       {quizSession && (

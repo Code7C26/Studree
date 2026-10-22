@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { streamAssistant } from '../services/assistant.service.js'
 import { getPlan } from '../services/userPlan.service.js'
+import { saveSummary } from '../services/study.service.js'
 import { useAssistantContext } from './useAssistantContext.js'
 import { assistantBridge } from '../lib/assistant/bridge.js'
 import { MAX } from '../../supabase/functions/assistant/config.js'
@@ -26,6 +27,9 @@ import {
   createInline, reduceInline, addInlineAnswer, inlineHistory, inlineView,
 } from '../lib/assistant/inlineAnswer.js'
 import { buildQuizRecord, quizTitle } from '../lib/assistant/quizRecord.js'
+import {
+  createSummarySession, finishSummarySave, canRetrySummarySave, startSummaryRetry, summaryRowFor, SUMMARY_SAVE_FAILED,
+} from '../lib/assistant/summarySession.js'
 import { createRequestSlot } from '../lib/assistant/requestSlot.js'
 import {
   ACTION_LABELS, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildScope, lockedActionMessage, requestMode,
@@ -85,6 +89,7 @@ function applyInFolder(context, proposal) {
 }
 
 /**
+ * @typedef {import('../lib/assistant/summarySession.js').SummarySession} SummarySession
  * @typedef {import('../lib/assistant/chatState.js').ChatState} ChatState
  * @typedef {import('../lib/assistant/inlineAnswer.js').InlineState} InlineState
  * @typedef {import('../lib/assistant/bridge.js').InlineCommand} InlineCommand
@@ -133,6 +138,9 @@ function applyInFolder(context, proposal) {
  *   submitQuiz: (given: Record<string, number|boolean|string>) => Promise<QuizOutcome|null>,
  *   discardOpenQuiz: () => void,
  *   retryQuizSave: () => Promise<void>,
+ *   summaryDoc: SummarySession|null,
+ *   retrySummarySave: () => Promise<void>,
+ *   summaryPending: boolean,
  *   inlineBusy: boolean,
  * }}
  */
@@ -171,6 +179,19 @@ export function useAssistant() {
   /** Un reintento de guardado a la vez (un doble click no puede duplicar la fila). */
   const retryingRef = useRef(false)
 
+  const [summaryDoc, setSummaryDoc] = useState(/** @type {SummarySession|null} */ (null))
+  /** Copia sincrónica del resumen (guard del reintento) y la fila a guardar, con la `key` a la que pertenece. */
+  const summaryRef = useRef(/** @type {SummarySession|null} */ (null))
+  const summaryRowRef = useRef(/** @type {{key: number, row: Object}|null} */ (null))
+  const lastSummaryKeyRef = useRef(0)
+  const retryingSummaryRef = useRef(false)
+  /** Hay un pedido de resumen en curso (antes de que llegue el resumen). */
+  const [summaryRequesting, setSummaryRequesting] = useState(false)
+  const putSummary = useCallback((/** @type {SummarySession|null} */ next) => {
+    summaryRef.current = next
+    setSummaryDoc(next)
+  }, [])
+
   useEffect(() => {
     stateRef.current = state
   }, [state])
@@ -202,6 +223,58 @@ export function useAssistant() {
   const options = useMemo(() => scopeOptions(context, plan), [context, plan])
   const scope = resolveScopeType(chosenScope, options)
 
+  /**
+   * Guarda la fila del resumen (una inserción por llamada) y anota el resultado
+   * en la sesión de esa `key`. Nunca lanza: un error queda en la sesión.
+   * @param {number} key
+   * @param {Object} row
+   */
+  const persistSummary = useCallback(async (key, row) => {
+    let id = null
+    let error = null
+    try {
+      const res = await saveSummary(/** @type {any} */ (row))
+      id = res.data?.id ?? null
+      error = res.error
+    } catch (err) {
+      console.error('[assistant] falló el guardado del resumen:', err)
+      error = SUMMARY_SAVE_FAILED
+    }
+    putSummary(finishSummarySave(summaryRef.current, key, { id, error: id ? null : error ?? SUMMARY_SAVE_FAILED }))
+  }, [putSummary])
+
+  /**
+   * Resumen recién llegado: lo muestra en `saving` y lo guarda UNA vez.
+   * @param {Object} payload  `SummaryPayload` del evento `summary`.
+   * @param {import('../lib/assistant/summarySession.js').SummaryMeta} meta
+   */
+  const saveNewSummary = useCallback(async (payload, meta) => {
+    const key = lastSummaryKeyRef.current + 1
+    lastSummaryKeyRef.current = key
+    const data = /** @type {import('../lib/assistant/summaryDoc.js').SummaryPayload} */ (payload)
+    summaryRowRef.current = { key, row: summaryRowFor(data, meta) }
+    putSummary(createSummarySession(key, data, meta, new Date().toISOString()))
+    await persistSummary(key, summaryRowRef.current.row)
+  }, [putSummary, persistSummary])
+
+  /**
+   * Reintenta guardar el resumen cuyo guardado falló. Solo desde `error` y sin
+   * fila (`canRetrySummarySave`): reintentar nunca inserta dos veces.
+   * @returns {Promise<void>}
+   */
+  const retrySummarySave = useCallback(async () => {
+    const session = summaryRef.current
+    const pending = summaryRowRef.current
+    if (!session || !pending || pending.key !== session.key || !canRetrySummarySave(session) || retryingSummaryRef.current) return
+    retryingSummaryRef.current = true
+    try {
+      putSummary(startSummaryRetry(session))
+      await persistSummary(session.key, pending.row)
+    } finally {
+      retryingSummaryRef.current = false
+    }
+  }, [putSummary, persistSummary])
+
   const run = useCallback(
     /**
      * Manda un pedido y pasa sus eventos al chat o a la tarjeta del atajo.
@@ -219,6 +292,10 @@ export function useAssistant() {
     async ({ fields, visibleText = '', selection = null, scopeOverride = null, target = 'chat', history = [] }) => {
       const inlineId = target === 'chat' ? null : target.inlineId
       const scopeValue = scopeOverride ?? buildScope(scope, context)
+      /** Datos del pedido de resumen (se toman acá: al llegar ya pudo cambiar la carpeta). */
+      let summaryMeta = null
+      /** @type {Object|null} */
+      let summaryPayload = null
       if (inlineId === null) {
         const blocked = blockReason({
           running: slot.running(), scopeValue, action: fields.action, quizOpen: blocksNewQuiz(quizRef.current),
@@ -243,6 +320,15 @@ export function useAssistant() {
         } else if (fields.action !== 'quiz_grade') {
           pendingQuizRef.current = null
         }
+        if (fields.action === 'summary') {
+          const bySubject = scopeValue.type === 'sheet' || scopeValue.type === 'subject'
+          summaryMeta = {
+            scope: scopeValue,
+            subjectId: bySubject ? context?.subject?.id ?? (scopeValue.type === 'subject' ? scopeValue.id ?? null : null) : null,
+            careerId: scopeValue.type === 'career' ? scopeValue.id ?? null : context?.career?.id ?? null,
+            subjectName: context?.subject?.name ?? null,
+          }
+        }
       } else if (slot.running()) {
         // Quien llama ya cortó la tarjeta anterior o avisó: nunca se pisa un pedido en curso.
         return { error: BUSY, grades: null }
@@ -257,6 +343,7 @@ export function useAssistant() {
       }
       const controller = slot.claim(inlineId === null ? 'chat' : 'inline')
       if (inlineId === null) setState((s) => addUserMessage(s, visibleText))
+      if (summaryMeta) setSummaryRequesting(true)
       /** @type {Array<Object>|null} */
       let grades = null
       /** @type {string|null} */
@@ -271,6 +358,8 @@ export function useAssistant() {
             return
           }
           if (event?.type === 'grades' && Array.isArray(event.grades)) grades = event.grades
+          const sm = event?.type === 'summary' ? event.summary : null
+          if (summaryMeta && sm && typeof sm === 'object' && typeof sm.title === 'string' && Array.isArray(sm.sections)) summaryPayload = sm
           if (event?.type === 'error') streamError = typeof event.message === 'string' && event.message ? event.message : GRADE_FAILED
           const meta = pendingQuizRef.current
           if (event?.type === 'quiz' && Array.isArray(event.questions) && meta) {
@@ -281,6 +370,11 @@ export function useAssistant() {
       })
       // Solo lo suelta si sigue siendo suyo (un atajo nuevo pudo haberlo reemplazado).
       slot.release(controller)
+      if (summaryMeta) {
+        // Un resumen que llegó ya gastó cupo: se guarda aunque después se haya cortado la respuesta.
+        if (summaryPayload) await saveNewSummary(summaryPayload, summaryMeta)
+        setSummaryRequesting(false)
+      }
       if (inlineId !== null) {
         const message = controller.signal.aborted ? null : error
         setInlineState((i) => (i?.id === inlineId ? { ...i, chat: finishRequest(i.chat, message) } : i))
@@ -293,7 +387,7 @@ export function useAssistant() {
       setState((s) => finishRequest(s, error))
       return { error: error ?? streamError, grades }
     },
-    [scope, context, mode, putQuiz, slot],
+    [scope, context, mode, putQuiz, slot, saveNewSummary],
   )
 
   const start = useCallback(
@@ -645,6 +739,9 @@ export function useAssistant() {
     submitQuiz,
     discardOpenQuiz,
     retryQuizSave,
+    summaryDoc,
+    retrySummarySave,
+    summaryPending: summaryRequesting || summaryDoc?.status === 'saving',
     // La tarjeta de un atajo está respondiendo: la prueba no se puede corregir mientras tanto.
     inlineBusy: Boolean(inline?.chat.busy),
   }

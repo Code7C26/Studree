@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { basedOnLabel, buildSummaryRow, pdfFileName, rowToSummary, summaryToMarkdown } from './summaryDoc.js'
+import { basedOnLabel, buildSummaryRow, formatUtcDate, pdfFileName, rowToSummary, summaryToMarkdown } from './summaryDoc.js'
 
 const payload = {
   title: 'Resumen · Biología',
@@ -78,4 +78,13 @@ test('summaryToMarkdown', () => {
     ].join('\n'),
   )
   assert.ok(!summaryToMarkdown({ ...doc, keyConcepts: [] }).includes('Conceptos clave'))
+})
+
+test('formatUtcDate parte el string sin pasar por Date (sin corrimiento de día)', () => {
+  assert.equal(formatUtcDate('2026-10-17'), '17/10/2026')
+  assert.equal(formatUtcDate('2026-01-01'), '01/01/2026')
+})
+
+test('formatUtcDate devuelve el texto tal cual si no es una fecha', () => {
+  assert.equal(formatUtcDate('ayer'), 'ayer')
 })
