@@ -17,6 +17,7 @@ export function QuizWindow({ open, title, onClose, children }) {
     const onKey = (/** @type {KeyboardEvent} */ event) => {
       if (event.key === 'Escape') onClose()
     }
+    // Respaldo para cuando el foco está afuera de la ventana (en body).
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
@@ -25,9 +26,12 @@ export function QuizWindow({ open, title, onClose, children }) {
     <div
       hidden={!open}
       className={`fixed inset-0 z-50 bg-black/60 sm:items-center sm:justify-center sm:p-6 ${open ? 'flex' : 'hidden'}`}
-      // El Esc de la ventana no tiene que cerrar también el panel (que está en el árbol de React).
+      // Esc con el foco adentro: cierra la ventana y no llega al panel (que está en el árbol de React).
+      // El stopPropagation de React también corta el evento nativo, por eso se cierra acá y no solo en `window`.
       onKeyDown={(event) => {
-        if (event.key === 'Escape') event.stopPropagation()
+        if (event.key !== 'Escape') return
+        event.stopPropagation()
+        onClose()
       }}
       role="presentation"
     >
