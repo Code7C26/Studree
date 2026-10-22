@@ -20,6 +20,11 @@
   con RLS (`select`, `insert` y `delete` propios, sin update); índices por `(user_id, created_at
   desc)`. Aditiva e idempotente, sin funciones nuevas. Documentado en `docs/DB_SCHEMA.md` y
   `docs/03-security.md`. La aplica el controlador.
+- **Tarea 2 — Resumen estructurado en la Edge Function:** `summary` deja de usar herramientas y
+  de streamear texto: salida JSON validada (`summary.js`: `SUMMARY_SCHEMA`, `validateSummary`,
+  falla cerrado y recorta largos) y evento SSE `summary` con `sheets`, `sheetCount`,
+  `totalSheets` y `external`. `no_notes` pasa a un mensaje general. Documentado en
+  `docs/features/assistant.md`.
 
 ---
 

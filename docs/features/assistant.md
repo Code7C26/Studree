@@ -171,17 +171,19 @@ Cada evento es una línea `data: <json>` seguida de una línea vacía.
 | `tool` | `name: string` | El modelo usa una herramienta (para mostrar "Leyendo tus hojas…"). |
 | `proposal` | `proposal: {id, status:'pending', kind:'append'\|'replace_selection'\|'new_sheet', sheetId?, subjectId?, markdown, source:'notes'\|'external'}` | Una propuesta de edición; el usuario la acepta o la rechaza. |
 | `quiz` | `questions: Question[]` (`{id, type:'mcq'\|'tf'\|'open', prompt, options?, answer, explanation, topic, sheetId?}`) | `quiz` y `weak_review`. |
+| `summary` | `summary: {title, sections: [{heading, body}], keyConcepts: [{term, definition}], sheets: [{sheetId, subjectId, date}], sheetCount, totalSheets, external}` | `summary` (salida estructurada validada por `summary.js`; `sheetCount` = hojas usadas, `totalSheets` = hojas con contenido en el alcance). |
 | `grades` | `grades: Array<{id, correct, feedback}>` | `quiz_grade` (una por pregunta abierta). |
 | `usage` | `action, bucket, used, max, period` (+ `external: {used, max, period}` en modo externo); `used`/`max` son `null` si el plan no tiene tope | La acción se registró en `ai_usage` (también `quiz_grade`, en su balde `grade`). |
 | `error` | `code, message` | `upstream`, `blocked`, `empty`, `aborted` (timeout de `GEMINI_TIMEOUT_MS` o desconexión), `timeout` (se venció el plazo total `REQUEST_DEADLINE_MS` = 120 s, sumando todos los pasos), `invalid_output` (JSON del modelo inválido), `steps` (demasiados pasos), `no_notes`, `no_weak_topics`, `server`. No hay `done` después. Tras `steps`, `aborted` o `timeout` puede venir un `usage` si antes llegó algo útil (ver "Cuándo se descuenta uso"); con los demás **no se descuenta uso**. |
 | `done` | `truncated?: true`, `finishReason?: string` (si no fue `STOP`, p. ej. `SAFETY` tras texto parcial o `MAX_TOKENS`) | Fin normal. |
 
-Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`grades` → `usage` → `done`.
+Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`summary`/`grades` → `usage` → `done`.
 
 ### Acciones
 
 - `chat`, `shortcut`: bucle con herramientas y el historial (sin turnos `model` iniciales).
-- `summary`, `study_plan`, `gaps`, `connections`: bucle con herramientas y un pedido por acción
+- `summary`: **sin herramientas**. Salida JSON (`SUMMARY_SCHEMA`, `summary.js`) sobre el contenido que junta el servidor (`gatherSources`, mismo tope que el examen); emite `tool` (`read_sheet`) y un evento `summary`. Mal armado → `invalid_output` sin descontar; sin apuntes → `no_notes`. Descuenta del balde `summary`. Ya no propone hojas nuevas.
+- `study_plan`, `gaps`, `connections`: bucle con herramientas y un pedido por acción
   (`actionInstruction`). `gaps` pide mirar los temas con `list_subject_topics`, leer con
   `read_sheet` y citar cada hueco por la fecha de la hoja; `connections` cruza los temas de cada
   materia y confirma las coincidencias con `search_notes`. El pedido de ninguna de las dos pide
@@ -384,9 +386,9 @@ del proveedor ni la clave).
   servidor) y reutiliza el texto guardado; un tema fallado suma **un** error por prueba; los
   aciertos solo borran el tema en un repaso (`isReview`) y si no se falló en esa misma prueba; en
   un examen normal no tocan nada. Temas recortados a 200.
-- **Resumen y plan de estudio:** van por el chat como cualquier acción (`summary`,
-  `study_plan`); si el resumen termina en una `propose_new_sheet`, se acepta con el mismo
-  `ProposalCard` → `context.apply` de la Tarea 10 (no hay otro camino de guardado).
+- **Plan de estudio:** va por el chat como cualquier acción (`study_plan`); si termina en una
+  `propose_new_sheet`, se acepta con el mismo `ProposalCard` → `context.apply` de la Tarea 10.
+  El **resumen** ya no va por el chat: llega como evento `summary` estructurado (Fase 14.1).
 
 ### Límites conocidos (Tarea 11)
 

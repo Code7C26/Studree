@@ -72,7 +72,7 @@ test('actionInstruction: cada acción con su pedido; chat y shortcut no agregan 
   assert.equal(actionInstruction('chat', { scopeLabel: 'X' }), '')
   assert.equal(actionInstruction('shortcut', { scopeLabel: 'X' }), '')
   assert.match(actionInstruction('summary', { scopeLabel: 'Materia: Álgebra' }), /resum.*Álgebra/is)
-  assert.match(actionInstruction('summary', { scopeLabel: 'X' }), /propose_new_sheet/)
+  assert.doesNotMatch(actionInstruction('summary', { scopeLabel: 'X' }), /propose_new_sheet/)
   const quiz = actionInstruction('quiz', { scopeLabel: 'X', quiz: { count: 4, types: ['mcq', 'open'] } })
   assert.match(quiz, /4/)
   assert.match(quiz, /de tipo: opción múltiple, desarrollo\./)

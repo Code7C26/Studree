@@ -14,7 +14,7 @@
 //
 // Uso (Ruling K): `recordUsage` se llama si la acción terminó bien, o si
 // agotó los pasos (`steps`) después de al menos una respuesta de Gemini y de
-// emitir algo útil (text/proposal/quiz/grades). Nunca ante un error de Gemini
+// emitir algo útil (text/proposal/quiz/grades/summary). Nunca ante un error de Gemini
 // ni ante salida inválida. `quiz_grade` descuenta de su balde `grade`.
 // Ruling Q: cortar (botón "Detener", cerrar la pestaña o vencer el plazo total
 // REQUEST_DEADLINE_MS) NO es un fallo de Gemini: si ya se emitió algo útil,
@@ -29,6 +29,7 @@ import { buildSystemPrompt, actionInstruction, formatDataBlock } from './prompt.
 import { buildGeminiRequest, GeminiError } from './gemini.js'
 import { runConversation } from './loop.js'
 import { QUIZ_SCHEMA, GRADES_SCHEMA, validateQuiz, validateGrades } from './quiz.js'
+import { SUMMARY_SCHEMA, validateSummary } from './summary.js'
 import { extractTopics } from './topics.js'
 
 export const CORS_HEADERS = {
@@ -43,7 +44,7 @@ const WEAK_SHEETS_MAX = 10
 const QUIZ_ACTIONS = ['quiz', 'weak_review']
 const WITH_HISTORY = ['chat', 'shortcut']
 /** Eventos que significan que al usuario le llegó algo útil (Ruling K). */
-const USEFUL_EVENTS = ['text', 'proposal', 'quiz', 'grades']
+const USEFUL_EVENTS = ['text', 'proposal', 'quiz', 'grades', 'summary']
 
 /** Mensajes de las respuestas JSON (antes del stream). */
 const HTTP_MESSAGES = {
@@ -64,7 +65,7 @@ const STREAM_ERRORS = {
   timeout: 'El Brote tardó demasiado y cortamos la respuesta. Probá con algo más concreto.',
   invalid_output: 'La respuesta del modelo vino mal armada. Probá de nuevo.',
   steps: 'El Brote dio demasiadas vueltas sin llegar a una respuesta. Probá con algo más concreto.',
-  no_notes: 'No hay apuntes en este alcance para armar una prueba.',
+  no_notes: 'No hay apuntes en este alcance todavía.',
   no_weak_topics: 'Todavía no tenés temas flojos para repasar: hacé una prueba primero.',
   server: 'No se pudo hablar con el Brote. Probá de nuevo.',
 }
@@ -152,7 +153,9 @@ async function resolveScope({ db, scope, plan }) {
   const withContent = await db.listSheetsContent(scopeSubjectIds)
   const mapMd = buildMapMarkdown({ ...mapTree, sheets: withContent })
   const allowedSubjectIds = plan === 'premium' ? subjects.map((s) => s.id) : scopeSubjectIds
-  return { scopeSubjectIds, allowedSubjectIds, scopeLabel, mapMd, sheet }
+  // Hojas con contenido del alcance (una sola si el alcance es una hoja).
+  const totalSheets = sheet ? 1 : withContent.filter((s) => String(s.content_md ?? '').trim()).length
+  return { scopeSubjectIds, allowedSubjectIds, scopeLabel, mapMd, sheet, totalSheets }
 }
 
 /**
@@ -174,7 +177,7 @@ async function gatherSources({ db, ctx, weakTopics }) {
     if (!content.trim()) return 0
     seen.add(sheet.id)
     used += content.length
-    out.push({ sheet_id: sheet.id, date: day(sheet.created_at), content_md: content })
+    out.push({ sheet_id: sheet.id, subject_id: sheet.subject_id, date: day(sheet.created_at), content_md: content })
     return content.length
   }
 
@@ -301,6 +304,39 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
       return false
     }
     emit({ type: 'grades', grades: checked.grades })
+    return true
+  }
+
+  if (action === 'summary') {
+    emit({ type: 'tool', name: 'read_sheet' })
+    const sources = await gatherSources({ db, ctx, weakTopics: [] })
+    if (!sources.length) {
+      emitError('no_notes')
+      return false
+    }
+    const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: false })
+    const text = join(
+      actionInstruction(action, { scopeLabel: ctx.scopeLabel }),
+      message.trim() && `Pedido del usuario: ${message.trim()}`,
+      formatDataBlock('Hojas', sources),
+    )
+    const res = await callModel(buildGeminiRequest({ systemPrompt, contents: [userTurn(text)], json: { schema: SUMMARY_SCHEMA } }), null)
+    const checked = validateSummary(parseJson(res.text))
+    if (!checked.ok) {
+      logError('[assistant] resumen inválido del modelo', checked.error)
+      emitError('invalid_output')
+      return false
+    }
+    emit({
+      type: 'summary',
+      summary: {
+        ...checked.summary,
+        sheets: sources.map((s) => ({ sheetId: s.sheet_id, subjectId: s.subject_id, date: s.date })),
+        sheetCount: sources.length,
+        totalSheets: ctx.totalSheets,
+        external: mode === 'external',
+      },
+    })
     return true
   }
 

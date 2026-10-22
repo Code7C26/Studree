@@ -63,7 +63,7 @@ export function actionInstruction(action, { scopeLabel, quiz }) {
   const types = (quiz?.types ?? []).map((t) => TYPE_LABELS[t]).filter(Boolean).join(', ')
   switch (action) {
     case 'summary':
-      return `Hacé un resumen de ${scopeLabel}: leé las hojas que hagan falta con las herramientas y ordenalo por temas. Si sirve, ofrecé guardarlo como hoja nueva con propose_new_sheet.`
+      return `Hacé un resumen de ${scopeLabel} con las hojas de abajo, ordenado en secciones por tema: cada sección con su título y su desarrollo en párrafos cortos (listas con "- " y, si sirve, **negrita**). Sumá los conceptos clave, cada uno con una definición de una línea. No propongas hojas nuevas.`
     case 'quiz':
       return `Armá una prueba tipo examen de ${quiz?.count} preguntas sobre ${scopeLabel}, de tipo: ${types}. ${QUIZ_FORMAT}`
     case 'weak_review':

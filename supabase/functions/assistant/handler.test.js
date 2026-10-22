@@ -640,13 +640,57 @@ test('quiz_grade al que le falta una nota → error invalid_output', async () =>
   assert.equal(evs.at(-1).code, 'invalid_output')
 })
 
-test('summary: usa herramientas y descuenta del balde summary', async () => {
-  const { deps, calls } = makeDeps()
+test('summary: salida estructurada sin herramientas, evento summary y descuenta una vez', async () => {
+  const payload = { title: 'Resumen · Bio', sections: [{ heading: 'Célula', body: 'Unidad…' }], key_concepts: [] }
+  const { deps, calls } = makeDeps({ gemini: [textReply(JSON.stringify(payload))] })
   const evs = await events(await handleRequest(post({ action: 'summary', scope: { type: 'subject', id: S1 } }), deps))
-  assert.ok(calls.gemini[0].body.tools?.length)
+  assert.equal(calls.gemini[0].body.tools, undefined)
+  assert.ok(calls.gemini[0].body.generationConfig.responseSchema)
   assert.match(lastUserText(calls.gemini[0]), /resum/i)
+  const ev = evs.find((e) => e.type === 'summary')
+  assert.equal(ev.summary.title, 'Resumen · Bio')
+  assert.deepEqual(ev.summary.sheets, [{ sheetId: H1, subjectId: S1, date: SHEET.created_at.slice(0, 10) }])
+  assert.equal(ev.summary.sheetCount, 1)
+  assert.equal(ev.summary.totalSheets, 1)
+  assert.equal(ev.summary.external, false)
+  assert.ok(!evs.some((e) => e.type === 'text'))
   assert.deepEqual(calls.record, [{ action: 'summary', external: false }])
   assert.equal(evs.find((e) => e.type === 'usage').bucket, 'summary')
+  assert.equal(evs.at(-1).type, 'done')
+})
+
+test('summary mal armado → invalid_output y no descuenta', async () => {
+  const { deps, calls } = makeDeps({ gemini: [textReply('{"title":"a","sections":[]}')] })
+  const evs = await events(await handleRequest(post({ action: 'summary', scope: { type: 'subject', id: S1 } }), deps))
+  assert.equal(evs.at(-1).code, 'invalid_output')
+  assert.equal(calls.record.length, 0)
+})
+
+test('summary sin apuntes → no_notes y no llama a Gemini', async () => {
+  const { deps, calls } = makeDeps()
+  const evs = await events(await handleRequest(post({ action: 'summary', scope: { type: 'subject', id: S2 } }), deps))
+  assert.equal(evs.at(-1).code, 'no_notes')
+  assert.match(evs.at(-1).message, /apuntes/)
+  assert.equal(calls.gemini.length, 0)
+  assert.equal(calls.record.length, 0)
+})
+
+test('summary de alcance hoja: totalSheets 1', async () => {
+  const other = { id: 'b2222222-2222-4222-8222-222222222222', subject_id: S1, created_at: '2026-10-02T10:00:00Z', content_md: 'otra' }
+  const payload = { title: 'R', sections: [{ heading: 'h', body: 'b' }], key_concepts: [] }
+  const { deps } = makeDeps({ gemini: [textReply(JSON.stringify(payload))], extraSheets: [other] })
+  const evs = await events(await handleRequest(post({ action: 'summary', scope: { type: 'sheet', id: H1 } }), deps))
+  const ev = evs.find((e) => e.type === 'summary')
+  assert.equal(ev.summary.totalSheets, 1)
+  assert.equal(ev.summary.sheetCount, 1)
+})
+
+test('summary de materia con dos hojas: totalSheets 2', async () => {
+  const other = { id: 'b2222222-2222-4222-8222-222222222222', subject_id: S1, created_at: '2026-10-02T10:00:00Z', content_md: 'otra' }
+  const payload = { title: 'R', sections: [{ heading: 'h', body: 'b' }], key_concepts: [] }
+  const { deps } = makeDeps({ gemini: [textReply(JSON.stringify(payload))], extraSheets: [other] })
+  const evs = await events(await handleRequest(post({ action: 'summary', scope: { type: 'subject', id: S1 } }), deps))
+  assert.equal(evs.find((e) => e.type === 'summary').summary.totalSheets, 2)
 })
 
 test('el historial se reenvía como turnos user/model, sin turnos model iniciales', async () => {
