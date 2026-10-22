@@ -29,6 +29,11 @@
   resumen → bloques sin HTML), `summaryDoc` (fila ↔ documento, Markdown, nombre del PDF),
   `quizRecord` (registro del examen; `answerText` se mueve desde `QuizRunner`), `studyItems`
   (filtros de Mi estudio), rutas `/estudio…` con `studyPath` y `formatSheetDay`.
+- **Tarea 4 — Services de Mi estudio y guardado completo del intento:** `study.service.js`
+  (`saveSummary`, `listSummaries`, `getSummary`, `deleteSummary`, `listQuizAttempts`,
+  `getQuizAttempt`, `deleteQuizAttempt`; listas con materia/carrera embebidas, paginadas y sin
+  filas de la papelera); `saveAttempt` acepta `subjectId`, `careerId`, `title` y `detail`.
+  Documentado en `docs/API_DOCS.md`.
 
 ---
 

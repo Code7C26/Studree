@@ -158,10 +158,24 @@ explorador arma el árbol con 3 consultas (carreras, materias y, de las hojas, s
 | `assistant.service.js` | `streamAssistant({request, signal?, onEvent}) → ServiceResult<true>` | POST a `/functions/v1/assistant` con `Authorization: Bearer <JWT>` y `apikey`. Lee el stream SSE (`lib/assistant/sse.js`) y reenvía cada evento a `onEvent`, sin asumir que `done` sea el último. Abortar con `signal` resuelve `{data: null, error: null}`. Los no-2xx se traducen en castellano. |
 | `assistant.service.js` | `translateAssistantError(status, body) → string` | Reexporta la función pura de `lib/assistant/assistantError.js`: 401 sesión, 403/429 el `message` del servidor, 400 `not_found` "ya no existe", 404 "falta desplegar", resto genérico. Nunca muestra cuerpos crudos. |
 | `userPlan.service.js` | `getPlan() → ServiceResult<'free'\|'premium'>` | Lee `user_plans`; sin fila = `'free'`; ante error devuelve `'free'` más el `error`. |
-| `quizResults.service.js` | `saveAttempt({scope, total, correct}) → ServiceResult<QuizAttempt>` | Inserta en `quiz_attempts` (`scope_id` NULL con alcance `all`). Rechaza sin llamar a la base si `correct > total` o no son enteros ≥ 0 (la base no tiene ese CHECK). `notifies: false`, sin cache. |
+| `quizResults.service.js` | `saveAttempt({scope, total, correct, subjectId?, careerId?, title?, detail?}) → ServiceResult<QuizAttempt>` | Inserta en `quiz_attempts` (`scope_id` NULL con alcance `all`). Los opcionales (0009) van a `subject_id`, `career_id`, `title`, `detail` (NULL si faltan). Devuelve la fila creada (con `id`). Rechaza sin llamar a la base si `correct > total` o no son enteros ≥ 0 (la base no tiene ese CHECK). `notifies: false`, sin cache. |
 | `quizResults.service.js` | `listWeakTopics(subjectId?: string\|string[]) → ServiceResult<WeakTopic[]>` | `id, subject_id, sheet_id, topic, misses, last_missed_at`; pagina de a 1000 y parte los `in(...)` de a 100. Sin argumento: todos los del usuario (RLS). |
 | `quizResults.service.js` | `applyWeakTopicUpdates({upserts, deletes}) → ServiceResult<true>` | Upsert con `onConflict: 'user_id,subject_id,topic'` (el `user_id` lo pone `default auth.uid()`), `last_missed_at` = ahora; luego borra `deletes` por id. `misses` viene calculado en el cliente (`planWeakTopicUpdates`): dos pruebas simultáneas pueden pisarse (límite conocido). |
 | `quizResults.service.js` | `resolveQuizSources({sheetIds, subjectIds}) → ServiceResult<{sheets, subjects}>` | Hojas (`subject_id`, `created_at`) y materias (`career_id`) **vivas** (`deleted_at` NULL); una hoja de una materia en la papelera se descarta. Para asignar materia a cada tema fallado y mostrar la fecha de la hoja. |
+
+### Mi estudio (migración 0009, Fase 14.1)
+
+`study.service.js`: `notifies: false`, sin cache. Las listas paginan (`fetchAllPages`), ordenan por `created_at desc, id`, embeben `subject:subjects(id, name, deleted_at)` y `career:careers(id, name, deleted_at)`, **no traen `content` ni `detail`** y pasan por `filterLiveStudyItems` (se descartan las filas de materias o carreras en la papelera).
+
+| Función | Retorno | Notas |
+|---------|---------|-------|
+| `saveSummary(row)` | `ServiceResult<{id, …}>` (fila creada) | `row`: `scope_type`, `scope_id?`, `subject_id?`, `career_id?`, `title`, `external?`, `sheet_count?`, `total_sheets?`, `content`. Solo pasan esos campos. |
+| `listSummaries()` | `ServiceResult<SummaryListItem[]>` | `id, scope_type, scope_id, subject_id, career_id, title, external, sheet_count, total_sheets, created_at, subject, career`. |
+| `getSummary(id)` | `ServiceResult<Object\|null>` | Fila completa con `content` y embeds; `null` si no existe o su materia/carrera está en la papelera. |
+| `deleteSummary(id)` | `ServiceResult<null>` | Borra por id (RLS `summaries_delete`). |
+| `listQuizAttempts()` | `ServiceResult<AttemptListItem[]>` | `id, scope_type, scope_id, subject_id, career_id, title, total, correct, created_at, subject, career`. |
+| `getQuizAttempt(id)` | `ServiceResult<Object\|null>` | Fila completa con `detail`; `null` igual que `getSummary`. |
+| `deleteQuizAttempt(id)` | `ServiceResult<null>` | Borra por id (RLS `_owner`). |
 
 ### Forma de las respuestas
 

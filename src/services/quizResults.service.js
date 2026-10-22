@@ -39,16 +39,31 @@ const uniqueIds = (list) => [...new Set((Array.isArray(list) ? list : []).filter
 /**
  * Guarda un intento. `correct` nunca supera `total` (la base no tiene ese
  * CHECK): se valida acá y, si no cumple, no se guarda.
- * @param {{scope: {type: 'sheet'|'subject'|'career'|'all', id?: string}, total: number, correct: number}} params
+ * Los campos opcionales (migración 0009) guardan el registro del examen para
+ * "Mi estudio": materia, carrera, título y `detail` (JSON). Ausentes → NULL.
+ * @param {{scope: {type: 'sheet'|'subject'|'career'|'all', id?: string}, total: number, correct: number, subjectId?: string|null, careerId?: string|null, title?: string|null, detail?: Object|null}} params
  * @returns {Promise<import('../types/models.js').ServiceResult<Object>>}
  */
-export async function saveAttempt({ scope, total, correct }) {
+export async function saveAttempt({ scope, total, correct, subjectId, careerId, title, detail }) {
   if (!scope || !SCOPE_TYPES.includes(scope.type)) return { data: null, error: 'Alcance inválido.' }
   if (!Number.isInteger(total) || !Number.isInteger(correct) || total < 0 || correct < 0 || correct > total) {
     return { data: null, error: 'El puntaje de la prueba no es válido.' }
   }
   const scopeId = scope.type === 'all' ? null : scope.id ?? null
-  return attempts.create({ scope_type: scope.type, scope_id: scopeId, total, correct }, undefined, { cache: false })
+  return attempts.create(
+    {
+      scope_type: scope.type,
+      scope_id: scopeId,
+      total,
+      correct,
+      subject_id: subjectId ?? null,
+      career_id: careerId ?? null,
+      title: title ?? null,
+      detail: detail ?? null,
+    },
+    undefined,
+    { cache: false },
+  )
 }
 
 /**
