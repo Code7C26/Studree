@@ -29,6 +29,16 @@ export function formatSheetDate(iso, now = new Date()) {
 }
 
 /**
+ * Solo día y mes (chips de fuentes de un resumen): `17/10`.
+ * @param {string} iso
+ * @returns {string}
+ */
+export function formatSheetDay(iso) {
+  const date = new Date(iso)
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`
+}
+
+/**
  * Siempre con año (export: el archivo puede leerse años después).
  * @param {string} iso
  * @returns {string}

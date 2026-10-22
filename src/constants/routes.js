@@ -14,6 +14,9 @@ export const ROUTES = Object.freeze({
   sheet: '/hojas/:sheetId', // links viejos: redirige a la carpeta en esa hoja
   profile: '/perfil',
   trash: '/papelera', // papelera (docs/features/trash.md)
+  study: '/estudio', // Mi estudio: resúmenes y exámenes guardados; acepta ?tab=&materia=
+  studySummary: '/estudio/resumenes/:summaryId',
+  studyQuiz: '/estudio/examenes/:attemptId',
 })
 
 /** @param {string} careerId */
@@ -27,3 +30,21 @@ export const careerPath = (careerId) => `/carreras/${careerId}`
  */
 export const subjectFolderPath = (subjectId, sheetId) =>
   sheetId ? `/materias/${subjectId}?hoja=${encodeURIComponent(sheetId)}` : `/materias/${subjectId}`
+
+/**
+ * Mi estudio, opcionalmente en una solapa y filtrado por materia (sin parámetros vacíos).
+ * @param {{tab?: 'resumenes'|'examenes', subjectId?: string}} [opts]
+ */
+export const studyPath = ({ tab, subjectId } = {}) => {
+  const params = new URLSearchParams()
+  if (tab) params.set('tab', tab)
+  if (subjectId) params.set('materia', subjectId)
+  const query = params.toString()
+  return query ? `/estudio?${query}` : '/estudio'
+}
+
+/** @param {string} summaryId */
+export const studySummaryPath = (summaryId) => `/estudio/resumenes/${summaryId}`
+
+/** @param {string} attemptId */
+export const studyQuizPath = (attemptId) => `/estudio/examenes/${attemptId}`

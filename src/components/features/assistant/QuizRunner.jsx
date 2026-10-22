@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Icon } from '../../ui/Icon'
 import { subjectFolderPath } from '../../../constants/routes'
 import { formatSheetDateLong } from '../../../lib/format/sheetDate.js'
+import { answerText } from '../../../lib/assistant/quizRecord.js'
 
 const TYPE_LABEL = { mcq: 'Opción múltiple', tf: 'Verdadero o falso', open: 'Desarrollo' }
 const TF_OPTIONS = [
@@ -21,14 +22,6 @@ const BUTTON = 'rounded-lg border border-border px-3 py-1 text-sm text-text-mute
 function isAnswered(question, value) {
   if (question.type === 'open') return typeof value === 'string' && value.trim() !== ''
   return value !== undefined
-}
-
-/** Texto legible de una respuesta (dada o correcta). */
-function answerText(question, value) {
-  if (value === undefined || value === null || value === '') return 'Sin responder'
-  if (question.type === 'mcq') return question.options?.[/** @type {number} */ (value)] ?? 'Sin responder'
-  if (question.type === 'tf') return value === true ? 'Verdadero' : 'Falso'
-  return String(value)
 }
 
 /**

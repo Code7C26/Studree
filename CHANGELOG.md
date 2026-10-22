@@ -25,6 +25,10 @@
   falla cerrado y recorta largos) y evento SSE `summary` con `sheets`, `sheetCount`,
   `totalSheets` y `external`. `no_notes` pasa a un mensaje general. Documentado en
   `docs/features/assistant.md`.
+- **Tarea 3 — Utilidades puras de resúmenes, registros y rutas:** `summaryBlocks` (cuerpo del
+  resumen → bloques sin HTML), `summaryDoc` (fila ↔ documento, Markdown, nombre del PDF),
+  `quizRecord` (registro del examen; `answerText` se mueve desde `QuizRunner`), `studyItems`
+  (filtros de Mi estudio), rutas `/estudio…` con `studyPath` y `formatSheetDay`.
 
 ---
 
