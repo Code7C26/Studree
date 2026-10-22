@@ -6,7 +6,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Icon } from '../components/ui/Icon'
 import { studyPath, studyQuizPath, studySummaryPath } from '../constants/routes'
-import { filterBySubject, subjectOptions } from '../lib/assistant/studyItems.js'
+import { filterBySubject, filterOptions } from '../lib/assistant/studyItems.js'
 
 const TABS = [
   { id: 'resumenes', label: 'Resúmenes' },
@@ -27,9 +27,8 @@ export function StudyPage() {
 
   const isSummaries = tab === 'resumenes'
   const rows = isSummaries ? summaries : attempts
-  const options = useMemo(() => subjectOptions(rows), [rows])
-  // Una materia sin ítems en esta pestaña no filtra (evita una lista vacía sin salida).
-  const activeSubject = options.some((o) => o.id === subjectId) ? subjectId : null
+  const options = useMemo(() => filterOptions(summaries, attempts, subjectId), [summaries, attempts, subjectId])
+  const activeSubject = subjectId
   const visible = useMemo(() => filterBySubject(rows, activeSubject), [rows, activeSubject])
 
   const go = (/** @type {{tab?: string, subjectId?: string|null}} */ next) => {
@@ -109,8 +108,8 @@ export function StudyPage() {
               title={isSummaries ? 'Sin resúmenes' : 'Sin exámenes'}
               message={
                 isSummaries
-                  ? 'Todavía no tenés resúmenes. Pedile uno al Brote con «Resumir materia».'
-                  : 'Todavía no tenés exámenes. Pedile uno al Brote con «Tomame examen».'
+                  ? `Todavía no tenés resúmenes${activeSubject ? ' de esta materia' : ''}. Pedile uno al Brote con «Resumir materia».`
+                  : `Todavía no tenés exámenes${activeSubject ? ' de esta materia' : ''}. Pedile uno al Brote con «Tomame examen».`
               }
             />
           </div>

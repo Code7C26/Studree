@@ -39,3 +39,12 @@ test('formatSheetDay', () => {
   assert.equal(formatSheetDay('2026-10-17T12:00:00'), '17/10')
   assert.equal(formatSheetDay('2026-01-05T12:00:00'), '05/01')
 })
+
+test('filterOptions junta resúmenes y exámenes y suma la materia de la URL', async () => {
+  const { filterOptions } = await import('./studyItems.js')
+  const s = [{ subject_id: 'a', subject: { id: 'a', name: 'Álgebra' } }]
+  const q = [{ subject_id: 'b', subject: { id: 'b', name: 'Biología' } }]
+  assert.deepEqual(filterOptions(s, q, null).map((o) => o.id), ['a', 'b'])
+  assert.deepEqual(filterOptions(s, q, 'b').map((o) => o.id), ['a', 'b'])
+  assert.deepEqual(filterOptions([], [], 'z'), [{ id: 'z', name: 'Esta materia' }])
+})

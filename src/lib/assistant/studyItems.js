@@ -40,3 +40,18 @@ export function subjectOptions(rows) {
 export function filterBySubject(rows, subjectId) {
   return subjectId ? rows.filter((r) => r.subject_id === subjectId) : rows
 }
+
+/**
+ * Opciones del filtro "Materia": las de resúmenes y exámenes juntas, y si la
+ * materia pedida por la URL no está entre ellas, una opción "Esta materia"
+ * para que el selector refleje el filtro activo.
+ * @param {Array<Parameters<typeof subjectOptions>[0][number]>} summaries
+ * @param {Array<Parameters<typeof subjectOptions>[0][number]>} attempts
+ * @param {string|null} activeId
+ * @returns {Array<{id: string, name: string}>}
+ */
+export function filterOptions(summaries, attempts, activeId) {
+  const options = subjectOptions([...(summaries ?? []), ...(attempts ?? [])])
+  if (activeId && !options.some((o) => o.id === activeId)) options.push({ id: activeId, name: 'Esta materia' })
+  return options
+}
