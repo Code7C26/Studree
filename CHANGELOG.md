@@ -74,6 +74,12 @@
   aplica en la carpeta o deja `setPendingApply` y navega), **Ver en Mi estudio**, **Reintentar**.
   El chat muestra "Tu resumen «…» está listo · Abrir"; `useLeaveWarning` también con un resumen
   pendiente. Documentado en `docs/features/assistant.md`.
+- **Tarea 10 — Sección "Mi estudio":** `/estudio` (`StudyPage`: pestañas Resúmenes / Exámenes, filtro
+  por materia con `?tab=` y `?materia=`, borrar con confirmación), `/estudio/resumenes/:id`
+  (`SummaryDocument`, Descargar PDF, Guardar como hoja, Borrar) y `/estudio/examenes/:id`
+  (`QuizRecordView`, Borrar); `useStudy`/`useStudyItem`; ítem **Mi estudio** en el header y botón
+  **Estudio** en la barra de la carpeta (abre la sección filtrada). Documentado en
+  `docs/features/study.md` y `docs/features/navigation-shell.md`.
 
 ---
 

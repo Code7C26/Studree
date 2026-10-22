@@ -7,6 +7,7 @@ import { OPEN_PALETTE_EVENT } from './WorkspaceLayout'
 const NAV_ITEMS = [
   { to: ROUTES.home, label: 'Inicio' },
   { to: ROUTES.careers, label: 'Carreras' },
+  { to: ROUTES.study, label: 'Mi estudio' },
   { to: ROUTES.profile, label: 'Perfil' },
 ]
 

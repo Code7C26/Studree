@@ -87,6 +87,7 @@
 | `layout/WorkspaceLayout` · `layout/TabBar` · `layout/Header` · `features/explorer/**` · `features/commandPalette/**` · `useExplorerTree` · `useHotkeys` · `lib/search/**` | `docs/features/navigation-shell.md` |
 | `public/**` · `index.html` (favicon, assets estáticos) | `docs/features/navigation-shell.md` (sección Logo) |
 | `services/trash.service.js` · `useTrash` · `useTrashPurge` · `pages/TrashPage.jsx` · `features/trash/**` · `lib/trash/**` | `docs/features/trash.md` |
+| `pages/StudyPage.jsx` · `pages/StudySummaryPage.jsx` · `pages/StudyQuizPage.jsx` · `useStudy` · `services/study.service.js` · `features/study/**` · `lib/assistant/studyItems.js` | `docs/features/study.md` |
 | `features/careerMap/**` · `useCareerMap` · `prerequisites.service.js` · `lib/graph/**` · `useFlowCanvas` | `docs/features/career-map.md` |
 | `pages/CareersPage.jsx` · `features/careers/**` · `useCareers` | `docs/features/careers.md` |
 | `services/dataEvents.js` · `services/crudService.js` | `docs/API_DOCS.md` |

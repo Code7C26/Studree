@@ -35,7 +35,7 @@ nombre en dos teclas.
 |---------|----------------|
 | `src/components/layout/WorkspaceLayout.jsx` | Grilla del shell: explorador + tabs + `<Outlet/>`; exporta `OPEN_PALETTE_EVENT` |
 | `src/components/layout/TabBar.jsx` | Pastillas de las materias abiertas (activar / cerrar) + botón del explorador |
-| `src/components/layout/Header.jsx` | Logo, buscador que abre el palette, navegación |
+| `src/components/layout/Header.jsx` | Logo, buscador que abre el palette, navegación (Inicio · Carreras · Mi estudio · Perfil) |
 | `src/components/features/explorer/Explorer.jsx` | Panel lateral: buscador + raíz del árbol + entrada "Papelera" al pie |
 | `src/components/features/explorer/ExplorerTree.jsx` | Render Carrera → Materia (con cantidad de hojas) |
 | `src/components/features/explorer/ExplorerItem.jsx` | Fila: chevron, icono, nombre, acciones |

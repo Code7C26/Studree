@@ -18,6 +18,9 @@ const SubjectFolderPage = lazyPage(() => import('./pages/SubjectFolderPage'), 'S
 const SheetRedirectPage = lazyPage(() => import('./pages/SheetRedirectPage'), 'SheetRedirectPage')
 const TrashPage = lazyPage(() => import('./pages/TrashPage'), 'TrashPage')
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
+const StudyPage = lazyPage(() => import('./pages/StudyPage'), 'StudyPage')
+const StudySummaryPage = lazyPage(() => import('./pages/StudySummaryPage'), 'StudySummaryPage')
+const StudyQuizPage = lazyPage(() => import('./pages/StudyQuizPage'), 'StudyQuizPage')
 
 /**
  * Suspense por ruta (no global): mientras baja el chunk, el header y el
@@ -48,6 +51,9 @@ export default function App() {
             <Route path={ROUTES.subjectFolder} element={withSuspense(<SubjectFolderPage />)} />
             <Route path={ROUTES.sheet} element={withSuspense(<SheetRedirectPage />)} />
             <Route path={ROUTES.trash} element={withSuspense(<TrashPage />)} />
+            <Route path={ROUTES.study} element={withSuspense(<StudyPage />)} />
+            <Route path={ROUTES.studySummary} element={withSuspense(<StudySummaryPage />)} />
+            <Route path={ROUTES.studyQuiz} element={withSuspense(<StudyQuizPage />)} />
           </Route>
         </Route>
 

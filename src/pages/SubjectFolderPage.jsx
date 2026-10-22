@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { useFolder } from '../hooks/useFolder.js'
 import { useInlineAnswer } from '../hooks/useInlineAnswer.js'
 import { useFolderAttachments } from '../hooks/useFolderAttachments.js'
@@ -22,7 +22,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PromptDialog } from '../components/ui/PromptDialog'
 import { UndoToast } from '../components/ui/UndoToast'
-import { careerPath } from '../constants/routes'
+import { careerPath, studyPath } from '../constants/routes'
 import { subjectCssVars } from '../constants/subjectTones.js'
 import { extractHeadings } from '../lib/markdown/headings.js'
 import { editorToMarkdown } from '../lib/markdown/serialize.js'
@@ -83,6 +83,7 @@ export function SubjectFolderPage() {
  * @param {{subjectId: string}} props
  */
 function SubjectFolder({ subjectId }) {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const targetSheetId = searchParams.get('hoja')
   const { openTab } = useOutletContext()
@@ -645,6 +646,15 @@ function SubjectFolder({ subjectId }) {
             </button>
             <button type="button" onClick={() => setImportOpen(true)} disabled={!subject} className={`${TOOL} text-text-muted hover:text-text`}>
               <Icon name="upload" /> Importar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(studyPath({ subjectId }))}
+              disabled={!subject}
+              title="Ver los resúmenes y exámenes de esta materia"
+              className={`${TOOL} text-text-muted hover:text-text`}
+            >
+              <Icon name="file-text" /> Estudio
             </button>
             <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft hover:text-accent`}>
               Exportar
