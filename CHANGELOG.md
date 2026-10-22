@@ -83,6 +83,34 @@
   vacío dice "de esta materia"). Documentado en
   `docs/features/study.md` y `docs/features/navigation-shell.md`.
 
+**Decisiones del diseño (el estudiante no las pidió; spec § 11):**
+
+| Tema | Decisión |
+|------|----------|
+| Preguntame | La tarjeta trae un cuadro para responder y corrige ahí (una sola vez) |
+| Pedidos | Uno a la vez en todo el Brote (tarjeta y panel) |
+| Historial | Los atajos no mandan el historial del chat |
+| Propuestas | Cada una va junto a su respuesta; rechazada, "Descartado" en una línea |
+| Examen | Ventana sobre la página (no una página); "Salir" no lo pierde |
+| Resultado | Muestra todas las preguntas, no solo las falladas |
+| Conceptos clave | Con una línea de definición |
+| Resumen | Se guarda solo y dice en cuántas hojas se basó |
+| PDF (ADR-022) | Con la impresión del navegador, sin librerías |
+| Guardar como hoja | Se conserva para el resumen |
+| Borrado | Resúmenes y exámenes se pueden borrar (de verdad, con confirmación) |
+| Versión | 0.18.0 y ADR-022 |
+| Tarjeta del atajo | Va dentro del texto (empuja lo de abajo), no flotando encima |
+| Prueba a medias | No se guarda: cerrar la pestaña la pierde, con aviso del navegador |
+| Materia y carrera | Resúmenes y exámenes las siguen (papelera y borrado definitivo) |
+
+**Pendiente:** volver a desplegar la Edge Function `assistant` (resumen estructurado) y verificar
+todo en el navegador. La migración `0009` quedó aplicada el 2026-10-22. Sin dependencias nuevas.
+
+**Cierre de documentación (Tarea 11):** ADR-022, estructura de carpetas y rutas en
+`docs/02-architecture.md`, Fase 14.1 en `docs/01-project-overview.md`, estado de la `0009` en
+`docs/DB_SCHEMA.md`, resumen de uso y límites conocidos en `docs/features/assistant.md` y filas de
+lookup en `CLAUDE.md` y sus copias.
+
 ---
 
 ## [0.17.0] — 2026-10-19

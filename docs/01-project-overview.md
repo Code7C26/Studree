@@ -185,6 +185,23 @@ Spec: `docs/superpowers/specs/2026-10-19-asistente-ia-design.md` · plan:
 > Migraciones `0007_asistente.sql` y `0008_quiz_grade_usage.sql` aplicadas el 2026-10-19.
 > Los topes de uso son **provisorios** (`supabase/functions/assistant/config.js`).
 
+### Fase 14.1: mejoras del Brote y "Mi estudio" (2026-10-22, ADR-022)
+
+Spec: `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md` · plan:
+`docs/superpowers/plans/2026-10-22-fase-14-1-brote-mejoras.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Los atajos responden en una tarjeta debajo del texto (sin abrir el panel); propuestas junto a su respuesta y achicadas a una línea al resolverse | `features/assistant.md`, `features/folder.md` | ✅ |
+| Examen en ventana grande, con registro de todas las preguntas y aviso al cerrar la pestaña | `features/assistant.md` | ✅ |
+| Resumen estructurado, guardado automático, ventana, PDF por impresión del navegador y "Guardar como hoja" | `features/assistant.md` | ✅ |
+| Sección **Mi estudio** (`/estudio`): resúmenes y exámenes guardados, con filtro por materia | `features/study.md` | ✅ |
+| Migración `0009_mi_estudio.sql` (`summaries`, `quiz_attempts` ampliada) | `DB_SCHEMA.md` | ✅ aplicada el 2026-10-22 |
+| Volver a desplegar la Edge Function `assistant` (resumen estructurado) | `features/assistant.md` (Cómo desplegar) | ⏳ pendiente (lo hace el estudiante) |
+| Verificación en el navegador de punta a punta | los 2 docs | ⏳ pendiente (prueba manual) |
+
+> Sin dependencias nuevas: el PDF usa la impresión del navegador (ADR-022).
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |

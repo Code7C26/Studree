@@ -451,4 +451,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-15 | **Fase 13**: papelera (`deleted_at` + RPC), adjuntos (`attachments` + bucket privado), plantillas (`sheet_templates`) | ✅ `0006` (aplicada 2026-10-15 vía Management API, tras probarla con `begin … rollback`) |
 | 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | ✅ Aplicada el 2026-10-19 (`0007`) |
 | 2026-10-19 | `ai_usage.action` admite `quiz_grade` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada el 2026-10-19 (`0008_quiz_grade_usage.sql`) |
-| 2026-10-22 | **Fase 14.1**: `summaries` + RLS; `quiz_attempts` suma `subject_id`, `career_id`, `title`, `detail` | Pendiente de aplicar (`0009_mi_estudio.sql`) |
+| 2026-10-22 | **Fase 14.1**: `summaries` + RLS; `quiz_attempts` suma `subject_id`, `career_id`, `title`, `detail` | Aplicada el 2026-10-22 (`0009_mi_estudio.sql`) |

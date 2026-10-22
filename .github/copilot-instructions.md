@@ -102,6 +102,7 @@
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
 | `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
 | `supabase/functions/assistant/**` · `src/lib/assistant/**` · `components/features/assistant/**` · `useAssistant` · `useAssistantContext` · `assistant.service.js` · `userPlan.service.js` · `quizResults.service.js` | `docs/features/assistant.md` + `docs/03-security.md` |
+| `lib/editor/broteAnchor.js` · `features/assistant/InlineAnswerCard` · `useInlineAnswer` · `useLeaveWarning` · `usePrintSummary` · `useSaveSummaryAsSheet` | `docs/features/assistant.md` (tarjeta, ventanas y PDF) + `docs/features/folder.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |

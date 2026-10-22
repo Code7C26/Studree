@@ -1,7 +1,8 @@
 # Feature: Asistente de IA (el Brote)
 
-> **Fase 14** · Estado: ✅ Implementada (rama `fase-14`, versión 0.17.0, ADR-021) · ⏳ falta que el
-> estudiante despliegue la función y cargue los secrets (ver "Cómo desplegar").
+> **Fase 14 y 14.1** · Estado: ✅ Implementada (rama `fase-14`, versión 0.18.0, ADR-021 y ADR-022) · ⏳ falta que el
+> estudiante despliegue (o vuelva a desplegar) la función y cargue los secrets (ver "Cómo desplegar").
+> Fase 14.1: spec [`2026-10-22-brote-mejoras-design.md`](../superpowers/specs/2026-10-22-brote-mejoras-design.md).
 > Spec: [`docs/superpowers/specs/2026-10-19-asistente-ia-design.md`](../superpowers/specs/2026-10-19-asistente-ia-design.md) ·
 > Plan: [`docs/superpowers/plans/2026-10-19-fase-14-asistente.md`](../superpowers/plans/2026-10-19-fase-14-asistente.md).
 > Leer antes de tocar el asistente, sus servicios, la Edge Function o las claves de Gemini.
@@ -60,7 +61,7 @@ Brote / panel (React) --useAssistant--> assistant.service.js --POST + JWT--> Edg
   máximos de tamaño).
 - **Cliente**: `useAssistant` (estado, pedidos, pruebas), `useAssistantContext` (lee el puente),
   `lib/assistant/**` (lógica pura con tests), `components/features/assistant/**` (presentación),
-  `services/assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`.
+  `services/assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`, `study.service.js` (Fase 14.1).
 
 ## Planes y topes (provisorios)
 
@@ -348,6 +349,24 @@ del proveedor ni la clave).
   `new_sheet` la hoja nueva se crea como cualquier "Nueva hoja" y **toma el foco** (se vuelve
   al panel con el Brote).
 
+## La Fase 14.1 de un vistazo: cómo se usa
+
+- **Atajos (tarjeta en la hoja):** Explicar, Refutar, Completar y Preguntame responden en una
+  **tarjeta debajo del bloque** donde termina la selección (widget del editor, no entra en el
+  Markdown), sin abrir el panel. Es **un pedido a la vez** en todo el Brote y **sin historial**: el
+  atajo no manda la conversación del chat. En **Preguntame** la tarjeta trae un cuadro para
+  responder (una vez) y corrige ahí. La tarjeta se cierra con la ✕, con Esc (vuelve el foco al
+  editor), al aceptar o descartar la propuesta, al borrarse el bloque o la hoja y al irse de la
+  carpeta; un atajo nuevo la reemplaza. **Seguir en el chat** pasa el intercambio al panel.
+- **Propuestas:** en el chat van junto a la respuesta que las trajo y, resueltas, se achican a una
+  línea ("Agregado a tu hoja del dd/mm" o "Descartado").
+- **Examen:** se abre en una ventana grande; **Salir** no pierde nada; al corregir se guarda el
+  registro completo y **Reintentar** cubre un guardado fallido. Cerrar o recargar la pestaña con
+  una prueba sin terminar (o un resumen guardándose) muestra el aviso del navegador.
+- **Resumen:** llega estructurado, se guarda solo, se abre en una ventana y ofrece **Descargar PDF**
+  (impresión del navegador, "Guardar como PDF"), **Guardar como hoja** y **Ver en Mi estudio**.
+- Todo lo guardado se revisa en **Mi estudio** (`docs/features/study.md`).
+
 ## Tarjeta de los atajos: la conversación "inline" (Fase 14.1, Tarea 6)
 
 Los atajos responden en una **tarjeta debajo del texto** sin abrir el panel (spec 14.1 § 3). El
@@ -568,11 +587,22 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
   `scope.id` y `selection.sheetId` se validan como UUID; `supabase/config.toml` con
   `[functions.assistant]`.
 
+## Límites conocidos (Fase 14.1)
+
+- **Una prueba sin terminar se pierde** si se cierra o recarga la pestaña: no se guarda a medias.
+  El navegador pregunta antes (`useLeaveWarning`), pero no se puede retomar después.
+- **El bundle principal pesa ~500 kB** y cruza el aviso de tamaño de chunk de Vite (el aviso del
+  build es esperado y no rompe nada). Partirlo queda para una fase de rendimiento.
+- La tarjeta del atajo no guarda historial y responde una sola vez en Preguntame; para seguir, el chat.
+- El PDF depende del diálogo de impresión del navegador (la maquetación puede variar entre navegadores).
+- La Edge Function hay que **volver a desplegarla** para el resumen estructurado.
+
 ## Límites conocidos (generales)
 
 - **El conteo de uso no es transaccional** (ver "Límites conocidos" de la Edge Function).
 - **El historial del chat no se guarda:** vive en memoria mientras dure la sesión (spec § 8);
-  recargar la página lo borra.
+  recargar la página lo borra. Lo que sí se guarda (Fase 14.1) son los resúmenes y los exámenes
+  terminados, en Mi estudio.
 - **Texto plano:** las respuestas no se renderizan como Markdown (sin negritas ni listas con
   formato) para no abrir una puerta a XSS.
 - Los topes y las funciones por plan son **provisorios**.
@@ -589,12 +619,14 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
 - **Lógica del cliente** (`src/lib/assistant/`): `sse.js`, `readSseStream.js`, `chatState.js`,
   `bridge.js`, `requestBuilder.js`, `shortcuts.js`, `editorApply.js`, `applyProposal.js`,
   `quizSession.js`, `quizScore.js`, `weakTopics.js`, `assistantError.js`, `inlineAnswer.js` y
-  `requestSlot.js` (Fase 14.1) (+ tests).
+  `requestSlot.js`, `quizRecord.js`, `summaryBlocks.js`, `summaryDoc.js`, `summarySession.js`,
+  `studyItems.js` (Fase 14.1) (+ tests); `src/lib/editor/broteAnchor.js` (ancla de la tarjeta).
 - **Services:** `assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`.
-- **Hooks:** `useAssistant.js`, `useAssistantContext.js`, `useInlineAnswer.js` (Fase 14.1).
+- **Hooks:** `useAssistant.js`, `useAssistantContext.js`, `useInlineAnswer.js`, `useLeaveWarning.js`, `usePrintSummary.js`, `useSaveSummaryAsSheet.js` (Fase 14.1).
 - **Componentes** (`src/components/features/assistant/`): `AssistantHost`, `AssistantPanel`,
-  `Brote`, `ChatThread`, `ProposalCard`, `SelectionShortcuts`, `QuizRunner`, `InlineAnswerCard`
-  (Fase 14.1; su ancla es `lib/editor/broteAnchor.js`).
+  `Brote`, `ChatThread`, `ProposalCard`, `SelectionShortcuts`, `QuizRunner`, `InlineAnswerCard`,
+  `QuizWindow`, `SummaryWindow` (Fase 14.1; la ancla de la tarjeta es `lib/editor/broteAnchor.js`);
+  `components/features/study/` (documento del resumen y registro del examen).
 - **Tocados:** `AppLayout.jsx` (monta el Brote), `SubjectFolderPage.jsx` (contexto, atajos y
   propuestas), `Modal`/`UndoToast` (portal), `Icon.jsx` (íconos nuevos), `storageKeys.js`
   (`studree:ui:assistant-open`), `lib/markdown/headings.js`, `index.css` (animaciones del
@@ -609,3 +641,5 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
 - [ ] Con dos cuentas, comprobar que una no ve apuntes de la otra por el asistente.
 - [ ] Verificación manual de la Tarea 11 (prueba → corrección → fila en `weak_topics`; repaso que borra lo acertado; free sin llamada a Gemini en Repaso/Plan): requiere la Edge Function desplegada.
 - [ ] Verificación manual de la Tarea 10 (paso 5 del plan: atajo → propuesta → Aceptar → "Guardado" → recargar; Rechazar; reemplazo tras editar el párrafo; marca externa): requiere la Edge Function desplegada.
+- [ ] **[ESTUDIANTE]** Volver a desplegar la función `assistant` (resumen estructurado, Fase 14.1).
+- [ ] Verificación manual de la Fase 14.1 en el navegador (tarjeta de atajos, examen en ventana y registro, resumen + PDF + Guardar como hoja, Mi estudio): requiere la función redesplegada.

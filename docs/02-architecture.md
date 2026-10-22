@@ -53,6 +53,9 @@ Studree/
 │   │   ├── SubjectFolderPage.jsx  # La Carpeta de una materia (ADR-017)
 │   │   ├── SheetRedirectPage.jsx  # /hojas/:id → carpeta en esa hoja
 │   │   ├── TrashPage.jsx          # Papelera (`/papelera`, ADR-019)
+│   │   ├── StudyPage.jsx          # Mi estudio (`/estudio`, ADR-022): resúmenes y exámenes
+│   │   ├── StudySummaryPage.jsx   # Un resumen guardado (`/estudio/resumenes/:id`)
+│   │   ├── StudyQuizPage.jsx      # Registro de un examen (`/estudio/examenes/:id`)
 │   │   └── ProfilePage.jsx
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
@@ -74,25 +77,31 @@ Studree/
 │   │       ├── templates/         # NewSheetButton, TemplatesManager
 │   │       ├── import/            # ImportDialog
 │   │       ├── assistant/         # El Brote (Fase 14, ADR-021): AssistantHost, AssistantPanel,
-│   │       │                      # Brote, ChatThread, ProposalCard, SelectionShortcuts, QuizRunner
+│   │       │                      # Brote, ChatThread, ProposalCard, SelectionShortcuts, QuizRunner,
+│   │       │                      # InlineAnswerCard (tarjeta de atajos), QuizWindow, SummaryWindow (14.1)
+│   │       ├── study/             # Mi estudio (Fase 14.1, ADR-022): SummaryDocument, SummaryPrint,
+│   │       │                      # QuizRecordView, StudyItemRow
 │   │       └── home/              # Inicio: HomePanel, ContinueCard, NextDateCard, WeekSummary,
 │   │                              # CalendarPanel, DateFormModal, TaskList, QuickNotes
 │   ├── hooks/                     # useAuth, useCareers, useCareerMap, useFolder,
 │   │                              # useSheetAutosave, useSheetLocation, useReadingMode,
 │   │                              # useExplorerTree, useExportTree, useHotkeys, useFlowCanvas, useHome,
 │   │                              # useTrash, useTrashPurge, useFolderAttachments,
-│   │                              # useSheetTemplates, useImport, useAssistant, useAssistantContext
+│   │                              # useSheetTemplates, useImport, useAssistant, useAssistantContext,
+│   │                              # useInlineAnswer, useLeaveWarning, usePrintSummary,
+│   │                              # useSaveSummaryAsSheet, useStudy (Fase 14.1)
 │   ├── services/                  # supabase.client, cache, crudService (fábrica),
 │   │                              # dataEvents, careers, subjects, sheets,
 │   │                              # prerequisites, home, importantDates, tasks,
 │   │                              # quickNotes, trash, attachments, sheetTemplates, import,
-│   │                              # assistant, userPlan, quizResults (Fase 14)
+│   │                              # assistant, userPlan, quizResults (Fase 14), study (Fase 14.1)
 │   ├── lib/
 │   │   ├── id.js
 │   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera), subjectStatus.js,
 │   │   │                          # canvasPositions.js
 │   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js, headings.js
-│   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets
+│   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets,
+│   │   │                          # broteAnchor (widget de la tarjeta del Brote, 14.1)
 │   │   ├── format/                # sheetDate.js (fecha y hora de las hojas)
 │   │   ├── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
 │   │   ├── trash/                 # trashItems.js (textos de la papelera, puras)
@@ -101,7 +110,9 @@ Studree/
 │   │   ├── home/                  # dates.js, calendar.js, preview.js, summary.js, greeting.js (Inicio, puras)
 │   │   └── assistant/             # El Brote (puras, con tests): sse, readSseStream, chatState, bridge,
 │   │                              # requestBuilder, shortcuts, editorApply, applyProposal,
-│   │                              # quizSession, quizScore, weakTopics, assistantError
+│   │                              # quizSession, quizScore, weakTopics, assistantError; 14.1: inlineAnswer,
+│   │                              # requestSlot, quizRecord, summaryBlocks, summaryDoc,
+│   │                              # summarySession, studyItems
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js, subjectTones.js (ADR-018),
 │   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js,
 │   │                              # sheetTemplates.js, attachmentLimits.js (Fase 13)
@@ -655,6 +666,9 @@ fuente de verdad, autosave, papelera). La app no tiene servidor propio (Supabase
 | `/materias/:subjectId` | `SubjectFolderPage` | **La Carpeta**: hojas seguidas + índice de temas + buscador; acepta `?hoja=:id` — lazy |
 | `/hojas/:sheetId` | `SheetRedirectPage` | Redirige a `/materias/:subjectId?hoja=:sheetId` (links viejos) |
 | `/papelera` | `TrashPage` | **Papelera** (Fase 13, ADR-019): restaurar, borrar para siempre o vaciar — ver `docs/features/trash.md` |
+| `/estudio` | `StudyPage` | **Mi estudio** (Fase 14.1, ADR-022): resúmenes y exámenes guardados; acepta `?tab=` y `?materia=` — ver `docs/features/study.md` |
+| `/estudio/resumenes/:id` | `StudySummaryPage` | Un resumen guardado: PDF, guardar como hoja, borrar |
+| `/estudio/examenes/:id` | `StudyQuizPage` | Registro de un examen con todas las preguntas |
 | `/perfil` | `ProfilePage` | Perfil (placeholder) |
 
 > Las páginas con canvas, el editor y el perfil se cargan con `React.lazy` (chunks
@@ -687,3 +701,34 @@ aporta de forma persistente:
 > El canvas es un **modo de exploración**, no el único camino: toda la navegación debe ser
 > posible solo con explorador + palette (requisito de mobile, donde arrastrar nodos no
 > funciona bien).
+
+### ADR-022: "Mi estudio" y PDF por impresión del navegador
+**Fecha:** 2026-10-22
+**Spec:** `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md`
+**Contexto:** los resúmenes y los exámenes del Brote se perdían al cerrar el chat (el resumen era
+texto del chat; del examen solo se guardaba el puntaje). El estudiante quiere volver a ellos,
+verlos en una ventana cómoda y sacar un PDF, sin sumar dependencias ni un servidor de PDF.
+**Decisión:**
+- **Una sección propia, "Mi estudio" (`/estudio`)**, más un acceso directo por materia (botón
+  **Estudio** en la carpeta, que abre la sección filtrada con `?materia=`). Lo estudiado es un
+  producto aparte de las hojas: no ensucia el Markdown de las materias y se encuentra en un solo lugar.
+- **El PDF sale de la impresión del navegador** (`window.print()` + CSS `@media print` sobre un
+  `#print-root`), con "Guardar como PDF". Sin librería de PDF.
+- **Los registros se guardan en la base:** el examen en `quiz_attempts.detail` (jsonb, junto al
+  puntaje) y el resumen en la tabla nueva `summaries`. Ambos con RLS propia, `subject_id` y
+  `career_id` con borrado en cascada (siguen a su materia y a su carrera, también en la papelera
+  y el borrado definitivo) y borrado real con confirmación. Migración `0009`.
+- El resumen es **salida estructurada** (JSON validado en la Edge Function, sin herramientas), así
+  la interfaz lo dibuja con elementos de React, nunca con HTML del modelo.
+**Alternativas descartadas:**
+- **Librería de PDF** (jsPDF, react-pdf, html2pdf): dependencia pesada (el bundle principal ya
+  cruza el aviso de Vite), fuentes y tildes a resolver, y un PDF menos fiel que el del navegador.
+- **PDF generado en la Edge Function:** más superficie en el servidor y más costo, sin ventaja.
+- **Guardar los resúmenes como hojas automáticamente:** mezclaría texto generado con los apuntes;
+  se conserva como acción explícita ("Guardar como hoja").
+- **Solo un listado dentro de cada materia:** no alcanza para ver todo lo estudiado ni filtrar.
+**Consecuencias:**
+- Hay que **volver a desplegar la función `assistant`** (el resumen cambió de formato).
+- El PDF depende del diálogo de impresión del navegador (el estudiante elige "Guardar como PDF").
+- Una prueba a medias no se guarda: cerrar o recargar la pestaña la pierde (el navegador avisa antes).
+- Los exámenes anteriores a la 0009 no tienen detalle y se muestran como "Sin detalle (prueba anterior)".
