@@ -39,6 +39,7 @@ const STATUS_LABELS = { idle: '', saving: 'Guardando…', saved: 'Guardado', err
  * @param {{upload: Function, resolveUrl: Function, isUploading: Function, open: Function}} props.attachmentApi
  * @param {(attachment: import('../../../types/models.js').Attachment) => void} props.onRequestRemoveAttachment - Pide confirmación (la página).
  * @param {{current: Map<string, (files: FileList|File[]) => void>}} props.uploaders - Para que el botón de adjuntar de la barra le pase archivos a la hoja con foco.
+ * @param {() => void} [props.onBroteRemoved] - Se borró el bloque de arriba de la tarjeta del Brote (la página la cierra).
  */
 export function FolderSheet({
   sheet,
@@ -58,6 +59,7 @@ export function FolderSheet({
   attachmentApi,
   onRequestRemoveAttachment,
   uploaders,
+  onBroteRemoved,
 }) {
   const { initialContent, syncStatus, error, updateContent, cancel, ensureCreated } = useSheetAutosave({ sheet, onCreated })
   const [uploadError, setUploadError] = useState(null)
@@ -172,6 +174,7 @@ export function FolderSheet({
           onHitsChange={(count) => onHitsChange(sheet.key, count)}
           onFiles={handleFiles}
           attachments={editorAttachments}
+          onBroteRemoved={onBroteRemoved}
         />
       </div>
       {uploadError && (

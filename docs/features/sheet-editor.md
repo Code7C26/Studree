@@ -73,7 +73,7 @@ representa (sin colores de texto, sin tablas complejas).
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/components/features/sheetEditor/SheetEditor.jsx` | Instancia de TipTap de una hoja; props `searchTerm`, `currentHit`, `onWikiLink`, `onHitsChange`, `onFocusEditor` |
+| `src/components/features/sheetEditor/SheetEditor.jsx` | Instancia de TipTap de una hoja; props `searchTerm`, `currentHit`, `onWikiLink`, `onHitsChange`, `onFocusEditor`, `onBroteRemoved` |
 | `src/components/features/sheetEditor/EditorToolbar.jsx` | Negrita, itálica, "Título", "Subtítulo", H3, H4, listas, "Tarea", "Cita", código, enlace (actúa sobre la hoja con foco) |
 | `src/components/features/folder/FolderSheet.jsx` | Barra de fecha + editor (ver `folder.md`) |
 | `src/hooks/useSheetAutosave.js` | Borrador, debounce, flush, creación de hojas nuevas |
@@ -95,7 +95,8 @@ respaldo). Código con fondo `paper-border/40`, coincidencias en `warn/30` y la 
 
 `Bold` · `Italic` · `Strike` · `Code` · `CodeBlock` · `Heading` (h1–h4) · `BulletList` ·
 `OrderedList` · `TaskList` · `Blockquote` · `HorizontalRule` · `Link` · `HighlightExtension`
-(propia).
+(propia) · `BroteAnchorExtension` (propia, Fase 14.1: widget donde la carpeta dibuja la tarjeta
+de un atajo del Brote; no entra en el Markdown. Ver `docs/features/folder.md`).
 
 ## Seguridad (XSS)
 

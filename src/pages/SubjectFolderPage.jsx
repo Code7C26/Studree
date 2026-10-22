@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { useFolder } from '../hooks/useFolder.js'
+import { useInlineAnswer } from '../hooks/useInlineAnswer.js'
 import { useFolderAttachments } from '../hooks/useFolderAttachments.js'
 import { useHotkeys } from '../hooks/useHotkeys.js'
 import { useSheetTemplates } from '../hooks/useSheetTemplates.js'
@@ -14,6 +16,7 @@ import { TemplatesManager } from '../components/features/templates/TemplatesMana
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { ImportDialog } from '../components/features/import/ImportDialog'
 import { SelectionShortcuts } from '../components/features/assistant/SelectionShortcuts'
+import { InlineAnswerCard } from '../components/features/assistant/InlineAnswerCard'
 import { Icon } from '../components/ui/Icon'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -25,6 +28,7 @@ import { extractHeadings } from '../lib/markdown/headings.js'
 import { editorToMarkdown } from '../lib/markdown/serialize.js'
 import { stripAttachmentRefs } from '../lib/attachments/refs.js'
 import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
+import { blockEndPos, setBroteAnchor } from '../lib/editor/broteAnchor.js'
 import { formatSheetDate } from '../lib/format/sheetDate.js'
 import { isLocalSheet } from '../lib/editor/folderSheets.js'
 import { assistantBridge } from '../lib/assistant/bridge.js'
@@ -46,6 +50,13 @@ const UNSAVED_SHEET = 'Esperá a que la hoja se guarde para usar los atajos del 
 /** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
 const TOOL =
   'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-40'
+
+/**
+ * Lugar de la tarjeta de un atajo del Brote (Fase 14.1): editor con el ancla,
+ * nodo del widget (ahí se dibuja la tarjeta por portal) e id de la tarjeta que
+ * se veía al pedirla (esa ya no se dibuja acá: la reemplaza la nueva).
+ * @typedef {{editor: import('@tiptap/react').Editor, dom: HTMLElement, staleId: number|null}} InlineSlot
+ */
 
 /** Headings de primer nivel del editor, en el mismo orden que `extractHeadings`. */
 const topLevelHeadings = (editor) =>
@@ -115,6 +126,21 @@ function SubjectFolder({ subjectId }) {
   const editorsRef = useRef(new Map())
   /** key de hoja → cancelar autosave pendiente (antes de borrar). */
   const cancelersRef = useRef(new Map())
+  /** Tarjeta del atajo del Brote: una sola en toda la carpeta (ver "Brote" más abajo). */
+  const [inlineSlot, setInlineSlot] = useState(/** @type {InlineSlot|null} */ (null))
+  const inlineSlotRef = useRef(/** @type {InlineSlot|null} */ (null))
+  /**
+   * Olvida el lugar de la tarjeta y lo devuelve. Con `clearAnchor` también saca
+   * el widget de su editor (no se puede hacer desde adentro de una transacción).
+   */
+  const forgetInlineSlot = useCallback((/** @type {boolean} */ clearAnchor) => {
+    const slot = inlineSlotRef.current
+    if (!slot) return null
+    inlineSlotRef.current = null
+    setInlineSlot(null)
+    if (clearAnchor) setBroteAnchor(slot.editor, null)
+    return slot
+  }, [])
   const [activeEditor, setActiveEditor] = useState(null)
   const [activeTopicId, setActiveTopicId] = useState(null)
   const [autoFocusKey, setAutoFocusKey] = useState(null)
@@ -317,10 +343,16 @@ function SubjectFolder({ subjectId }) {
       editorsRef.current.set(key, editor)
       return
     }
+    const removed = editorsRef.current.get(key)
     editorsRef.current.delete(key)
+    // Se fue la hoja de la tarjeta del Brote (papelera, otra materia): se cierra y se corta su pedido.
+    if (removed && inlineSlotRef.current?.editor === removed) {
+      forgetInlineSlot(false)
+      assistantBridge.sendInline({ type: 'close' })
+    }
     // La hoja con foco se borró: la toolbar no puede seguir apuntando a un editor destruido.
     setActiveEditor((active) => (active && active.isDestroyed ? null : active))
-  }, [])
+  }, [forgetInlineSlot])
 
   useEffect(() => {
     if (!import.meta.env.DEV || mountReportedRef.current || loading || sheets.length === 0) return
@@ -403,21 +435,101 @@ function SubjectFolder({ subjectId }) {
     return () => assistantBridge.set(null)
   }, [subject, activeSheetId, getSelection, apply])
 
-  // Un atajo encolado que el panel todavía no tomó no puede dispararse después
-  // en otra carpeta (la carpeta se remonta por materia: `key={subjectId}`).
-  useEffect(() => () => assistantBridge.clearRequest(), [])
+  // Al irse de la carpeta (se remonta por materia: `key={subjectId}`): un atajo
+  // encolado que el panel todavía no tomó no puede dispararse después en otra
+  // carpeta, y la tarjeta del atajo se cierra (si estaba respondiendo, se corta).
+  useEffect(
+    () => () => {
+      assistantBridge.clearRequest()
+      assistantBridge.sendInline({ type: 'close' })
+    },
+    [],
+  )
+
+  // ---- Tarjeta del atajo (Fase 14.1) ---------------------------------------
+  // El atajo responde en una tarjeta DENTRO de la hoja, debajo del bloque donde
+  // terminó la selección: un widget de ProseMirror (`broteAnchor.js`, no entra
+  // en el Markdown) y React dibuja la tarjeta adentro por portal. El motor vive
+  // en el panel (`useAssistant`) y publica la vista en el puente.
+
+  const inline = useInlineAnswer()
+  const inlineView = inline.view
+  const inlineViewRef = useRef(inlineView)
+  inlineViewRef.current = inlineView
 
   const handleShortcut = useCallback(
     (id) => {
+      const editor = activeEditorRef.current
       const selection = getSelection()
       if (!selection) {
-        if (sheetOfEditor(activeEditorRef.current) && isLocalSheet(sheetOfEditor(activeEditorRef.current))) showNotice(UNSAVED_SHEET)
+        if (sheetOfEditor(editor) && isLocalSheet(sheetOfEditor(editor))) showNotice(UNSAVED_SHEET)
         return
       }
-      assistantBridge.request({ request: buildShortcutRequest(id, selection), label: shortcutLabel(id, selection), selection })
+      // Una sola tarjeta en la carpeta: la anterior (quizás en otra hoja) deja su lugar.
+      forgetInlineSlot(true)
+      const dom = document.createElement('div')
+      dom.contentEditable = 'false'
+      setBroteAnchor(editor, { pos: blockEndPos(editor.state.doc, selection.to), dom })
+      const slot = { editor, dom, staleId: inlineViewRef.current?.id ?? null }
+      inlineSlotRef.current = slot
+      setInlineSlot(slot)
+      assistantBridge.request({
+        request: buildShortcutRequest(id, selection),
+        label: shortcutLabel(id, selection),
+        selection,
+        target: 'inline',
+        shortcutId: id,
+      })
     },
-    [getSelection, sheetOfEditor, showNotice],
+    [getSelection, sheetOfEditor, showNotice, forgetInlineSlot],
   )
+
+  // Si la tarjeta desaparece (✕, Esc, Descartar, Agregar, Seguir en el chat, o
+  // se descargó el motor), se saca su widget. Y una tarjeta sin lugar en esta
+  // carpeta no se vería: se cierra (y se corta su pedido).
+  const lastInlineViewRef = useRef(inlineView)
+  useEffect(() => {
+    const previous = lastInlineViewRef.current
+    lastInlineViewRef.current = inlineView
+    if (inlineView) {
+      if (!inlineSlotRef.current) assistantBridge.sendInline({ type: 'close' })
+      return
+    }
+    // Se cerró la tarjeta que un atajo nuevo está reemplazando: el lugar es de la nueva.
+    if (!previous || previous.id === inlineSlotRef.current?.staleId) return
+    forgetInlineSlot(true)
+  }, [inlineView, forgetInlineSlot])
+
+  /**
+   * Se borró el bloque de arriba de la tarjeta: el plugin ya sacó el ancla.
+   * Llega desde adentro de una transacción del editor, así que no se despacha
+   * nada y el comando al motor sale después.
+   */
+  const handleBroteRemoved = useCallback(() => {
+    if (!forgetInlineSlot(false)) return
+    queueMicrotask(() => assistantBridge.sendInline({ type: 'close' }))
+  }, [forgetInlineSlot])
+
+  /** Esc en la tarjeta: el foco vuelve a la hoja (el editor del lugar que se dibujó). */
+  const inlineEditor = inlineSlot?.editor ?? null
+  const focusInlineEditor = useCallback(() => {
+    if (inlineEditor && !inlineEditor.isDestroyed) inlineEditor.commands.focus()
+  }, [inlineEditor])
+
+  // Propuesta dejada para esta materia desde otra página (p. ej. un resumen que
+  // se guarda como hoja): se aplica una vez, cuando la materia y sus hojas cargaron.
+  const pendingApplyDoneRef = useRef(false)
+  useEffect(() => {
+    if (pendingApplyDoneRef.current || loading || !subject) return
+    pendingApplyDoneRef.current = true
+    const proposal = assistantBridge.takePendingApply(subjectId)
+    if (!proposal) return
+    const result = applyRef.current(proposal)
+    if (!result.ok) showNotice(/** @type {{error: string}} */ (result).error)
+  }, [loading, subject, subjectId, showNotice])
+
+  /** La tarjeta que se dibuja: la del lugar actual (no la que un atajo nuevo está reemplazando). */
+  const inlineCard = inlineView && inlineSlot && inlineView.id !== inlineSlot.staleId ? inlineView : null
 
   async function removeSheet(sheet) {
     cancelersRef.current.get(sheet.key)?.()
@@ -597,6 +709,7 @@ function SubjectFolder({ subjectId }) {
                   attachmentApi={folderAttachmentApi}
                   onRequestRemoveAttachment={setPendingAttachment}
                   uploaders={uploadersRef}
+                  onBroteRemoved={handleBroteRemoved}
                 />
               ))}
               {!reading && subject && (
@@ -613,6 +726,21 @@ function SubjectFolder({ subjectId }) {
       </div>
 
       <SelectionShortcuts editor={activeEditor} hidden={reading} onPick={handleShortcut} />
+
+      {inlineCard &&
+        createPortal(
+          <InlineAnswerCard
+            key={inlineCard.id}
+            view={inlineCard}
+            onClose={inline.close}
+            onAccept={inline.accept}
+            onDiscard={inline.discard}
+            onContinue={inline.continueInChat}
+            onAnswer={inline.answer}
+            onEscape={focusInlineEditor}
+          />,
+          inlineSlot.dom,
+        )}
 
       {reading && (
         <button

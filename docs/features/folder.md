@@ -154,11 +154,64 @@ Word, sobre **papel crema con renglones** y el **margen del color de la materia*
   mismo camino que una plantilla (la hoja local con contenido se crea al montarse). No borra
   hojas ni cambia el flujo de borrado (sigue cancelando el autosave antes).
 
+## Fase 14.1: la respuesta de los atajos dentro de la hoja (2026-10-22)
+
+Spec `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md` § 3. El motor (la conversación
+"inline" de `useAssistant`) está en `docs/features/assistant.md`; acá, cómo la dibuja la carpeta.
+
+- **Dónde va:** al tocar un atajo, la tarjeta del Brote aparece **dentro del papel, debajo del
+  bloque de primer nivel donde termina la selección** (un párrafo, una lista entera, una cita) y
+  empuja hacia abajo lo que sigue. El panel no se abre.
+- **Ancla (`lib/editor/broteAnchor.js`, con tests):** `BroteAnchorExtension` (la registra
+  `SheetEditor`) envuelve un plugin de ProseMirror cuyo estado es `{pos, dom}|null`. Pinta un
+  `Decoration.widget(pos, () => dom, {key: 'brote-inline', side: -1, stopEvent, ignoreSelection})`:
+  es una **decoración**, así que no forma parte del documento ni del Markdown que se guarda
+  (ADR-011), y los clicks, teclas y la selección dentro de la tarjeta no le llegan al editor.
+  - `blockEndPos(doc, pos)` = `doc.resolve(pos).after(1)` (o `pos` entre bloques).
+  - `setBroteAnchor(editor, {pos, dom}|null)` la pone o la saca (meta de una transacción);
+    `getBroteAnchor(editor)` devuelve `{pos}|null`. Si ya había un ancla con **otro** nodo, primero
+    la saca: ProseMirror da por iguales dos widgets con la misma `key` y reutilizaría el nodo
+    viejo (la tarjeta nueva se dibujaría en un nodo fuera de la página).
+  - Con cada cambio, la posición sigue al texto (`mapResult(pos, -1)`): escribir antes o dentro
+    del bloque la corre; si se borró lo que estaba justo antes (el bloque de arriba, o un cambio
+    que lo atraviesa), el ancla desaparece y se llama a `onRemoved()` una vez.
+- **La carpeta (`SubjectFolderPage`):** `handleShortcut` arma un `div` (`contenteditable=false`),
+  saca el ancla anterior (puede estar en otra hoja: hay **una sola tarjeta** en la carpeta), pone
+  la nueva en `blockEndPos(doc, selection.to)` y encola el pedido con `target: 'inline'` y
+  `shortcutId`. Lee la vista con `useInlineAnswer` y la dibuja con
+  `createPortal(<InlineAnswerCard …/>, dom)`. Mientras el atajo nuevo no llega al motor, la
+  tarjeta anterior no se dibuja en el lugar nuevo (`staleId`).
+- **Cuándo se cierra:** ✕, Esc, Descartar, Agregar a la hoja y Seguir en el chat (el motor la
+  borra y la carpeta saca el widget cuando la vista pasa a `null`); si se borra el bloque de
+  arriba (`onRemoved` → `close`, sin despachar nada desde adentro de la transacción); si se va
+  la hoja (papelera: su editor se desmonta → `close`); al irse de la carpeta (`close` al
+  desmontar). Una tarjeta sin lugar en la carpeta se cierra. Cerrar mientras responde corta el
+  pedido.
+- **`InlineAnswerCard`** (`components/features/assistant/`): tarjeta oscura (`bg-surface`,
+  `max-w-md`, usa el ancho disponible en pantallas angostas) con "Brote · Completar", chip "Con
+  conocimiento externo" si corresponde y ✕ ("Cerrar la respuesta del Brote"); respuestas como
+  texto plano (`whitespace-pre-wrap`, nunca HTML); estado mientras responde ("Pensando…" o el
+  del servidor); aviso y error; la propuesta resaltada en verde con **Agregar a la hoja**,
+  **Descartar** y **Seguir en el chat** (sin propuesta, solo este último; deshabilitado mientras
+  responde); en **Preguntame**, "Tu respuesta" + **Responder** (Enter envía, Shift+Enter salto de
+  línea). `role="region"` "Respuesta del Brote"; un `aria-live="polite"` anuncia el texto final
+  solo al terminar; Esc la cierra y devuelve el foco al editor de esa hoja. No usa `<p>` ni
+  headings: los estilos del papel (`.sheet-editor .ProseMirror p`, `h1…h4`) no la tocan y el
+  índice de temas no la cuenta.
+- **Agregar a la hoja** usa `context.apply` (el mismo `applyRef` de siempre: editor →
+  `onUpdate` → autosave, con la verificación de la selección y la marca de conocimiento externo).
+- **Modo lectura:** la barra de atajos se oculta, la tarjeta puede quedar.
+- **Propuesta pendiente de otra página:** cuando la materia y sus hojas terminaron de cargar, la
+  carpeta toma una vez `assistantBridge.takePendingApply(subjectId)` y la aplica con `applyRef`
+  (lo usa "Guardar como hoja" de un resumen); si falla, muestra el aviso.
+
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export; publica el contexto del Brote y aplica sus propuestas |
+| `src/pages/SubjectFolderPage.jsx` | Arma la carpeta: índice, búsqueda, toolbar, hojas, modo lectura, borrar, export; publica el contexto del Brote, aplica sus propuestas y dibuja la tarjeta de los atajos |
+| `src/components/features/assistant/InlineAnswerCard.jsx` | Tarjeta de la respuesta de un atajo dentro de la hoja (presentacional) |
+| `src/lib/editor/broteAnchor.js` | Ancla (widget de ProseMirror) de la tarjeta del atajo |
 | `src/pages/SheetRedirectPage.jsx` | Redirige `/hojas/:id` a la carpeta |
 | `src/components/features/folder/FolderSheet.jsx` | Una hoja: barra de fecha + estado de guardado + plantilla + papelera + editor + lista de adjuntos |
 | `src/components/features/templates/` · `attachments/` · `import/` | Nueva hoja ▾ y administrador, lista de adjuntos al pie, diálogo de importación |
@@ -199,6 +252,7 @@ hojas en menos de ~1 s. En desarrollo, la consola muestra
 
 ## Pendiente
 
+- [ ] Verificar en el navegador la tarjeta de los atajos (Fase 14.1) con la Edge Function desplegada: Completar → tarjeta debajo del párrafo → Agregar a la hoja; borrar el párrafo de arriba la cierra.
 - [ ] Verificar en el navegador la Fase 13 en la carpeta: adjuntos de punta a punta (el Markdown guarda `![…](adjunto:…)` limpio y la imagen se ve al recargar), borrar con "Deshacer", plantillas e importar.
 - [ ] Medir rendimiento con una materia grande (ver arriba).
 - [ ] Autocompletar `[[` con los temas de la materia.

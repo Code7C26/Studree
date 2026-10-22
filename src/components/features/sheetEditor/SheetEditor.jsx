@@ -17,6 +17,7 @@ import { Markdown } from 'tiptap-markdown'
 import { markdownToEditorContent } from '../../../lib/markdown/parse.js'
 import { editorToMarkdown } from '../../../lib/markdown/serialize.js'
 import { HighlightExtension, setSearch, getSearchHits } from '../../../lib/editor/highlightExtension.js'
+import { BroteAnchorExtension } from '../../../lib/editor/broteAnchor.js'
 import { AttachmentImage, AttachmentLinkClick } from '../../../lib/editor/attachmentNodes.js'
 import { ATTACHMENT_PROTOCOL } from '../../../lib/attachments/refs.js'
 
@@ -32,6 +33,7 @@ import { ATTACHMENT_PROTOCOL } from '../../../lib/attachments/refs.js'
  * @param {(count: number) => void} [props.onHitsChange] - Cuántas coincidencias hay en esta hoja.
  * @param {{resolve: (id: string) => Promise<string|null>, isUploading: (id: string) => boolean, open: (id: string) => void}} [props.attachments]
  * @param {(files: FileList) => void} [props.onFiles] - Archivos soltados o pegados sobre la hoja.
+ * @param {() => void} [props.onBroteRemoved] - Se borró el bloque de arriba de la tarjeta del Brote (`broteAnchor.js`).
  */
 export function SheetEditor({
   content,
@@ -44,11 +46,12 @@ export function SheetEditor({
   onHitsChange,
   attachments,
   onFiles,
+  onBroteRemoved,
 }) {
   // Las opciones de las extensiones se fijan al crear el editor: los callbacks
   // van por ref para que siempre se llame a la versión más nueva.
-  const callbacks = useRef({ onWikiLink, onHitsChange, attachments, onFiles })
-  callbacks.current = { onWikiLink, onHitsChange, attachments, onFiles }
+  const callbacks = useRef({ onWikiLink, onHitsChange, attachments, onFiles, onBroteRemoved })
+  callbacks.current = { onWikiLink, onHitsChange, attachments, onFiles, onBroteRemoved }
 
   const editor = useEditor({
     extensions: [
@@ -69,6 +72,8 @@ export function SheetEditor({
       AttachmentLinkClick.configure({ onOpen: (id) => callbacks.current.attachments?.open(id) }),
       Markdown.configure({ html: false, transformPastedText: true }),
       HighlightExtension.configure({ onWikiLink: (title) => callbacks.current.onWikiLink?.(title) }),
+      // Ancla de la tarjeta de un atajo del Brote (widget: no entra en el Markdown).
+      BroteAnchorExtension.configure({ onRemoved: () => callbacks.current.onBroteRemoved?.() }),
     ],
     content: markdownToEditorContent(content),
     onUpdate: ({ editor: instance }) => {

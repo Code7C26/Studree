@@ -353,8 +353,9 @@ del proveedor ni la clave).
 Los atajos responden en una **tarjeta debajo del texto** sin abrir el panel (spec 14.1 § 3). El
 motor sigue siendo uno solo (`useAssistant`, dentro del panel perezoso): la tarjeta es una
 **segunda conversación** del mismo hook, con su propio `ChatState`, que se publica en el puente.
-Esta tarea arma el motor y el contrato; la tarjeta y su ancla en el editor son de la Tarea 7
-(hasta entonces la carpeta sigue encolando sin `target` y todo va al chat).
+Esta tarea arma el motor y el contrato; la tarjeta (`InlineAnswerCard`) y su ancla en el
+editor (`lib/editor/broteAnchor.js`) son de la Tarea 7 y están en `docs/features/folder.md`:
+desde entonces la carpeta encola los atajos con `target: 'inline'` y `shortcutId`.
 
 **Contrato del puente (`lib/assistant/bridge.js`):**
 
@@ -533,7 +534,8 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
 - **Services:** `assistant.service.js`, `userPlan.service.js`, `quizResults.service.js`.
 - **Hooks:** `useAssistant.js`, `useAssistantContext.js`, `useInlineAnswer.js` (Fase 14.1).
 - **Componentes** (`src/components/features/assistant/`): `AssistantHost`, `AssistantPanel`,
-  `Brote`, `ChatThread`, `ProposalCard`, `SelectionShortcuts`, `QuizRunner`.
+  `Brote`, `ChatThread`, `ProposalCard`, `SelectionShortcuts`, `QuizRunner`, `InlineAnswerCard`
+  (Fase 14.1; su ancla es `lib/editor/broteAnchor.js`).
 - **Tocados:** `AppLayout.jsx` (monta el Brote), `SubjectFolderPage.jsx` (contexto, atajos y
   propuestas), `Modal`/`UndoToast` (portal), `Icon.jsx` (íconos nuevos), `storageKeys.js`
   (`studree:ui:assistant-open`), `lib/markdown/headings.js`, `index.css` (animaciones del

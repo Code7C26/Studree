@@ -47,6 +47,17 @@
   chat y tarjeta se avisan entre sí si el otro responde) y atiende `close`, `discard`, `accept`,
   `continue` y `answer`; mientras responde la tarjeta, la prueba no se corrige. Nuevo `useInlineAnswer`; `AssistantHost` solo carga el panel para la tarjeta y lo
   abre con `onOpenRequest`. Documentado en `docs/features/assistant.md`.
+- **Tarea 7 — La respuesta de los atajos debajo del texto:** `lib/editor/broteAnchor.js`
+  (`blockEndPos`, `createBroteAnchorPlugin`, `BroteAnchorExtension`, `setBroteAnchor`,
+  `getBroteAnchor`; con tests): un widget de ProseMirror debajo del bloque donde termina la
+  selección, que sigue al texto y se cierra si se borra el bloque de arriba (no entra en el
+  Markdown). `InlineAnswerCard` (tarjeta oscura sobre el papel, "Brote · Completar", ✕,
+  respuesta en texto plano, propuesta resaltada con Agregar a la hoja / Descartar / Seguir en el
+  chat, respuesta del Preguntame, Esc vuelve al editor, anuncio al terminar). La carpeta encola
+  los atajos con `target: 'inline'`, dibuja la tarjeta por portal en el widget, la cierra al
+  borrarse el bloque o la hoja y al irse de la carpeta, y aplica `takePendingApply` al cargar.
+  `SheetEditor` registra la extensión (`onBroteRemoved`, pasado por `FolderSheet`). Documentado
+  en `docs/features/folder.md`, `docs/features/sheet-editor.md` y `docs/features/assistant.md`.
 
 ---
 
