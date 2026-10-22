@@ -78,7 +78,9 @@
   por materia con `?tab=` y `?materia=`, borrar con confirmación), `/estudio/resumenes/:id`
   (`SummaryDocument`, Descargar PDF, Guardar como hoja, Borrar) y `/estudio/examenes/:id`
   (`QuizRecordView`, Borrar); `useStudy`/`useStudyItem`; ítem **Mi estudio** en el header y botón
-  **Estudio** en la barra de la carpeta (abre la sección filtrada). Documentado en
+  **Estudio** en la barra de la carpeta (abre la sección filtrada; el filtro de la URL no se descarta
+  en una pestaña vacía: `filterOptions` toma las materias de ambas listas, suma "Esta materia" y el
+  vacío dice "de esta materia"). Documentado en
   `docs/features/study.md` y `docs/features/navigation-shell.md`.
 
 ---

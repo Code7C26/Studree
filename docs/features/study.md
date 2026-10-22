@@ -20,7 +20,11 @@ abre la sección filtrada por esa materia.
 ## Lista (`StudyPage`)
 
 - Pestañas **Resúmenes** / **Exámenes** (`role="tablist"`).
-- Filtro **Materia**: "Todas las materias" + materias presentes (`subjectOptions`). Los ítems de
+- Filtro **Materia**: "Todas las materias" + las materias de resúmenes y exámenes juntos (`filterOptions`).
+  El filtro de la URL (`?materia=`) queda activo aunque la pestaña no tenga ítems de esa materia; si la
+  materia no está entre las opciones (no tiene nada guardado) se suma la opción "Esta materia". Sin
+  ítems, el vacío lo aclara ("Todavía no tenés resúmenes de esta materia. Pedile uno al Brote con
+  «Resumir materia»."; en exámenes, «Tomame examen»). Los ítems de
   alcance carrera o todo (sin `subject_id`) solo aparecen sin filtro (`filterBySubject`).
 - Cada ítem: título, materia (o "Varias materias"), fecha (`formatSheetDateLong`), y en
   exámenes "7 de 10"; link a su página y botón de borrar con confirmación.
