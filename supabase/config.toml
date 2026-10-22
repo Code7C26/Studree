@@ -1,3 +1,5 @@
+project_id = "studree"
+
 # Config mínima de la CLI de Supabase para desplegar el asistente (Fase 14).
 # Solo cubre la Edge Function: no configura un entorno local (`supabase start`).
 
