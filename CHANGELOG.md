@@ -119,6 +119,12 @@ lookup en `CLAUDE.md` y sus copias.
   la vista y devuelve el foco al editor; «Guardar como hoja» cierra la ventana (no duplica); el encabezado
   entra en pantallas de 375px; aviso al salir si falló el guardado; mensaje propio si solo fallaron los
   temas flojos; título y alcance del resumen armados en el cliente (`summaryTitle`); `study.md` corregido.
+- **«Tomame examen» no funcionaba nunca** (request: "tomar examen no funcionó, puedes revisarlo?"):
+  Gemini omitía `answer_index` (opcional en `QUIZ_SCHEMA`) y `validateQuiz` rechazaba la prueba entera
+  con `invalid_output`. Ahora los cuatro campos de respuesta son obligatorios (relleno en los que no
+  corresponden) y el prompt lo pide. Archivos: `supabase/functions/assistant/quiz.js`, `prompt.js`,
+  `quiz.test.js`, `docs/features/assistant.md`. Verificado contra la función publicada con un usuario
+  de prueba (examen y corrección de desarrollo OK; usuario borrado).
 
 ---
 

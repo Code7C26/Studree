@@ -33,6 +33,22 @@ test('esquemas en el formato de generateContent (tipos en MAYÚSCULAS)', () => {
   assert.equal(GRADES_SCHEMA.properties.grades.items.properties.correct.type, 'BOOLEAN')
 })
 
+test('el esquema obliga a mandar los campos de respuesta (Gemini omite los opcionales)', () => {
+  const { required } = QUIZ_SCHEMA.properties.questions.items
+  for (const field of ['options', 'answer_index', 'answer_bool', 'answer_text']) {
+    assert.ok(required.includes(field), `${field} tiene que ser obligatorio`)
+  }
+})
+
+test('los campos de relleno de otros tipos no rompen la pregunta', () => {
+  const r = validateQuiz(
+    { questions: [tf({ options: [], answer_index: 0, answer_text: '' }), open({ options: [], answer_index: 0, answer_bool: false })] },
+    { count: 5 },
+  )
+  assert.equal(r.ok, true)
+  assert.deepEqual(r.questions.map((q) => q.answer), [tf().answer_bool, open().answer_text])
+})
+
 test('prueba válida: normaliza answer, asigna ids q1..qn y conserva la hoja', () => {
   const r = validateQuiz({ questions: [mcq(), tf(), open()] }, { count: 5 })
   assert.equal(r.ok, true)

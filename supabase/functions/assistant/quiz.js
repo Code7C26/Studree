@@ -36,15 +36,18 @@ export const QUIZ_SCHEMA = {
         properties: {
           type: { type: 'STRING', enum: TYPES, description: 'mcq = opción múltiple, tf = verdadero/falso, open = desarrollo' },
           prompt: { type: 'STRING', description: 'Enunciado de la pregunta' },
-          options: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Solo mcq: de 3 a 5 opciones' },
-          answer_index: { type: 'INTEGER', description: 'Solo mcq: índice (desde 0) de la opción correcta' },
-          answer_bool: { type: 'BOOLEAN', description: 'Solo tf: si la afirmación es verdadera' },
-          answer_text: { type: 'STRING', description: 'Solo open: respuesta de referencia' },
+          options: { type: 'ARRAY', items: { type: 'STRING' }, description: 'mcq: de 3 a 5 opciones; tf y open: lista vacía' },
+          answer_index: { type: 'INTEGER', description: 'mcq: índice (desde 0) de la opción correcta; tf y open: 0' },
+          answer_bool: { type: 'BOOLEAN', description: 'tf: si la afirmación es verdadera; mcq y open: false' },
+          answer_text: { type: 'STRING', description: 'open: respuesta de referencia; mcq y tf: texto vacío' },
           explanation: { type: 'STRING', description: 'Por qué la respuesta es esa' },
           topic: { type: 'STRING', description: 'Tema (heading) de la hoja de origen' },
           sheet_id: { type: 'STRING', description: 'id de la hoja de origen' },
         },
-        required: ['type', 'prompt', 'explanation', 'topic'],
+        // Gemini omite los campos opcionales (pasaba con answer_index y la prueba entera
+        // se rechazaba): todos los de respuesta son obligatorios y el que no
+        // corresponde al tipo va de relleno; validateQuiz solo lee el del tipo.
+        required: ['type', 'prompt', 'options', 'answer_index', 'answer_bool', 'answer_text', 'explanation', 'topic'],
       },
     },
   },

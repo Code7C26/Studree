@@ -189,7 +189,10 @@ Orden en un éxito: `text`/`tool`/`proposal`/`quiz`/`summary`/`grades` → `usag
   `read_sheet` y citar cada hueco por la fecha de la hoja; `connections` cruza los temas de cada
   materia y confirma las coincidencias con `search_notes`. El pedido de ninguna de las dos pide
   propuestas.
-- `quiz`, `weak_review`: salida JSON (`QUIZ_SCHEMA`) sin herramientas; el servidor junta el contenido
+- `quiz`, `weak_review`: salida JSON (`QUIZ_SCHEMA`) sin herramientas. En `QUIZ_SCHEMA` los cuatro campos
+  de respuesta (`options`, `answer_index`, `answer_bool`, `answer_text`) son **obligatorios**: Gemini
+  omite los opcionales (no mandaba `answer_index` y toda prueba con opción múltiple se rechazaba); el que
+  no corresponde al tipo va de relleno y `validateQuiz` lo ignora. El servidor junta el contenido
   de las hojas del alcance (tope `MAX.quizSourceChars`, repartido entre hasta `MAX.quizSourceSubjects`
   materias) y lo manda como bloque de datos. `weak_review` lee `weak_topics` con el JWT y los pasa al
   prompt (filtrados por las materias del alcance en la base, antes del tope de 50); sin temas flojos →
