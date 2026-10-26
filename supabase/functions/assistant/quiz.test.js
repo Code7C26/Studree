@@ -99,10 +99,16 @@ test('abierta sin respuesta de referencia → error', () => {
   assert.equal(validateQuiz({ questions: [open({ answer_text: '   ' })] }, { count: 5 }).ok, false)
 })
 
-test('tipo desconocido, sin enunciado, sin tema o sin explicación → error', () => {
-  for (const q of [mcq({ type: 'essay' }), mcq({ prompt: '' }), tf({ topic: ' ' }), open({ explanation: 7 })]) {
+test('tipo desconocido, sin enunciado o sin explicación → error', () => {
+  for (const q of [mcq({ type: 'essay' }), mcq({ prompt: '' }), open({ explanation: 7 })]) {
     assert.equal(validateQuiz({ questions: [q] }, { count: 5 }).ok, false)
   }
+})
+
+test('sin tema (hojas sin títulos #) → tema "General", no se rechaza la prueba', () => {
+  const r = validateQuiz({ questions: [tf({ topic: '' }), mcq({ topic: ' ' }), open({ topic: undefined })] }, { count: 5 })
+  assert.equal(r.ok, true)
+  assert.deepEqual(r.questions.map((q) => q.topic), ['General', 'General', 'General'])
 })
 
 test('estructura inválida o sin preguntas → error', () => {

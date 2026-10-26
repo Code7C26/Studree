@@ -50,7 +50,7 @@ export function buildSystemPrompt({ action, mode, scopeLabel, mapMd, today, hasS
 const TYPE_LABELS = { mcq: 'opción múltiple', tf: 'verdadero/falso', open: 'desarrollo' }
 
 const QUIZ_FORMAT =
-  'Formato: opción múltiple → 3 a 5 options y answer_index (desde 0); verdadero/falso → answer_bool; desarrollo → answer_text con la respuesta de referencia. Mandá siempre options, answer_index, answer_bool y answer_text: en los que no corresponden al tipo, lista vacía, 0, false o texto vacío. Cada pregunta lleva explanation, topic (el tema de la hoja, tal como aparece) y sheet_id de la hoja de donde salió. Usá solo el contenido de las hojas que te paso.'
+  'Formato: opción múltiple → 3 a 5 options y answer_index (desde 0); verdadero/falso → answer_bool; desarrollo → answer_text con la respuesta de referencia. Mandá siempre options, answer_index, answer_bool y answer_text: en los que no corresponden al tipo, lista vacía, 0, false o texto vacío. Cada pregunta lleva explanation, topic (el tema de la hoja, tal como aparece; si la hoja no tiene temas, "General") y sheet_id de la hoja de donde salió. Usá solo el contenido de las hojas que te paso.'
 
 /**
  * Pedido de cada acción (va en el turno del usuario). Vacío para chat y

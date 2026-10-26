@@ -14,6 +14,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TYPES = ['mcq', 'tf', 'open']
 const MCQ_MIN = 3
 const MCQ_MAX = 5
+/** Tema de las preguntas que vienen sin tema (hojas sin títulos `#`). */
+export const DEFAULT_TOPIC = 'General'
 
 /** Largo máximo de cada texto de la prueba (`topic` ≤ 200 por `weak_topics.topic`). */
 export const TEXT_MAX = {
@@ -98,8 +100,9 @@ function normalizeQuestion(raw, index, sheetIds) {
   if (!TYPES.includes(raw.type)) return { error: `La pregunta ${n} tiene un tipo inválido.` }
   const prompt = text(raw.prompt, TEXT_MAX.prompt)
   const explanation = text(raw.explanation, TEXT_MAX.explanation)
-  const topic = text(raw.topic, TEXT_MAX.topic)
-  if (!prompt || !explanation || !topic) return { error: `A la pregunta ${n} le falta enunciado, explicación o tema.` }
+  // Con hojas sin títulos `#` el modelo deja el tema vacío: no es motivo para tirar la prueba.
+  const topic = text(raw.topic, TEXT_MAX.topic) ?? DEFAULT_TOPIC
+  if (!prompt || !explanation) return { error: `A la pregunta ${n} le falta enunciado o explicación.` }
 
   /** @type {Question} */
   const q = { id: `q${n}`, type: raw.type, prompt }

@@ -125,6 +125,10 @@ lookup en `CLAUDE.md` y sus copias.
   corresponden) y el prompt lo pide. Archivos: `supabase/functions/assistant/quiz.js`, `prompt.js`,
   `quiz.test.js`, `docs/features/assistant.md`. Verificado contra la función publicada con un usuario
   de prueba (examen y corrección de desarrollo OK; usuario borrado).
+- **El examen seguía fallando con hojas sin títulos `#`:** sin temas, el modelo devuelve `topic` vacío y
+  `validateQuiz` rechazaba la prueba. Ahora una pregunta sin tema toma `DEFAULT_TOPIC` = "General" (es
+  el tema que usa el Repaso de errores) y el prompt lo pide. Reproducido y verificado con el contenido
+  real de una hoja sin títulos, en la función publicada. Archivos: `quiz.js`, `prompt.js`, `quiz.test.js`.
 
 ---
 
