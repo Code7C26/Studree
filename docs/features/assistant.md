@@ -1,7 +1,7 @@
 # Feature: Asistente de IA (el Brote)
 
-> **Fase 14 y 14.1** · Estado: ✅ Implementada (rama `fase-14`, versión 0.18.0, ADR-021 y ADR-022) · ⏳ falta que el
-> estudiante despliegue (o vuelva a desplegar) la función y cargue los secrets (ver "Cómo desplegar").
+> **Fase 14 y 14.1** · Estado: ✅ Implementada (rama `fase-14`, versión 0.18.0, ADR-021 y ADR-022) · ✅ función
+> desplegada y verificada en el navegador por el estudiante el 2026-10-26.
 > Fase 14.1: spec [`2026-10-22-brote-mejoras-design.md`](../superpowers/specs/2026-10-22-brote-mejoras-design.md).
 > Spec: [`docs/superpowers/specs/2026-10-19-asistente-ia-design.md`](../superpowers/specs/2026-10-19-asistente-ia-design.md) ·
 > Plan: [`docs/superpowers/plans/2026-10-19-fase-14-asistente.md`](../superpowers/plans/2026-10-19-fase-14-asistente.md).
@@ -643,10 +643,10 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
 ## Pendiente
 
 - [x] Implementar las capacidades de la tabla (tareas 1 a 12 del plan).
-- [ ] **[ESTUDIANTE]** Desplegar la función y cargar los secrets (ver "Cómo desplegar").
-- [ ] Verificar en el navegador el panel, el Brote y la propuesta de cambios.
+- [x] **[ESTUDIANTE]** Desplegar la función y cargar los secrets (ver "Cómo desplegar").
+- [x] Verificar en el navegador el panel, el Brote y la propuesta de cambios.
 - [ ] Con dos cuentas, comprobar que una no ve apuntes de la otra por el asistente.
 - [ ] Verificación manual de la Tarea 11 (prueba → corrección → fila en `weak_topics`; repaso que borra lo acertado; free sin llamada a Gemini en Repaso/Plan): requiere la Edge Function desplegada.
 - [ ] Verificación manual de la Tarea 10 (paso 5 del plan: atajo → propuesta → Aceptar → "Guardado" → recargar; Rechazar; reemplazo tras editar el párrafo; marca externa): requiere la Edge Function desplegada.
-- [ ] **[ESTUDIANTE]** Volver a desplegar la función `assistant` (resumen estructurado, Fase 14.1).
-- [ ] Verificación manual de la Fase 14.1 en el navegador (tarjeta de atajos, examen en ventana y registro, resumen + PDF + Guardar como hoja, Mi estudio): requiere la función redesplegada.
+- [x] **[ESTUDIANTE]** Volver a desplegar la función `assistant` (resumen estructurado, Fase 14.1).
+- [x] Verificación manual de la Fase 14.1 en el navegador (tarjeta de atajos, examen en ventana y registro, resumen + PDF + Guardar como hoja, Mi estudio): requiere la función redesplegada.

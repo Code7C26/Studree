@@ -103,8 +103,8 @@
 | Prueba a medias | No se guarda: cerrar la pestaña la pierde, con aviso del navegador |
 | Materia y carrera | Resúmenes y exámenes las siguen (papelera y borrado definitivo) |
 
-**Pendiente:** volver a desplegar la Edge Function `assistant` (resumen estructurado) y verificar
-todo en el navegador. La migración `0009` quedó aplicada el 2026-10-22. Sin dependencias nuevas.
+**Estado:** Edge Function `assistant` desplegada y Fase 14.1 verificada en el navegador por el
+estudiante el 2026-10-26. La migración `0009` quedó aplicada el 2026-10-22. Sin dependencias nuevas.
 
 **Cierre de documentación (Tarea 11):** ADR-022, estructura de carpetas y rutas en
 `docs/02-architecture.md`, Fase 14.1 en `docs/01-project-overview.md`, estado de la `0009` en

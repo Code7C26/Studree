@@ -179,8 +179,9 @@ Spec: `docs/superpowers/specs/2026-10-19-asistente-ia-design.md` · plan:
 | Atajos sobre el texto (Explicar, Refutar, Completar, Preguntame) y propuestas que el usuario acepta o rechaza | `features/assistant.md` | ✅ |
 | Pruebas tipo examen, repaso de errores, resúmenes, plan de estudio, detector de huecos y conexiones entre materias | `features/assistant.md` | ✅ |
 | Tablas `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | `DB_SCHEMA.md` | ✅ |
-| Desplegar la función y cargar los secrets de Gemini | `features/assistant.md` (Cómo desplegar) | ⏳ pendiente (lo hace el estudiante) |
-| Verificación en el navegador (con la función desplegada y dos cuentas) | `features/assistant.md` | ⏳ pendiente (prueba manual) |
+| Desplegar la función y cargar los secrets de Gemini | `features/assistant.md` (Cómo desplegar) | ✅ desplegada |
+| Verificación en el navegador (con la función desplegada) | `features/assistant.md` | ✅ verificada por el estudiante el 2026-10-26 |
+| Prueba con dos cuentas (una no ve apuntes de la otra por el asistente) | `features/assistant.md` | ⏳ pendiente (prueba manual) |
 
 > Migraciones `0007_asistente.sql` y `0008_quiz_grade_usage.sql` aplicadas el 2026-10-19.
 > Los topes de uso son **provisorios** (`supabase/functions/assistant/config.js`).
@@ -197,8 +198,8 @@ Spec: `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md` · plan:
 | Resumen estructurado, guardado automático, ventana, PDF por impresión del navegador y "Guardar como hoja" | `features/assistant.md` | ✅ |
 | Sección **Mi estudio** (`/estudio`): resúmenes y exámenes guardados, con filtro por materia | `features/study.md` | ✅ |
 | Migración `0009_mi_estudio.sql` (`summaries`, `quiz_attempts` ampliada) | `DB_SCHEMA.md` | ✅ aplicada el 2026-10-22 |
-| Volver a desplegar la Edge Function `assistant` (resumen estructurado) | `features/assistant.md` (Cómo desplegar) | ⏳ pendiente (lo hace el estudiante) |
-| Verificación en el navegador de punta a punta | los 2 docs | ⏳ pendiente (prueba manual) |
+| Volver a desplegar la Edge Function `assistant` (resumen estructurado) | `features/assistant.md` (Cómo desplegar) | ✅ desplegada el 2026-10-23 |
+| Verificación en el navegador de punta a punta | los 2 docs | ✅ verificada por el estudiante el 2026-10-26 |
 
 > Sin dependencias nuevas: el PDF usa la impresión del navegador (ADR-022).
 
