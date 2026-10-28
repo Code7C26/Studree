@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { ROUTES } from '../constants/routes'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * Catch-all de rutas.
@@ -11,12 +12,13 @@ import { ROUTES } from '../constants/routes'
  * página — ver CHANGELOG.
  */
 export function NotFoundPage() {
+  const { t } = useI18n()
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <h1 className="text-2xl font-bold">Página no encontrada</h1>
-      <p className="mt-2 text-text-muted">Esta sección todavía no existe o cambió de lugar.</p>
+      <h1 className="text-2xl font-bold">{t('shell.notFound.title')}</h1>
+      <p className="mt-2 text-text-muted">{t('shell.notFound.message')}</p>
       <Link to={ROUTES.home} className="mt-6">
-        <Button>Volver al inicio</Button>
+        <Button>{t('shell.notFound.back')}</Button>
       </Link>
     </div>
   )

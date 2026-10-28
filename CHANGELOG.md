@@ -30,6 +30,12 @@
   da exactamente lo mismo que antes y el inglés usa `10/14` y hora de 12 horas
   (`Tuesday 10/14 · 6:30 PM`). `sheetLocalIso` y `sheetFileName` (formato de archivo) no
   cambian. El orden alfabético de `studyItems` usa el idioma activo. Nuevo `core.tIn(lang, …)`.
+- **Tarea 4 — Shell, login, perfil, papelera y UI:** cabecera, tabs, explorador, `Ctrl K`, drawer,
+  404, login, Perfil, Papelera y los diálogos/UI compartidos pasan por `t()` (diccionarios
+  `common`, `shell`, `auth`, `profile`, `trash`, `errors`). `translateAuthError` se movió a
+  `services/authErrors.js` (testeable) y ya **no muestra el texto crudo del proveedor**: lo que no
+  reconoce sale como mensaje genérico; suma el caso de red caída. Los mensajes de `crudService` y
+  `trash.service` salen de `errors.*`. `PALETTE` guarda `nameKey` en vez del nombre.
 
 ---
 

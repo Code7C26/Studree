@@ -5,6 +5,7 @@
 
 import { Icon } from '../ui/Icon'
 import { getSubjectTones } from '../../constants/subjectTones.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -16,14 +17,15 @@ import { getSubjectTones } from '../../constants/subjectTones.js'
  * @param {() => void} props.onToggleExplorer
  */
 export function TabBar({ tabs, activeId, onActivate, onClose, explorerOpen, onToggleExplorer }) {
+  const { t } = useI18n()
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border/60 px-2 py-1.5">
       <button
         type="button"
         onClick={onToggleExplorer}
-        aria-label={explorerOpen ? 'Ocultar explorador (Ctrl+B)' : 'Mostrar explorador (Ctrl+B)'}
+        aria-label={explorerOpen ? t('shell.tabs.hideExplorer') : t('shell.tabs.showExplorer')}
         aria-pressed={explorerOpen}
-        title="Explorador (Ctrl+B)"
+        title={t('shell.tabs.explorerTitle')}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
       >
         <Icon name="sidebar" />
@@ -52,7 +54,7 @@ export function TabBar({ tabs, activeId, onActivate, onClose, explorerOpen, onTo
             <button
               type="button"
               onClick={() => onClose(tab.id)}
-              aria-label={`Cerrar ${tab.title}`}
+              aria-label={t('shell.tabs.close', { title: tab.title })}
               className={`rounded p-1 text-text-muted transition-opacity hover:bg-surface-2 hover:text-text focus-visible:opacity-100 ${
                 active ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
               }`}

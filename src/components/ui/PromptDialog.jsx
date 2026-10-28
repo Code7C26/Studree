@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { TextField } from './TextField'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /**
  * Diálogo para pedir un nombre (crear un nodo desde el canvas, etc.).
@@ -17,7 +18,8 @@ import { TextField } from './TextField'
  * @param {() => void} props.onClose
  * @param {React.ReactNode} [props.children] - Campos extra debajo del input.
  */
-export function PromptDialog({ open, title, label, placeholder, submitLabel = 'Crear', onSubmit, onClose, children }) {
+export function PromptDialog({ open, title, label, placeholder, submitLabel, onSubmit, onClose, children }) {
+  const { t } = useI18n()
   const [value, setValue] = useState('')
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -60,10 +62,10 @@ export function PromptDialog({ open, title, label, placeholder, submitLabel = 'C
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={saving || !value.trim()}>
-            {saving ? 'Guardando…' : submitLabel}
+            {saving ? t('common.saving') : (submitLabel ?? t('common.create'))}
           </Button>
         </div>
       </form>

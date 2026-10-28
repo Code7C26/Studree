@@ -17,6 +17,7 @@
 import { getSupabase } from './supabase.client.js'
 import { translateError, fetchAllPages } from './crudService.js'
 import { notifyDataChanged } from './dataEvents.js'
+import { t } from '../lib/i18n/index.js'
 
 /** kind de `list_trash` → tabla. */
 export const TABLE_BY_KIND = Object.freeze({ career: 'careers', subject: 'subjects', sheet: 'sheets' })
@@ -44,11 +45,11 @@ export const trashService = {
   async trash(table, id) {
     try {
       const { data, error } = await getSupabase().rpc('trash_item', { p_table: table, p_id: id })
-      if (error) return { data: null, error: translateError(error, 'No se pudo mover a la papelera.') }
+      if (error) return { data: null, error: translateError(error, t('errors.trash.move')) }
       notifyDataChanged()
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: translateError(error, 'No se pudo mover a la papelera.') }
+      return { data: null, error: translateError(error, t('errors.trash.move')) }
     }
   },
 
@@ -60,11 +61,11 @@ export const trashService = {
   async restore(table, id) {
     try {
       const { error } = await getSupabase().rpc('restore_item', { p_table: table, p_id: id })
-      if (error) return { data: null, error: translateError(error, 'No se pudo restaurar.') }
+      if (error) return { data: null, error: translateError(error, t('errors.trash.restore')) }
       notifyDataChanged()
       return { data: true, error: null }
     } catch (error) {
-      return { data: null, error: translateError(error, 'No se pudo restaurar.') }
+      return { data: null, error: translateError(error, t('errors.trash.restore')) }
     }
   },
 
@@ -72,10 +73,10 @@ export const trashService = {
   async list() {
     try {
       const { data, error } = await getSupabase().rpc('list_trash')
-      if (error) return { data: [], error: translateError(error, 'No se pudo cargar la papelera.') }
+      if (error) return { data: [], error: translateError(error, t('errors.trash.load')) }
       return { data: data ?? [], error: null }
     } catch (error) {
-      return { data: [], error: translateError(error, 'No se pudo cargar la papelera.') }
+      return { data: [], error: translateError(error, t('errors.trash.load')) }
     }
   },
 
@@ -88,7 +89,7 @@ export const trashService = {
    * @returns {Promise<import('../types/models.js').ServiceResult<Set<string>>>}
    */
   async trashedDescendantIds(kind, id) {
-    const fallback = 'No se pudo revisar qué incluye.'
+    const fallback = t('errors.trash.check')
     if (kind === 'sheet') return { data: new Set(), error: null }
     try {
       const pages = (table, columns, filter) =>
@@ -120,7 +121,7 @@ export const trashService = {
    * @returns {Promise<import('../types/models.js').ServiceResult<boolean>>}
    */
   async purgeForever(kind, id) {
-    const fallback = 'No se pudo borrar para siempre.'
+    const fallback = t('errors.trash.purge')
     const table = TABLE_BY_KIND[kind]
     try {
       // Primero confirmar que sigue en la papelera: recién ahí se tocan archivos.
@@ -157,7 +158,7 @@ export const trashService = {
   async purgeExpired(days = 30) {
     try {
       const { data, error } = await getSupabase().rpc('list_expired_trash', { p_days: days })
-      if (error) return { data: 0, error: translateError(error, 'No se pudo vaciar lo vencido.') }
+      if (error) return { data: 0, error: translateError(error, t('errors.trash.purgeExpired')) }
       let purged = 0
       for (const item of data ?? []) {
         const { data: deleted, error: purgeError } = await this.purgeForever(item.kind, item.id)
@@ -166,7 +167,7 @@ export const trashService = {
       }
       return { data: purged, error: null }
     } catch (error) {
-      return { data: 0, error: translateError(error, 'No se pudo vaciar lo vencido.') }
+      return { data: 0, error: translateError(error, t('errors.trash.purgeExpired')) }
     }
   },
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Icon } from './Icon'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /**
  * Panel lateral deslizante (drawer) desde la derecha, con overlay.
@@ -12,6 +13,7 @@ import { Icon } from './Icon'
  * @param {React.ReactNode} props.children
  */
 export function Drawer({ open, onClose, title, children }) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return undefined
     const onKey = (event) => {
@@ -45,7 +47,7 @@ export function Drawer({ open, onClose, title, children }) {
           <button
             onClick={onClose}
             className="rounded p-1 text-text-muted transition-colors hover:text-text"
-            aria-label="Cerrar panel"
+            aria-label={t('shell.drawer.close')}
           >
             <Icon name="close" />
           </button>

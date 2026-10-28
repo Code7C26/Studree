@@ -14,6 +14,7 @@ import { careersService } from '../services/careers.service.js'
 import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService } from '../services/sheets.service.js'
 import { onDataChanged } from '../services/dataEvents.js'
+import { t } from '../lib/i18n/index.js'
 
 /** Service correcto por nivel, para el rename desde el explorador. */
 const SERVICES_BY_TYPE = {
@@ -135,7 +136,7 @@ export function useExplorerTree() {
   const renameEntity = useCallback(
     async (type, id, name, node) => {
       const trimmed = name.trim()
-      if (!trimmed) return 'El nombre no puede estar vacío.'
+      if (!trimmed) return t('errors.emptyName')
 
       const service = SERVICES_BY_TYPE[type]
       const parentField = PARENT_FIELD_BY_TYPE[type]

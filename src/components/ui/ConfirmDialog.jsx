@@ -1,5 +1,6 @@
 import { Modal } from './Modal'
 import { Button } from './Button'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /**
  * Diálogo de confirmación para acciones destructivas (Mandamiento UX / Fase 4).
@@ -17,17 +18,18 @@ export function ConfirmDialog({
   message,
   onConfirm,
   onCancel,
-  confirmLabel = 'Eliminar',
+  confirmLabel,
 }) {
+  const { t } = useI18n()
   return (
     <Modal open={open} onClose={onCancel} title={title}>
       <p className="text-sm text-text-muted">{message}</p>
       <div className="mt-6 flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>
-          Cancelar
+          {t('common.cancel')}
         </Button>
         <Button variant="danger" onClick={onConfirm}>
-          {confirmLabel}
+          {confirmLabel ?? t('common.delete')}
         </Button>
       </div>
     </Modal>

@@ -1,0 +1,28 @@
+/** Trash: page, rows and confirmation sentences. */
+export default {
+  title: 'Trash',
+  help: 'What you delete stays here for {days} days. After that it is deleted automatically, attachments included.',
+  emptyAll: 'Empty trash',
+  emptyTitle: 'The trash is empty',
+  emptyMessage: 'Whatever you delete will show up here.',
+  emptyAllMessage: 'Everything in the trash is permanently deleted, attachments included. This cannot be undone.',
+  purgeTitle: 'Delete forever',
+  purge: 'Delete forever',
+  restore: 'Restore',
+  kinds: { career: 'Career', subject: 'Subject', sheet: 'Sheet' },
+  from: 'From {where}',
+  deletesToday: 'deleted today',
+  deletesIn: { one: 'deleted in {count} day', other: 'deleted in {count} days' },
+  counts: {
+    subjects: { one: '{count} subject', other: '{count} subjects' },
+    sheets: { one: '{count} sheet', other: '{count} sheets' },
+    attachments: { one: '{count} attachment', other: '{count} attachments' },
+  },
+  includes: 'includes {list}',
+  listAnd: '{head} and {last}',
+  quoted: '“{text}”',
+  sheetTitle: 'Sheet from {date}: {preview}',
+  sheetTitleNoPreview: 'Sheet from {date}',
+  purgeMessage: 'This permanently deletes “{title}” and everything it includes.{also} This cannot be undone.',
+  purgeAlso: ' Also permanently deleted: {list}.',
+}

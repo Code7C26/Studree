@@ -8,6 +8,8 @@ import { LoginPage } from './pages/LoginPage'
 import { CareersPage } from './pages/CareersPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ROUTES } from './constants/routes'
+import { useI18n } from './hooks/useI18n.js'
+import { t } from './lib/i18n/index.js'
 
 // Páginas pesadas en chunks aparte: React Flow + dagre (canvas) y TipTap
 // (editor) solo se descargan al entrar a esas vistas, no en el bundle inicial.
@@ -28,10 +30,12 @@ const StudyQuizPage = lazyPage(() => import('./pages/StudyQuizPage'), 'StudyQuiz
  * @param {React.ReactNode} element
  */
 const withSuspense = (element) => (
-  <Suspense fallback={<p className="mt-8 text-center text-text-muted">Cargando…</p>}>{element}</Suspense>
+  <Suspense fallback={<p className="mt-8 text-center text-text-muted">{t('common.loading')}</p>}>{element}</Suspense>
 )
 
 export default function App() {
+  // Suscribe la raíz al idioma: al cambiarlo, todo el árbol de rutas vuelve a pintar.
+  useI18n()
   return (
     <Routes>
       <Route element={<AppLayout />}>

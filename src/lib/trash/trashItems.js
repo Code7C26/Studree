@@ -1,9 +1,10 @@
 /**
- * Textos de la papelera (puras, ver docs/features/trash.md).
+ * Textos de la papelera (puras, ver docs/features/trash.md). Siguen el idioma activo (Fase 18).
  */
 
 import { buildPreview } from '../home/preview.js'
 import { formatSheetDate } from '../format/sheetDate.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /** Días que algo pasa en la papelera antes de borrarse solo. */
 export const TRASH_DAYS = 30
@@ -23,36 +24,46 @@ export function daysLeft(deletedAt, now = new Date(), days = TRASH_DAYS) {
   return Math.max(0, Math.ceil(remaining / DAY_MS))
 }
 
-/** @param {number} count @param {string} one @param {string} many */
-const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`
+/**
+ * "a, b y c" / "a, b and c" según el idioma ('' si no hay nada).
+ * @param {string[]} parts
+ * @param {string} lang
+ * @returns {string}
+ */
+function joinList(parts, lang) {
+  if (parts.length <= 1) return parts.join('')
+  return tIn(lang, 'trash.listAnd', { head: parts.slice(0, -1).join(', '), last: parts.at(-1) })
+}
 
 /**
  * "incluye 4 materias, 23 hojas y 2 adjuntos" ('' si no arrastra nada).
  * @param {Pick<import('../../types/models.js').TrashItem, 'subjects_count'|'sheets_count'|'attachments_count'>} item
+ * @param {string} [lang]
  * @returns {string}
  */
-export function describeContents(item) {
+export function describeContents(item, lang = getLang()) {
+  const count = (key, value) => value > 0 && tIn(lang, `trash.counts.${key}`, { count: value })
   const parts = [
-    item.subjects_count > 0 && plural(item.subjects_count, 'materia', 'materias'),
-    item.sheets_count > 0 && plural(item.sheets_count, 'hoja', 'hojas'),
-    item.attachments_count > 0 && plural(item.attachments_count, 'adjunto', 'adjuntos'),
+    count('subjects', item.subjects_count),
+    count('sheets', item.sheets_count),
+    count('attachments', item.attachments_count),
   ].filter(Boolean)
   if (parts.length === 0) return ''
-  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} y ${parts.at(-1)}`
-  return `incluye ${list}`
+  return tIn(lang, 'trash.includes', { list: joinList(parts, lang) })
 }
 
 /**
  * Cómo se nombra un elemento de la papelera. Las hojas no tienen título
  * (ADR-017): fecha + primer renglón.
  * @param {Pick<import('../../types/models.js').TrashItem, 'kind'|'label'|'sheet_created_at'>} item
+ * @param {string} [lang]
  * @returns {string}
  */
-export function trashItemTitle(item) {
+export function trashItemTitle(item, lang = getLang()) {
   if (item.kind !== 'sheet') return item.label
-  const date = formatSheetDate(item.sheet_created_at)
+  const date = formatSheetDate(item.sheet_created_at, new Date(), lang)
   const preview = buildPreview(item.label ?? '', 80)
-  return preview ? `Hoja del ${date}: ${preview}` : `Hoja del ${date}`
+  return preview ? tIn(lang, 'trash.sheetTitle', { date, preview }) : tIn(lang, 'trash.sheetTitleNoPreview', { date })
 }
 
 /**
@@ -70,18 +81,15 @@ export function nestedTrashItems(items, target, descendantIds) {
   return items.filter((item) => item.id !== target.id && item.kind !== 'career' && descendantIds.has(item.id))
 }
 
-/** @param {string[]} parts */
-const joinList = (parts) => (parts.length <= 1 ? parts.join('') : `${parts.slice(0, -1).join(', ')} y ${parts.at(-1)}`)
-
 /**
  * Texto de la confirmación de "Borrar para siempre".
  * @param {import('../../types/models.js').TrashItem} item
  * @param {import('../../types/models.js').TrashItem[]} nested - De `nestedTrashItems`.
+ * @param {string} [lang]
  * @returns {string}
  */
-export function purgeMessage(item, nested) {
-  const also = nested.length > 0
-    ? ` También se borran para siempre: ${joinList(nested.map((candidate) => `«${trashItemTitle(candidate)}»`))}.`
-    : ''
-  return `Se borra para siempre «${trashItemTitle(item)}», con todo lo que incluye.${also} No se puede deshacer.`
+export function purgeMessage(item, nested, lang = getLang()) {
+  const quote = (candidate) => tIn(lang, 'trash.quoted', { text: trashItemTitle(candidate, lang) })
+  const also = nested.length > 0 ? tIn(lang, 'trash.purgeAlso', { list: joinList(nested.map(quote), lang) }) : ''
+  return tIn(lang, 'trash.purgeMessage', { title: trashItemTitle(item, lang), also })
 }

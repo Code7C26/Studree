@@ -17,6 +17,7 @@ import { getSupabase } from './supabase.client.js'
 import { readCache, writeCache, cacheKey } from './cache.service.js'
 import { generateId } from '../lib/id.js'
 import { notifyDataChanged } from './dataEvents.js'
+import { t } from '../lib/i18n/index.js'
 
 /**
  * Traduce un error de supabase-js a un mensaje accionable en castellano.
@@ -29,19 +30,19 @@ export function translateError(error, fallback) {
   const message = error.message ?? ''
 
   if (/JWT|not authenticated|session/i.test(message)) {
-    return 'Tu sesión expiró. Volvé a iniciar sesión.'
+    return t('errors.supabase.sessionExpired')
   }
   if (/row-level security|violates row-level/i.test(message)) {
-    return 'No tenés permiso para hacer esto.'
+    return t('errors.supabase.forbidden')
   }
   if (/duplicate key|already exists/i.test(message)) {
-    return 'Ya existe un registro igual.'
+    return t('errors.supabase.duplicate')
   }
   if (/does not exist|schema cache/i.test(message)) {
-    return 'Falta aplicar una migración de la base (ver supabase/migrations/, en orden: 0001, 0002…).'
+    return t('errors.supabase.migration')
   }
   if (/Failed to fetch|NetworkError|fetch failed/i.test(message)) {
-    return 'Sin conexión con el servidor. Se guardó localmente y se reintentará.'
+    return t('errors.supabase.offline')
   }
   return message || fallback
 }
@@ -118,12 +119,12 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
           if (parentColumn && parentId) query = query.eq(parentColumn, parentId)
           return query.order(orderBy, { ascending: true }).order('id', { ascending: true }).range(from, to)
         })
-        if (error) return { data: readCache(key, []), error: translateError(error, 'No se pudo cargar la lista.') }
+        if (error) return { data: readCache(key, []), error: translateError(error, t('errors.crud.loadList')) }
 
         writeCache(key, data)
         return { data, error: null }
       } catch (error) {
-        return { data: readCache(key, []), error: translateError(error, 'No se pudo cargar la lista.') }
+        return { data: readCache(key, []), error: translateError(error, t('errors.crud.loadList')) }
       }
     },
 
@@ -135,10 +136,10 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
     async get(id) {
       try {
         const { data, error } = await alive(getSupabase().from(table).select('*').eq('id', id)).maybeSingle()
-        if (error) return { data: null, error: translateError(error, 'No se pudo cargar el registro.') }
+        if (error) return { data: null, error: translateError(error, t('errors.crud.loadRecord')) }
         return { data, error: null }
       } catch (error) {
-        return { data: null, error: translateError(error, 'No se pudo cargar el registro.') }
+        return { data: null, error: translateError(error, t('errors.crud.loadRecord')) }
       }
     },
 
@@ -170,7 +171,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
 
         if (error) {
           write(previous) // revertir
-          return { data: null, error: translateError(error, 'No se pudo crear.') }
+          return { data: null, error: translateError(error, t('errors.crud.create')) }
         }
 
         write([...previous, data])
@@ -178,7 +179,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
         return { data, error: null }
       } catch (error) {
         write(previous)
-        return { data: null, error: translateError(error, 'No se pudo crear.') }
+        return { data: null, error: translateError(error, t('errors.crud.create')) }
       }
     },
 
@@ -202,7 +203,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
 
         if (error) {
           writeCache(key, previous)
-          return { data: null, error: translateError(error, 'No se pudo guardar.') }
+          return { data: null, error: translateError(error, t('errors.crud.save')) }
         }
 
         writeCache(key, previous.map((row) => (row.id === id ? data : row)))
@@ -210,7 +211,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
         return { data, error: null }
       } catch (error) {
         writeCache(key, previous)
-        return { data: null, error: translateError(error, 'No se pudo guardar.') }
+        return { data: null, error: translateError(error, t('errors.crud.save')) }
       }
     },
 
@@ -239,7 +240,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
           p_y_column: yColumn,
           p_moves: moves.map(({ id, x, y }) => ({ id, x, y })),
         })
-        if (error) return { data: null, error: translateError(error, 'No se pudo guardar la posición.') }
+        if (error) return { data: null, error: translateError(error, t('errors.crud.savePosition')) }
 
         const key = keyFor(parentId)
         const byId = new Map(moves.map((move) => [move.id, move]))
@@ -251,7 +252,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
         )
         return { data: true, error: null }
       } catch (error) {
-        return { data: null, error: translateError(error, 'No se pudo guardar la posición.') }
+        return { data: null, error: translateError(error, t('errors.crud.savePosition')) }
       }
     },
 
@@ -275,14 +276,14 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
 
         if (error) {
           write(previous)
-          return { data: null, error: translateError(error, 'No se pudo eliminar.') }
+          return { data: null, error: translateError(error, t('errors.crud.delete')) }
         }
 
         if (notifies) notifyDataChanged()
         return { data: true, error: null }
       } catch (error) {
         write(previous)
-        return { data: null, error: translateError(error, 'No se pudo eliminar.') }
+        return { data: null, error: translateError(error, t('errors.crud.delete')) }
       }
     },
 
@@ -306,10 +307,10 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
             .order('id', { ascending: true })
             .range(from, to),
         )
-        if (error) return { data: [], error: translateError(error, 'No se pudo cargar la lista.') }
+        if (error) return { data: [], error: translateError(error, t('errors.crud.loadList')) }
         return { data, error: null }
       } catch (error) {
-        return { data: [], error: translateError(error, 'No se pudo cargar la lista.') }
+        return { data: [], error: translateError(error, t('errors.crud.loadList')) }
       }
     },
 
@@ -328,7 +329,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
       const values = Object.fromEntries(columns.map((column) => [column, null]))
       try {
         const { error } = await getSupabase().from(table).update(values).in(parentColumn, parentIds)
-        if (error) return { data: null, error: translateError(error, 'No se pudo reordenar.') }
+        if (error) return { data: null, error: translateError(error, t('errors.crud.reorder')) }
 
         for (const parentId of parentIds) {
           const key = keyFor(parentId)
@@ -336,7 +337,7 @@ export function createCrudService({ table, parentColumn, orderBy = 'position', n
         }
         return { data: true, error: null }
       } catch (error) {
-        return { data: null, error: translateError(error, 'No se pudo reordenar.') }
+        return { data: null, error: translateError(error, t('errors.crud.reorder')) }
       }
     },
   }

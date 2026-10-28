@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.js'
 import { ROUTES } from '../../constants/routes'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /**
  * Guard de rutas: sin sesión no se entra al workspace.
@@ -12,9 +13,10 @@ import { ROUTES } from '../../constants/routes'
 export function RequireAuth() {
   const { user, loading } = useAuth()
   const location = useLocation()
+  const { t } = useI18n()
 
   if (loading) {
-    return <p className="py-16 text-center text-text-muted">Cargando…</p>
+    return <p className="py-16 text-center text-text-muted">{t('common.loading')}</p>
   }
 
   if (!user) {

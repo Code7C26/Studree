@@ -3,12 +3,13 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../hooks/useAuth.js'
 import { Icon } from '../ui/Icon'
 import { OPEN_PALETTE_EVENT } from './WorkspaceLayout'
+import { useI18n } from '../../hooks/useI18n.js'
 
 const NAV_ITEMS = [
-  { to: ROUTES.home, label: 'Inicio' },
-  { to: ROUTES.careers, label: 'Carreras' },
-  { to: ROUTES.study, label: 'Mi estudio' },
-  { to: ROUTES.profile, label: 'Perfil' },
+  { to: ROUTES.home, labelKey: 'shell.nav.home' },
+  { to: ROUTES.careers, labelKey: 'shell.nav.careers' },
+  { to: ROUTES.study, labelKey: 'shell.nav.study' },
+  { to: ROUTES.profile, labelKey: 'shell.nav.profile' },
 ]
 
 /** Rutas con command palette (las del workspace, ver AppLayout). */
@@ -23,6 +24,7 @@ const LINK_IDLE = `${LINK} text-text-muted hover:bg-surface-2 hover:text-text`
  */
 export function Header() {
   const { user, isAnonymous, signOut } = useAuth()
+  const { t } = useI18n()
   const { pathname } = useLocation()
   const hasPalette = pathname === ROUTES.home || PALETTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
 
@@ -43,7 +45,7 @@ export function Header() {
             className="ml-auto hidden min-w-[16rem] items-center gap-2 rounded-lg border border-border bg-surface/70 px-3 py-1.5 text-sm text-text-muted transition-colors hover:border-text-muted/60 hover:text-text sm:flex"
           >
             <Icon name="search" />
-            <span>Buscar un tema o una materia</span>
+            <span>{t('shell.header.search')}</span>
             <kbd className="ml-auto rounded border border-border px-1 font-sans text-[11px]">Ctrl&nbsp;K</kbd>
           </button>
         )}
@@ -57,7 +59,7 @@ export function Header() {
               end={item.to === ROUTES.home}
               className={({ isActive }) => (isActive ? `${LINK} font-medium text-accent-soft` : LINK_IDLE)}
             >
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
 
@@ -67,11 +69,11 @@ export function Header() {
           */}
           {user && !isAnonymous ? (
             <button type="button" onClick={signOut} className={LINK_IDLE}>
-              Salir
+              {t('shell.nav.signOut')}
             </button>
           ) : user && isAnonymous ? null : (
             <NavLink to={ROUTES.login} className={LINK_IDLE}>
-              Entrar
+              {t('shell.nav.signIn')}
             </NavLink>
           )}
         </nav>

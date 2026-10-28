@@ -1,4 +1,5 @@
 import { PALETTE } from '../../constants/palette'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /**
  * Selector de color de la paleta del proyecto.
@@ -7,6 +8,7 @@ import { PALETTE } from '../../constants/palette'
  * @param {(color: string) => void} props.onChange
  */
 export function ColorPicker({ value, onChange }) {
+  const { t } = useI18n()
   return (
     <div className="flex flex-wrap gap-2">
       {PALETTE.map((color) => (
@@ -18,8 +20,8 @@ export function ColorPicker({ value, onChange }) {
             value === color.value ? 'border-text' : 'border-transparent'
           }`}
           style={{ backgroundColor: color.value }}
-          title={color.name}
-          aria-label={`Color ${color.name}`}
+          title={t(color.nameKey)}
+          aria-label={t('common.colorLabel', { name: t(color.nameKey) })}
         />
       ))}
     </div>

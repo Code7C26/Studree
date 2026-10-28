@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { buildContentSnippet } from '../../../lib/search/snippet.js'
 import { sheetsService } from '../../../services/sheets.service.js'
 import { formatSheetDate } from '../../../lib/format/sheetDate.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 const ICONS = { subject: '📚', sheet: '📝' }
 
@@ -48,6 +49,7 @@ function score(text, query) {
  * @param {(subjectId: string, sheetId?: string) => void} props.onOpenSubject - Abre la carpeta (en una hoja, si viene).
  */
 export function CommandPalette({ open, onClose, searchIndex, onOpenSubject }) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   /** Hojas cuyo contenido contiene el texto (respuesta del servidor). */
@@ -141,7 +143,7 @@ export function CommandPalette({ open, onClose, searchIndex, onOpenSubject }) {
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Buscar"
+        aria-label={t('shell.palette.label')}
       >
         <input
           autoFocus
@@ -152,14 +154,14 @@ export function CommandPalette({ open, onClose, searchIndex, onOpenSubject }) {
             setSelected(0)
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Buscar una materia o un texto dentro de tus hojas…"
-          aria-label="Buscar"
+          placeholder={t('shell.palette.placeholder')}
+          aria-label={t('shell.palette.label')}
           className="w-full border-b border-border bg-transparent px-4 py-3 text-text outline-none placeholder:text-text-muted"
         />
 
         <ul className="max-h-80 overflow-y-auto p-1.5">
           {results.length === 0 && (
-            <li className="px-3 py-6 text-center text-sm text-text-muted">Sin resultados.</li>
+            <li className="px-3 py-6 text-center text-sm text-text-muted">{t('shell.palette.noResults')}</li>
           )}
           {results.map(({ entry, snippet }, index) => (
             <li key={`${entry.type}:${entry.id}`}>

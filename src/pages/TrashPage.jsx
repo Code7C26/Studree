@@ -5,12 +5,14 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Icon } from '../components/ui/Icon'
 import { TRASH_DAYS, purgeMessage } from '../lib/trash/trashItems.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * `/papelera`: lo borrado, para restaurar o borrar para siempre.
  * Ver docs/features/trash.md.
  */
 export function TrashPage() {
+  const { t } = useI18n()
   const { items, loading, error, restore, purge, nestedItems, emptyTrash } = useTrash()
   const [confirm, setConfirm] = useState(null) // { type: 'one', item, nested } | { type: 'all' }
   const [busy, setBusy] = useState(false)
@@ -43,9 +45,9 @@ export function TrashPage() {
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold">Papelera</h1>
+          <h1 className="font-display text-3xl font-bold">{t('trash.title')}</h1>
           <p className="mt-1 text-sm text-text-muted">
-            Lo que borrás queda acá {TRASH_DAYS} días. Después se borra solo, con sus adjuntos.
+            {t('trash.help', { days: TRASH_DAYS })}
           </p>
         </div>
         {items.length > 0 && (
@@ -55,7 +57,7 @@ export function TrashPage() {
             disabled={busy}
             className="self-start rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted hover:border-red-800 hover:text-red-300 disabled:opacity-40 sm:self-auto"
           >
-            Vaciar papelera
+            {t('trash.emptyAll')}
           </button>
         )}
       </div>
@@ -67,13 +69,13 @@ export function TrashPage() {
       )}
 
       {loading && items.length === 0 ? (
-        <p className="mt-10 text-center text-text-muted">Cargando…</p>
+        <p className="mt-10 text-center text-text-muted">{t('common.loading')}</p>
       ) : items.length === 0 ? (
         <div className="mt-10">
           <EmptyState
             icon={<Icon name="trash" size={32} className="text-text-muted" />}
-            title="La papelera está vacía"
-            message="Lo que borres va a aparecer acá."
+            title={t('trash.emptyTitle')}
+            message={t('trash.emptyMessage')}
           />
         </div>
       ) : (
@@ -92,15 +94,15 @@ export function TrashPage() {
 
       <ConfirmDialog
         open={confirm != null}
-        title={confirm?.type === 'all' ? 'Vaciar papelera' : 'Borrar para siempre'}
+        title={confirm?.type === 'all' ? t('trash.emptyAll') : t('trash.purgeTitle')}
         message={
           confirm?.type === 'all'
-            ? 'Se borra para siempre todo lo que está en la papelera, con sus adjuntos. No se puede deshacer.'
+            ? t('trash.emptyAllMessage')
             : confirm
               ? purgeMessage(confirm.item, confirm.nested ?? [])
               : ''
         }
-        confirmLabel="Borrar para siempre"
+        confirmLabel={t('trash.purge')}
         onConfirm={handleConfirm}
         onCancel={() => setConfirm(null)}
       />

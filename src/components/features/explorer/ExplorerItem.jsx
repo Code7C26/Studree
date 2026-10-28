@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 const CHEVRON_WIDTH = 18
 
@@ -34,6 +35,7 @@ export function ExplorerItem({
   onSelect,
   onRename,
 }) {
+  const { t } = useI18n()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(label)
   const [renameError, setRenameError] = useState(null)
@@ -77,7 +79,7 @@ export function ExplorerItem({
           <button
             type="button"
             onClick={onToggle}
-            aria-label={expanded ? `Colapsar ${label}` : `Expandir ${label}`}
+            aria-label={expanded ? t('shell.explorer.collapse', { label }) : t('shell.explorer.expand', { label })}
             className="flex shrink-0 items-center justify-center py-1.5 text-text-muted hover:text-text"
             style={{ width: CHEVRON_WIDTH }}
           >
@@ -95,7 +97,7 @@ export function ExplorerItem({
             onBlur={commit}
             onKeyDown={handleKeyDown}
             onClick={(event) => event.stopPropagation()}
-            aria-label={`Renombrar ${label}`}
+            aria-label={t('shell.explorer.rename', { label })}
             className="min-w-0 flex-1 rounded border border-accent bg-bg px-1.5 py-0.5 text-sm text-text outline-none"
           />
         ) : (
@@ -114,7 +116,7 @@ export function ExplorerItem({
           <button
             type="button"
             onClick={startEditing}
-            aria-label={`Renombrar ${label}`}
+            aria-label={t('shell.explorer.rename', { label })}
             className="shrink-0 p-1 text-text-muted opacity-0 transition-opacity hover:text-text group-hover:opacity-100"
           >
             ✏️

@@ -71,3 +71,10 @@ Todos los métodos devuelven `{ data, error }` con el error ya traducido (`trans
 
 - [ ] Verificar en el navegador (la extensión de Chrome no estaba conectada al implementar): borrar y "Deshacer" en las tres páginas, `/papelera` completa (restaurar, borrar para siempre, vaciar), que lo borrado no aparezca en el explorador, `Ctrl+K`, el Inicio ni el export, y el chequeo de huérfanos en Storage tras "borrar para siempre".
 - [ ] Seguimiento menor: la purga solo corre cuando alguien entra a la app (no hay cron).
+
+## Idioma (Fase 18)
+
+Los textos de la papelera (página, filas, "incluye 4 materias…", confirmación) salen del
+diccionario `trash`; `lib/trash/trashItems.js` recibe un `lang` opcional (por defecto el
+activo) y usa plurales (`{one, other}`). Los mensajes de error de `trash.service.js` salen de
+`errors.trash.*`. Ver `docs/features/i18n.md`.

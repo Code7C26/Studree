@@ -22,6 +22,7 @@ import { useReadingMode } from '../../hooks/useReadingMode.js'
 import { readCache, writeCache } from '../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../constants/storageKeys.js'
 import { ROUTES, careerPath, subjectFolderPath } from '../../constants/routes.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Breakpoint `md` de Tailwind: desde acá el explorador es un panel fijo (antes, un drawer). */
 const DESKTOP_QUERY = '(min-width: 768px)'
@@ -48,6 +49,7 @@ export function WorkspaceLayout() {
   const params = useParams()
   const location = useLocation()
   const { user } = useAuth()
+  const { t } = useI18n()
   useTrashPurge(user?.id ?? null)
   const { reading } = useReadingMode()
   // El Inicio ocupa la pantalla entera: sin explorador ni tabs (ADR-018).
@@ -145,7 +147,7 @@ export function WorkspaceLayout() {
 
       {/* Mobile: el explorador no tiene panel fijo, se abre como drawer. */}
       <div className="md:hidden">
-        <Drawer open={explorerOpen && showShell} onClose={() => setExplorerOpen(false)} title="Explorador">
+        <Drawer open={explorerOpen && showShell} onClose={() => setExplorerOpen(false)} title={t('shell.explorer.title')}>
           <Explorer {...explorerProps} />
         </Drawer>
       </div>

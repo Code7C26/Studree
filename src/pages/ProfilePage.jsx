@@ -53,9 +53,9 @@ export function ProfilePage() {
     if (result.error) {
       setError(result.error)
     } else if (result.needsConfirmation) {
-      setNotice(`Te mandamos un mail a ${email} para confirmar la cuenta. Hasta que lo confirmes, seguís entrando como invitado.`)
+      setNotice(t('profile.linkConfirm', { email }))
     } else {
-      setNotice('Listo, tu cuenta ya tiene email y contraseña.')
+      setNotice(t('profile.linkDone'))
       setEmail('')
       setPassword('')
     }
@@ -65,16 +65,16 @@ export function ProfilePage() {
 
   return (
     <section className="mx-auto max-w-md">
-      <h1 className="text-2xl font-bold">Perfil</h1>
-      <p className="mt-2 text-text-muted">Tu cuenta y el contenido que tenés cargado.</p>
+      <h1 className="text-2xl font-bold">{t('profile.title')}</h1>
+      <p className="mt-2 text-text-muted">{t('profile.subtitle')}</p>
 
       <div className="card mt-6 space-y-3">
-        <h2 className="text-sm font-semibold text-text-muted">Cuenta</h2>
+        <h2 className="text-sm font-semibold text-text-muted">{t('profile.account')}</h2>
 
         {isAnonymous ? (
           <p className="text-sm text-text">
-            Entraste como <span className="font-medium text-accent">invitado</span> (sesión
-            anónima), sin email ni contraseña.
+            {t('profile.guestBefore')} <span className="font-medium text-accent">{t('profile.guestWord')}</span>{' '}
+            {t('profile.guestAfter')}
           </p>
         ) : (
           <p className="text-sm text-text">{user?.email}</p>
@@ -82,30 +82,28 @@ export function ProfilePage() {
 
         {isAnonymous && (
           <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-xs text-red-300">
-            Si cerrás sesión sin agregar un email y contraseña, no vas a poder volver a
-            entrar a esta cuenta y perdés todo lo que cargaste.
+            {t('profile.guestWarning')}
           </p>
         )}
 
         {!isAnonymous && (
           <Button variant="ghost" onClick={signOut} className="w-full">
-            Salir
+            {t('profile.signOut')}
           </Button>
         )}
       </div>
 
       {isAnonymous && (
         <div className="card mt-4 space-y-3">
-          <h2 className="text-sm font-semibold text-text-muted">Agregar email y contraseña</h2>
+          <h2 className="text-sm font-semibold text-text-muted">{t('profile.linkTitle')}</h2>
           <p className="text-xs text-text-muted">
-            Convertí tu cuenta de invitado en una cuenta normal sin perder nada de lo que ya
-            cargaste.
+            {t('profile.linkHelp')}
           </p>
 
           <form onSubmit={handleLink} className="space-y-3">
             <TextField
               id="link-email"
-              label="Email"
+              label={t('common.email')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -114,7 +112,7 @@ export function ProfilePage() {
             />
             <TextField
               id="link-password"
-              label="Contraseña"
+              label={t('common.password')}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -135,7 +133,7 @@ export function ProfilePage() {
             )}
 
             <Button type="submit" disabled={linking} className="w-full">
-              {linking ? 'Un momento…' : 'Guardar'}
+              {linking ? t('common.oneMoment') : t('common.save')}
             </Button>
           </form>
         </div>
@@ -148,22 +146,22 @@ export function ProfilePage() {
       </div>
 
       <div className="card mt-4 space-y-3">
-        <h2 className="text-sm font-semibold text-text-muted">Contenido cargado</h2>
+        <h2 className="text-sm font-semibold text-text-muted">{t('profile.content')}</h2>
 
         {loadingTree ? (
-          <p className="text-sm text-text-muted">Contando…</p>
+          <p className="text-sm text-text-muted">{t('profile.counting')}</p>
         ) : (
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <dt className="text-xs text-text-muted">Carreras</dt>
+              <dt className="text-xs text-text-muted">{t('profile.careers')}</dt>
               <dd className="text-xl font-bold text-accent">{counts.careers}</dd>
             </div>
             <div>
-              <dt className="text-xs text-text-muted">Materias</dt>
+              <dt className="text-xs text-text-muted">{t('profile.subjects')}</dt>
               <dd className="text-xl font-bold text-accent">{counts.subjects}</dd>
             </div>
             <div>
-              <dt className="text-xs text-text-muted">Hojas</dt>
+              <dt className="text-xs text-text-muted">{t('profile.sheets')}</dt>
               <dd className="text-xl font-bold text-accent">{counts.sheets}</dd>
             </div>
           </dl>

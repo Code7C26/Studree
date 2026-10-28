@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Cuánto queda visible el aviso. */
 const UNDO_TOAST_MS = 6000
@@ -14,6 +15,7 @@ const UNDO_TOAST_MS = 6000
  * @param {() => void} props.onClose - Pasarlo estable (useCallback): si cambia, el timer se reinicia.
  */
 export function UndoToast({ message, onUndo, onClose }) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!message) return undefined
     const timer = window.setTimeout(onClose, UNDO_TOAST_MS)
@@ -29,7 +31,7 @@ export function UndoToast({ message, onUndo, onClose }) {
     >
       <span>{message}</span>
       <button type="button" onClick={onUndo} className="min-h-8 font-medium text-accent hover:text-accent-soft">
-        Deshacer
+        {t('common.undo')}
       </button>
     </div>,
     document.body,

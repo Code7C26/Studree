@@ -169,3 +169,10 @@ la carpeta también escuchan el aviso y se recargan en silencio.
 - [ ] Reordenar tabs arrastrando.
 - [ ] Acciones del palette además de navegar (crear hoja, exportar).
 - [x] Renombrar en línea desde el explorador (2026-09-14).
+
+## Idioma (Fase 18)
+
+Todo el texto del shell (cabecera, tabs, explorador, buscador `Ctrl K`, drawer, 404) sale del
+diccionario `shell` de `src/lib/i18n/` (castellano / inglés, ver `docs/features/i18n.md`). Los
+componentes llaman a `useI18n()`; los links de navegación guardan una `labelKey`, no un texto.
+`App.jsx` también se suscribe al idioma para que todo el árbol de rutas vuelva a pintar al cambiarlo.

@@ -2,27 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AuthContext } from '../../hooks/useAuth.js'
 import { supabase, isSupabaseConfigured } from '../../services/supabase.client.js'
 import { clearAllCache } from '../../services/cache.service.js'
-
-/**
- * Traduce los errores de Supabase Auth a mensajes accionables.
- * @param {{message?: string}|null} error
- * @returns {string|null}
- */
-function translateAuthError(error) {
-  if (!error) return null
-  const message = error.message ?? ''
-
-  if (/Invalid login credentials/i.test(message)) return 'Email o contraseña incorrectos.'
-  if (/Email not confirmed/i.test(message)) {
-    return 'Falta confirmar el email. Revisá tu casilla (o desactivá la confirmación en Supabase → Authentication → Providers).'
-  }
-  if (/User already registered/i.test(message)) return 'Ese email ya tiene cuenta. Iniciá sesión.'
-  if (/Password should be at least/i.test(message)) {
-    return 'La contraseña debe tener al menos 6 caracteres.'
-  }
-  if (/rate limit|too many/i.test(message)) return 'Demasiados intentos. Esperá un momento.'
-  return message || 'No se pudo completar la operación.'
-}
+import { translateAuthError } from '../../services/authErrors.js'
 
 /**
  * Provee la sesión a toda la app.

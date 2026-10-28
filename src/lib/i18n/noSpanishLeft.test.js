@@ -11,13 +11,10 @@ import { scanSourceTree } from './scanSpanish.js'
  *  - un prefijo de PENDING sin ningún castellano → ya migró, hay que borrarlo de la lista.
  */
 export const PENDING = [
-  'src/App.jsx',
   'src/components/features/assistant/',
   'src/components/features/attachments/',
   'src/components/features/careerMap/',
   'src/components/features/careers/',
-  'src/components/features/commandPalette/',
-  'src/components/features/explorer/',
   'src/components/features/export/',
   'src/components/features/folder/',
   'src/components/features/home/',
@@ -25,9 +22,6 @@ export const PENDING = [
   'src/components/features/sheetEditor/',
   'src/components/features/study/',
   'src/components/features/templates/',
-  'src/components/features/trash/',
-  'src/components/layout/',
-  'src/components/ui/',
   'src/constants/',
   'src/hooks/',
   'src/lib/assistant/',
@@ -35,7 +29,6 @@ export const PENDING = [
   'src/lib/export/',
   'src/lib/home/',
   'src/lib/import/',
-  'src/lib/trash/',
   'src/pages/',
   'src/services/',
 ]

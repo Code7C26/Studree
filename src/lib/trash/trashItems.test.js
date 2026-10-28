@@ -56,3 +56,19 @@ test('purgeMessage nombra lo que también se borra', () => {
     'Se borra para siempre «Bio», con todo lo que incluye. También se borran para siempre: «Genética» y «Física». No se puede deshacer.',
   )
 })
+
+test('en inglés: contenidos, título de hoja y confirmación', () => {
+  assert.equal(
+    describeContents({ kind: 'career', subjects_count: 4, sheets_count: 23, attachments_count: 2 }, 'en'),
+    'includes 4 subjects, 23 sheets and 2 attachments',
+  )
+  assert.equal(describeContents({ kind: 'subject', subjects_count: 0, sheets_count: 1, attachments_count: 0 }, 'en'), 'includes 1 sheet')
+  const bare = trashItemTitle({ kind: 'sheet', label: '', sheet_created_at: '2026-10-14T21:30:00Z' }, 'en')
+  assert.match(bare, /^Sheet from /)
+  const career = { kind: 'career', id: 'c1', label: 'Bio' }
+  const subject = { kind: 'subject', id: 's1', label: 'Genetics' }
+  assert.equal(
+    purgeMessage(career, [subject], 'en'),
+    'This permanently deletes “Bio” and everything it includes. Also permanently deleted: “Genetics”. This cannot be undone.',
+  )
+})

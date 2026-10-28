@@ -18,6 +18,8 @@ export const COMMON_WORDS = Object.freeze([
   'Plantilla', 'Plantillas', 'Importar', 'Exportar', 'Editar', 'Renombrar', 'Mover', 'Abrir',
   'Salir', 'Entrar', 'Enviar', 'Siguiente', 'Anterior', 'Empezar', 'Terminar', 'Resultado',
   'Puntaje', 'Correcta', 'Incorrecta', 'Verdadero', 'Falso',
+  'Explorador', 'Filtrar', 'Restaurar', 'Deshacer', 'Vaciar', 'Colapsar', 'Expandir', 'Ocultar',
+  'Mostrar', 'Resultados', 'Momento', 'Renombrar', 'Entraste', 'Contando', 'Papelera',
 ])
 
 const ACCENTS = /[áéíóúüñÁÉÍÓÚÜÑ¿¡]/

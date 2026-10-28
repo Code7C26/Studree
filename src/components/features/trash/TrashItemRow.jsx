@@ -1,7 +1,6 @@
 import { Icon } from '../../ui/Icon'
 import { daysLeft, describeContents, trashItemTitle } from '../../../lib/trash/trashItems.js'
-
-const KIND_LABELS = { career: 'Carrera', subject: 'Materia', sheet: 'Hoja' }
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * Una fila de la papelera. Ver docs/features/trash.md.
@@ -12,6 +11,7 @@ const KIND_LABELS = { career: 'Carrera', subject: 'Materia', sheet: 'Hoja' }
  * @param {boolean} props.busy
  */
 export function TrashItemRow({ item, onRestore, onPurge, busy }) {
+  const { t } = useI18n()
   const where = item.kind === 'sheet' ? `${item.subject_name}, ${item.career_name}` : item.career_name
   const contents = describeContents(item)
   const days = daysLeft(item.deleted_at)
@@ -19,12 +19,12 @@ export function TrashItemRow({ item, onRestore, onPurge, busy }) {
   return (
     <li className="flex flex-col gap-3 border-b border-border px-1 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="text-xs text-text-muted">{KIND_LABELS[item.kind]}</p>
+        <p className="text-xs text-text-muted">{t(`trash.kinds.${item.kind}`)}</p>
         <p className="truncate font-medium text-text" title={trashItemTitle(item)}>
           {trashItemTitle(item)}
         </p>
         <p className="mt-0.5 text-xs text-text-muted">
-          {[where && `De ${where}`, contents, days === 0 ? 'se borra hoy' : `se borra en ${days} día${days === 1 ? '' : 's'}`]
+          {[where && t('trash.from', { where }), contents, days === 0 ? t('trash.deletesToday') : t('trash.deletesIn', { count: days })]
             .filter(Boolean)
             .join('. ')}
         </p>
@@ -36,7 +36,7 @@ export function TrashItemRow({ item, onRestore, onPurge, busy }) {
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:border-accent hover:text-accent disabled:opacity-40"
         >
-          <Icon name="restore" /> Restaurar
+          <Icon name="restore" /> {t('trash.restore')}
         </button>
         <button
           type="button"
@@ -44,7 +44,7 @@ export function TrashItemRow({ item, onRestore, onPurge, busy }) {
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-text-muted hover:text-red-300 disabled:opacity-40"
         >
-          <Icon name="trash" /> Borrar para siempre
+          <Icon name="trash" /> {t('trash.purge')}
         </button>
       </div>
     </li>
