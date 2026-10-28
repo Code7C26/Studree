@@ -6,6 +6,19 @@
 
 ---
 
+## [0.19.0] — 2026-10-28
+
+### Added — Studree en inglés (FASE 18)
+
+> Request: "agregar un botón para pasar la app a inglés" (selector en la configuración, como en
+> cualquier web; el Brote responde en el idioma en que le escriben).
+> Spec: `docs/superpowers/specs/2026-10-28-ingles-design.md` · plan:
+> `docs/superpowers/plans/2026-10-28-fase-18-ingles.md`.
+
+- **Tarea 0:** documentación inicial (`docs/features/i18n.md`) y rama `fase-18` desde `fase-14`.
+
+---
+
 ## [Sin versión] — 2026-10-26
 
 ### Changed — Hoja de ruta: Fase 18 (inglés)
