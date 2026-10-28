@@ -3,6 +3,7 @@ import { HomePanel } from './HomePanel'
 import { Button } from '../../ui/Button'
 import { HOME_LIMITS } from '../../../constants/homeLimits.js'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 const TEXTAREA =
   'w-full resize-y rounded-lg border bg-bg/60 px-3 py-2 text-sm text-text transition-colors focus-visible:border-accent'
@@ -16,6 +17,7 @@ const TEXTAREA =
  * @param {number} props.index - Para alternar la inclinación del post-it.
  */
 function NoteCard({ note, onUpdate, onRemove, index }) {
+  const { t } = useI18n()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.body)
   // Esc cancela: si el navegador dispara `blur` al sacar el textarea del DOM,
@@ -54,7 +56,7 @@ function NoteCard({ note, onUpdate, onRemove, index }) {
           maxLength={HOME_LIMITS.noteBody}
           rows={3}
           autoFocus
-          aria-label="Editar nota"
+          aria-label={t('home.notes.editLabel')}
           className="w-full resize-y rounded-sm border border-postit-ink/30 bg-postit px-2 py-1 text-sm text-postit-ink"
         />
       ) : (
@@ -72,7 +74,7 @@ function NoteCard({ note, onUpdate, onRemove, index }) {
       <button
         type="button"
         onClick={() => onRemove(note.id)}
-        aria-label="Borrar nota"
+        aria-label={t('home.notes.deleteLabel')}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-postit-ink/70 transition-colors hover:bg-black/5 hover:text-postit-ink"
       >
         <Icon name="close" size={14} />
@@ -95,6 +97,7 @@ function NoteCard({ note, onUpdate, onRemove, index }) {
  * @param {string} [props.className]
  */
 export function QuickNotes({ notes, pendingRemoval, loading, error, onCreate, onUpdate, onRemove, onUndoRemove, className = '' }) {
+  const { t } = useI18n()
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
   // Ref (no estado): el atajo Ctrl+Enter repetido llega antes del re-render, y
@@ -112,7 +115,7 @@ export function QuickNotes({ notes, pendingRemoval, loading, error, onCreate, on
   }
 
   return (
-    <HomePanel title="Notas rápidas" error={error} className={className}>
+    <HomePanel title={t('home.notes.title')} error={error} className={className}>
       <div className="space-y-2">
         <textarea
           value={body}
@@ -123,16 +126,16 @@ export function QuickNotes({ notes, pendingRemoval, loading, error, onCreate, on
               save()
             }
           }}
-          placeholder="Anotá algo…"
+          placeholder={t('home.notes.placeholder')}
           maxLength={HOME_LIMITS.noteBody}
           rows={2}
-          aria-label="Nueva nota"
+          aria-label={t('home.notes.newLabel')}
           className={`${TEXTAREA} border-border`}
         />
         <div className="flex items-center justify-between gap-2">
-          <span className="hidden text-xs text-text-muted sm:inline">Ctrl+Enter para guardar</span>
+          <span className="hidden text-xs text-text-muted sm:inline">{t('home.notes.shortcut')}</span>
           <Button onClick={save} disabled={saving || !body.trim()} className="ml-auto">
-            Guardar
+            {t('common.save')}
           </Button>
         </div>
       </div>
@@ -142,17 +145,17 @@ export function QuickNotes({ notes, pendingRemoval, loading, error, onCreate, on
           role="status"
           className="mt-3 flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text"
         >
-          Nota borrada
+          {t('home.notes.removed')}
           <button type="button" onClick={onUndoRemove} className="min-h-8 font-medium text-accent hover:text-accent-soft">
-            Deshacer
+            {t('common.undo')}
           </button>
         </div>
       )}
 
       {loading && notes.length === 0 ? (
-        <p className="mt-3 text-sm text-text-muted">Cargando…</p>
+        <p className="mt-3 text-sm text-text-muted">{t('common.loading')}</p>
       ) : notes.length === 0 ? (
-        <p className="mt-3 text-sm text-text-muted">Sin notas por ahora.</p>
+        <p className="mt-3 text-sm text-text-muted">{t('home.notes.none')}</p>
       ) : (
         <ul className="mt-4 grid gap-3">
           {notes.map((note, index) => (

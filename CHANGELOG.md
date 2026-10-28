@@ -36,6 +36,10 @@
   `services/authErrors.js` (testeable) y ya **no muestra el texto crudo del proveedor**: lo que no
   reconoce sale como mensaje genérico; suma el caso de red caída. Los mensajes de `crudService` y
   `trash.service` salen de `errors.*`. `PALETTE` guarda `nameKey` en vez del nombre.
+- **Tarea 5 — Inicio:** página, bloques (`ContinueCard`, `NextDateCard`, `WeekSummary`, `CalendarPanel`,
+  `TaskList`, `QuickNotes`, `DateFormModal`) y `lib/home` (`greeting`, `summary`, `calendar`) pasan por
+  `t()` (diccionario `home`). Se agregan tests de `greeting`, `summary` y `calendar`;
+  `WEEKDAY_HEADERS` pasó a `weekdayHeaders(lang)`.
 
 ---
 

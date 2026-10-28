@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { HomePanel } from './HomePanel'
 import { Button } from '../../ui/Button'
-import { WEEKDAY_HEADERS, buildMonthGrid, shiftMonth } from '../../../lib/home/calendar.js'
+import { weekdayHeaders, buildMonthGrid, shiftMonth } from '../../../lib/home/calendar.js'
 import { daysUntil, formatCountdown, formatMonthTitle, formatShortDate, parseDateKey } from '../../../lib/home/dates.js'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 const NAV_BUTTON =
   'flex h-10 w-10 items-center justify-center rounded-lg text-lg text-text-muted transition-colors hover:bg-surface-2 hover:text-text'
@@ -23,6 +24,7 @@ const NAV_BUTTON =
  * @param {string} [props.className]
  */
 export function CalendarPanel({ todayKey, upcoming, markers, loading, error, onAddDate, onEditDate, className = '' }) {
+  const { t, lang } = useI18n()
   const [view, setView] = useState(() => {
     const today = parseDateKey(todayKey)
     return { year: today.getFullYear(), month: today.getMonth() }
@@ -32,27 +34,27 @@ export function CalendarPanel({ todayKey, upcoming, markers, loading, error, onA
 
   return (
     <HomePanel
-      title="Calendario"
+      title={t('home.calendar.title')}
       error={error}
       className={className}
       action={
         <Button variant="ghost" className="px-3 py-1.5" onClick={() => onAddDate(todayKey)}>
-          <Icon name="plus" size={14} /> Fecha
+          <Icon name="plus" size={14} /> {t('home.calendar.addShort')}
         </Button>
       }
     >
       <div className="flex items-center justify-between">
-        <button type="button" className={NAV_BUTTON} onClick={() => move(-1)} aria-label="Mes anterior">
+        <button type="button" className={NAV_BUTTON} onClick={() => move(-1)} aria-label={t('home.calendar.prevMonth')}>
           <Icon name="chevron-left" />
         </button>
-        <p className="text-sm font-semibold text-text">{formatMonthTitle(view.year, view.month)}</p>
-        <button type="button" className={NAV_BUTTON} onClick={() => move(1)} aria-label="Mes siguiente">
+        <p className="text-sm font-semibold text-text">{formatMonthTitle(view.year, view.month, lang)}</p>
+        <button type="button" className={NAV_BUTTON} onClick={() => move(1)} aria-label={t('home.calendar.nextMonth')}>
           <Icon name="chevron-right" />
         </button>
       </div>
 
       <div className="mt-2 grid grid-cols-7 gap-1 text-center tabular-nums">
-        {WEEKDAY_HEADERS.map((header, index) => (
+        {weekdayHeaders(lang).map((header, index) => (
           <span key={index} className="py-1 text-xs text-text-muted" aria-hidden="true">
             {header}
           </span>
@@ -62,9 +64,9 @@ export function CalendarPanel({ todayKey, upcoming, markers, loading, error, onA
           const isToday = cell.key === todayKey
           const label = [
             formatShortDate(cell.key),
-            marker?.dates ? 'con fechas' : null,
-            marker?.tasks ? 'vencen tareas' : null,
-            'agregar fecha',
+            marker?.dates ? t('home.calendar.withDates') : null,
+            marker?.tasks ? t('home.calendar.tasksDue') : null,
+            t('home.calendar.addDate'),
           ]
             .filter(Boolean)
             .join(', ')
@@ -95,18 +97,18 @@ export function CalendarPanel({ todayKey, upcoming, markers, loading, error, onA
 
       <p className="mt-2 flex gap-4 text-xs text-text-muted">
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden="true" /> Fecha
+          <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden="true" /> {t('home.calendar.legendDate')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-text-muted" aria-hidden="true" /> Vence una tarea
+          <span className="h-1.5 w-1.5 rounded-full bg-text-muted" aria-hidden="true" /> {t('home.calendar.legendTask')}
         </span>
       </p>
 
-      <h3 className="mt-4 text-sm font-medium text-text-muted">Próximas</h3>
+      <h3 className="mt-4 text-sm font-medium text-text-muted">{t('home.calendar.upcoming')}</h3>
       {loading && upcoming.length === 0 ? (
-        <p className="mt-2 text-sm text-text-muted">Cargando…</p>
+        <p className="mt-2 text-sm text-text-muted">{t('common.loading')}</p>
       ) : upcoming.length === 0 ? (
-        <p className="mt-2 text-sm text-text-muted">Sin fechas próximas. Tocá un día para agregar una.</p>
+        <p className="mt-2 text-sm text-text-muted">{t('home.calendar.noUpcoming')}</p>
       ) : (
         <ul className="mt-2 space-y-1">
           {upcoming.map((item) => (

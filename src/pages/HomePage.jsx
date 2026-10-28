@@ -9,6 +9,7 @@ import { TaskList } from '../components/features/home/TaskList'
 import { QuickNotes } from '../components/features/home/QuickNotes'
 import { describeNextDate, formatLongDay, greetingFor } from '../lib/home/greeting.js'
 import { daysUntil, parseDateKey } from '../lib/home/dates.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * Inicio (`/`, dentro del workspace, sin explorador ni tabs): saludo, seguí
@@ -20,20 +21,21 @@ import { daysUntil, parseDateKey } from '../lib/home/dates.js'
  */
 export function HomePage() {
   const home = useHome()
+  const { lang } = useI18n()
   /** Fecha abierta en el modal (alta si no tiene id), o null. */
   const [dateForm, setDateForm] = useState(/** @type {{id?: string, title: string, date: string}|null} */ (null))
 
   const openNewDate = (key) => setDateForm({ title: '', date: key })
 
   const next = home.dates.next
-  const nextLine = next ? describeNextDate(next.title, daysUntil(next.date, home.todayKey)) : null
+  const nextLine = next ? describeNextDate(next.title, daysUntil(next.date, home.todayKey), lang) : null
 
   return (
     <div className="mx-auto max-w-5xl">
       <header className="mb-6">
-        <h1 className="font-display text-4xl font-extrabold tracking-tight">{greetingFor(new Date())}</h1>
+        <h1 className="font-display text-4xl font-extrabold tracking-tight">{greetingFor(new Date(), lang)}</h1>
         <p className="mt-1 text-text-muted">
-          {formatLongDay(parseDateKey(home.todayKey))}
+          {formatLongDay(parseDateKey(home.todayKey), lang)}
           {nextLine && <> — {nextLine}.</>}
         </p>
       </header>

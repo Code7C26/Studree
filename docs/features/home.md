@@ -153,3 +153,13 @@ Tablas `important_dates`, `tasks` y `quick_notes` (migración `0005_home.sql`, R
 - Pasar una nota a hoja.
 - El scroll a la hoja (lo hace La Carpeta).
 - PWA y la fase de celular (acá solo se deja el layout responsive).
+
+## Idioma (Fase 18)
+
+Todo el texto del Inicio sale del diccionario `home` (castellano / inglés, ver
+`docs/features/i18n.md`): saludo, "Seguí donde dejaste", próxima fecha, semana, calendario,
+tareas y notas. Las funciones de `lib/home/` (`greeting`, `summary`, `calendar`, `dates`) reciben
+un `lang` opcional (por defecto el activo) y usan plurales (`{one, other}`) en vez de armar
+"tarea"/"tareas" a mano. El calendario sigue empezando el lunes en los dos idiomas
+(`weekdayHeaders(lang)`). `HomePage` pasa `lang` a los formateadores para volver a pintar al
+cambiar de idioma. Las fechas, tareas y notas del usuario no se traducen.

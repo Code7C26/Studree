@@ -5,6 +5,7 @@ import { isOverdue } from '../../../lib/home/summary.js'
 import { formatDayMonth } from '../../../lib/home/dates.js'
 import { HOME_LIMITS } from '../../../constants/homeLimits.js'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 const ICON_BUTTON =
   'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-surface-2 hover:text-text'
@@ -19,6 +20,7 @@ const ICON_BUTTON =
  * @param {(id: string) => void} props.onDelete
  */
 function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
+  const { t } = useI18n()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(task.text)
   // Esc cancela: el `blur` que sigue no tiene que guardar.
@@ -50,7 +52,7 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
           type="checkbox"
           checked={done}
           onChange={() => onToggle(task.id, !done)}
-          aria-label={done ? `Marcar «${task.text}» como pendiente` : `Marcar «${task.text}» como hecha`}
+          aria-label={done ? t('home.tasks.markPending', { text: task.text }) : t('home.tasks.markDone', { text: task.text })}
           className="h-5 w-5 cursor-pointer accent-accent"
         />
       </label>
@@ -69,7 +71,7 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
           }}
           maxLength={HOME_LIMITS.taskText}
           autoFocus
-          aria-label="Editar tarea"
+          aria-label={t('home.tasks.editLabel')}
           className="min-w-0 flex-1 rounded-md border border-accent bg-bg px-2 py-1 text-sm text-text"
         />
       ) : (
@@ -82,16 +84,18 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
       )}
       {task.due_date && !done && (
         <span className={`shrink-0 text-xs ${overdue ? 'font-medium text-red-300' : 'text-text-muted'}`}>
-          {overdue ? 'vencida' : 'vence'} {formatDayMonth(task.due_date)}
+          {overdue
+            ? t('home.tasks.overdueOn', { date: formatDayMonth(task.due_date) })
+            : t('home.tasks.dueOn', { date: formatDayMonth(task.due_date) })}
         </span>
       )}
       {!done && !editing && (
-        <button type="button" onClick={startEditing} className={ICON_BUTTON} aria-label={`Editar «${task.text}»`}>
+        <button type="button" onClick={startEditing} className={ICON_BUTTON} aria-label={t('home.tasks.editItem', { text: task.text })}>
           <Icon name="edit" size={14} />
         </button>
       )}
       {done && (
-        <button type="button" onClick={() => onDelete(task.id)} className={ICON_BUTTON} aria-label={`Borrar «${task.text}»`}>
+        <button type="button" onClick={() => onDelete(task.id)} className={ICON_BUTTON} aria-label={t('home.tasks.deleteItem', { text: task.text })}>
           <Icon name="close" size={14} />
         </button>
       )}
@@ -114,6 +118,7 @@ function TaskItem({ task, todayKey, onToggle, onRename, onDelete }) {
  * @param {string} [props.className]
  */
 export function TaskList({ pending, done, todayKey, loading, error, onCreate, onToggle, onRename, onDelete, className = '' }) {
+  const { t } = useI18n()
   const [text, setText] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [saving, setSaving] = useState(false)
@@ -134,32 +139,32 @@ export function TaskList({ pending, done, todayKey, loading, error, onCreate, on
   const itemProps = { todayKey, onToggle, onRename, onDelete }
 
   return (
-    <HomePanel title="Tareas" error={error} className={className}>
+    <HomePanel title={t('home.tasks.title')} error={error} className={className}>
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
         <input
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Nueva tarea…"
+          placeholder={t('home.tasks.newPlaceholder')}
           maxLength={HOME_LIMITS.taskText}
-          aria-label="Nueva tarea"
+          aria-label={t('home.tasks.newLabel')}
           className="min-h-10 min-w-0 flex-1 basis-48 rounded-lg border border-border bg-bg/60 px-3 py-2 text-sm text-text transition-colors focus-visible:border-accent"
         />
         <input
           type="date"
           value={dueDate}
           onChange={(event) => setDueDate(event.target.value)}
-          aria-label="Fecha límite (opcional)"
+          aria-label={t('home.tasks.dueLabel')}
           className="min-h-10 rounded-lg border border-border bg-bg/60 px-3 py-2 text-sm text-text transition-colors focus-visible:border-accent"
         />
         <Button type="submit" disabled={saving || !text.trim()}>
-          Agregar
+          {t('home.tasks.add')}
         </Button>
       </form>
 
       {loading && pending.length === 0 ? (
-        <p className="mt-3 text-sm text-text-muted">Cargando…</p>
+        <p className="mt-3 text-sm text-text-muted">{t('common.loading')}</p>
       ) : pending.length === 0 ? (
-        <p className="mt-3 text-sm text-text-muted">No tenés tareas pendientes.</p>
+        <p className="mt-3 text-sm text-text-muted">{t('home.tasks.none')}</p>
       ) : (
         <ul className="mt-3 space-y-1">
           {pending.map((task) => (
@@ -171,7 +176,7 @@ export function TaskList({ pending, done, todayKey, loading, error, onCreate, on
       {done.length > 0 && (
         <details className="mt-3">
           <summary className="flex min-h-10 cursor-pointer items-center text-sm text-text-muted hover:text-text">
-            Hechas ({done.length})
+            {t('home.tasks.doneSummary', { count: done.length })}
           </summary>
           <ul className="mt-1 space-y-1">
             {done.map((task) => (

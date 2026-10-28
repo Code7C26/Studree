@@ -17,6 +17,7 @@ export default {
     delete: 'No se pudo eliminar.',
     reorder: 'No se pudo reordenar.',
   },
+  home: { lastSheet: 'No se pudo cargar la última hoja.' },
   trash: {
     move: 'No se pudo mover a la papelera.',
     restore: 'No se pudo restaurar.',

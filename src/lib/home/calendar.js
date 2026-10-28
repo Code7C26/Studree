@@ -4,9 +4,16 @@
  */
 
 import { toDateKey } from './dates.js'
+import { getLang, tIn } from '../i18n/index.js'
 
-/** Encabezados de la grilla, de lunes a domingo. */
-export const WEEKDAY_HEADERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+/**
+ * Encabezados de la grilla, de lunes a domingo, según el idioma.
+ * @param {string} [lang]
+ * @returns {string[]}
+ */
+export function weekdayHeaders(lang = getLang()) {
+  return Array.from({ length: 7 }, (_, index) => tIn(lang, `home.calendar.weekdayInitials.${index}`))
+}
 
 /**
  * @typedef {{key: string, day: number, inMonth: boolean}} CalendarCell

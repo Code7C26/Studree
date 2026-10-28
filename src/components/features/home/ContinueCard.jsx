@@ -4,6 +4,7 @@ import { ROUTES, subjectFolderPath } from '../../../constants/routes.js'
 import { formatRelativeTime } from '../../../lib/home/dates.js'
 import { getSubjectTones } from '../../../constants/subjectTones.js'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * "Seguí donde dejaste": la última hoja editada (sin título: materia + fecha +
@@ -16,16 +17,17 @@ import { Icon } from '../../ui/Icon'
  * @param {string} [props.className]
  */
 export function ContinueCard({ sheet, loading, error, className = '' }) {
+  const { t, lang } = useI18n()
   return (
-    <HomePanel title="Seguí donde dejaste" error={error} variant="hero" className={className}>
+    <HomePanel title={t('home.continue.title')} error={error} variant="hero" className={className}>
       {loading && !sheet ? (
-        <p className="text-sm text-text-muted">Cargando…</p>
+        <p className="text-sm text-text-muted">{t('common.loading')}</p>
       ) : sheet ? (
         <Link to={subjectFolderPath(sheet.subject_id, sheet.id)} className="group block rounded-xl sm:min-h-[13rem]">
           <p className="font-display text-2xl font-bold text-text">{sheet.subject_name}</p>
-          <p className="mt-0.5 text-sm text-text-muted">Escribiste {formatRelativeTime(sheet.updated_at)}</p>
+          <p className="mt-0.5 text-sm text-text-muted">{t('home.continue.wrote', { when: formatRelativeTime(sheet.updated_at, new Date(), lang) })}</p>
           <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent-soft">
-            Seguir escribiendo <Icon name="chevron-right" size={14} />
+            {t('home.continue.keepWriting')} <Icon name="chevron-right" size={14} />
           </span>
           {sheet.preview && (
             <div
@@ -39,9 +41,9 @@ export function ContinueCard({ sheet, loading, error, className = '' }) {
         </Link>
       ) : (
         <div>
-          <p className="text-sm text-text-muted">Todavía no escribiste nada.</p>
+          <p className="text-sm text-text-muted">{t('home.continue.empty')}</p>
           <Link to={ROUTES.careers} className="btn-accent mt-3 text-sm">
-            Ir a mis carreras
+            {t('home.continue.goCareers')}
           </Link>
         </div>
       )}

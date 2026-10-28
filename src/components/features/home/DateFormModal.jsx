@@ -3,6 +3,7 @@ import { Modal } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import { TextField } from '../../ui/TextField'
 import { HOME_LIMITS } from '../../../constants/homeLimits.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * Crear / editar / borrar una fecha importante (título + día).
@@ -16,6 +17,7 @@ import { HOME_LIMITS } from '../../../constants/homeLimits.js'
  * @param {(id: string) => Promise<string|null>} props.onDelete
  */
 export function DateFormModal({ initial, onClose, onSave, onDelete }) {
+  const { t } = useI18n()
   const [title, setTitle] = useState(initial.title)
   const [date, setDate] = useState(initial.date)
   const [error, setError] = useState(null)
@@ -26,8 +28,8 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
   /** @param {React.FormEvent} event */
   async function handleSubmit(event) {
     event.preventDefault()
-    if (!title.trim()) return setError('Escribí un título.')
-    if (!date) return setError('Elegí un día.')
+    if (!title.trim()) return setError(t('home.dateForm.needTitle'))
+    if (!date) return setError(t('home.dateForm.needDay'))
     setSaving(true)
     const saveError = await onSave({ title, date })
     setSaving(false)
@@ -48,16 +50,16 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
   }
 
   return (
-    <Modal open onClose={onClose} title={isEditing ? 'Editar fecha' : 'Nueva fecha'}>
+    <Modal open onClose={onClose} title={isEditing ? t('home.dateForm.editTitle') : t('home.dateForm.newTitle')}>
       {confirmingDelete ? (
         <div>
-          <p className="text-sm text-text-muted">¿Borrar «{initial.title}»? No se puede deshacer.</p>
+          <p className="text-sm text-text-muted">{t('home.dateForm.confirmDelete', { title: initial.title })}</p>
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={saving}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDelete} disabled={saving}>
-              Borrar
+              {t('home.dateForm.delete')}
             </Button>
           </div>
         </div>
@@ -65,8 +67,8 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <TextField
             id="important-date-title"
-            label="Qué es"
-            placeholder="Parcial de Álgebra"
+            label={t('home.dateForm.whatLabel')}
+            placeholder={t('home.dateForm.whatPlaceholder')}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={HOME_LIMITS.dateTitle}
@@ -75,7 +77,7 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
           />
           <TextField
             id="important-date-day"
-            label="Día"
+            label={t('home.dateForm.dayLabel')}
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
@@ -89,17 +91,17 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
           <div className="flex items-center justify-between gap-2">
             {isEditing ? (
               <Button type="button" variant="ghost" onClick={() => setConfirmingDelete(true)} disabled={saving}>
-                Borrar
+                {t('home.dateForm.delete')}
               </Button>
             ) : (
               <span />
             )}
             <div className="flex gap-2">
               <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
-                Cancelar
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('common.saving') : t('common.save')}
               </Button>
             </div>
           </div>

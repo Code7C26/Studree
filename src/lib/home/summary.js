@@ -7,6 +7,7 @@
  */
 
 import { addDays } from './dates.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /**
  * @typedef {{id: string, title: string, date: string, created_at?: string}} ImportantDate
@@ -64,20 +65,18 @@ export function buildWeekSummary({ dates, tasks, todayKey }) {
   }
 }
 
-/** @param {number} count @param {string} one @param {string} many */
-const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`
-
 /**
  * Texto del resumen, en partes para que la UI pinte en rojo las vencidas.
  * @param {{dates: number, tasks: number, overdue: number}} summary
+ * @param {string} [lang]
  * @returns {{calm: boolean, parts: Array<{text: string, danger: boolean}>}}
  */
-export function describeWeekSummary({ dates, tasks, overdue }) {
+export function describeWeekSummary({ dates, tasks, overdue }, lang = getLang()) {
   const parts = [
-    { text: plural(dates, 'fecha', 'fechas'), danger: false },
-    { text: plural(tasks, 'tarea', 'tareas'), danger: false },
+    { text: tIn(lang, 'home.week.dates', { count: dates }), danger: false },
+    { text: tIn(lang, 'home.week.tasks', { count: tasks }), danger: false },
   ]
-  if (overdue > 0) parts.push({ text: plural(overdue, 'vencida', 'vencidas'), danger: true })
+  if (overdue > 0) parts.push({ text: tIn(lang, 'home.week.overdue', { count: overdue }), danger: true })
   return { calm: dates === 0 && tasks === 0 && overdue === 0, parts }
 }
 

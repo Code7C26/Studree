@@ -17,6 +17,7 @@ export default {
     delete: 'Could not delete it.',
     reorder: 'Could not reorder.',
   },
+  home: { lastSheet: 'Could not load the last sheet.' },
   trash: {
     move: 'Could not move it to the trash.',
     restore: 'Could not restore it.',

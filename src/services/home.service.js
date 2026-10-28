@@ -12,6 +12,7 @@ import { getSupabase } from './supabase.client.js'
 import { readCache, writeCache, cacheKey } from './cache.service.js'
 import { translateError } from './crudService.js'
 import { buildPreview } from '../lib/home/preview.js'
+import { t } from '../lib/i18n/index.js'
 
 const LAST_SHEET_KEY = cacheKey('home:lastSheet')
 
@@ -40,7 +41,7 @@ export const homeService = {
         .maybeSingle()
 
       if (error) {
-        return { data: readCache(LAST_SHEET_KEY, null), error: translateError(error, 'No se pudo cargar la última hoja.') }
+        return { data: readCache(LAST_SHEET_KEY, null), error: translateError(error, t('errors.home.lastSheet')) }
       }
 
       const sheet = data
@@ -48,7 +49,7 @@ export const homeService = {
             id: data.id,
             subject_id: data.subject_id,
             updated_at: data.updated_at,
-            subject_name: data.subjects?.name ?? 'Materia',
+            subject_name: data.subjects?.name ?? t('home.continue.subjectFallback'),
             subject_color: data.subjects?.color ?? null,
             preview: buildPreview(data.content_md),
           }
@@ -56,7 +57,7 @@ export const homeService = {
       writeCache(LAST_SHEET_KEY, sheet)
       return { data: sheet, error: null }
     } catch (error) {
-      return { data: readCache(LAST_SHEET_KEY, null), error: translateError(error, 'No se pudo cargar la última hoja.') }
+      return { data: readCache(LAST_SHEET_KEY, null), error: translateError(error, t('errors.home.lastSheet')) }
     }
   },
 }
