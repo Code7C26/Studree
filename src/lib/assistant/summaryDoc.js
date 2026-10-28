@@ -1,3 +1,5 @@
+import { getLang, tIn } from '../i18n/index.js'
+import { formatNumericDate } from '../format/dateParts.js'
 // Documento de resumen del Brote: de la fila de `summaries` a la interfaz, de
 // la interfaz a Markdown/PDF. Puro: sin React ni services.
 
@@ -75,14 +77,15 @@ export function buildSummaryRow(payload, meta) {
 /**
  * Markdown para copiar o descargar. Fecha en hora local.
  * @param {SummaryDoc} doc
+ * @param {string} [lang]
  * @returns {string}
  */
-export function summaryToMarkdown(doc) {
+export function summaryToMarkdown(doc, lang = getLang()) {
   const d = new Date(doc.createdAt)
-  const lines = [`*Resumen hecho por el Brote el ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}*`, '']
+  const lines = [`*${tIn(lang, 'study.summary.madeBy', { date: formatNumericDate(d, lang, true) })}*`, '']
   for (const s of doc.sections) lines.push(`# ${s.heading}`, '', s.body, '')
   if (doc.keyConcepts.length > 0) {
-    lines.push('# Conceptos clave', '')
+    lines.push(`# ${tIn(lang, 'study.summary.keyConcepts')}`, '')
     for (const k of doc.keyConcepts) lines.push(`- **${k.term}**: ${k.definition}`)
     lines.push('')
   }
@@ -108,43 +111,47 @@ export function pdfFileName(title, iso) {
 /**
  * @param {number} sheetCount
  * @param {number} totalSheets
+ * @param {string} [lang]
  * @returns {string}
  */
-export function basedOnLabel(sheetCount, totalSheets) {
-  const noun = (n) => (n === 1 ? 'hoja' : 'hojas')
+export function basedOnLabel(sheetCount, totalSheets, lang = getLang()) {
   return sheetCount === totalSheets
-    ? `basado en ${sheetCount} ${noun(sheetCount)}`
-    : `basado en ${sheetCount} de ${totalSheets} ${noun(totalSheets)}`
+    ? tIn(lang, 'study.summary.basedOnAll', { count: sheetCount })
+    : tIn(lang, 'study.summary.basedOnSome', { sheets: sheetCount, count: totalSheets })
 }
 
 /**
  * Fecha UTC `YYYY-MM-DD` → `dd/mm/aaaa`, partiendo el texto: con `new Date()` se
  * correría un día en husos al oeste de UTC.
  * @param {string} date
+ * @param {string} [lang]
  * @returns {string}
  */
-export function formatUtcDate(date) {
+export function formatUtcDate(date, lang = getLang()) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date))
-  return match ? `${match[3]}/${match[2]}/${match[1]}` : String(date)
+  if (!match) return String(date)
+  return lang === 'en' ? `${match[2]}/${match[3]}/${match[1]}` : `${match[3]}/${match[2]}/${match[1]}`
 }
 
-const SCOPE_LABELS = { sheet: 'Una hoja', subject: 'Una materia', career: 'Toda la carrera', all: 'Todas mis materias' }
+const SCOPE_TYPES = ['sheet', 'subject', 'career', 'all']
 
 /**
  * @param {'sheet'|'subject'|'career'|'all'} scopeType
+ * @param {string} [lang]
  * @returns {string}
  */
-export function summaryScopeLabel(scopeType) {
-  return SCOPE_LABELS[scopeType] ?? ''
+export function summaryScopeLabel(scopeType, lang = getLang()) {
+  return SCOPE_TYPES.includes(scopeType) ? tIn(lang, `study.summary.scope.${scopeType}`) : ''
 }
 
 /**
  * Título del resumen, armado en el cliente: "Resumen · Biología" (hoja/materia),
  * "Resumen · Toda la carrera" o "Resumen · Todas mis materias".
  * @param {{scopeType: 'sheet'|'subject'|'career'|'all', subjectName: string|null}} args
+ * @param {string} [lang]
  * @returns {string}
  */
-export function summaryTitle({ scopeType, subjectName }) {
+export function summaryTitle({ scopeType, subjectName }, lang = getLang()) {
   const bySubject = scopeType === 'sheet' || scopeType === 'subject'
-  return `Resumen · ${bySubject && subjectName ? subjectName : summaryScopeLabel(scopeType)}`
+  return tIn(lang, 'study.summary.title', { name: bySubject && subjectName ? subjectName : summaryScopeLabel(scopeType, lang) })
 }

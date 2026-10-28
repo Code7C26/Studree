@@ -49,3 +49,13 @@ test('buildQuizRecord', () => {
   assert.equal('feedback' in vacio.questions[0], false)
   assert.equal('subjectId' in vacio.questions[0], false)
 })
+
+test('quizTitle y answerText en inglés', () => {
+  assert.equal(quizTitle({ isReview: false, scopeType: 'subject', subjectName: 'Biology' }, 'en'), 'Exam · Biology')
+  assert.equal(quizTitle({ isReview: true, scopeType: 'sheet', subjectName: 'Biology' }, 'en'), 'Mistake review · Biology')
+  assert.equal(quizTitle({ isReview: false, scopeType: 'career', subjectName: null }, 'en'), 'Exam · The whole career')
+  assert.equal(quizTitle({ isReview: false, scopeType: 'all', subjectName: null }, 'en'), 'Exam · All my subjects')
+  assert.equal(answerText({ type: 'tf' }, true, 'en'), 'True')
+  assert.equal(answerText({ type: 'tf' }, false, 'en'), 'False')
+  assert.equal(answerText({ type: 'open' }, '', 'en'), 'Not answered')
+})

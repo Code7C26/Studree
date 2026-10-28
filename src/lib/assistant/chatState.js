@@ -1,3 +1,4 @@
+import { getLang, tIn } from '../i18n/index.js'
 // Estado del chat del Brote. Puro: sin React, sin window, sin servicios.
 // El hook pasa cada evento del servidor por `reduceEvent`.
 
@@ -47,8 +48,6 @@ const KINDS = ['append', 'replace_selection', 'new_sheet']
 const SOURCES = ['notes', 'external']
 const SETTABLE = ['applied', 'rejected', 'failed']
 
-const GENERIC_ERROR = 'No se pudo hablar con el Brote. Probá de nuevo.'
-
 /** @returns {ChatState} */
 export function initialChat() {
   return {
@@ -65,12 +64,34 @@ function capMessages(messages) {
   return messages.length > MAX_MESSAGES ? messages.slice(-MAX_MESSAGES) : messages
 }
 
-/** Texto legible para la herramienta que está usando el modelo. */
-function toolStatus(name) {
-  if (name === 'read_sheet' || name === 'list_subject_topics' || name === 'search_notes') return 'Leyendo tus hojas…'
-  if (name === 'get_agenda') return 'Mirando tu agenda…'
-  if (typeof name === 'string' && name.startsWith('propose_')) return 'Preparando una propuesta…'
-  return 'Pensando…'
+/**
+ * Texto legible para la herramienta que está usando el modelo.
+ * @param {unknown} name
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function toolStatus(name, lang = getLang()) {
+  if (name === 'read_sheet' || name === 'list_subject_topics' || name === 'search_notes') return tIn(lang, 'assistant.chat.reading')
+  if (name === 'get_agenda') return tIn(lang, 'assistant.chat.agenda')
+  if (typeof name === 'string' && name.startsWith('propose_')) return tIn(lang, 'assistant.chat.preparing')
+  return tIn(lang, 'assistant.chat.thinking')
+}
+
+/**
+ * Texto de un evento `error` del servidor: se traduce por su `code`; si el código no lo conoce este
+ * cliente, queda el `message` del servidor; si tampoco hay, el mensaje genérico.
+ * @param {{code?: unknown, message?: unknown}} event
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function streamErrorText(event, lang = getLang()) {
+  if (typeof event?.code === 'string') {
+    const key = `assistant.errors.stream.${event.code}`
+    const translated = tIn(lang, key)
+    if (translated !== key) return translated
+  }
+  if (typeof event?.message === 'string' && event.message) return event.message
+  return tIn(lang, 'assistant.errors.generic')
 }
 
 /**
@@ -164,7 +185,7 @@ export function reduceEvent(state, event) {
         ...state,
         busy: false,
         status: null,
-        error: typeof event.message === 'string' && event.message ? event.message : GENERIC_ERROR,
+        error: streamErrorText(event),
       }
     case 'done': {
       const reason = event.finishReason

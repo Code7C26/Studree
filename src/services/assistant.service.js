@@ -6,6 +6,7 @@
 import { getSupabase } from './supabase.client.js'
 import { readSseStream } from '../lib/assistant/readSseStream.js'
 import { translateAssistantError } from '../lib/assistant/assistantError.js'
+import { t } from '../lib/i18n/index.js'
 
 export { translateAssistantError }
 
@@ -57,7 +58,7 @@ export async function streamAssistant({ request, signal, onEvent }) {
 
     const { ended } = await readSseStream(response.body, onEvent, { signal })
     if (ended === 'aborted' || signal?.aborted) return { data: null, error: null }
-    if (ended === 'callback') return { data: null, error: 'Ocurrió un error inesperado en el Brote.' }
+    if (ended === 'callback') return { data: null, error: t('assistant.errors.unexpected') }
     if (ended === 'eof') return { data: null, error: generic }
     return { data: true, error: null }
   } catch (error) {

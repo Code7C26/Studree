@@ -1,3 +1,4 @@
+import { getLang, tIn } from '../i18n/index.js'
 // Registro de un examen terminado (`quiz_attempts.detail`). Puro.
 
 /**
@@ -25,23 +26,26 @@
  * Texto legible de una respuesta (dada o correcta).
  * @param {{type: string, options?: string[]}} question
  * @param {number|boolean|string|null|undefined} value
+ * @param {string} [lang]
  * @returns {string}
  */
-export function answerText(question, value) {
-  if (value === undefined || value === null || value === '') return 'Sin responder'
-  if (question.type === 'mcq') return question.options?.[/** @type {number} */ (value)] ?? 'Sin responder'
-  if (question.type === 'tf') return value === true ? 'Verdadero' : 'Falso'
+export function answerText(question, value, lang = getLang()) {
+  const unanswered = tIn(lang, 'assistant.quiz.unanswered')
+  if (value === undefined || value === null || value === '') return unanswered
+  if (question.type === 'mcq') return question.options?.[/** @type {number} */ (value)] ?? unanswered
+  if (question.type === 'tf') return value === true ? tIn(lang, 'assistant.quiz.true') : tIn(lang, 'assistant.quiz.false')
   return String(value)
 }
 
 /**
  * @param {{isReview: boolean, scopeType: 'sheet'|'subject'|'career'|'all', subjectName: string|null}} args
+ * @param {string} [lang]
  * @returns {string}
  */
-export function quizTitle({ isReview, scopeType, subjectName }) {
-  const prefix = isReview ? 'Repaso de errores' : 'Examen'
+export function quizTitle({ isReview, scopeType, subjectName }, lang = getLang()) {
+  const prefix = tIn(lang, isReview ? 'assistant.quiz.titleReview' : 'assistant.quiz.titleExam')
   if (subjectName) return `${prefix} · ${subjectName}`
-  return `${prefix} · ${scopeType === 'career' ? 'Toda la carrera' : 'Todas mis materias'}`
+  return `${prefix} · ${tIn(lang, scopeType === 'career' ? 'assistant.quiz.titleCareer' : 'assistant.quiz.titleAll')}`
 }
 
 /**

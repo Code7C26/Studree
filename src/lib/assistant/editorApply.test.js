@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { applyProposalToEditor, CHANGED_MESSAGE } from './editorApply.js'
+import { applyProposalToEditor, changedMessage } from './editorApply.js'
 
 /** Editor falso: un texto plano donde la posición es el índice + 1. */
 function fakeEditor(text, { ok = true } = {}) {
@@ -58,8 +58,8 @@ test('replace_selection falla sin tocar nada si el texto cambió', () => {
   const selection = { sheetId: 'sh1', from: 4, to: 15, text: 'mitocondria' }
   const changed = { ...selection, text: 'otra cosa!!' }
   const result = applyProposalToEditor(editor, proposal({ kind: 'replace_selection' }), changed)
-  assert.deepEqual(result, { ok: false, error: CHANGED_MESSAGE })
-  assert.equal(CHANGED_MESSAGE, 'La hoja cambió; volvé a seleccionar el texto.')
+  assert.deepEqual(result, { ok: false, error: changedMessage() })
+  assert.equal(changedMessage(), 'La hoja cambió; volvé a seleccionar el texto.')
   assert.equal(calls.length, 0)
 })
 

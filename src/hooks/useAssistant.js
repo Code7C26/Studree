@@ -17,7 +17,7 @@ import {
 import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assistant/quizScore.js'
 import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
 import {
-  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON,
+  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, quizOpenReason,
   canRetrySave, withSavedAttempt,
 } from '../lib/assistant/quizSession.js'
 import {
@@ -29,28 +29,21 @@ import {
 import { buildQuizRecord, quizTitle } from '../lib/assistant/quizRecord.js'
 import { requestMeta } from '../lib/assistant/requestMeta.js'
 import {
-  createSummarySession, finishSummarySave, canRetrySummarySave, startSummaryRetry, summaryRowFor, SUMMARY_SAVE_FAILED,
+  createSummarySession, finishSummarySave, canRetrySummarySave, startSummaryRetry, summaryRowFor, summarySaveFailed,
 } from '../lib/assistant/summarySession.js'
 import { createRequestSlot } from '../lib/assistant/requestSlot.js'
 import {
-  ACTION_LABELS, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildScope, lockedActionMessage, requestMode,
+  actionLabel, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildRequest, buildScope, lockedActionMessage,
   resolveScopeType, scopeOptions,
 } from '../lib/assistant/requestBuilder.js'
+import { t } from '../lib/i18n/index.js'
+import { useI18n } from './useI18n.js'
+import { streamErrorText } from '../lib/assistant/chatState.js'
 
-const NO_SCOPE = 'Abrí una materia para preguntarle al Brote (o pasate a Premium para preguntar sobre todas).'
-const NO_CONTEXT = 'Abrí la carpeta de la materia para aplicar el cambio.'
-const BUSY = 'El Brote todavía está respondiendo: probá cuando termine.'
-/** Aviso de la tarjeta de un atajo cuando el que está respondiendo es el chat. */
-const INLINE_BUSY = 'El Brote está respondiendo en el chat: probá cuando termine.'
-const CANCELLED = 'Cortaste la respuesta.'
-const APPLY_FAILED = 'No se pudo aplicar el cambio.'
-const GRADE_LABEL = 'Corregí mis respuestas de desarrollo'
-const GRADE_FAILED = 'No se pudieron corregir las respuestas de desarrollo.'
-const TOPICS_NOT_UPDATED = 'Guardé el examen, pero no pude actualizar tus temas flojos.'
-const SUBMIT_FAILED = 'Algo falló al corregir o guardar la prueba. Probá de nuevo más tarde.'
-const NO_SUBJECT = 'Abrí una materia para detectar sus huecos.'
+/** Texto de un aviso del Brote en el idioma activo (diccionario `assistant.notices`). */
+const notice = (key) => t(`assistant.notices.${key}`)
 /** Aviso de cada motivo de `blockReason`. */
-const BLOCK_NOTICES = { busy: BUSY, no_scope: NO_SCOPE, quiz_open: QUIZ_OPEN_REASON }
+const blockNotice = (reason) => ({ busy: notice('busy'), no_scope: notice('noScope'), quiz_open: quizOpenReason() })[reason]
 
 /**
  * Las propuestas de un pedido con selección llevan esa selección (con su rango),
@@ -78,16 +71,16 @@ function tagProposal(event, selection) {
  * @returns {{ok: true, sheetCreatedAt?: string}|{ok: false, error: string}}
  */
 function applyInFolder(context, proposal) {
-  if (!context) return { ok: false, error: NO_CONTEXT }
+  if (!context) return { ok: false, error: notice('noContext') }
   let result
   try {
     result = context.apply(proposal)
   } catch (error) {
     console.error('[assistant] apply lanzó un error:', error)
-    return { ok: false, error: APPLY_FAILED }
+    return { ok: false, error: notice('applyFailed') }
   }
   if (result?.ok) return result
-  return { ok: false, error: result && 'error' in result ? result.error : APPLY_FAILED }
+  return { ok: false, error: result && 'error' in result ? result.error : notice('applyFailed') }
 }
 
 /**
@@ -147,6 +140,7 @@ function applyInFolder(context, proposal) {
  * }}
  */
 export function useAssistant() {
+  const { lang } = useI18n()
   const context = useAssistantContext()
   const [state, setState] = useState(initialChat)
   const [plan, setPlan] = useState(/** @type {'free'|'premium'} */ ('free'))
@@ -222,7 +216,7 @@ export function useAssistant() {
     slot.abort()
   }, [slot])
 
-  const options = useMemo(() => scopeOptions(context, plan), [context, plan])
+  const options = useMemo(() => scopeOptions(context, plan, lang), [context, plan, lang])
   const scope = resolveScopeType(chosenScope, options)
 
   /**
@@ -240,9 +234,9 @@ export function useAssistant() {
       error = res.error
     } catch (err) {
       console.error('[assistant] falló el guardado del resumen:', err)
-      error = SUMMARY_SAVE_FAILED
+      error = summarySaveFailed()
     }
-    putSummary(finishSummarySave(summaryRef.current, key, { id, error: id ? null : error ?? SUMMARY_SAVE_FAILED }))
+    putSummary(finishSummarySave(summaryRef.current, key, { id, error: id ? null : error ?? summarySaveFailed() }))
   }, [putSummary])
 
   /**
@@ -303,7 +297,7 @@ export function useAssistant() {
           running: slot.running(), scopeValue, action: fields.action, quizOpen: blocksNewQuiz(quizRef.current),
         })
         if (blocked) {
-          const notice = BLOCK_NOTICES[blocked]
+          const notice = blockNotice(blocked)
           setState((s) => setNotice(s, notice))
           return { error: notice, grades: null }
         }
@@ -328,16 +322,14 @@ export function useAssistant() {
         }
       } else if (slot.running()) {
         // Quien llama ya cortó la tarjeta anterior o avisó: nunca se pisa un pedido en curso.
-        return { error: BUSY, grades: null }
+        return { error: notice('busy'), grades: null }
       }
-      const request = {
-        message: '',
-        ...fields,
+      const request = buildRequest({
+        fields,
         history: inlineId === null ? buildHistory(stateRef.current.messages) : history,
-        // Ruling R: la corrección nunca gasta el cupo externo.
-        mode: requestMode(fields.action, mode),
+        mode,
         scope: scopeValue,
-      }
+      })
       const controller = slot.claim(inlineId === null ? 'chat' : 'inline')
       if (inlineId === null) setState((s) => addUserMessage(s, visibleText))
       if (summaryMeta) setSummaryRequesting(true)
@@ -357,7 +349,9 @@ export function useAssistant() {
           if (event?.type === 'grades' && Array.isArray(event.grades)) grades = event.grades
           const sm = event?.type === 'summary' ? event.summary : null
           if (summaryMeta && sm && typeof sm === 'object' && typeof sm.title === 'string' && Array.isArray(sm.sections)) summaryPayload = sm
-          if (event?.type === 'error') streamError = typeof event.message === 'string' && event.message ? event.message : GRADE_FAILED
+          if (event?.type === 'error') {
+            streamError = typeof event.code === 'string' || (typeof event.message === 'string' && event.message) ? streamErrorText(event) : notice('gradeFailed')
+          }
           const meta = pendingQuizRef.current
           if (event?.type === 'quiz' && Array.isArray(event.questions) && meta) {
             putQuiz(createQuizSession(quizRef.current ?? { key: lastQuizKeyRef.current }, meta, event.questions))
@@ -375,11 +369,11 @@ export function useAssistant() {
       if (inlineId !== null) {
         const message = controller.signal.aborted ? null : error
         setInlineState((i) => (i?.id === inlineId ? { ...i, chat: finishRequest(i.chat, message) } : i))
-        return { error: controller.signal.aborted ? CANCELLED : error, grades: null }
+        return { error: controller.signal.aborted ? notice('cancelled') : error, grades: null }
       }
       if (controller.signal.aborted) {
         setState((s) => finishRequest(s))
-        return { error: CANCELLED, grades: null }
+        return { error: notice('cancelled'), grades: null }
       }
       setState((s) => finishRequest(s, error))
       return { error: error ?? streamError, grades }
@@ -414,7 +408,7 @@ export function useAssistant() {
         running: slot.running(), scopeValue: buildScope(scope, context), action: 'chat', quizOpen: false,
       })
       if (blocked) {
-        setState((s) => setNotice(s, BLOCK_NOTICES[blocked]))
+        setState((s) => setNotice(s, blockNotice(blocked)))
         return false
       }
       start({ action: 'chat', message }, message)
@@ -433,11 +427,11 @@ export function useAssistant() {
       // Huecos y conexiones tienen su propio alcance (no el del panel).
       const fixed = actionScope(action, context)
       if (fixed === null) {
-        setState((s) => setNotice(s, NO_SUBJECT))
+        setState((s) => setNotice(s, notice('noSubject')))
         return
       }
       const { label, ...fields } = extra ?? {}
-      const visible = label ?? ACTION_LABELS[action] ?? fields.message ?? action
+      const visible = label ?? actionLabel(action) ?? fields.message ?? action
       start({ ...fields, action }, visible, null, fixed ?? null)
     },
     [plan, context, start],
@@ -478,7 +472,7 @@ export function useAssistant() {
       running: slot.running(), scopeValue, action: item.request?.action ?? 'shortcut', quizOpen: false,
     })
     if (blocked) {
-      const notice = blocked === 'busy' ? INLINE_BUSY : BLOCK_NOTICES[blocked]
+      const notice = blocked === 'busy' ? notice('inlineBusy') : blockNotice(blocked)
       putInline({ ...created, chat: setNotice(finishRequest(created.chat), notice) })
       return
     }
@@ -528,7 +522,7 @@ export function useAssistant() {
         if (current.chat.busy) return
         // Con el chat respondiendo, el intercambio no se mete en medio de su respuesta.
         if (slot.running()) {
-          noticeInline(current.id, INLINE_BUSY)
+          noticeInline(current.id, notice('inlineBusy'))
           return
         }
         // Solo si hubo intercambio: un aviso o un error sin respuesta no se pasa al chat.
@@ -544,7 +538,7 @@ export function useAssistant() {
         if (!message || !inlineView(current)?.canAnswer) return
         if (slot.running()) {
           // Un doble envío encuentra su propio pedido en curso: no avisa nada.
-          if (slot.owner() === 'chat') noticeInline(current.id, INLINE_BUSY)
+          if (slot.owner() === 'chat') noticeInline(current.id, notice('inlineBusy'))
           return
         }
         const history = inlineHistory(current)
@@ -599,7 +593,7 @@ export function useAssistant() {
     })
     const attemptId = attempt.data?.id ?? null
     // Con el intento ya guardado, un fallo posterior es solo de los temas flojos.
-    const laterError = (error) => attempt.error ?? (error ? (attemptId ? TOPICS_NOT_UPDATED : error) : null)
+    const laterError = (error) => attempt.error ?? (error ? (attemptId ? notice('topicsNotUpdated') : error) : null)
     if (sources.error) return { sheets, record, attemptId, saveError: laterError(sources.error), savedTopics: false }
 
     const where = attachSubjects(session.questions, {
@@ -646,9 +640,9 @@ export function useAssistant() {
         let grades = null
         let gradeError = null
         if (answers.length) {
-          const res = await start({ action: 'quiz_grade', answers }, GRADE_LABEL, null, session.scope)
+          const res = await start({ action: 'quiz_grade', answers }, notice('gradeLabel'), null, session.scope)
           grades = res.grades
-          gradeError = res.grades ? null : res.error ?? GRADE_FAILED
+          gradeError = res.grades ? null : res.error ?? notice('gradeFailed')
         }
         const results = mergeResults(session.questions, given, closed, grades)
         graded = { results, score: summarize(results), gradeError }
@@ -657,9 +651,9 @@ export function useAssistant() {
       } catch (error) {
         // Un error inesperado no puede dejar la prueba trabada en `grading`.
         console.error('[assistant] falló el envío de la prueba:', error)
-        outcome = failedOutcome(graded, SUBMIT_FAILED)
+        outcome = failedOutcome(graded, notice('submitFailed'))
       } finally {
-        putQuiz(finishSubmit(quizRef.current, session.key, outcome ?? failedOutcome(graded, SUBMIT_FAILED)))
+        putQuiz(finishSubmit(quizRef.current, session.key, outcome ?? failedOutcome(graded, notice('submitFailed'))))
       }
       return outcome
     },
@@ -685,7 +679,7 @@ export function useAssistant() {
         title: session.title,
         detail: outcome.record,
       })
-      putQuiz(withSavedAttempt(quizRef.current, session.key, { attemptId: attempt.data?.id ?? null, error: attempt.error ?? SUBMIT_FAILED }))
+      putQuiz(withSavedAttempt(quizRef.current, session.key, { attemptId: attempt.data?.id ?? null, error: attempt.error ?? notice('submitFailed') }))
     } finally {
       retryingRef.current = false
     }

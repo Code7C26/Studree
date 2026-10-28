@@ -4,7 +4,8 @@
 
 import { addUserMessage, initialChat, reduceEvent } from './chatState.js'
 import { buildHistory } from './requestBuilder.js'
-import { SHORTCUTS } from './shortcuts.js'
+import { SHORTCUTS, shortcutName } from './shortcuts.js'
+import { LANGS, getLang, tIn } from '../i18n/index.js'
 
 /**
  * @typedef {import('./chatState.js').ChatState} ChatState
@@ -52,7 +53,7 @@ import { SHORTCUTS } from './shortcuts.js'
 function shortcutOf(item) {
   if (SHORTCUTS.some((s) => s.id === item?.shortcutId)) return /** @type {ShortcutId} */ (item.shortcutId)
   const label = typeof item?.label === 'string' ? item.label : ''
-  const found = SHORTCUTS.find((s) => label.startsWith(`${s.label}:`))
+  const found = SHORTCUTS.find((s) => LANGS.some((lang) => label.startsWith(`${shortcutName(s.id, lang)}:`)))
   return found ? /** @type {ShortcutId} */ (found.id) : null
 }
 
@@ -126,7 +127,9 @@ export function inlineView(inline) {
   const replies = chat.messages.slice(1)
   return {
     id: inline.id,
-    label: SHORTCUTS.find((s) => s.id === inline.shortcutId)?.label ?? 'Brote',
+    label: SHORTCUTS.some((s) => s.id === inline.shortcutId)
+      ? shortcutName(inline.shortcutId)
+      : tIn(getLang(), 'assistant.shortcuts.brote'),
     replies,
     busy: chat.busy,
     status: chat.status,

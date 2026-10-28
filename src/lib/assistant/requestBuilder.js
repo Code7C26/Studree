@@ -5,31 +5,25 @@
 
 import { FEATURES, MAX } from '../../../supabase/functions/assistant/config.js'
 import { QUIZ_ACTIONS } from './quizSession.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /**
  * @typedef {'sheet'|'subject'|'career'|'all'} ScopeType
  * @typedef {{value: ScopeType, label: string, locked: boolean}} ScopeOption
  */
 
-/** Etiqueta visible de cada acción lanzada desde un chip. */
-export const ACTION_LABELS = Object.freeze({
-  summary: 'Resumir materia',
-  quiz: 'Tomame examen',
-  weak_review: 'Repaso de errores',
-  study_plan: 'Plan de estudio',
-  gaps: 'Detectar huecos',
-  connections: 'Conexiones entre materias',
-})
+/**
+ * Etiqueta visible de cada acción lanzada desde un chip.
+ * @param {string} action
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function actionLabel(action, lang = getLang()) {
+  return tIn(lang, `assistant.actions.${action}`)
+}
 
 /** Función de Premium de cada acción (misma tabla que `quota.js`). */
 const FEATURE_OF_ACTION = { weak_review: 'weakReview', study_plan: 'studyPlan', connections: 'connections' }
-
-/** Mismo texto que el servidor (`quota.js`, FEATURE_MESSAGES). */
-const LOCKED_MESSAGES = {
-  weakReview: 'El repaso de temas flojos es parte de Premium.',
-  studyPlan: 'El plan de estudio es parte de Premium.',
-  connections: 'Las conexiones entre temas son parte de Premium.',
-}
 
 /** Orden de preferencia del alcance cuando el elegido no está disponible. */
 const SCOPE_PREFERENCE = ['subject', 'sheet', 'career', 'all']
@@ -56,16 +50,17 @@ export function buildHistory(messages) {
  * permite vienen con `locked: true` (se muestran como Premium).
  * @param {import('./bridge.js').AssistantContext|null} context
  * @param {'free'|'premium'} plan
+ * @param {string} [lang]
  * @returns {ScopeOption[]}
  */
-export function scopeOptions(context, plan) {
+export function scopeOptions(context, plan, lang = getLang()) {
   const wide = !featuresOf(plan).allScope
   /** @type {ScopeOption[]} */
   const out = []
-  if (context?.sheetId) out.push({ value: 'sheet', label: 'Esta hoja', locked: false })
-  if (context?.subject) out.push({ value: 'subject', label: 'Esta materia', locked: false })
-  if (context?.career) out.push({ value: 'career', label: 'La carrera', locked: wide })
-  out.push({ value: 'all', label: 'Todas mis materias', locked: wide })
+  if (context?.sheetId) out.push({ value: 'sheet', label: tIn(lang, 'assistant.scope.sheet'), locked: false })
+  if (context?.subject) out.push({ value: 'subject', label: tIn(lang, 'assistant.scope.subject'), locked: false })
+  if (context?.career) out.push({ value: 'career', label: tIn(lang, 'assistant.scope.career'), locked: wide })
+  out.push({ value: 'all', label: tIn(lang, 'assistant.scope.all'), locked: wide })
   return out
 }
 
@@ -99,12 +94,13 @@ export function buildScope(type, context) {
  * Si la acción es de Premium y el plan no la tiene, el aviso a mostrar; si no, `null`.
  * @param {string} action
  * @param {'free'|'premium'} plan
+ * @param {string} [lang]
  * @returns {string|null}
  */
-export function lockedActionMessage(action, plan) {
+export function lockedActionMessage(action, plan, lang = getLang()) {
   const feature = FEATURE_OF_ACTION[action]
   if (!feature || featuresOf(plan)[feature]) return null
-  return LOCKED_MESSAGES[feature] ?? 'Es parte de Premium.'
+  return tIn(lang, `assistant.locked.${feature}`)
 }
 
 /**
@@ -124,6 +120,17 @@ export function actionScope(action, context) {
 
 /** Largo máximo del mensaje que acepta el servidor. */
 export const MAX_MESSAGE = MAX.message
+
+/**
+ * El pedido completo al servidor: los campos de la acción, el historial, el modo (la corrección va
+ * siempre en `notes`), el alcance y el idioma de la interfaz (`uiLang`: el servidor lo usa para
+ * responder en ese idioma cuando no hay un mensaje escrito).
+ * @param {{fields: Object, history: Array<{role: string, text: string}>, mode: 'notes'|'external', scope: Object|null, lang?: string}} input
+ * @returns {Object}
+ */
+export function buildRequest({ fields, history, mode, scope, lang = getLang() }) {
+  return { message: '', ...fields, history, mode: requestMode(fields.action, mode), scope, uiLang: lang }
+}
 
 /**
  * Modo del pedido. Ruling R: la corrección (`quiz_grade`) va SIEMPRE en modo

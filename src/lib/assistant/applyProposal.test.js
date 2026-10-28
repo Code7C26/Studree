@@ -20,3 +20,9 @@ test('proposalTitle distingue los tres kind', () => {
   assert.equal(new Set(t).size, 3)
   assert.equal(proposalTitle({ kind: 'raro' }), 'Cambio propuesto')
 })
+
+test('en inglés: título de la propuesta y mensajes del editor', () => {
+  assert.equal(proposalTitle({ kind: 'append' }, 'en'), 'Add to the end of the sheet')
+  assert.equal(proposalTitle({ kind: 'raro' }, 'en'), 'Proposed change')
+  assert.equal(proposalTitle({ kind: 'new_sheet' }, 'es'), 'Crear una hoja nueva')
+})

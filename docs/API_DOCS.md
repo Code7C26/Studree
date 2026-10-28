@@ -278,3 +278,15 @@ recibe un error de la base, no una validación de JavaScript.
 | 403 | Sin permisos |
 | 404 | No encontrado |
 | 500 | Error del servidor |
+
+## Idioma del asistente (Fase 18)
+
+- **Pedido:** el cuerpo suma `uiLang` (`'es'` o `'en'`). Es opcional para el servidor (si falta o es otro
+  valor, se toma `'es'`).
+- **403 / 429:** además de `code` y `message`, el cuerpo trae `reason` (la función de Premium o el tope: `allScope`,
+  `weakReview`, `studyPlan`, `connections` / `chat`, `summary`, `quiz`, `extras`, `grade`, `external`,
+  `unverified`). El cliente traduce por `code` + `reason`; si no lo conoce, muestra `message`.
+- **Eventos `error` del stream:** el cliente traduce por `code` (`upstream`, `blocked`, `empty`, `aborted`,
+  `timeout`, `invalid_output`, `steps`, `no_notes`, `no_weak_topics`, `server`) y cae a `message`.
+- Los errores de `services/` (`crudService`, `trash`, `sheets`, `attachments`, `study`, etc.) salen del
+  diccionario `errors`/`study` en el idioma activo.

@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { assistantBridge } from '../lib/assistant/bridge.js'
 import { summaryToMarkdown } from '../lib/assistant/summaryDoc.js'
 import { subjectFolderPath } from '../constants/routes'
+import { t } from '../lib/i18n/index.js'
 
-const NO_SUBJECT = 'Este resumen no es de una sola materia.'
-const APPLY_FAILED = 'No se pudo agregar el resumen como hoja.'
 
 /**
  * "Guardar como hoja": agrega el resumen como hoja nueva de su materia por el
@@ -19,7 +18,7 @@ export function useSaveSummaryAsSheet() {
   const save = useCallback(
     (doc) => {
       const subjectId = doc?.subjectId
-      if (!subjectId) return { ok: false, error: NO_SUBJECT }
+      if (!subjectId) return { ok: false, error: t('study.summary.notSingleSubject') }
       const proposal = /** @type {any} */ ({
         id: `summary-${doc.id ?? Date.now()}`,
         kind: 'new_sheet',
@@ -33,10 +32,10 @@ export function useSaveSummaryAsSheet() {
         try {
           const result = context.apply(proposal)
           if (result?.ok) return { ok: true, inFolder: true }
-          return { ok: false, error: result && 'error' in result ? result.error : APPLY_FAILED }
+          return { ok: false, error: result && 'error' in result ? result.error : t('study.summary.sheetFailed') }
         } catch (error) {
           console.error('[summary] apply lanzó un error:', error)
-          return { ok: false, error: APPLY_FAILED }
+          return { ok: false, error: t('study.summary.sheetFailed') }
         }
       }
       assistantBridge.setPendingApply({ subjectId, proposal })

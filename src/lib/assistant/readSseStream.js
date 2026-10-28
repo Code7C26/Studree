@@ -37,7 +37,7 @@ export async function readSseStream(body, onEvent, { signal, logError = console.
       try {
         onEvent(event)
       } catch (error) {
-        logError('[assistant] onEvent lanzó un error:', error)
+        logError('[assistant] onEvent lanzó un error:', error) // i18n-ignore: log de desarrollo
         return false
       }
     }

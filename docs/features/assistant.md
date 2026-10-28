@@ -650,3 +650,21 @@ etiqueta; después lo hablado en la tarjeta), `pendingProposal`, `inlineView`.
 - [ ] Verificación manual de la Tarea 10 (paso 5 del plan: atajo → propuesta → Aceptar → "Guardado" → recargar; Rechazar; reemplazo tras editar el párrafo; marca externa): requiere la Edge Function desplegada.
 - [x] **[ESTUDIANTE]** Volver a desplegar la función `assistant` (resumen estructurado, Fase 14.1).
 - [x] Verificación manual de la Fase 14.1 en el navegador (tarjeta de atajos, examen en ventana y registro, resumen + PDF + Guardar como hoja, Mi estudio): requiere la función redesplegada.
+
+## Idioma (Fase 18)
+
+Toda la interfaz del Brote (botón, panel, chat, tarjetas de atajos, propuestas, examen y avisos) sale del
+diccionario `assistant` (castellano / inglés, ver `docs/features/i18n.md`). En inglés el Brote se llama
+"Sprout". Lo que cambia en el código:
+
+- **El pedido lleva `uiLang`** (`buildRequest` en `lib/assistant/requestBuilder.js`): `'es'` o `'en'`. El
+  servidor lo usa para responder en ese idioma cuando no hay un mensaje escrito (resúmenes, exámenes, plan de
+  estudio…); en `chat` y `shortcut` el Brote responde **en el idioma del mensaje**.
+- **Errores por código.** `translateAssistantError(status, body, lang)` y el evento `error` del stream se
+  traducen por `code` (+ `reason` en los 403/429: la función de Premium o el tope que se agotó). Si el
+  servidor es viejo (sin `reason`) o manda un código que el cliente no conoce, se muestra su `message`.
+- Las constantes de texto pasaron a funciones que leen el idioma al usarse: `actionLabel`, `quizOpenReason`,
+  `summarySaveFailed`, `changedMessage`, `shortcutName`, `toolStatus`, `streamErrorText`. Los atajos arman
+  el mensaje que se manda al modelo en el idioma activo (`buildShortcutRequest(id, selection, lang)`).
+- Lo que el Brote genera (resúmenes, exámenes, títulos) se guarda en el idioma de ese momento y no cambia
+  después.

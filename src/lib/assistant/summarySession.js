@@ -2,6 +2,7 @@
 // Se guarda UNA sola vez: `saving` → `saved` | `error`; reintentar solo desde `error`.
 
 import { buildSummaryRow, rowToSummary, summaryTitle } from './summaryDoc.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /**
  * @typedef {import('./summaryDoc.js').SummaryDoc} SummaryDoc
@@ -25,7 +26,7 @@ import { buildSummaryRow, rowToSummary, summaryTitle } from './summaryDoc.js'
  * @property {string|null} saveError
  */
 
-export const SUMMARY_SAVE_FAILED = 'No se pudo guardar el resumen.'
+export const summarySaveFailed = (lang = getLang()) => tIn(lang, 'study.errors.summarySave')
 
 /**
  * Fila a insertar para un resumen recién llegado. El título se arma acá según
@@ -62,7 +63,7 @@ export function createSummarySession(key, payload, meta, nowIso) {
 export function finishSummarySave(session, key, { id, error }) {
   if (!session || session.key !== key || session.status === 'saved') return session
   if (id) return { ...session, doc: { ...session.doc, id }, status: 'saved', savedId: id, saveError: null }
-  return { ...session, status: 'error', saveError: error || SUMMARY_SAVE_FAILED }
+  return { ...session, status: 'error', saveError: error || summarySaveFailed() }
 }
 
 /** ¿Se puede reintentar? Solo con error y sin fila (nunca se inserta dos veces). */

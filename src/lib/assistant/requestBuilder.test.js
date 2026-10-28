@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  buildHistory, scopeOptions, resolveScopeType, buildScope, lockedActionMessage, actionScope, ACTION_LABELS, MAX_MESSAGE,
+  buildHistory, scopeOptions, resolveScopeType, buildScope, lockedActionMessage, actionScope, MAX_MESSAGE,
   requestMode, blockReason,
 } from './requestBuilder.js'
 import { validateRequest } from '../../../supabase/functions/assistant/request.js'
@@ -77,8 +77,8 @@ test('lockedActionMessage: free no tiene repaso ni plan; premium sí; el resto n
 })
 
 test('chips de la segunda etapa: huecos libre, conexiones de Premium', () => {
-  assert.equal(typeof ACTION_LABELS.gaps, 'string')
-  assert.equal(typeof ACTION_LABELS.connections, 'string')
+  assert.equal(typeof actionLabel('gaps'), 'string')
+  assert.equal(typeof actionLabel('connections'), 'string')
   assert.equal(lockedActionMessage('gaps', 'free'), null)
   assert.match(lockedActionMessage('connections', 'free'), /Premium/)
   assert.equal(lockedActionMessage('connections', 'premium'), null)
@@ -124,4 +124,27 @@ test('blockReason: ocupado, sin alcance o prueba abierta frenan el pedido (en es
   assert.equal(blockReason({ running: false, scopeValue: scope, action: 'chat', quizOpen: true }), null)
   assert.equal(blockReason({ running: false, scopeValue: scope, action: 'quiz_grade', quizOpen: true }), null)
   assert.equal(blockReason({ running: false, scopeValue: scope, action: 'quiz', quizOpen: false }), null)
+})
+
+import { actionLabel, buildRequest } from './requestBuilder.js'
+
+test('buildRequest: todo pedido lleva uiLang y la corrección va siempre en modo notes', () => {
+  const scope = { type: 'all' }
+  assert.deepEqual(
+    buildRequest({ fields: { action: 'chat', message: 'hola' }, history: [], mode: 'external', scope, lang: 'en' }),
+    { message: 'hola', action: 'chat', history: [], mode: 'external', scope, uiLang: 'en' },
+  )
+  const grade = buildRequest({ fields: { action: 'quiz_grade', answers: [] }, history: [], mode: 'external', scope, lang: 'es' })
+  assert.equal(grade.mode, 'notes')
+  assert.equal(grade.uiLang, 'es')
+  assert.equal(grade.message, '')
+})
+
+test('etiquetas, alcances y avisos de Premium en cada idioma', () => {
+  assert.equal(actionLabel('quiz', 'es'), 'Tomame examen')
+  assert.equal(actionLabel('quiz', 'en'), 'Quiz me')
+  assert.equal(lockedActionMessage('connections', 'free', 'en'), 'Connections between topics are part of Premium.')
+  const labels = scopeOptions(ctx, 'free', 'en').map((option) => option.label)
+  assert.deepEqual(labels, ['This sheet', 'This subject', 'The career', 'All my subjects'])
+  assert.deepEqual(scopeOptions(ctx, 'free', 'es').map((option) => option.label), ['Esta hoja', 'Esta materia', 'La carrera', 'Todas mis materias'])
 })

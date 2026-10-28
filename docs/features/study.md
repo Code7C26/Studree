@@ -56,3 +56,11 @@ impresión del navegador; hint «Guardar como PDF») y **Guardar como hoja**
 ## Navegación
 
 Header: Inicio · Carreras · **Mi estudio** · Perfil (ver `navigation-shell.md`).
+
+## Idioma (Fase 18)
+
+Mi estudio (listas, documento del resumen, registro del examen, ventanas y avisos) sale de los diccionarios
+`study` y `assistant`. Los parámetros de la URL (`?tab=resumenes`, `materia`) son identificadores y no cambian
+con el idioma. Los resúmenes y exámenes ya guardados quedan en el idioma en que se generaron; las fechas y
+el orden alfabético siguen el idioma activo. Los errores de `study.service` se comparan con las claves de
+`errors.crud.*` (ya no con el texto en castellano).

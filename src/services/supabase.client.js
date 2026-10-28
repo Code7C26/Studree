@@ -52,7 +52,7 @@ if (!isSupabaseConfigured) {
 export function getSupabase() {
   if (!supabase) {
     throw new Error(
-      'Supabase no está configurado: faltan VITE_SUPABASE_URL y/o ' +
+      'Supabase no está configurado: faltan VITE_SUPABASE_URL y/o ' + // i18n-ignore: error de desarrollo (nadie lo ve en la interfaz)
         'VITE_SUPABASE_ANON_KEY en .env.local (ver .env.example).',
     )
   }

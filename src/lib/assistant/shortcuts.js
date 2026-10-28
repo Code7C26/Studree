@@ -3,26 +3,22 @@
 // Ver docs/features/assistant.md.
 
 import { MAX } from '../../../supabase/functions/assistant/config.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /** @typedef {import('./bridge.js').Selection} Selection */
 /** @typedef {'explain'|'refute'|'complete'|'ask'} ShortcutId */
 
 /** Atajos de la barra flotante, en el orden en que se muestran. */
-export const SHORTCUTS = Object.freeze([
-  { id: 'explain', label: 'Explicar' },
-  { id: 'refute', label: 'Refutar' },
-  { id: 'complete', label: 'Completar' },
-  { id: 'ask', label: 'Preguntame' },
-])
+export const SHORTCUTS = Object.freeze([{ id: 'explain' }, { id: 'refute' }, { id: 'complete' }, { id: 'ask' }])
 
-/** Lo que se le pide al Brote en cada atajo (antes de citar el texto). */
-const INSTRUCTIONS = {
-  explain: 'Explicame este fragmento de mis apuntes con otras palabras y algún ejemplo.',
-  refute:
-    'Revisá este fragmento de mis apuntes: marcá lo que esté flojo, impreciso o mal. Si conviene corregirlo, proponé el texto nuevo con propose_replace_selection (o lo que falte con propose_append).',
-  complete:
-    'Completá este fragmento de mis apuntes con los conceptos que le falten. Proponé el texto con propose_replace_selection (o con propose_append si va al final de la hoja).',
-  ask: 'Tomame una pregunta sobre este fragmento de mis apuntes para ver si lo entendí. Esperá mi respuesta antes de corregirme.',
+/**
+ * Nombre visible de un atajo en el idioma pedido.
+ * @param {string} id
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function shortcutName(id, lang = getLang()) {
+  return tIn(lang, `assistant.shortcuts.label.${id}`)
 }
 
 /** Largo del pedacito de texto que se ve en el chat. */
@@ -34,7 +30,7 @@ const LABEL_EXCERPT = 80
  */
 function findShortcut(id) {
   const shortcut = SHORTCUTS.find((s) => s.id === id)
-  if (!shortcut) throw new Error(`Atajo desconocido: ${id}`)
+  if (!shortcut) throw new Error(`Atajo desconocido: ${id}`) // i18n-ignore: error de programación
   return shortcut
 }
 
@@ -42,7 +38,7 @@ function findShortcut(id) {
 function selectedText(selection) {
   const text = typeof selection?.text === 'string' ? selection.text : ''
   if (!selection || typeof selection.sheetId !== 'string' || !selection.sheetId || !text.trim()) {
-    throw new Error('El atajo necesita un texto seleccionado.')
+    throw new Error('El atajo necesita un texto seleccionado.') // i18n-ignore: error de programación
   }
   return text
 }
@@ -53,12 +49,13 @@ function selectedText(selection) {
  * `MAX.selection`) va en `selection`.
  * @param {string} id
  * @param {Selection} selection
+ * @param {string} [lang]
  * @returns {{action: 'shortcut', message: string, selection: {sheetId: string, text: string}}}
  */
-export function buildShortcutRequest(id, selection) {
+export function buildShortcutRequest(id, selection, lang = getLang()) {
   findShortcut(id)
   const text = selectedText(selection).slice(0, MAX.selection)
-  const head = `${INSTRUCTIONS[id]}\n\nTexto seleccionado:\n«`
+  const head = `${tIn(lang, `assistant.shortcuts.instruction.${id}`)}\n\n${tIn(lang, 'assistant.shortcuts.selectedText')}\n«`
   const room = MAX.message - head.length - 2
   const quoted = text.length > room ? `${text.slice(0, room - 1)}…` : text
   return {
@@ -72,10 +69,12 @@ export function buildShortcutRequest(id, selection) {
  * Lo que se muestra como mensaje del usuario en el chat ("Explicar: «…»").
  * @param {string} id
  * @param {Selection} selection
+ * @param {string} [lang]
  * @returns {string}
  */
-export function shortcutLabel(id, selection) {
-  const { label } = findShortcut(id)
+export function shortcutLabel(id, selection, lang = getLang()) {
+  findShortcut(id)
+  const label = shortcutName(id, lang)
   const flat = selectedText(selection).replace(/\s+/g, ' ').trim()
   const excerpt = flat.length > LABEL_EXCERPT ? `${flat.slice(0, LABEL_EXCERPT - 1)}…` : flat
   return `${label}: «${excerpt}»`

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { SHORTCUTS, buildShortcutRequest, shortcutLabel } from './shortcuts.js'
+import { SHORTCUTS, buildShortcutRequest, shortcutLabel, shortcutName } from './shortcuts.js'
 import { MAX } from '../../../supabase/functions/assistant/config.js'
 import { validateRequest } from '../../../supabase/functions/assistant/request.js'
 
@@ -15,7 +15,7 @@ test('SHORTCUTS tiene los cuatro atajos en orden', () => {
     ['explain', 'refute', 'complete', 'ask'],
   )
   assert.deepEqual(
-    SHORTCUTS.map((s) => s.label),
+    SHORTCUTS.map((s) => shortcutName(s.id, 'es')),
     ['Explicar', 'Refutar', 'Completar', 'Preguntame'],
   )
 })
@@ -68,4 +68,18 @@ test('shortcutLabel arma el texto visible con la etiqueta y un pedazo del texto'
   assert.ok(label.startsWith('Explicar'))
   assert.ok(label.includes('La mitocondria'))
   assert.ok(shortcutLabel('explain', { ...sel, text: 'y'.repeat(500) }).length < 200)
+})
+
+
+test('los atajos arman el pedido y la etiqueta en el idioma pedido', () => {
+  const selection = { sheetId: 'b1111111-1111-4111-8111-111111111111', from: 1, to: 9, text: 'La mitocondria' }
+  const es = buildShortcutRequest('explain', selection, 'es')
+  assert.match(es.message, /^Explicame este fragmento de mis apuntes/)
+  assert.match(es.message, /Texto seleccionado:\n«La mitocondria»$/)
+  const en = buildShortcutRequest('complete', selection, 'en')
+  assert.match(en.message, /^Complete this excerpt from my notes/)
+  assert.match(en.message, /Selected text:\n«La mitocondria»$/)
+  assert.equal(shortcutName('refute', 'es'), 'Refutar')
+  assert.equal(shortcutName('refute', 'en'), 'Challenge')
+  assert.equal(shortcutLabel('ask', selection, 'en'), 'Quiz me: «La mitocondria»')
 })

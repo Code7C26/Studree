@@ -58,3 +58,12 @@ test('itemTitle: respeta el título y, si falta, usa un respaldo según el alcan
   assert.equal(itemTitle({ title: null, scope_type: 'all' }), 'Examen anterior · todas mis materias')
   assert.equal(itemTitle({ title: null }), 'Examen anterior')
 })
+
+import { itemTitle } from './studyItems.js'
+
+test('itemTitle de un examen anterior sin título, en cada idioma', () => {
+  assert.equal(itemTitle({ title: 'Mi examen' }, 'en'), 'Mi examen')
+  assert.equal(itemTitle({ scope_type: 'career' }, 'es'), 'Examen anterior · toda la carrera')
+  assert.equal(itemTitle({ scope_type: 'career' }, 'en'), 'Previous exam · the whole career')
+  assert.equal(itemTitle({}, 'en'), 'Previous exam')
+})

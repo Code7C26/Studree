@@ -90,7 +90,8 @@ test('error deja busy false, el mensaje y limpia status', () => {
   s = reduceEvent(s, { type: 'tool', name: 'read_sheet' })
   s = reduceEvent(s, { type: 'error', code: 'upstream', message: 'Se cayó.' })
   assert.equal(s.busy, false)
-  assert.equal(s.error, 'Se cayó.')
+  // El texto sale del diccionario por `code`; el `message` del servidor es solo el respaldo.
+  assert.equal(s.error, 'El Brote no pudo responder ahora. Probá de nuevo en un rato.')
   assert.equal(s.status, null)
 })
 
@@ -99,7 +100,7 @@ test('usage después de error no reabre busy ni borra el error', () => {
   s = reduceEvent(s, { type: 'error', code: 'steps', message: 'Demasiados pasos.' })
   s = reduceEvent(s, { type: 'usage', action: 'chat', used: 1, max: 5 })
   assert.equal(s.busy, false)
-  assert.equal(s.error, 'Demasiados pasos.')
+  assert.equal(s.error, 'El Brote dio demasiadas vueltas sin llegar a una respuesta. Probá con algo más concreto.')
   assert.equal(s.usage.used, 1)
 })
 
@@ -237,4 +238,26 @@ test('evento summary válido queda en state.summary; uno sin sections se ignora'
   assert.deepEqual(s.summary, summary)
   assert.equal(reduceEvent(initialChat(), { type: 'summary', summary: { title: 'T' } }).summary, null)
   assert.equal(reduceEvent(initialChat(), { type: 'summary', summary: { sections: [] } }).summary, null)
+})
+
+import { toolStatus, streamErrorText } from './chatState.js'
+
+test('un evento error se traduce por su code; con un code desconocido queda el message', () => {
+  assert.equal(streamErrorText({ type: 'error', code: 'steps', message: 'x' }, 'es'), 'El Brote dio demasiadas vueltas sin llegar a una respuesta. Probá con algo más concreto.')
+  assert.equal(streamErrorText({ type: 'error', code: 'steps', message: 'x' }, 'en'), 'The Sprout went around in circles without reaching an answer. Try something more specific.')
+  assert.equal(streamErrorText({ type: 'error', code: 'nuevo', message: 'x' }, 'en'), 'x')
+  assert.equal(streamErrorText({ type: 'error' }, 'en'), 'Could not reach the Sprout. Try again.')
+})
+
+test('reduceEvent deja el error traducido en el estado', () => {
+  const state = reduceEvent(initialChat(), { type: 'error', code: 'empty', message: 'M' })
+  assert.equal(state.error, 'El Brote no devolvió nada. Probá de nuevo.')
+  assert.equal(state.busy, false)
+})
+
+test('toolStatus: texto de la herramienta que usa el modelo, en cada idioma', () => {
+  assert.equal(toolStatus('read_sheet', 'es'), 'Leyendo tus hojas…')
+  assert.equal(toolStatus('get_agenda', 'en'), 'Looking at your agenda…')
+  assert.equal(toolStatus('propose_append', 'en'), 'Preparing a proposal…')
+  assert.equal(toolStatus('otra', 'en'), 'Thinking…')
 })

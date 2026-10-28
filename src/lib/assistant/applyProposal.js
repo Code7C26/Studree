@@ -1,3 +1,4 @@
+import { getLang, tIn } from '../i18n/index.js'
 // Ayudas puras para aplicar propuestas del Brote. Aplicar siempre lo decide el usuario.
 
 const ORIGIN_MARK = '> Agregado por el Brote (conocimiento externo)'
@@ -27,13 +28,14 @@ export function canApplyReplace(currentText, savedText) {
 /**
  * Título de la tarjeta de una propuesta.
  * @param {import('./chatState.js').Proposal} p
+ * @param {string} [lang]
  * @returns {string}
  */
-export function proposalTitle(p) {
+export function proposalTitle(p, lang = getLang()) {
   switch (p?.kind) {
-    case 'append': return 'Agregar al final de la hoja'
-    case 'replace_selection': return 'Reemplazar la selección'
-    case 'new_sheet': return 'Crear una hoja nueva'
-    default: return 'Cambio propuesto'
+    case 'append': return tIn(lang, 'assistant.proposal.append')
+    case 'replace_selection': return tIn(lang, 'assistant.proposal.replace')
+    case 'new_sheet': return tIn(lang, 'assistant.proposal.newSheet')
+    default: return tIn(lang, 'assistant.proposal.other')
   }
 }

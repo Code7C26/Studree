@@ -9,6 +9,7 @@
 import { createCrudService, fetchAllPages, translateError } from './crudService.js'
 import { getSupabase } from './supabase.client.js'
 import { filterLiveStudyItems } from '../lib/assistant/studyItems.js'
+import { t } from '../lib/i18n/index.js'
 
 const summaries = createCrudService({ table: 'summaries', orderBy: 'created_at', notifies: false })
 const attempts = createCrudService({ table: 'quiz_attempts', orderBy: 'created_at', notifies: false })
@@ -62,15 +63,15 @@ async function getLive(table, id, fallback) {
  * @returns {Promise<import('../types/models.js').ServiceResult<{id: string}>>}
  */
 export async function saveSummary(row) {
-  if (!row || !row.title || !row.content) return { data: null, error: 'El resumen no es válido.' }
+  if (!row || !row.title || !row.content) return { data: null, error: t('study.errors.summaryInvalid') }
   const values = Object.fromEntries(SUMMARY_FIELDS.filter((k) => row[k] !== undefined).map((k) => [k, row[k]]))
   const { data, error } = await summaries.create(values, undefined, { cache: false })
-  return { data, error: error === 'No se pudo crear.' ? 'No se pudo guardar el resumen.' : error }
+  return { data, error: error === t('errors.crud.create') ? t('study.errors.summarySave') : error }
 }
 
 /** @returns {Promise<import('../types/models.js').ServiceResult<Object[]>>} */
 export function listSummaries() {
-  return listLive('summaries', SUMMARY_LIST, 'No se pudieron leer tus resúmenes.')
+  return listLive('summaries', SUMMARY_LIST, t('study.errors.summariesLoad'))
 }
 
 /**
@@ -78,7 +79,7 @@ export function listSummaries() {
  * @returns {Promise<import('../types/models.js').ServiceResult<Object|null>>}
  */
 export function getSummary(id) {
-  return getLive('summaries', id, 'No se pudo leer el resumen.')
+  return getLive('summaries', id, t('study.errors.summaryLoad'))
 }
 
 /**
@@ -87,12 +88,12 @@ export function getSummary(id) {
  */
 export async function deleteSummary(id) {
   const { error } = await summaries.remove(id, undefined, { cache: false })
-  return { data: null, error: error === 'No se pudo eliminar.' ? 'No se pudo borrar el resumen.' : error }
+  return { data: null, error: error === t('errors.crud.delete') ? t('study.errors.summaryDelete') : error }
 }
 
 /** @returns {Promise<import('../types/models.js').ServiceResult<Object[]>>} */
 export function listQuizAttempts() {
-  return listLive('quiz_attempts', ATTEMPT_LIST, 'No se pudieron leer tus exámenes.')
+  return listLive('quiz_attempts', ATTEMPT_LIST, t('study.errors.quizzesLoad'))
 }
 
 /**
@@ -100,7 +101,7 @@ export function listQuizAttempts() {
  * @returns {Promise<import('../types/models.js').ServiceResult<Object|null>>} Con `detail`.
  */
 export function getQuizAttempt(id) {
-  return getLive('quiz_attempts', id, 'No se pudo leer el examen.')
+  return getLive('quiz_attempts', id, t('study.errors.quizLoad'))
 }
 
 /**
@@ -109,5 +110,5 @@ export function getQuizAttempt(id) {
  */
 export async function deleteQuizAttempt(id) {
   const { error } = await attempts.remove(id, undefined, { cache: false })
-  return { data: null, error: error === 'No se pudo eliminar.' ? 'No se pudo borrar el examen.' : error }
+  return { data: null, error: error === t('errors.crud.delete') ? t('study.errors.quizDelete') : error }
 }

@@ -8,6 +8,7 @@
 
 import { createCrudService, fetchAllPages, translateError } from './crudService.js'
 import { getSupabase } from './supabase.client.js'
+import { t } from '../lib/i18n/index.js'
 
 const attempts = createCrudService({ table: 'quiz_attempts', orderBy: 'created_at', notifies: false })
 
@@ -45,9 +46,9 @@ const uniqueIds = (list) => [...new Set((Array.isArray(list) ? list : []).filter
  * @returns {Promise<import('../types/models.js').ServiceResult<Object>>}
  */
 export async function saveAttempt({ scope, total, correct, subjectId, careerId, title, detail }) {
-  if (!scope || !SCOPE_TYPES.includes(scope.type)) return { data: null, error: 'Alcance inválido.' }
+  if (!scope || !SCOPE_TYPES.includes(scope.type)) return { data: null, error: t('study.errors.scopeInvalid') }
   if (!Number.isInteger(total) || !Number.isInteger(correct) || total < 0 || correct < 0 || correct > total) {
-    return { data: null, error: 'El puntaje de la prueba no es válido.' }
+    return { data: null, error: t('study.errors.scoreInvalid') }
   }
   const scopeId = scope.type === 'all' ? null : scope.id ?? null
   return attempts.create(
@@ -83,12 +84,12 @@ export async function listWeakTopics(subjectId) {
         if (part) query = query.in('subject_id', part)
         return query.order('last_missed_at', { ascending: false }).order('id', { ascending: true }).range(from, to)
       })
-      if (error) return { data: [], error: translateError(error, 'No se pudieron leer tus temas flojos.') }
+      if (error) return { data: [], error: translateError(error, t('study.errors.weakLoad')) }
       rows.push(...data)
     }
     return { data: rows, error: null }
   } catch (error) {
-    return { data: [], error: translateError(error, 'No se pudieron leer tus temas flojos.') }
+    return { data: [], error: translateError(error, t('study.errors.weakLoad')) }
   }
 }
 
@@ -118,15 +119,15 @@ export async function applyWeakTopicUpdates({ upserts = [], deletes = [] } = {})
   try {
     if (rows.length) {
       const { error } = await getSupabase().from('weak_topics').upsert(rows, { onConflict: 'user_id,subject_id,topic' })
-      if (error) return { data: null, error: translateError(error, 'No se pudieron guardar tus temas flojos.') }
+      if (error) return { data: null, error: translateError(error, t('study.errors.weakSave')) }
     }
     for (const part of chunks(ids)) {
       const { error } = await getSupabase().from('weak_topics').delete().in('id', part)
-      if (error) return { data: null, error: translateError(error, 'No se pudieron actualizar tus temas flojos.') }
+      if (error) return { data: null, error: translateError(error, t('study.errors.weakUpdate')) }
     }
     return { data: true, error: null }
   } catch (error) {
-    return { data: null, error: translateError(error, 'No se pudieron guardar tus temas flojos.') }
+    return { data: null, error: translateError(error, t('study.errors.weakSave')) }
   }
 }
 
@@ -144,7 +145,7 @@ export async function resolveQuizSources({ sheetIds = [], subjectIds = [] } = {}
   const sheets = {}
   /** @type {Record<string, {career_id: string}>} */
   const subjects = {}
-  const fallback = 'No se pudieron leer las hojas de la prueba.'
+  const fallback = t('study.errors.quizSheetsLoad')
   try {
     for (const part of chunks(uniqueIds(sheetIds))) {
       const { data, error } = await getSupabase()

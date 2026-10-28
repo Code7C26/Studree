@@ -39,3 +39,26 @@ test('500, 503 sin code config y red caen en el genérico', () => {
   assert.equal(translateAssistantError(503, null), GENERIC)
   assert.equal(translateAssistantError(0, undefined), GENERIC)
 })
+
+test('traducción por code + reason: topes y funciones de Premium, en cada idioma', () => {
+  const quota = { code: 'quota', reason: 'chat', message: 'M' }
+  assert.equal(translateAssistantError(429, quota, 'es'), 'Llegaste al tope de preguntas de hoy. Probá mañana o pasate a Premium.')
+  assert.equal(translateAssistantError(429, quota, 'en'), 'You reached today’s question limit. Try again tomorrow or go Premium.')
+  const feature = { code: 'feature', reason: 'weakReview', message: 'M' }
+  assert.equal(translateAssistantError(403, feature, 'en'), 'Reviewing weak topics is part of Premium.')
+  assert.equal(translateAssistantError(429, { code: 'quota', reason: 'unverified' }, 'es'), 'No pudimos verificar tu uso. Probá de nuevo.')
+})
+
+test('servidor viejo o código desconocido: se muestra el message del servidor, sin romper', () => {
+  assert.equal(translateAssistantError(429, { code: 'quota', message: 'M' }, 'en'), 'M')
+  assert.equal(translateAssistantError(429, { code: 'quota', reason: 'zzz', message: 'M' }, 'en'), 'M')
+  assert.equal(translateAssistantError(403, { code: 'feature', reason: 'nueva', message: 'Solo Premium' }, 'es'), 'Solo Premium')
+  assert.equal(translateAssistantError(429, { code: 'quota', reason: 'zzz' }, 'en'), 'Could not reach the Sprout. Try again.')
+})
+
+test('estados sin cuerpo, en inglés', () => {
+  assert.equal(translateAssistantError(401, null, 'en'), 'Your session expired. Sign in again.')
+  assert.equal(translateAssistantError(404, null, 'en'), 'The assistant is not available yet (the function has not been deployed).')
+  assert.equal(translateAssistantError(400, { code: 'not_found' }, 'en'), 'That sheet or subject no longer exists (is it in the trash?).')
+  assert.equal(translateAssistantError(0, undefined, 'en'), 'Could not reach the Sprout. Try again.')
+})

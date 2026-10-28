@@ -53,6 +53,15 @@
   `labelKey`/`helpKey` (los identificadores `aprobada`, `cursar`… no cambian), `PALETTE` ya tenía
   `nameKey`, y `describeBlockReason(state, lang)` traduce el motivo del candado. Test nuevo: cada clave
   existe en los dos idiomas.
+- **Tarea 8 — Capa del Brote y de Mi estudio:** `translateAssistantError` y los eventos `error` se
+  traducen por `code` + `reason` (con respaldo al `message` del servidor); el pedido lleva `uiLang`
+  (`buildRequest`); `lib/assistant` pasa por `t()` y sus constantes de texto (`ACTION_LABELS`,
+  `QUIZ_OPEN_REASON`, `SUMMARY_SAVE_FAILED`, `CHANGED_MESSAGE`, la etiqueta dentro de `SHORTCUTS`) pasan a
+  funciones (`actionLabel`, `quizOpenReason`, `summarySaveFailed`, `changedMessage`, `shortcutName`). Los
+  atajos arman su mensaje en el idioma activo. Los services de estudio comparan contra `errors.crud.*`.
+- **Tarea 9 — Brote y Mi estudio (componentes):** botón, panel, chat, tarjetas, propuestas, examen,
+  resumen, páginas de Mi estudio y los hooks `useAssistant`/`useSaveSummaryAsSheet` pasan por `t()`
+  (diccionarios `assistant` y `study`; en inglés, "Sprout"). El trinquete queda en cero: `PENDING` vacío.
 
 ---
 

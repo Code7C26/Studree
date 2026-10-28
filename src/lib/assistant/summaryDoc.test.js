@@ -101,3 +101,22 @@ test('summaryTitle y summaryScopeLabel', async () => {
   assert.equal(summaryScopeLabel('career'), 'Toda la carrera')
   assert.equal(summaryScopeLabel('all'), 'Todas mis materias')
 })
+
+import { summaryScopeLabel, summaryTitle } from './summaryDoc.js'
+
+test('resumen: etiquetas, título, fechas y Markdown en cada idioma', () => {
+  assert.equal(basedOnLabel(3, 3, 'es'), 'basado en 3 hojas')
+  assert.equal(basedOnLabel(2, 5, 'es'), 'basado en 2 de 5 hojas')
+  assert.equal(basedOnLabel(1, 1, 'en'), 'based on 1 sheet')
+  assert.equal(basedOnLabel(2, 5, 'en'), 'based on 2 of 5 sheets')
+  assert.equal(summaryScopeLabel('career', 'en'), 'The whole career')
+  assert.equal(summaryTitle({ scopeType: 'subject', subjectName: 'Biología' }, 'es'), 'Resumen · Biología')
+  assert.equal(summaryTitle({ scopeType: 'all', subjectName: null }, 'en'), 'Summary · All my subjects')
+  assert.equal(formatUtcDate('2026-10-14', 'es'), '14/10/2026')
+  assert.equal(formatUtcDate('2026-10-14', 'en'), '10/14/2026')
+  const doc = { createdAt: '2026-10-14T18:30:00', sections: [{ heading: 'A', body: 'b' }], keyConcepts: [{ term: 't', definition: 'd' }] }
+  assert.match(summaryToMarkdown(doc, 'es'), /^\*Resumen hecho por el Brote el 14\/10\/2026\*/)
+  assert.match(summaryToMarkdown(doc, 'es'), /# Conceptos clave/)
+  assert.match(summaryToMarkdown(doc, 'en'), /^\*Summary made by the Sprout on 10\/14\/2026\*/)
+  assert.match(summaryToMarkdown(doc, 'en'), /# Key concepts/)
+})

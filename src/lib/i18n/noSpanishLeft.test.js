@@ -11,12 +11,6 @@ import { scanSourceTree } from './scanSpanish.js'
  *  - un prefijo de PENDING sin ningún castellano → ya migró, hay que borrarlo de la lista.
  */
 export const PENDING = [
-  'src/components/features/assistant/',
-  'src/components/features/study/',
-  'src/hooks/',
-  'src/lib/assistant/',
-  'src/pages/',
-  'src/services/',
 ]
 
 const hits = scanSourceTree('src')

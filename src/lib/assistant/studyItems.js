@@ -1,7 +1,7 @@
 // Filas de "Mi estudio" (resúmenes y exámenes con su materia/carrera embebidas).
 // Puro: sin React ni services.
 
-import { getLang } from '../i18n/index.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /**
  * Descarta las filas de materias o carreras en la papelera, o cuyo embed
@@ -54,21 +54,23 @@ export function filterBySubject(rows, subjectId) {
  */
 export function filterOptions(summaries, attempts, activeId) {
   const options = subjectOptions([...(summaries ?? []), ...(attempts ?? [])])
-  if (activeId && !options.some((o) => o.id === activeId)) options.push({ id: activeId, name: 'Esta materia' })
+  if (activeId && !options.some((o) => o.id === activeId)) options.push({ id: activeId, name: tIn(getLang(), 'study.page.thisSubject') })
   return options
 }
 
-const SCOPE_FALLBACK = { sheet: 'una hoja', subject: 'una materia', career: 'toda la carrera', all: 'todas mis materias' }
+const SCOPE_TYPES = ['sheet', 'subject', 'career', 'all']
 
 /**
  * Título para mostrar de un examen. Los anteriores a la migración 0009 no lo
  * tienen: se arma uno según el alcance.
  * @param {{title?: string|null, scope_type?: string|null}} row
+ * @param {string} [lang]
  * @returns {string}
  */
-export function itemTitle(row) {
+export function itemTitle(row, lang = getLang()) {
   const title = String(row?.title ?? '').trim()
   if (title) return title
-  const where = SCOPE_FALLBACK[/** @type {keyof typeof SCOPE_FALLBACK} */ (row?.scope_type ?? '')]
-  return where ? `Examen anterior · ${where}` : 'Examen anterior'
+  const scopeType = row?.scope_type ?? ''
+  if (!SCOPE_TYPES.includes(scopeType)) return tIn(lang, 'study.page.previousExam')
+  return tIn(lang, 'study.page.previousExamWhere', { where: tIn(lang, `study.page.scopeFallback.${scopeType}`) })
 }

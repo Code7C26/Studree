@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, QUIZ_OPEN_REASON, canRetrySave, withSavedAttempt,
+  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, quizOpenReason, canRetrySave, withSavedAttempt,
 } from './quizSession.js'
 
 const meta = { scope: { type: 'subject', id: 's1' }, scopeSubjectId: 's1', isReview: false }
@@ -64,7 +64,7 @@ test('blocksNewQuiz: una prueba open o grading bloquea pedir otra; done o ningun
   assert.equal(blocksNewQuiz(done), false)
   assert.equal(blocksNewQuiz(null), false)
   assert.deepEqual([...QUIZ_ACTIONS].sort(), ['quiz', 'weak_review'])
-  assert.match(QUIZ_OPEN_REASON, /Terminá o descartá la prueba abierta/)
+  assert.match(quizOpenReason(), /Terminá o descartá la prueba abierta/)
 })
 
 test('discardQuiz: descarta una prueba open o done; una que se está corrigiendo no', () => {

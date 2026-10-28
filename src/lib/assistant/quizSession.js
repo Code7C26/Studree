@@ -1,3 +1,4 @@
+import { getLang, tIn } from '../i18n/index.js'
 // Ciclo de vida de una prueba del Brote. Puro: sin React ni services.
 // Una prueba se corrige y se guarda UNA sola vez: `open` → `grading` → `done`.
 
@@ -23,7 +24,7 @@
 export const QUIZ_ACTIONS = Object.freeze(['quiz', 'weak_review'])
 
 /** Por qué no se puede pedir otra prueba (se muestra en los chips deshabilitados). */
-export const QUIZ_OPEN_REASON = 'Terminá o descartá la prueba abierta para pedir otra.'
+export const quizOpenReason = (lang = getLang()) => tIn(lang, 'assistant.notices.quizOpen')
 
 /**
  * ¿Hay una prueba sin terminar? Pedir otra la reemplazaría: se perderían las
