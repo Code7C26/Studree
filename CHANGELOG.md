@@ -16,6 +16,11 @@
 > `docs/superpowers/plans/2026-10-28-fase-18-ingles.md`.
 
 - **Tarea 0:** documentación inicial (`docs/features/i18n.md`) y rama `fase-18` desde `fase-14`.
+- **Tarea 1 — Núcleo de idiomas:** `src/lib/i18n/` (`detectLang`, `createI18n`, instancia con
+  `t`/`getLang`/`setLang`/`subscribe`, diccionarios por área en `es/` y `en/`), clave
+  `studree:ui:lang` y `clearAllCache()` ya **no borra el idioma**. Tests: núcleo, **paridad**
+  `es`/`en` y un **trinquete** (`noSpanishLeft.test.js` + `scanSpanish.js`) que impide castellano
+  suelto fuera de las áreas pendientes.
 
 ---
 

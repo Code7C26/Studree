@@ -11,6 +11,9 @@
 
 import { STORAGE_KEYS } from '../constants/storageKeys.js'
 
+/** Claves que sobreviven a `clearAllCache()` (el idioma no es dato de ningún usuario). */
+const PRESERVED_KEYS = [STORAGE_KEYS.uiLang]
+
 /**
  * Lee un valor de la cache.
  * @template T
@@ -76,13 +79,14 @@ export function cacheKey(collection, parentId) {
  * Se usa al cerrar sesión: nada de un usuario puede quedar visible para el
  * siguiente que inicie sesión en el mismo navegador — las tabs, por ejemplo,
  * guardan títulos de hojas.
+ * No toca `PRESERVED_KEYS`: preferencias del dispositivo que no contienen datos del usuario.
  */
 export function clearAllCache() {
   try {
     const toRemove = []
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i)
-      if (key && key.startsWith(STORAGE_KEYS.appPrefix)) toRemove.push(key)
+      if (key && key.startsWith(STORAGE_KEYS.appPrefix) && !PRESERVED_KEYS.includes(key)) toRemove.push(key)
     }
     for (const key of toRemove) localStorage.removeItem(key)
   } catch (error) {

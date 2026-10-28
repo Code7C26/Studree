@@ -25,4 +25,9 @@ export const STORAGE_KEYS = Object.freeze({
   uiExplorerOpen: 'studree:ui:explorer-open',
   /** Panel del Brote (asistente) abierto/cerrado (Fase 14). */
   uiAssistantOpen: 'studree:ui:assistant-open',
+  /**
+   * Idioma de la interfaz, 'es' | 'en' (Fase 18). Es del dispositivo, no del usuario: NO se
+   * borra al cerrar sesión (ver `PRESERVED_KEYS` en cache.service.js).
+   */
+  uiLang: 'studree:ui:lang',
 })
