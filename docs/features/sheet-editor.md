@@ -108,3 +108,9 @@ de un atajo del Brote; no entra en el Markdown. Ver `docs/features/folder.md`).
 - [ ] Imágenes (requiere Supabase Storage).
 - [ ] Historial de versiones.
 - [ ] Autocompletar `[[` con los temas de la materia.
+
+## Idioma (Fase 18)
+
+La barra de herramientas (`EditorToolbar`) toma sus títulos de `editor.toolbar.*`: `HEADINGS` guarda
+una `titleKey` en vez del texto. El aviso "Subiendo…/Cargando imagen…" de los adjuntos en el editor
+(`attachmentNodes.js`) sale del diccionario `folder.attachments`.

@@ -25,6 +25,7 @@ import {
   orderFolderSheets,
   restoreLocalSheets,
 } from '../lib/editor/folderSheets.js'
+import { t } from '../lib/i18n/index.js'
 
 const LIVE_CONTENT_DELAY_MS = 300
 
@@ -79,7 +80,7 @@ export function useFolder(subjectId) {
       if (request !== requestRef.current) return
 
       setSubject(subjectRow)
-      setSubjectError(subjectRow ? null : (getError ?? 'No se encontró la materia.'))
+      setSubjectError(subjectRow ? null : (getError ?? t('importExport.export.subjectNotFound')))
       setError(listError)
       // Si la lista falló NO se usan sus filas (son la cache vieja): ver nextFolderSheets.
       setSheets((current) => nextFolderSheets(current, rows, listError, liveRef.current))

@@ -1,0 +1,25 @@
+/** Barra de herramientas del editor de hojas. */
+export default {
+  toolbar: {
+    bold: 'Negrita',
+    italic: 'Itálica',
+    strike: 'Tachado',
+    code: 'Código en línea',
+    heading1: 'Título',
+    heading2: 'Subtítulo',
+    heading3: 'Título 3',
+    heading4: 'Título 4',
+    list: 'Lista',
+    ordered: 'Lista numerada',
+    checklist: 'Checklist',
+    checklistLabel: 'Tarea',
+    quote: 'Cita',
+    quoteLabel: 'Cita',
+    codeBlock: 'Bloque de código',
+    rule: 'Línea horizontal',
+    link: 'Enlace',
+    linkPrompt: 'URL del enlace',
+    attachTitle: 'Adjuntar (también podés soltar o pegar archivos en la hoja)',
+    attachLabel: 'Adjuntar un archivo a la hoja',
+  },
+}

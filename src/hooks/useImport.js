@@ -9,6 +9,7 @@ import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService } from '../services/sheets.service.js'
 import { importService } from '../services/import.service.js'
 import { buildImportPlan, markDuplicates, summarizePlan, describeSummary } from '../lib/import/plan.js'
+import { t } from '../lib/i18n/index.js'
 
 /**
  * Lee los archivos elegidos: `.md` sueltos y el contenido de los `.zip`.
@@ -102,7 +103,7 @@ export function useImport(target) {
         setSummary(summarizePlan(planRef.current))
         setPhase('ready')
       } catch (err) {
-        setError(err?.message ?? 'No se pudieron leer los archivos.')
+        setError(err?.message ?? t('importExport.import.readFailed'))
         setPhase('idle')
       }
     },
@@ -125,7 +126,7 @@ export function useImport(target) {
       setPhase('done')
     } catch (err) {
       // Nunca dejar el diálogo trabado en "importando".
-      setError(err?.message ?? 'Falló la importación.')
+      setError(err?.message ?? t('importExport.import.failed'))
       setPhase('idle')
     }
   }, [])

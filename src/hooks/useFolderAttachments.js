@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { attachmentsService } from '../services/attachments.service.js'
+import { t } from '../lib/i18n/index.js'
 
 /** @param {import('../types/models.js').Attachment[]} rows */
 function groupBySheet(rows) {
@@ -92,7 +93,7 @@ export function useFolderAttachments(sheetIds) {
   const open = useCallback(async (id) => {
     const url = await attachmentsService.signedUrl(id)
     if (url) window.open(url, '_blank', 'noopener,noreferrer')
-    else setError('Ese adjunto ya no está disponible.')
+    else setError(t('folder.attachments.unavailable'))
   }, [])
 
   const resolveUrl = useCallback((id) => attachmentsService.signedUrl(id), [])

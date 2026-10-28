@@ -8,9 +8,18 @@ import { splitFrontmatter } from './frontmatter.js'
 import { resolveCreatedAt } from './createdAt.js'
 import { buildZipIndex, findMediaRefs } from './mediaRefs.js'
 import { unescapeMarkdownText } from '../attachments/refs.js'
+import { getLang, tIn } from '../i18n/index.js'
 
-export const IMPORT_FALLBACK_NAME = 'Importado'
 const EXPORT_ROOT = 'Studree'
+
+/**
+ * Nombre de la carrera o materia cuando el archivo no dice a cuál pertenece.
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function importFallbackName(lang = getLang()) {
+  return tIn(lang, 'importExport.plan.fallbackName')
+}
 
 /** @param {string} name */
 const nameKey = (name) => name.trim().toLowerCase()
@@ -26,11 +35,11 @@ export function isIgnoredPath(path) {
 }
 
 /** Carrera y materia de un `.md` según su carpeta y su frontmatter. */
-function destinationFor(path, meta) {
+function destinationFor(path, meta, lang) {
   let dirs = path.split('/').slice(0, -1).map((segment) => segment.trim()).filter(Boolean)
   if (dirs.length >= 2 && dirs[0] === EXPORT_ROOT) dirs = dirs.slice(1)
-  const careerName = meta.carrera?.trim() || (dirs.length >= 2 ? dirs[dirs.length - 2] : '') || IMPORT_FALLBACK_NAME
-  const subjectName = meta.materia?.trim() || (dirs.length >= 1 ? dirs[dirs.length - 1] : '') || IMPORT_FALLBACK_NAME
+  const careerName = meta.carrera?.trim() || (dirs.length >= 2 ? dirs[dirs.length - 2] : '') || importFallbackName(lang)
+  const subjectName = meta.materia?.trim() || (dirs.length >= 1 ? dirs[dirs.length - 1] : '') || importFallbackName(lang)
   return { careerName, subjectName }
 }
 
@@ -41,8 +50,9 @@ function destinationFor(path, meta) {
  * @param {{mode: 'subject', subjectId: string, subjectName: string}|{mode: 'careers'}} params.target
  * @param {Array<{id: string, name: string, subjects: Array<{id: string, name: string}>}>} params.existingCareers
  * @param {Date} [params.now]
+ * @param {string} [params.lang] - Idioma de los motivos de salteo y del nombre de reserva.
  */
-export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, target, existingCareers, now = new Date() }) {
+export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, target, existingCareers, now = new Date(), lang = getLang() }) {
   // Zips hechos en Windows pueden traer `\` como separador.
   const mdEntries = rawEntries.map((entry) => ({ ...entry, path: entry.path.replaceAll('\\', '/') }))
   const filePaths = rawPaths.map((path) => path.replaceAll('\\', '/'))
@@ -57,7 +67,7 @@ export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, ta
     if (isIgnoredPath(entry.path)) continue
     const { meta, body } = splitFrontmatter(entry.text)
     if (!body.trim()) {
-      skipped.push({ path: entry.path, reason: 'Está vacía.' })
+      skipped.push({ path: entry.path, reason: tIn(lang, 'importExport.plan.empty') })
       continue
     }
     const media = findMediaRefs(body, entry.path, index)
@@ -75,7 +85,7 @@ export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, ta
       group = groups.get('subject') ?? { careerName: '', careerId: null, subjectName: target.subjectName, subjectId: target.subjectId, sheets: [] }
       groups.set('subject', group)
     } else {
-      const { careerName, subjectName } = destinationFor(entry.path, meta)
+      const { careerName, subjectName } = destinationFor(entry.path, meta, lang)
       const key = `${nameKey(careerName)}/${nameKey(subjectName)}`
       group = groups.get(key)
       if (!group) {
@@ -95,7 +105,7 @@ export function buildImportPlan({ mdEntries: rawEntries, filePaths: rawPaths, ta
   }
 
   for (const path of visibleFiles) {
-    if (!referenced.has(path)) skipped.push({ path, reason: 'No es un .md ni está usado en una hoja.' })
+    if (!referenced.has(path)) skipped.push({ path, reason: tIn(lang, 'importExport.plan.notUsed') })
   }
 
   return { groups: [...groups.values()], skipped }
@@ -152,29 +162,22 @@ export function summarizePlan(plan) {
   }
 }
 
-/** @param {number} n @param {string} one @param {string} many */
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
-
-/** @param {string[]} parts */
-const joinList = (parts) => (parts.length <= 1 ? parts.join('') : `${parts.slice(0, -1).join(', ')} y ${parts.at(-1)}`)
-
 /**
  * "Se van a crear 2 carreras, 5 materias, 40 hojas y 12 adjuntos. 3 hojas ya existen y se saltean."
  * @param {ReturnType<typeof summarizePlan>} summary
+ * @param {string} [lang]
  */
-export function describeSummary(summary) {
+export function describeSummary(summary, lang = getLang()) {
+  const count = (key, value) => value > 0 && tIn(lang, `importExport.counts.${key}`, { count: value })
   const parts = [
-    summary.newCareers > 0 && plural(summary.newCareers, 'carrera', 'carreras'),
-    summary.newSubjects > 0 && plural(summary.newSubjects, 'materia', 'materias'),
-    summary.sheets > 0 && plural(summary.sheets, 'hoja', 'hojas'),
-    summary.media > 0 && plural(summary.media, 'adjunto', 'adjuntos'),
+    count('careers', summary.newCareers),
+    count('subjects', summary.newSubjects),
+    count('sheets', summary.sheets),
+    count('attachments', summary.media),
   ].filter(Boolean)
-  const sentences = [parts.length > 0 ? `Se van a crear ${joinList(parts)}.` : 'No hay hojas nuevas para importar.']
-  if (summary.duplicates > 0) {
-    sentences.push(`${plural(summary.duplicates, 'hoja ya existe', 'hojas ya existen')} y se ${summary.duplicates === 1 ? 'saltea' : 'saltean'}.`)
-  }
-  if (summary.skipped > 0) {
-    sentences.push(`${plural(summary.skipped, 'archivo no se importa', 'archivos no se importan')}.`)
-  }
+  const list = parts.length <= 1 ? parts.join('') : tIn(lang, 'importExport.plan.listAnd', { head: parts.slice(0, -1).join(', '), last: parts.at(-1) })
+  const sentences = [parts.length > 0 ? tIn(lang, 'importExport.plan.willCreate', { list }) : tIn(lang, 'importExport.plan.nothingNew')]
+  if (summary.duplicates > 0) sentences.push(tIn(lang, 'importExport.plan.duplicates', { count: summary.duplicates }))
+  if (summary.skipped > 0) sentences.push(tIn(lang, 'importExport.plan.skipped', { count: summary.skipped }))
   return sentences.join(' ')
 }

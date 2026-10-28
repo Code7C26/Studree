@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -19,6 +20,7 @@ import { Icon } from '../../ui/Icon'
  * @param {number} props.focusSignal - Cambia para pedir foco (ej. Ctrl+F).
  */
 export function FolderSearchBar({ term, onTermChange, total, current, onNext, onPrevious, onClose, focusSignal }) {
+  const { t } = useI18n()
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function FolderSearchBar({ term, onTermChange, total, current, onNext, on
     }
   }
 
-  const counter = term.trim() ? (total === 0 ? 'Sin resultados' : `${(current ?? 0) + 1} de ${total}`) : ''
+  const counter = term.trim() ? (total === 0 ? t('folder.search.none') : t('folder.search.counter', { current: (current ?? 0) + 1, total })) : ''
 
   return (
     <div className="flex items-center gap-1 rounded-lg bg-bg/60 px-2 focus-within:ring-1 focus-within:ring-accent-soft">
@@ -51,8 +53,8 @@ export function FolderSearchBar({ term, onTermChange, total, current, onNext, on
         value={term}
         onChange={(event) => onTermChange(event.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Buscar en la materia…"
-        aria-label="Buscar en la materia"
+        placeholder={t('folder.search.placeholder')}
+        aria-label={t('folder.search.label')}
         className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-text-muted"
       />
       {counter && <span className="shrink-0 text-xs tabular-nums text-text-muted">{counter}</span>}
@@ -60,7 +62,7 @@ export function FolderSearchBar({ term, onTermChange, total, current, onNext, on
         type="button"
         onClick={onPrevious}
         disabled={total === 0}
-        aria-label="Coincidencia anterior"
+        aria-label={t('folder.search.previous')}
         className="rounded p-1 text-text-muted hover:text-text disabled:opacity-40"
       >
         <Icon name="arrow-up" size={14} />
@@ -69,7 +71,7 @@ export function FolderSearchBar({ term, onTermChange, total, current, onNext, on
         type="button"
         onClick={onNext}
         disabled={total === 0}
-        aria-label="Coincidencia siguiente"
+        aria-label={t('folder.search.next')}
         className="rounded p-1 text-text-muted hover:text-text disabled:opacity-40"
       >
         <Icon name="arrow-down" size={14} />

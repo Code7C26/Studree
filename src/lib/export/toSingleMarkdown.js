@@ -21,6 +21,7 @@
 
 import { formatSheetDateLong } from '../format/sheetDate.js'
 import { describeAttachmentRefs } from '../attachments/refs.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 const MAX_HEADING = 6
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/
@@ -61,25 +62,25 @@ const heading = (level, text) => `${'#'.repeat(Math.min(level, MAX_HEADING))} ${
  * @param {{created_at: string, content_md: string}} sheet
  * @param {number} level - Nivel del heading de la hoja.
  */
-function sheetToMarkdown(sheet, level) {
-  const content = shiftHeadings(describeAttachmentRefs(sheet.content_md?.trim() ?? ''), level)
-  return [heading(level, formatSheetDateLong(sheet.created_at)), content].filter(Boolean).join('\n\n')
+function sheetToMarkdown(sheet, level, lang) {
+  const content = shiftHeadings(describeAttachmentRefs(sheet.content_md?.trim() ?? '', lang), level)
+  return [heading(level, formatSheetDateLong(sheet.created_at, lang)), content].filter(Boolean).join('\n\n')
 }
 
 /**
  * @param {{name: string, sheets: Array}} subject
  * @param {number} level - Nivel del heading de la materia.
  */
-function subjectToMarkdown(subject, level) {
-  return [heading(level, subject.name), ...subject.sheets.map((sheet) => sheetToMarkdown(sheet, level + 1))].join('\n\n')
+function subjectToMarkdown(subject, level, lang) {
+  return [heading(level, subject.name), ...subject.sheets.map((sheet) => sheetToMarkdown(sheet, level + 1, lang))].join('\n\n')
 }
 
 /**
  * @param {{name: string, subjects: Array}} career
  * @param {number} level - Nivel del heading de la carrera.
  */
-function careerToMarkdown(career, level) {
-  return [heading(level, career.name), ...career.subjects.map((subject) => subjectToMarkdown(subject, level + 1))].join(
+function careerToMarkdown(career, level, lang) {
+  return [heading(level, career.name), ...career.subjects.map((subject) => subjectToMarkdown(subject, level + 1, lang))].join(
     '\n\n',
   )
 }
@@ -89,8 +90,8 @@ function careerToMarkdown(career, level) {
  * @param {{name: string, sheets: Array}} subject
  * @returns {string}
  */
-export function subjectTreeToMarkdown(subject) {
-  return subjectToMarkdown(subject, 1)
+export function subjectTreeToMarkdown(subject, lang = getLang()) {
+  return subjectToMarkdown(subject, 1, lang)
 }
 
 /**
@@ -98,8 +99,8 @@ export function subjectTreeToMarkdown(subject) {
  * @param {{name: string, subjects: Array}} career
  * @returns {string}
  */
-export function careerTreeToMarkdown(career) {
-  return careerToMarkdown(career, 1)
+export function careerTreeToMarkdown(career, lang = getLang()) {
+  return careerToMarkdown(career, 1, lang)
 }
 
 /**
@@ -107,8 +108,8 @@ export function careerTreeToMarkdown(career) {
  * @param {Array<{name: string, subjects: Array}>} careers
  * @returns {string}
  */
-export function allTreeToMarkdown(careers) {
-  return [heading(1, 'Mis apuntes'), ...careers.map((career) => careerToMarkdown(career, 2))].join('\n\n')
+export function allTreeToMarkdown(careers, lang = getLang()) {
+  return [heading(1, tIn(lang, 'importExport.file.allHeading')), ...careers.map((career) => careerToMarkdown(career, 2, lang))].join('\n\n')
 }
 
 /**
@@ -117,15 +118,16 @@ export function allTreeToMarkdown(careers) {
  * "Copiar para IA".
  * @param {string} markdown
  * @param {string} scopeLabel - Ej. `la materia "Genética"`.
+ * @param {string} [lang]
  * @returns {string}
  */
-export function withAiPreamble(markdown, scopeLabel) {
+export function withAiPreamble(markdown, scopeLabel, lang = getLang()) {
   const date = new Date().toISOString().slice(0, 10)
   const preamble = [
-    `> Apuntes de estudio exportados de Studree el ${date} (${scopeLabel}).`,
-    '> Estructura: cada heading de nivel superior agrupa a los de abajo (carrera › materia › hoja).',
-    '> Cada hoja es un apunte en Markdown y su título es la fecha y hora en que se escribió (orden cronológico).',
-    '> `[[Tema]]` es un enlace al título (tema) con ese nombre dentro de la misma materia.',
+    tIn(lang, 'importExport.file.preamble.intro', { date, scope: scopeLabel }),
+    tIn(lang, 'importExport.file.preamble.structure'),
+    tIn(lang, 'importExport.file.preamble.sheets'),
+    tIn(lang, 'importExport.file.preamble.links'),
   ].join('\n')
   return `${preamble}\n\n${markdown}`
 }

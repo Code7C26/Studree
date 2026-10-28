@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * "Nueva hoja" partido: el botón crea en blanco; la flecha abre las plantillas.
@@ -11,6 +12,7 @@ import { Icon } from '../../ui/Icon'
  * @param {() => void} props.onManage
  */
 export function NewSheetButton({ templates, onBlank, onPick, onManage }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
 
@@ -44,14 +46,14 @@ export function NewSheetButton({ templates, onBlank, onPick, onManage }) {
         onClick={onBlank}
         className="flex flex-1 items-center justify-center gap-2 rounded-l-md border-2 border-dashed border-border py-4 text-sm text-text-muted transition-colors hover:border-[var(--subject)] hover:text-[var(--subject-light)]"
       >
-        <Icon name="plus" /> Nueva hoja
+        <Icon name="plus" /> {t('templates.newBlank')}
       </button>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Nueva hoja desde una plantilla"
+        aria-label={t('templates.newFromTemplate')}
         className="rounded-r-md border-2 border-l-0 border-dashed border-border px-3 text-text-muted transition-colors hover:border-[var(--subject)] hover:text-[var(--subject-light)]"
       >
         <Icon name="chevron-down" />
@@ -59,13 +61,13 @@ export function NewSheetButton({ templates, onBlank, onPick, onManage }) {
 
       {open && (
         <div role="menu" className="glass absolute bottom-full right-0 z-20 mb-2 w-64 bg-surface/95 p-1.5 shadow-lg shadow-black/40">
-          <p className="px-2 pb-1 pt-1.5 text-xs text-text-muted">Plantillas</p>
+          <p className="px-2 pb-1 pt-1.5 text-xs text-text-muted">{t('templates.menuTemplates')}</p>
           {factory.map((template) => (
             <MenuItem key={template.id} onClick={() => pick(template)}>
               {template.name}
             </MenuItem>
           ))}
-          {own.length > 0 && <p className="px-2 pb-1 pt-2 text-xs text-text-muted">Tuyas</p>}
+          {own.length > 0 && <p className="px-2 pb-1 pt-2 text-xs text-text-muted">{t('templates.menuOwn')}</p>}
           {own.map((template) => (
             <MenuItem key={template.id} onClick={() => pick(template)}>
               {template.name}
@@ -78,7 +80,7 @@ export function NewSheetButton({ templates, onBlank, onPick, onManage }) {
               onManage()
             }}
           >
-            Administrar plantillas…
+            {t('templates.manage')}
           </MenuItem>
         </div>
       )}

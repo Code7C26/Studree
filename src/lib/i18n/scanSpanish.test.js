@@ -44,3 +44,15 @@ test('un regex con comillas o backtick no rompe el análisis de lo que sigue', (
   assert.deepEqual(texts("const r = /[#>*_~`]/g\nconst a = 'Guardar'"), ['Guardar'])
   assert.deepEqual(texts('x.replace(/["\']/g, \'\')\n// Acción\nconst a = 1'), [])
 })
+
+test('una línea marcada con i18n-ignore (formato de archivo) no se reporta', () => {
+  assert.deepEqual(texts("const key = 'carrera: Años' // i18n-ignore: formato de archivo"), [])
+  assert.deepEqual(texts("const key = 'carrera: Años'"), ['carrera: Años'])
+})
+
+test('los identificadores en minúscula (ids del DOM, parámetros de URL) no cuentan como texto', () => {
+  assert.deepEqual(texts("const id = `hoja-${sheet.id}`"), [])
+  assert.deepEqual(texts("searchParams.get('hoja')"), [])
+  assert.deepEqual(texts("const label = 'Hoja'"), ['Hoja'])
+  assert.deepEqual(texts("const label = 'la hoja nueva'"), ['la hoja nueva'])
+})

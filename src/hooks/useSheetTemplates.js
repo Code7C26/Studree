@@ -5,20 +5,22 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { sheetTemplatesService } from '../services/sheetTemplates.service.js'
-import { FACTORY_TEMPLATES, TEMPLATE_CONTENT_MAX, TEMPLATE_NAME_MAX } from '../constants/sheetTemplates.js'
+import { getFactoryTemplates, TEMPLATE_CONTENT_MAX, TEMPLATE_NAME_MAX } from '../constants/sheetTemplates.js'
+import { useI18n } from './useI18n.js'
+import { t } from '../lib/i18n/index.js'
 
 /** @param {string} name @returns {string|null} */
 function validateName(name) {
   const trimmed = name.trim()
-  if (!trimmed) return 'Poné un nombre.'
-  if (trimmed.length > TEMPLATE_NAME_MAX) return `El nombre puede tener hasta ${TEMPLATE_NAME_MAX} caracteres.`
+  if (!trimmed) return t('templates.errors.nameRequired')
+  if (trimmed.length > TEMPLATE_NAME_MAX) return t('templates.errors.nameTooLong', { max: TEMPLATE_NAME_MAX })
   return null
 }
 
 /** @param {string} content @returns {string|null} */
 function validateContent(content) {
-  if (!content.trim()) return 'La plantilla está vacía.'
-  if (content.length > TEMPLATE_CONTENT_MAX) return `La plantilla puede tener hasta ${TEMPLATE_CONTENT_MAX} caracteres.`
+  if (!content.trim()) return t('templates.errors.contentEmpty')
+  if (content.length > TEMPLATE_CONTENT_MAX) return t('templates.errors.contentTooLong', { max: TEMPLATE_CONTENT_MAX })
   return null
 }
 
@@ -35,6 +37,7 @@ function validateContent(content) {
  * }}
  */
 export function useSheetTemplates() {
+  const { lang } = useI18n()
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -56,7 +59,7 @@ export function useSheetTemplates() {
     }
   }, [])
 
-  const all = useMemo(() => [...FACTORY_TEMPLATES, ...templates], [templates])
+  const all = useMemo(() => [...getFactoryTemplates(lang), ...templates], [templates, lang])
 
   const createTemplate = useCallback(async (name, content) => {
     const invalid = validateName(name) ?? validateContent(content)

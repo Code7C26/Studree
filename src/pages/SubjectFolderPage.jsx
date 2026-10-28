@@ -35,6 +35,7 @@ import { assistantBridge } from '../lib/assistant/bridge.js'
 import { applyProposalToEditor } from '../lib/assistant/editorApply.js'
 import { withOriginMark } from '../lib/assistant/applyProposal.js'
 import { buildShortcutRequest, shortcutLabel } from '../lib/assistant/shortcuts.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * Margen (px) para que un tema cuente como "el que estás leyendo". Se suma al
@@ -43,9 +44,6 @@ import { buildShortcutRequest, shortcutLabel } from '../lib/assistant/shortcuts.
  */
 const ACTIVE_TOPIC_TOLERANCE = 8
 const NOTICE_MS = 3000
-/** Ruling O: una propuesta solo se aplica sobre la carpeta abierta. */
-const NOT_IN_FOLDER = 'Abrí la materia de esa hoja para aplicar el cambio.'
-const UNSAVED_SHEET = 'Esperá a que la hoja se guarde para usar los atajos del Brote.'
 
 /** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
 const TOOL =
@@ -83,6 +81,7 @@ export function SubjectFolderPage() {
  * @param {{subjectId: string}} props
  */
 function SubjectFolder({ subjectId }) {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const targetSheetId = searchParams.get('hoja')
@@ -210,9 +209,9 @@ function SubjectFolder({ subjectId }) {
       const wanted = title.trim().toLowerCase()
       const topic = topics.find((candidate) => candidate.text.toLowerCase() === wanted)
       if (topic) goToTopic(topic)
-      else showNotice(`No hay un tema «${title}» en esta materia.`)
+      else showNotice(t('folder.page.noTopic', { title }))
     },
-    [topics, goToTopic, showNotice],
+    [topics, goToTopic, showNotice, t],
   )
 
   // Tema activo: el último heading que llegó a su línea de lectura (borde superior del
@@ -404,17 +403,17 @@ function SubjectFolder({ subjectId }) {
   }, [sheetOfEditor])
 
   /** La implementación cambia con el estado; el contexto publicado llama siempre a la última. */
-  const applyRef = useRef(/** @type {(proposal: any) => import('../lib/assistant/bridge.js').ApplyResult} */ (() => ({ ok: false, error: NOT_IN_FOLDER })))
+  const applyRef = useRef(/** @type {(proposal: any) => import('../lib/assistant/bridge.js').ApplyResult} */ (() => ({ ok: false, error: t('folder.page.notInFolder') })))
   applyRef.current = (proposal) => {
     if (proposal?.kind === 'new_sheet') {
-      if (proposal.subjectId !== subjectId) return { ok: false, error: NOT_IN_FOLDER }
+      if (proposal.subjectId !== subjectId) return { ok: false, error: t('folder.page.notInFolder') }
       // Mismo camino que una plantilla: hoja local con contenido, que se crea al montarse.
       handleAddSheet(withOriginMark(proposal.markdown, proposal.source))
       return { ok: true }
     }
     const sheet = sheetsRef.current.find((candidate) => candidate.id === proposal?.sheetId)
     const editor = sheet ? editorsRef.current.get(sheet.key) : null
-    if (!editor || editor.isDestroyed) return { ok: false, error: NOT_IN_FOLDER }
+    if (!editor || editor.isDestroyed) return { ok: false, error: t('folder.page.notInFolder') }
     const result = applyProposalToEditor(editor, proposal, proposal.selection ?? null)
     if (!result.ok) return result
     document.getElementById(`hoja-${sheet.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -463,7 +462,7 @@ function SubjectFolder({ subjectId }) {
       const editor = activeEditorRef.current
       const selection = getSelection()
       if (!selection) {
-        if (sheetOfEditor(editor) && isLocalSheet(sheetOfEditor(editor))) showNotice(UNSAVED_SHEET)
+        if (sheetOfEditor(editor) && isLocalSheet(sheetOfEditor(editor))) showNotice(t('folder.page.unsavedSheet'))
         return
       }
       // Una sola tarjeta en la carpeta: la anterior (quizás en otra hoja) deja su lugar.
@@ -482,7 +481,7 @@ function SubjectFolder({ subjectId }) {
         shortcutId: id,
       })
     },
-    [getSelection, sheetOfEditor, showNotice, forgetInlineSlot],
+    [getSelection, sheetOfEditor, showNotice, forgetInlineSlot, t],
   )
 
   // Si la tarjeta desaparece (✕, Esc, Descartar, Agregar, Seguir en el chat, o
@@ -536,7 +535,7 @@ function SubjectFolder({ subjectId }) {
     cancelersRef.current.get(sheet.key)?.()
     // Por `key`: si la hoja nueva se creó mientras se confirmaba, su id ya cambió.
     const { sheetId } = await deleteSheet(sheet.key)
-    if (sheetId) setUndo({ message: 'Hoja movida a la papelera', sheetId })
+    if (sheetId) setUndo({ message: t('folder.page.movedToTrash'), sheetId })
   }
 
   function handleRequestDelete(sheet) {
@@ -554,7 +553,7 @@ function SubjectFolder({ subjectId }) {
   // ---- Render ------------------------------------------------------------
 
   if (subjectError) {
-    return <EmptyState title="Materia no encontrada" message={subjectError} />
+    return <EmptyState title={t('folder.page.subjectNotFound')} message={subjectError} />
   }
 
   return (
@@ -594,7 +593,7 @@ function SubjectFolder({ subjectId }) {
               to={careerPath(subject.career_id)}
               className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text"
             >
-              <Icon name="chevron-left" size={14} /> Volver a la carrera
+              <Icon name="chevron-left" size={14} /> {t('folder.page.backToCareer')}
             </Link>
           )}
           <h1 className="mt-2 flex items-center gap-2 font-display text-xl font-bold" title={subject?.name}>
@@ -602,12 +601,12 @@ function SubjectFolder({ subjectId }) {
               className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--subject)] shadow-[0_0_10px_var(--subject)]"
               aria-hidden="true"
             />
-            <span className="truncate">{subject?.name ?? 'Cargando…'}</span>
+            <span className="truncate">{subject?.name ?? t('common.loading')}</span>
           </h1>
           <p className="mb-4 mt-1 text-xs text-text-muted">
-            {sheets.length} hoja{sheets.length === 1 ? '' : 's'}, {topics.length} tema{topics.length === 1 ? '' : 's'}
+            {t('folder.page.sheetCount', { count: sheets.length })}, {t('folder.page.topicCount', { count: topics.length })}
           </p>
-          <h2 className="mb-2 text-xs font-medium text-text-muted">Temas</h2>
+          <h2 className="mb-2 text-xs font-medium text-text-muted">{t('folder.page.topics')}</h2>
           <TopicIndex topics={topics} activeId={activeTopicId} onGo={goToTopic} />
         </aside>
       )}
@@ -639,25 +638,25 @@ function SubjectFolder({ subjectId }) {
             <button
               type="button"
               onClick={() => setReading(true)}
-              title="Ocultar todo menos las hojas (Esc para salir)"
+              title={t('folder.page.readTitle')}
               className={`${TOOL} text-text-muted hover:text-text`}
             >
-              <Icon name="book-open" /> Leer
+              <Icon name="book-open" /> {t('folder.page.read')}
             </button>
             <button type="button" onClick={() => setImportOpen(true)} disabled={!subject} className={`${TOOL} text-text-muted hover:text-text`}>
-              <Icon name="upload" /> Importar
+              <Icon name="upload" /> {t('folder.page.import')}
             </button>
             <button
               type="button"
               onClick={() => navigate(studyPath({ subjectId }))}
               disabled={!subject}
-              title="Ver los resúmenes y exámenes de esta materia"
+              title={t('folder.page.studyTitle')}
               className={`${TOOL} text-text-muted hover:text-text`}
             >
-              <Icon name="file-text" /> Estudio
+              <Icon name="file-text" /> {t('folder.page.study')}
             </button>
             <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft hover:text-accent`}>
-              Exportar
+              {t('folder.page.export')}
             </button>
           </div>
         )}
@@ -672,7 +671,7 @@ function SubjectFolder({ subjectId }) {
             <span>{error ?? attachmentsState.error}</span>
             <span className="flex shrink-0 gap-2">
               <button type="button" onClick={reload} className="underline">
-                Reintentar
+                {t('folder.page.retry')}
               </button>
               <button
                 type="button"
@@ -680,7 +679,7 @@ function SubjectFolder({ subjectId }) {
                   clearError()
                   attachmentsState.clearError()
                 }}
-                aria-label="Cerrar aviso"
+                aria-label={t('folder.page.dismiss')}
               >
                 <Icon name="close" size={14} />
               </button>
@@ -690,13 +689,13 @@ function SubjectFolder({ subjectId }) {
 
         <div className="space-y-8 pb-24">
           {loading && sheets.length === 0 ? (
-            <p className="mt-8 text-center text-text-muted">Cargando…</p>
+            <p className="mt-8 text-center text-text-muted">{t('common.loading')}</p>
           ) : (
             <>
               {sheets.length === 0 && !error && (
                 <EmptyState
-                  title="La carpeta está vacía"
-                  message="Agregá la primera hoja y empezá a escribir. Usá # Título para marcar los temas."
+                  title={t('folder.page.emptyTitle')}
+                  message={t('folder.page.emptyMessage')}
                 />
               )}
               {sheets.map((sheet) => (
@@ -758,17 +757,17 @@ function SubjectFolder({ subjectId }) {
           onClick={() => setReading(false)}
           className="glass fixed right-4 top-4 z-50 px-3 py-1.5 text-sm text-text-muted hover:text-text"
         >
-          Salir del modo lectura (Esc)
+          {t('folder.page.exitReading')}
         </button>
       )}
 
       <ConfirmDialog
         open={pendingDelete != null}
-        title="Mover a la papelera"
-        confirmLabel="Mover a la papelera"
+        title={t('folder.page.trashTitle')}
+        confirmLabel={t('folder.page.trashConfirm')}
         message={
           pendingDelete
-            ? `La hoja del ${formatSheetDate(pendingDelete.created_at)} se mueve a la papelera. Podés restaurarla durante 30 días.`
+            ? t('folder.page.trashMessage', { date: formatSheetDate(pendingDelete.created_at) })
             : ''
         }
         onConfirm={handleConfirmDelete}
@@ -777,13 +776,13 @@ function SubjectFolder({ subjectId }) {
 
       <ConfirmDialog
         open={pendingAttachment != null}
-        title="Borrar adjunto"
+        title={t('folder.page.attachmentTitle')}
         message={
           pendingAttachment
-            ? `Se borra «${pendingAttachment.name}» para siempre. Donde estaba en el texto va a decir "Adjunto no disponible".`
+            ? t('folder.page.attachmentMessage', { name: pendingAttachment.name })
             : ''
         }
-        confirmLabel="Borrar"
+        confirmLabel={t('folder.page.attachmentConfirm')}
         onConfirm={async () => {
           const attachment = pendingAttachment
           setPendingAttachment(null)
@@ -794,10 +793,10 @@ function SubjectFolder({ subjectId }) {
 
       <PromptDialog
         open={templateSource != null}
-        title="Guardar como plantilla"
-        label="Nombre de la plantilla"
-        placeholder="Ej. Clase de laboratorio"
-        submitLabel="Guardar"
+        title={t('folder.page.templateTitle')}
+        label={t('folder.page.templateLabel')}
+        placeholder={t('folder.page.templatePlaceholder')}
+        submitLabel={t('common.save')}
         onClose={() => setTemplateSource(null)}
         onSubmit={(name) => {
           const editor = editorsRef.current.get(templateSource.key)
@@ -805,7 +804,7 @@ function SubjectFolder({ subjectId }) {
           return createTemplate(name, stripAttachmentRefs(markdown))
         }}
       >
-        <p className="text-xs text-text-muted">Se guarda el contenido actual de la hoja, sin los adjuntos.</p>
+        <p className="text-xs text-text-muted">{t('folder.page.templateHelp')}</p>
       </PromptDialog>
 
       <TemplatesManager

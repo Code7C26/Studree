@@ -64,3 +64,11 @@ red/RLS: el hook devuelve el mensaje y la UI lo muestra en el diálogo.
 - [ ] Verificar en el navegador (la extensión de Chrome no estaba conectada al implementar): crear una hoja desde "Clase", guardar una hoja como plantilla y administrar las propias.
 - [ ] Plantillas por materia o compartidas.
 - [ ] Reordenar las propias.
+
+## Idioma (Fase 18)
+
+`FACTORY_TEMPLATES` pasó a `getFactoryTemplates(lang)` (`constants/sheetTemplates.js`): los `id`
+(`factory:clase`, `factory:resumen`, `factory:practica`, `factory:repaso`) no cambian; el nombre y el
+contenido salen de `templates.factory.*` en el idioma activo. El contenido se toma al **crear** la hoja
+y después no cambia de idioma. Las validaciones de `useSheetTemplates` y el administrador también
+salen del diccionario `templates`.

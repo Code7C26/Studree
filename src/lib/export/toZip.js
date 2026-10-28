@@ -19,13 +19,17 @@
 import { buildFrontmatter } from './frontmatter.js'
 import { sheetFileName, sheetLocalIso } from '../format/sheetDate.js'
 import { rewriteAttachmentRefs, escapeLinkText } from '../attachments/refs.js'
+import { getLang, tIn } from '../i18n/index.js'
+import { attachmentPlaceholder } from '../attachments/refs.js'
 
 const INVALID_FILENAME_CHARS = /[/\\:*?"<>|]/g
-const FALLBACK_NAME = 'Sin título'
 
-/** @param {string} name */
-function sanitizeName(name) {
-  return name.trim().replace(INVALID_FILENAME_CHARS, '-') || FALLBACK_NAME
+/**
+ * @param {string} name
+ * @param {string} lang - Idioma del nombre de reserva (`Sin título` / `Untitled`).
+ */
+function sanitizeName(name, lang) {
+  return name.trim().replace(INVALID_FILENAME_CHARS, '-') || tIn(lang, 'importExport.file.untitled')
 }
 
 /**
@@ -33,10 +37,11 @@ function sanitizeName(name) {
  * (comparando sin mayúsculas). Registra el resultado en `used`.
  * @param {string} name
  * @param {Set<string>} used - Nombres ya usados en esa carpeta (en minúsculas).
+ * @param {string} [lang]
  * @returns {string}
  */
-export function uniqueName(name, used) {
-  const base = sanitizeName(name)
+export function uniqueName(name, used, lang = getLang()) {
+  const base = sanitizeName(name, lang)
   let candidate = base
   for (let copy = 2; used.has(candidate.toLowerCase()); copy += 1) candidate = `${base} (${copy})`
   used.add(candidate.toLowerCase())
@@ -44,7 +49,7 @@ export function uniqueName(name, used) {
 }
 
 /** Carpeta de los adjuntos dentro de cada materia. */
-export const ATTACHMENTS_DIR = 'adjuntos'
+export const ATTACHMENTS_DIR = 'adjuntos' // i18n-ignore: nombre de carpeta del formato de export (el importador lo lee)
 
 /**
  * Ruta relativa apta para un link Markdown: espacios, tildes y paréntesis
@@ -63,9 +68,10 @@ export function encodeAttachmentPath(path) {
  * Como `uniqueName`, pero con el sufijo antes de la extensión: `a (2).png`.
  * @param {string} name
  * @param {Set<string>} used
+ * @param {string} lang
  */
-function uniqueAttachmentName(name, used) {
-  const clean = sanitizeName(name)
+function uniqueAttachmentName(name, used, lang) {
+  const clean = sanitizeName(name, lang)
   const dot = clean.lastIndexOf('.')
   const base = dot > 0 ? clean.slice(0, dot) : clean
   const extension = dot > 0 ? clean.slice(dot) : ''
@@ -81,8 +87,9 @@ function uniqueAttachmentName(name, used) {
  * @param {Array<{created_at: string, content_md: string, updated_at: string|null, attachments?: Array}>} sheets
  * @param {{careerName: string, subjectName: string}} meta - Para el frontmatter.
  * @param {Map<string, Blob>} files - Archivos descargados, por id de adjunto.
+ * @param {string} lang
  */
-function addSheetsToFolder(folder, sheets, meta, files) {
+function addSheetsToFolder(folder, sheets, meta, files, lang) {
   const used = new Set()
   const usedAttachments = new Set()
   for (const sheet of sheets) {
@@ -91,13 +98,13 @@ function addSheetsToFolder(folder, sheets, meta, files) {
     for (const attachment of sheet.attachments ?? []) {
       const blob = files.get(attachment.id)
       if (!blob) continue
-      const fileName = uniqueAttachmentName(attachment.name, usedAttachments)
+      const fileName = uniqueAttachmentName(attachment.name, usedAttachments, lang)
       folder.file(`${ATTACHMENTS_DIR}/${fileName}`, blob)
       paths.set(attachment.id, `${ATTACHMENTS_DIR}/${fileName}`)
     }
     const content = rewriteAttachmentRefs(sheet.content_md ?? '', (ref) => {
       const path = paths.get(ref.id)
-      if (!path) return `[${ref.isImage ? 'imagen' : 'archivo'}: ${ref.text}]`
+      if (!path) return attachmentPlaceholder(ref, lang)
       return `${ref.isImage ? '!' : ''}[${escapeLinkText(ref.text)}](${encodeAttachmentPath(path)})`
     })
     const frontmatter = buildFrontmatter({
@@ -105,7 +112,7 @@ function addSheetsToFolder(folder, sheets, meta, files) {
       created: sheetLocalIso(sheet.created_at),
       date: (sheet.updated_at ?? '').slice(0, 10),
     })
-    folder.file(`${uniqueName(sheetFileName(sheet.created_at), used)}.md`, `${frontmatter}\n${content}`)
+    folder.file(`${uniqueName(sheetFileName(sheet.created_at), used, lang)}.md`, `${frontmatter}\n${content}`)
   }
 }
 
@@ -114,13 +121,14 @@ function addSheetsToFolder(folder, sheets, meta, files) {
  * @param {{name: string, subjects: Array}} career
  * @param {Set<string>} used - Nombres ya usados en la carpeta padre.
  * @param {Map<string, Blob>} files
+ * @param {string} lang
  */
-function addCareerToFolder(parent, career, used, files) {
-  const careerFolder = parent.folder(uniqueName(career.name, used))
+function addCareerToFolder(parent, career, used, files, lang) {
+  const careerFolder = parent.folder(uniqueName(career.name, used, lang))
   const subjectNames = new Set()
   for (const subject of career.subjects) {
-    const subjectFolder = careerFolder.folder(uniqueName(subject.name, subjectNames))
-    addSheetsToFolder(subjectFolder, subject.sheets, { careerName: career.name, subjectName: subject.name }, files)
+    const subjectFolder = careerFolder.folder(uniqueName(subject.name, subjectNames, lang))
+    addSheetsToFolder(subjectFolder, subject.sheets, { careerName: career.name, subjectName: subject.name }, files, lang)
   }
 }
 
@@ -129,12 +137,13 @@ function addCareerToFolder(parent, career, used, files) {
  * @param {typeof import('jszip')} JSZip - Constructor ya importado por el caller.
  * @param {{name: string, careerName: string, sheets: Array}} subject
  * @param {Map<string, Blob>} [files] - Archivos de adjuntos por id (si falta uno queda como texto).
+ * @param {string} [lang]
  * @returns {Promise<Blob>}
  */
-export async function subjectTreeToZip(JSZip, subject, files = new Map()) {
+export async function subjectTreeToZip(JSZip, subject, files = new Map(), lang = getLang()) {
   const zip = new JSZip()
-  const root = zip.folder(sanitizeName(subject.name))
-  addSheetsToFolder(root, subject.sheets, { careerName: subject.careerName, subjectName: subject.name }, files)
+  const root = zip.folder(sanitizeName(subject.name, lang))
+  addSheetsToFolder(root, subject.sheets, { careerName: subject.careerName, subjectName: subject.name }, files, lang)
   return zip.generateAsync({ type: 'blob' })
 }
 
@@ -143,11 +152,12 @@ export async function subjectTreeToZip(JSZip, subject, files = new Map()) {
  * @param {typeof import('jszip')} JSZip
  * @param {{name: string, subjects: Array}} career
  * @param {Map<string, Blob>} [files]
+ * @param {string} [lang]
  * @returns {Promise<Blob>}
  */
-export async function careerTreeToZip(JSZip, career, files = new Map()) {
+export async function careerTreeToZip(JSZip, career, files = new Map(), lang = getLang()) {
   const zip = new JSZip()
-  addCareerToFolder(zip, career, new Set(), files)
+  addCareerToFolder(zip, career, new Set(), files, lang)
   return zip.generateAsync({ type: 'blob' })
 }
 
@@ -156,13 +166,14 @@ export async function careerTreeToZip(JSZip, career, files = new Map()) {
  * @param {typeof import('jszip')} JSZip
  * @param {Array<{name: string, subjects: Array}>} careers
  * @param {Map<string, Blob>} [files]
+ * @param {string} [lang]
  * @returns {Promise<Blob>}
  */
-export async function allTreeToZip(JSZip, careers, files = new Map()) {
+export async function allTreeToZip(JSZip, careers, files = new Map(), lang = getLang()) {
   const zip = new JSZip()
   const root = zip.folder('Studree')
   const used = new Set()
-  for (const career of careers) addCareerToFolder(root, career, used, files)
+  for (const career of careers) addCareerToFolder(root, career, used, files, lang)
   return zip.generateAsync({ type: 'blob' })
 }
 

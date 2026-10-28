@@ -40,6 +40,13 @@
   `TaskList`, `QuickNotes`, `DateFormModal`) y `lib/home` (`greeting`, `summary`, `calendar`) pasan por
   `t()` (diccionario `home`). Se agregan tests de `greeting`, `summary` y `calendar`;
   `WEEKDAY_HEADERS` pasó a `weekdayHeaders(lang)`.
+- **Tarea 6 — Carpeta, editor, adjuntos, plantillas, importar y exportar:** página de la carpeta,
+  buscador, índice de temas, barra del editor, adjuntos, plantillas (menú y administrador), diálogos
+  de importar y exportar y los textos de `lib/export`, `lib/import` y los services pasan por `t()`
+  (diccionarios `folder`, `editor`, `templates`, `importExport`). `FACTORY_TEMPLATES` →
+  `getFactoryTemplates(lang)` (mismos `id`); `IMPORT_FALLBACK_NAME` → `importFallbackName(lang)`.
+  **Formato de archivo intacto:** claves del frontmatter, `adjuntos/`, `Studree/` y `adjunto:` no se
+  traducen (hay un test). El escáner de castellano acepta `i18n-ignore` para esas líneas.
 
 ---
 

@@ -257,3 +257,12 @@ hojas en menos de ~1 s. En desarrollo, la consola muestra
 - [ ] Medir rendimiento con una materia grande (ver arriba).
 - [ ] Autocompletar `[[` con los temas de la materia.
 - [ ] Celular: índice como drawer (fase "Celular", al final de la hoja de ruta).
+
+## Idioma (Fase 18)
+
+La carpeta (página, barra de herramientas, buscador `Ctrl+F`, índice de temas, estado de guardado,
+avisos y diálogos) sale de los diccionarios `folder` y `editor` (ver `docs/features/i18n.md`).
+Las fechas de las hojas siguen el idioma (`Tuesday 10/14/2025 · 6:30 PM` en inglés). Las hojas, los
+temas y los nombres de materia no se traducen. Los textos que arma el código al **crear** algo (el
+contenido de una plantilla de fábrica, el nombre de un adjunto sin nombre) quedan guardados en el
+idioma de ese momento.

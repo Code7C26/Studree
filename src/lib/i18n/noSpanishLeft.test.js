@@ -12,21 +12,12 @@ import { scanSourceTree } from './scanSpanish.js'
  */
 export const PENDING = [
   'src/components/features/assistant/',
-  'src/components/features/attachments/',
   'src/components/features/careerMap/',
   'src/components/features/careers/',
-  'src/components/features/export/',
-  'src/components/features/folder/',
-  'src/components/features/import/',
-  'src/components/features/sheetEditor/',
   'src/components/features/study/',
-  'src/components/features/templates/',
   'src/constants/',
   'src/hooks/',
   'src/lib/assistant/',
-  'src/lib/editor/',
-  'src/lib/export/',
-  'src/lib/import/',
   'src/pages/',
   'src/services/',
 ]

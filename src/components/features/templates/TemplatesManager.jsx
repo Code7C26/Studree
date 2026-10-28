@@ -3,6 +3,7 @@ import { Modal } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import { ConfirmDialog } from '../../ui/ConfirmDialog'
 import { TEMPLATE_CONTENT_MAX, TEMPLATE_NAME_MAX } from '../../../constants/sheetTemplates.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * Administrar las plantillas propias: renombrar, editar el texto y borrar.
@@ -16,6 +17,7 @@ import { TEMPLATE_CONTENT_MAX, TEMPLATE_NAME_MAX } from '../../../constants/shee
  * @param {(id: string) => Promise<string|null>} props.onDelete
  */
 export function TemplatesManager({ open, onClose, templates, onRename, onUpdateContent, onDelete }) {
+  const { t } = useI18n()
   const [selectedId, setSelectedId] = useState(null)
   const [name, setName] = useState('')
   const [content, setContent] = useState('')
@@ -49,15 +51,15 @@ export function TemplatesManager({ open, onClose, templates, onRename, onUpdateC
 
   return (
     <>
-      <Modal open={open} onClose={onClose} title="Tus plantillas">
+      <Modal open={open} onClose={onClose} title={t('templates.manager.title')}>
         {templates.length === 0 ? (
           <p className="text-sm text-text-muted">
-            Todavía no guardaste ninguna. Usá «Guardar como plantilla» en una hoja.
+            {t('templates.manager.empty')}
           </p>
         ) : (
           <div className="space-y-3">
             <label className="block text-xs text-text-muted">
-              Plantilla
+              {t('templates.manager.pick')}
               <select
                 value={selectedId ?? ''}
                 onChange={(event) => setSelectedId(event.target.value)}
@@ -71,7 +73,7 @@ export function TemplatesManager({ open, onClose, templates, onRename, onUpdateC
               </select>
             </label>
             <label className="block text-xs text-text-muted">
-              Nombre
+              {t('templates.manager.name')}
               <input
                 value={name}
                 maxLength={TEMPLATE_NAME_MAX}
@@ -80,7 +82,7 @@ export function TemplatesManager({ open, onClose, templates, onRename, onUpdateC
               />
             </label>
             <label className="block text-xs text-text-muted">
-              Contenido (Markdown)
+              {t('templates.manager.content')}
               <textarea
                 value={content}
                 maxLength={TEMPLATE_CONTENT_MAX}
@@ -96,10 +98,10 @@ export function TemplatesManager({ open, onClose, templates, onRename, onUpdateC
             )}
             <div className="flex justify-between gap-2">
               <Button variant="danger" onClick={() => setConfirmDelete(true)} disabled={!selected || saving}>
-                Borrar
+                {t('templates.manager.delete')}
               </Button>
               <Button onClick={handleSave} disabled={!selected || saving}>
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? t('common.saving') : t('common.save')}
               </Button>
             </div>
           </div>
@@ -109,9 +111,9 @@ export function TemplatesManager({ open, onClose, templates, onRename, onUpdateC
       {/* Hermano del Modal (no hijo): comparten z-50 y así queda siempre encima. */}
       <ConfirmDialog
         open={open && confirmDelete}
-        title="Borrar plantilla"
-        message={selected ? `Se borra la plantilla «${selected.name}». Las hojas creadas con ella no cambian.` : ''}
-        confirmLabel="Borrar"
+        title={t('templates.manager.deleteTitle')}
+        message={selected ? t('templates.manager.deleteMessage', { name: selected.name }) : ''}
+        confirmLabel={t('templates.manager.delete')}
         onConfirm={async () => {
           setConfirmDelete(false)
           if (selected) setError(await onDelete(selected.id))

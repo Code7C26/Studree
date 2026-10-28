@@ -1,3 +1,4 @@
+import { useI18n } from '../../../hooks/useI18n.js'
 /**
  * Índice de temas de la carpeta (ADR-017): los headings `#`–`####` de todas
  * las hojas de la materia, en orden. Un click lleva al inicio del tema. El
@@ -24,17 +25,18 @@ const INDENT = { 1: 'pl-3', 2: 'pl-6', 3: 'pl-9', 4: 'pl-12' }
  * @param {(topic: FolderTopic) => void} props.onGo
  */
 export function TopicIndex({ topics, activeId, onGo }) {
+  const { t } = useI18n()
   if (topics.length === 0) {
     return (
       <p className="text-xs leading-relaxed text-text-muted">
-        Todavía no hay temas. Escribí un título con <code className="rounded bg-surface-2 px-1"># Tema</code> en una hoja
-        y aparece acá.
+        {t('folder.topics.emptyBefore')} <code className="rounded bg-surface-2 px-1">{t('folder.topics.example')}</code>{' '}
+        {t('folder.topics.emptyAfter')}
       </p>
     )
   }
 
   return (
-    <nav aria-label="Temas de la materia">
+    <nav aria-label={t('folder.topics.navLabel')}>
       <ul className="border-l border-border">
         {topics.map((topic) => {
           const active = topic.id === activeId

@@ -11,6 +11,7 @@ import Image from '@tiptap/extension-image'
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { attachmentHref, parseAttachmentHref } from '../attachments/refs.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 export const AttachmentImage = Image.extend({
   addOptions() {
@@ -41,7 +42,9 @@ export const AttachmentImage = Image.extend({
 
       const status = document.createElement('span')
       status.className = 'sheet-attachment-status'
-      status.textContent = options.isUploading(id) ? `Subiendo ${img.alt || 'imagen'}…` : 'Cargando imagen…'
+      status.textContent = options.isUploading(id)
+        ? tIn(getLang(), 'folder.attachments.uploading', { name: img.alt || tIn(getLang(), 'folder.attachments.imageName') })
+        : tIn(getLang(), 'folder.attachments.loadingImage')
       dom.append(status)
 
       let alive = true

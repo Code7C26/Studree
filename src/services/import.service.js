@@ -14,6 +14,7 @@ import { attachmentsService } from './attachments.service.js'
 import { notifyDataChanged } from './dataEvents.js'
 import { replaceMediaRefs, mimeFromName } from '../lib/import/mediaRefs.js'
 import { attachmentMarkdown } from '../lib/attachments/refs.js'
+import { t } from '../lib/i18n/index.js'
 
 /** @param {string} path */
 const basename = (path) => path.split('/').pop() ?? path
@@ -86,7 +87,7 @@ export const importService = {
             if (uploaded.has(ref.zipPath)) continue
             const blob = await readFile(ref.zipPath)
             if (!blob) {
-              report.failures.push({ path: ref.zipPath, reason: 'No se encontró en el .zip.' })
+              report.failures.push({ path: ref.zipPath, reason: t('importExport.import.zipMissing') })
               continue
             }
             const name = basename(ref.zipPath)

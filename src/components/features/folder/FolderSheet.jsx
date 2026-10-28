@@ -17,8 +17,7 @@ import { insertAttachment, removeAttachment } from '../../../lib/editor/attachme
 import { isImageMime } from '../../../lib/attachments/refs.js'
 import { generateId } from '../../../lib/id.js'
 import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENT_LABEL } from '../../../constants/attachmentLimits.js'
-
-const STATUS_LABELS = { idle: '', saving: 'Guardando…', saved: 'Guardado', error: 'Error al guardar' }
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -61,6 +60,7 @@ export function FolderSheet({
   uploaders,
   onBroteRemoved,
 }) {
+  const { t } = useI18n()
   const { initialContent, syncStatus, error, updateContent, cancel, ensureCreated } = useSheetAutosave({ sheet, onCreated })
   const [uploadError, setUploadError] = useState(null)
   const editorRef = useRef(null)
@@ -97,12 +97,12 @@ export function FolderSheet({
     const failures = []
     for (const file of Array.from(fileList)) {
       if (file.size > MAX_ATTACHMENT_BYTES) {
-        failures.push(`«${file.name}» pesa más de ${MAX_ATTACHMENT_LABEL}.`)
+        failures.push(t('folder.attachments.tooBig', { name: file.name, limit: MAX_ATTACHMENT_LABEL }))
         continue
       }
       const sheetId = await ensureCreated()
       if (!sheetId) {
-        failures.push('No se pudo guardar la hoja para adjuntar el archivo.')
+        failures.push(t('folder.sheet.saveFailed'))
         break
       }
       const id = generateId()
@@ -131,7 +131,7 @@ export function FolderSheet({
     [attachmentApi],
   )
 
-  const status = STATUS_LABELS[syncStatus]
+  const status = syncStatus === 'idle' ? '' : t(`folder.sheet.${syncStatus}`)
 
   return (
     <article
@@ -146,8 +146,8 @@ export function FolderSheet({
           <button
             type="button"
             onClick={() => onSaveAsTemplate(sheet)}
-            aria-label={`Guardar la hoja del ${formatSheetDate(sheet.created_at)} como plantilla`}
-            title="Guardar como plantilla"
+            aria-label={t('folder.sheet.saveTemplateLabel', { date: formatSheetDate(sheet.created_at) })}
+            title={t('folder.sheet.saveTemplateTitle')}
             className="rounded p-1 opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
           >
             <Icon name="template" size={14} />
@@ -155,7 +155,7 @@ export function FolderSheet({
           <button
             type="button"
             onClick={() => onRequestDelete(sheet)}
-            aria-label={`Mover a la papelera la hoja del ${formatSheetDate(sheet.created_at)}`}
+            aria-label={t('folder.sheet.trashLabel', { date: formatSheetDate(sheet.created_at) })}
             className="rounded p-1 opacity-0 transition-opacity hover:text-red-700 focus-visible:opacity-100 group-hover:opacity-100"
           >
             <Icon name="trash" size={14} />

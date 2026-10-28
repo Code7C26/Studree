@@ -1,3 +1,4 @@
+import { getLang, tIn } from '../i18n/index.js'
 /**
  * Referencias a adjuntos dentro del Markdown de una hoja (Fase 13, ver
  * docs/features/attachments.md). El Markdown sigue siendo la fuente de verdad
@@ -119,8 +120,18 @@ export function stripAttachmentRefs(markdown) {
  * Para el `.md` único y "Copiar para IA" (no llevan archivos).
  * @param {string} markdown
  */
-export function describeAttachmentRefs(markdown) {
-  return rewriteAttachmentRefs(markdown, (ref) => `[${ref.isImage ? 'imagen' : 'archivo'}: ${ref.text}]`)
+export function describeAttachmentRefs(markdown, lang = getLang()) {
+  return rewriteAttachmentRefs(markdown, (ref) => attachmentPlaceholder(ref, lang))
+}
+
+/**
+ * Cómo se nombra en texto un adjunto que no va como archivo: `[imagen: pizarrón]` / `[image: board]`.
+ * @param {{isImage: boolean, text: string}} ref
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function attachmentPlaceholder(ref, lang = getLang()) {
+  return tIn(lang, ref.isImage ? 'folder.attachments.placeholderImage' : 'folder.attachments.placeholderFile', { text: ref.text })
 }
 
 /** @param {string} mime */

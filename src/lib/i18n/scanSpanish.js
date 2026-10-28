@@ -29,7 +29,10 @@ const WORDS = new RegExp(`\\b(${COMMON_WORDS.join('|')})\\b`, 'i')
 function isSpanish(text) {
   const clean = text.trim()
   if (!/[A-Za-zÁ-ú]/.test(clean) || ALLOWED_LITERALS.includes(clean)) return false
-  return ACCENTS.test(clean) || WORDS.test(clean)
+  if (ACCENTS.test(clean)) return true
+  // Un identificador en minúscula (id del DOM, parámetro de URL: `hoja-3`) no es texto visible.
+  if (/^[a-z][\w\-${}.:/]*$/.test(clean)) return false
+  return WORDS.test(clean)
 }
 
 /**
@@ -131,6 +134,7 @@ export function findSpanish(source) {
     const nearby = lines.slice(Math.max(0, literal.line - 4), literal.line).join('\n')
     if (/console\./.test(nearby) || /^\s*(import|export)\b.*\bfrom\b/.test(lineText) || /\bimport\(/.test(lineText)) continue
     if (literal.text.trim().startsWith('/')) continue // rutas ('/carreras')
+    if (lineText.includes('i18n-ignore')) continue // texto de formato de archivo, no de interfaz
     if (isSpanish(literal.text)) hits.push({ text: literal.text.trim(), line: literal.line })
   }
 

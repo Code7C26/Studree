@@ -16,6 +16,7 @@ import { generateId } from '../lib/id.js'
 import { listInChunks } from '../lib/chunk.js'
 import { storageSafeName } from '../lib/attachments/files.js'
 import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENT_LABEL } from '../constants/attachmentLimits.js'
+import { t } from '../lib/i18n/index.js'
 
 const BUCKET = 'attachments'
 const SIGNED_URL_SECONDS = 60 * 60
@@ -49,14 +50,14 @@ export const attachmentsService = {
    *   referencia en el editor ANTES de que termine la subida.
    * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Attachment>>}
    */
-  upload(sheetId, file, { id = generateId(), name = file.name ?? 'archivo' } = {}) {
+  upload(sheetId, file, { id = generateId(), name = file.name ?? t('folder.attachments.fallbackName') } = {}) {
     const task = (async () => {
-      if (file.size > MAX_ATTACHMENT_BYTES) return { data: null, error: `«${name}» pesa más de ${MAX_ATTACHMENT_LABEL}.` }
-      if (file.size === 0) return { data: null, error: `«${name}» está vacío.` }
-      const fallback = `No se pudo subir «${name}».`
+      if (file.size > MAX_ATTACHMENT_BYTES) return { data: null, error: t('folder.attachments.tooBig', { name, limit: MAX_ATTACHMENT_LABEL }) }
+      if (file.size === 0) return { data: null, error: t('folder.attachments.empty', { name }) }
+      const fallback = t('folder.attachments.uploadFailed', { name })
       try {
         const userId = await currentUserId()
-        if (!userId) return { data: null, error: 'Tu sesión expiró. Volvé a iniciar sesión.' }
+        if (!userId) return { data: null, error: t('errors.supabase.sessionExpired') }
         const path = `${userId}/${id}/${storageSafeName(name)}`
         const contentType = file.type || 'application/octet-stream'
 
@@ -123,7 +124,7 @@ export const attachmentsService = {
    * @returns {Promise<import('../types/models.js').ServiceResult<boolean>>}
    */
   async remove(attachment) {
-    const fallback = `No se pudo borrar «${attachment.name}».`
+    const fallback = t('folder.attachments.removeFailed', { name: attachment.name })
     try {
       const { error: filesError } = await getSupabase().storage.from(BUCKET).remove([attachment.storage_path])
       if (filesError) return { data: null, error: translateError(filesError, fallback) }

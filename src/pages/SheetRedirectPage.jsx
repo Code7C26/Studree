@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useSheetLocation } from '../hooks/useSheetLocation.js'
 import { EmptyState } from '../components/ui/EmptyState'
 import { subjectFolderPath } from '../constants/routes'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * `/hojas/:sheetId` ya no es una pantalla (ADR-017): las hojas viven dentro de
@@ -13,11 +14,12 @@ export function SheetRedirectPage() {
   const { sheetId } = useParams()
   const navigate = useNavigate()
   const { location, error } = useSheetLocation(sheetId)
+  const { t } = useI18n()
 
   useEffect(() => {
     if (location) navigate(subjectFolderPath(location.subjectId, location.sheetId), { replace: true })
   }, [location, navigate])
 
-  if (error) return <EmptyState title="Hoja no encontrada" message={error} />
-  return <p className="mt-8 text-center text-text-muted">Abriendo…</p>
+  if (error) return <EmptyState title={t('folder.page.sheetNotFound')} message={error} />
+  return <p className="mt-8 text-center text-text-muted">{t('folder.page.opening')}</p>
 }

@@ -12,6 +12,7 @@
 
 import { createCrudService, translateError } from './crudService.js'
 import { getSupabase } from './supabase.client.js'
+import { t } from '../lib/i18n/index.js'
 
 const crud = createCrudService({ table: 'sheets', parentColumn: 'subject_id', orderBy: 'created_at', softDelete: true })
 
@@ -74,10 +75,10 @@ export const sheetsService = {
         .select()
         .single()
 
-      if (error) return { data: null, error: translateError(error, 'No se pudo guardar la hoja.') }
+      if (error) return { data: null, error: translateError(error, t('errors.sheets.save')) }
       return { data, error: null }
     } catch (error) {
-      return { data: null, error: translateError(error, 'No se pudo guardar la hoja.') }
+      return { data: null, error: translateError(error, t('errors.sheets.save')) }
     }
   },
 
@@ -103,10 +104,10 @@ export const sheetsService = {
         .order('updated_at', { ascending: false })
         .limit(SEARCH_LIMIT)
 
-      if (error) return { data: [], error: translateError(error, 'No se pudo buscar.') }
+      if (error) return { data: [], error: translateError(error, t('errors.sheets.search')) }
       return { data: data.map((row) => ({ id: row.id, subject_id: row.subject_id, content_md: row.content_md, created_at: row.created_at })), error: null }
     } catch (error) {
-      return { data: [], error: translateError(error, 'No se pudo buscar.') }
+      return { data: [], error: translateError(error, t('errors.sheets.search')) }
     }
   },
 }

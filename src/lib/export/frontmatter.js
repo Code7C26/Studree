@@ -20,10 +20,10 @@ function yamlString(value) {
 export function buildFrontmatter({ careerName, subjectName, created, date }) {
   return [
     '---',
-    `carrera: ${yamlString(careerName)}`,
-    `materia: ${yamlString(subjectName)}`,
-    `creada: ${created}`,
-    ...(date ? [`fecha: ${date}`] : []),
+    `carrera: ${yamlString(careerName)}`, // i18n-ignore: claves del formato de export (el importador las lee)
+    `materia: ${yamlString(subjectName)}`, // i18n-ignore
+    `creada: ${created}`, // i18n-ignore
+    ...(date ? [`fecha: ${date}`] : []), // i18n-ignore
     '---',
     '',
   ].join('\n')

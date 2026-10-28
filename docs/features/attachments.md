@@ -88,3 +88,9 @@ traducen a un mensaje en castellano (`ServiceResult.error`); nunca se propaga el
 
 - [ ] Verificar en el navegador (la extensión de Chrome no estaba conectada al implementar): el round-trip en el editor (el Markdown guarda `![…](adjunto:…)` limpio y la imagen se ve al recargar), soltar, pegar una captura y el clip; y que el borrado deje el bucket sin huérfanos.
 - [ ] Seguimiento menor: si la pestaña se cierra a mitad de una subida, la referencia queda en el texto como "Adjunto no disponible".
+
+## Idioma (Fase 18)
+
+Los textos de los adjuntos (lista al pie, avisos de subida, errores de `attachments.service` y
+"Ese adjunto ya no está disponible") salen del diccionario `folder.attachments`. El protocolo
+`adjunto:` guardado en el Markdown es un dato y no cambia con el idioma.

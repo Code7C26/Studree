@@ -54,3 +54,11 @@ Un archivo que falla no frena al resto: queda en el informe con su motivo.
 ## Pendiente
 
 - [ ] Verificar en el navegador (la extensión de Chrome no estaba conectada al implementar): importar un `.md` suelto, importar un `.zip` de export de Studree en otra carrera (con la imagen visible) y volver a importarlo (no debe duplicar); ida y vuelta export/import.
+
+## Idioma (Fase 18)
+
+El diálogo y el plan de importación (`lib/import/plan.js`) siguen el idioma activo: los motivos de
+salteo, el resumen ("This will create 2 careers…") y el nombre de reserva (`importFallbackName`,
+"Importado" / "Imported"). **El importador sigue leyendo exports en cualquier idioma**: las claves del
+frontmatter (`carrera`, `materia`, `creada`, `fecha`), la carpeta `adjuntos/` y el protocolo
+`adjunto:` del Markdown son formato de archivo y no se traducen.

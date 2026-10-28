@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildImportPlan, markDuplicates, summarizePlan, describeSummary, IMPORT_FALLBACK_NAME } from './plan.js'
+import { buildImportPlan, markDuplicates, summarizePlan, describeSummary, importFallbackName } from './plan.js'
 
 const now = new Date('2026-10-20T12:00:00Z')
 const md = (path, text = '# Hola', lastModified = null) => ({ path, text, lastModified })
@@ -28,8 +28,8 @@ test('export de una materia: la carrera sale del frontmatter', () => {
 
 test('un .md suelto va a Importado/Importado', () => {
   const { groups } = plan([md('clase.md')])
-  assert.equal(groups[0].careerName, IMPORT_FALLBACK_NAME)
-  assert.equal(groups[0].subjectName, IMPORT_FALLBACK_NAME)
+  assert.equal(groups[0].careerName, importFallbackName())
+  assert.equal(groups[0].subjectName, importFallbackName())
 })
 
 test('reusa carrera y materia existentes sin distinguir mayúsculas ni espacios', () => {
@@ -116,7 +116,7 @@ test('summarizePlan y describeSummary', () => {
 
 test('Studree/Materia (dos niveles) no crea una carrera "Studree"', () => {
   const { groups } = plan([md('Studree/Genética/a.md')])
-  assert.equal(groups[0].careerName, IMPORT_FALLBACK_NAME)
+  assert.equal(groups[0].careerName, importFallbackName())
   assert.equal(groups[0].subjectName, 'Genética')
 })
 
@@ -150,4 +150,31 @@ test('duplicados: el texto escapado de la base coincide con el del zip sin escap
   })
   const existing = new Map([['s1', [{ created_at: at, content_md: '![\\_b\\*.png](adjunto:x)' }]]])
   assert.equal(markDuplicates(p, existing).groups[0].sheets[0].duplicate, true)
+})
+
+test('en inglés: el resumen, los motivos de salteo y el nombre de reserva', () => {
+  const summary = { newCareers: 2, newSubjects: 5, sheets: 40, media: 12, duplicates: 3, skipped: 1 }
+  assert.equal(
+    describeSummary(summary, 'es'),
+    'Se van a crear 2 carreras, 5 materias, 40 hojas y 12 adjuntos. 3 hojas ya existen y se saltean. 1 archivo no se importa.',
+  )
+  assert.equal(
+    describeSummary(summary, 'en'),
+    'This will create 2 careers, 5 subjects, 40 sheets and 12 attachments. 3 sheets already exist and will be skipped. 1 file will not be imported.',
+  )
+  assert.equal(describeSummary({ ...summary, newCareers: 0, newSubjects: 0, sheets: 0, media: 0, duplicates: 0, skipped: 0 }, 'en'), 'There are no new sheets to import.')
+  assert.equal(plan([md('vacio.md', '')], { lang: 'en' }).skipped[0].reason, 'It is empty.')
+  assert.equal(plan([md('vacio.md', '')]).skipped[0].reason, 'Está vacía.')
+  assert.equal(plan([], { filePaths: ['foto.png'], lang: 'en' }).skipped[0].reason, 'It is not a .md and is not used in any sheet.')
+  assert.equal(importFallbackName('en'), 'Imported')
+  assert.equal(importFallbackName('es'), 'Importado')
+})
+
+test('un export hecho en inglés se importa igual: las claves del frontmatter no cambian', () => {
+  const text = '---\ncarrera: "Bio"\nmateria: "Genetics"\ncreada: 2025-10-14T18:30\n---\n# x'
+  const english = plan([md('Genetics/a.md', text)], { lang: 'en' }).groups[0]
+  const spanish = plan([md('Genetics/a.md', text)], { lang: 'es' }).groups[0]
+  assert.equal(english.careerName, 'Bio')
+  assert.equal(english.subjectName, 'Genetics')
+  assert.equal(english.sheets[0].created_at, spanish.sheets[0].created_at)
 })

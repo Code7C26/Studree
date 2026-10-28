@@ -107,3 +107,18 @@ test('nombres con puntuación escapada por el editor no ganan barras en el expor
   assert.ok(md.includes('[\\[v\\]_\\\\.pdf](adjuntos/'))
   assert.ok(!md.includes('\\_') && !md.includes('\\*'))
 })
+
+test('en inglés: las claves del frontmatter no cambian y el texto descriptivo sale en inglés', async () => {
+  const subject = {
+    name: '',
+    careerName: 'Bio',
+    sheets: [{ created_at: '2025-10-14T21:30:00Z', updated_at: null, content_md: '![lost](adjunto:a3)', attachments: [attachment('a3', 'lost.png')] }],
+  }
+  const out = await subjectTreeToZip(FakeZip, subject, new Map(), 'en')
+  const [path, md] = [...out.entries()].find(([entry]) => entry.endsWith('.md'))
+  assert.ok(path.startsWith('Untitled/'), path)
+  for (const key of ['carrera:', 'materia:', 'creada:']) assert.ok(md.includes(key), key)
+  assert.match(md, /[image: lost]/)
+  const es = await subjectTreeToZip(FakeZip, subject, new Map(), 'es')
+  assert.ok([...es.keys()][0].startsWith('Sin título/'))
+})

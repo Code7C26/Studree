@@ -2,34 +2,29 @@
  * Plantillas de hoja de fábrica (Fase 13, ver docs/features/sheet-templates.md).
  * Viven en el código, no en la base: no se pueden borrar. Las del usuario
  * están en la tabla `sheet_templates` (migración 0006).
+ *
+ * Fase 18: el nombre y el contenido salen del diccionario `templates.factory` y siguen el idioma
+ * activo. El contenido es Markdown que pasa a ser contenido del usuario: se toma al CREAR la hoja
+ * y después no cambia de idioma. Los `id` no cambian.
  */
+
+import { getLang, tIn } from '../lib/i18n/index.js'
 
 export const TEMPLATE_NAME_MAX = 60
 export const TEMPLATE_CONTENT_MAX = 20000
 
-export const FACTORY_TEMPLATES = Object.freeze([
-  {
-    id: 'factory:clase',
-    name: 'Clase',
+/** Claves del diccionario de cada plantilla de fábrica (el id es `factory:<clave>`). */
+const FACTORY_KEYS = Object.freeze(['clase', 'resumen', 'practica', 'repaso'])
+
+/**
+ * @param {string} [lang]
+ * @returns {Array<{id: string, name: string, factory: true, content_md: string}>}
+ */
+export function getFactoryTemplates(lang = getLang()) {
+  return FACTORY_KEYS.map((key) => ({
+    id: `factory:${key}`,
+    name: tIn(lang, `templates.factory.${key}.name`),
     factory: true,
-    content_md: '# Clase\n\n## Conceptos clave\n\n- \n\n## Ejemplos\n\n\n## Dudas para preguntar\n\n- [ ] ',
-  },
-  {
-    id: 'factory:resumen',
-    name: 'Resumen',
-    factory: true,
-    content_md: '# Resumen\n\n## Idea principal\n\n\n## Puntos clave\n\n- \n\n## Para recordar\n\n> ',
-  },
-  {
-    id: 'factory:practica',
-    name: 'Práctica',
-    factory: true,
-    content_md: '# Práctica\n\n## Ejercicio 1\n\n**Enunciado:** \n\n**Resolución:** \n\n## Errores que cometí\n\n- ',
-  },
-  {
-    id: 'factory:repaso',
-    name: 'Repaso para parcial',
-    factory: true,
-    content_md: '# Repaso\n\n## Temas que entran\n\n- [ ] \n\n## Fórmulas y definiciones\n\n\n## Preguntas de práctica\n\n1. ',
-  },
-])
+    content_md: tIn(lang, `templates.factory.${key}.content`),
+  }))
+}

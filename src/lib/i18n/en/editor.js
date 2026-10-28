@@ -1,0 +1,25 @@
+/** Sheet editor toolbar. */
+export default {
+  toolbar: {
+    bold: 'Bold',
+    italic: 'Italic',
+    strike: 'Strikethrough',
+    code: 'Inline code',
+    heading1: 'Heading',
+    heading2: 'Subheading',
+    heading3: 'Heading 3',
+    heading4: 'Heading 4',
+    list: 'Bulleted list',
+    ordered: 'Numbered list',
+    checklist: 'Checklist',
+    checklistLabel: 'Task',
+    quote: 'Quote',
+    quoteLabel: 'Quote',
+    codeBlock: 'Code block',
+    rule: 'Horizontal rule',
+    link: 'Link',
+    linkPrompt: 'Link URL',
+    attachTitle: 'Attach (you can also drop or paste files into the sheet)',
+    attachLabel: 'Attach a file to the sheet',
+  },
+}

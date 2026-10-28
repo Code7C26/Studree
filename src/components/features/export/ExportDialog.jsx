@@ -10,6 +10,7 @@ import {
 } from '../../../lib/export/toSingleMarkdown.js'
 import { subjectTreeToZip, careerTreeToZip, allTreeToZip } from '../../../lib/export/toZip.js'
 import { downloadTextFile, downloadBlob, buildExportFilename } from '../../../lib/export/download.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * Diálogo de export a Markdown: `.md` único, `.zip` con carpetas, o "Copiar
@@ -28,6 +29,7 @@ import { downloadTextFile, downloadBlob, buildExportFilename } from '../../../li
  * @param {string} [props.subjectId]
  */
 export function ExportDialog({ open, onClose, careerId, subjectId }) {
+  const { t } = useI18n()
   const defaultScope = subjectId ? 'subject' : careerId ? 'career' : 'all'
   const [scope, setScope] = useState(defaultScope)
   const [format, setFormat] = useState('md')
@@ -48,14 +50,14 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
   async function buildMarkdown() {
     if (scope === 'subject') {
       const tree = await loadSubjectTree(subjectId)
-      return tree && { name: tree.name, markdown: subjectTreeToMarkdown(tree), label: `la materia "${tree.name}"` }
+      return tree && { name: tree.name, markdown: subjectTreeToMarkdown(tree), label: t('importExport.export.labelSubject', { name: tree.name }) }
     }
     if (scope === 'career') {
       const tree = await loadCareerTree(careerId)
-      return tree && { name: tree.name, markdown: careerTreeToMarkdown(tree), label: `la carrera "${tree.name}"` }
+      return tree && { name: tree.name, markdown: careerTreeToMarkdown(tree), label: t('importExport.export.labelCareer', { name: tree.name }) }
     }
     const careers = await loadAllTree()
-    return careers && { name: 'todo', markdown: allTreeToMarkdown(careers), label: 'todas las carreras' }
+    return careers && { name: t('importExport.export.fileNameAll'), markdown: allTreeToMarkdown(careers), label: t('importExport.export.labelAll') }
   }
 
   async function handleDownload() {
@@ -88,14 +90,14 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
           : scope === 'career'
             ? await careerTreeToZip(JSZip, tree, files)
             : await allTreeToZip(JSZip, tree, files)
-      downloadBlob(buildExportFilename(scope === 'all' ? 'todo' : tree.name, 'zip'), blob)
+      downloadBlob(buildExportFilename(scope === 'all' ? t('importExport.export.fileNameAll') : tree.name, 'zip'), blob)
       if (failed > 0) {
-        setNotice(`${failed} adjunto${failed === 1 ? '' : 's'} no se pudo descargar y quedó como texto en el .md.`)
+        setNotice(t('importExport.export.attachmentsFailed', { count: failed }))
         return
       }
       onClose()
     } catch {
-      setNotice('No se pudo armar el .zip. Probá de nuevo.')
+      setNotice(t('importExport.export.zipFailed'))
     } finally {
       setWorking(false)
     }
@@ -107,28 +109,27 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
     if (!result) return
     try {
       await navigator.clipboard.writeText(withAiPreamble(result.markdown, result.label))
-      setNotice('Copiado. Pegalo en el chat de tu IA.')
+      setNotice(t('importExport.export.copied'))
     } catch {
-      setNotice('El navegador no dejó copiar al portapapeles. Usá "Descargar .md".')
+      setNotice(t('importExport.export.clipboardFailed'))
     }
   }
 
   const scopes = [
-    ...(subjectId ? [{ id: 'subject', label: 'Esta materia' }] : []),
-    ...(careerId ? [{ id: 'career', label: 'Toda la carrera' }] : []),
-    { id: 'all', label: 'Todas mis carreras' },
+    ...(subjectId ? [{ id: 'subject', label: t('importExport.export.scopeSubject') }] : []),
+    ...(careerId ? [{ id: 'career', label: t('importExport.export.scopeCareer') }] : []),
+    { id: 'all', label: t('importExport.export.scopeAll') },
   ]
 
   return (
-    <Modal open={open} onClose={onClose} title="Exportar a Markdown">
+    <Modal open={open} onClose={onClose} title={t('importExport.export.title')}>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-text-muted">
-          Copiá tus apuntes para pegarlos en una IA, descargá un único <code>.md</code>, o un <code>.zip</code> con
-          carpetas para Obsidian.
+          {t('importExport.export.intro')}
         </p>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm text-text-muted">Alcance</legend>
+          <legend className="mb-1 text-sm text-text-muted">{t('importExport.export.scope')}</legend>
           {scopes.map((option) => (
             <label key={option.id} className="flex items-center gap-2 text-sm">
               <input
@@ -144,14 +145,14 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
         </fieldset>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm text-text-muted">Formato de descarga</legend>
+          <legend className="mb-1 text-sm text-text-muted">{t('importExport.export.formatLegend')}</legend>
           <label className="flex items-center gap-2 text-sm">
             <input type="radio" name="export-format" value="md" checked={format === 'md'} onChange={() => setFormat('md')} />
-            <code>.md</code> único (para IA)
+            {t('importExport.export.formatMd')}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="radio" name="export-format" value="zip" checked={format === 'zip'} onChange={() => setFormat('zip')} />
-            <code>.zip</code> con carpetas (para Obsidian). Incluye los adjuntos de cada hoja.
+            {t('importExport.export.formatZip')}
           </label>
         </fieldset>
 
@@ -168,13 +169,13 @@ export function ExportDialog({ open, onClose, careerId, subjectId }) {
 
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Cerrar
+            {t('common.close')}
           </Button>
           <Button variant="ghost" onClick={handleCopyForAi} disabled={busy}>
-            📋 Copiar para IA
+            📋 {t('importExport.export.copyForAi')}
           </Button>
           <Button onClick={handleDownload} disabled={busy}>
-            {working ? 'Preparando adjuntos…' : busy ? 'Generando…' : `Descargar .${format}`}
+            {working ? t('importExport.export.preparing') : busy ? t('importExport.export.generating') : t('importExport.export.download', { format })}
           </Button>
         </div>
       </div>

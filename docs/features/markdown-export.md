@@ -137,3 +137,11 @@ Contenido de la hoja…
 - [ ] Export de una sola hoja.
 - [ ] Incluir/excluir hojas vacías.
 - [ ] Índice de contenidos al principio del `.md` único.
+
+## Idioma (Fase 18)
+
+El texto descriptivo de lo exportado sigue el idioma activo: el título "Mis apuntes" / "My notes", el
+preámbulo de "Copiar para IA", los marcadores `[imagen: …]` / `[image: …]` y el nombre de reserva
+"Sin título" / "Untitled". Las funciones de `lib/export/` reciben un `lang` opcional. **Formato de
+archivo, sin traducir:** las claves del frontmatter, la carpeta `adjuntos/` y la raíz `Studree/` del
+.zip (el importador las lee), y las fechas de `sheetLocalIso`/`sheetFileName`.

@@ -6,6 +6,7 @@
  */
 
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -36,10 +37,10 @@ function ToolbarButton({ active, onClick, label, title, ariaLabel, disabled }) {
 
 /** Títulos: los dos de uso diario con nombre, los otros con su nivel. */
 const HEADINGS = [
-  { level: 1, title: 'Título', label: 'Título' },
-  { level: 2, title: 'Subtítulo', label: 'Subtítulo' },
-  { level: 3, title: 'Título 3', label: 'H3' },
-  { level: 4, title: 'Título 4', label: 'H4' },
+  { level: 1, titleKey: 'editor.toolbar.heading1', labelKey: 'editor.toolbar.heading1' },
+  { level: 2, titleKey: 'editor.toolbar.heading2', labelKey: 'editor.toolbar.heading2' },
+  { level: 3, titleKey: 'editor.toolbar.heading3', label: 'H3' },
+  { level: 4, titleKey: 'editor.toolbar.heading4', label: 'H4' },
 ]
 
 /**
@@ -49,11 +50,12 @@ const HEADINGS = [
  * @param {boolean} [props.canAttach] - false si no hay hoja a la que adjuntar.
  */
 export function EditorToolbar({ editor, onAttach, canAttach = true }) {
+  const { t } = useI18n()
   // Adjuntar no depende del editor con foco: la página elige la hoja destino.
   const attachButton = onAttach && (
     <ToolbarButton
-      title="Adjuntar (también podés soltar o pegar archivos en la hoja)"
-      ariaLabel="Adjuntar un archivo a la hoja"
+      title={t('editor.toolbar.attachTitle')}
+      ariaLabel={t('editor.toolbar.attachLabel')}
       label={<Icon name="paperclip" size={14} />}
       disabled={!canAttach}
       onClick={onAttach}
@@ -64,7 +66,7 @@ export function EditorToolbar({ editor, onAttach, canAttach = true }) {
 
   function setLink() {
     const previous = editor.getAttributes('link').href
-    const url = window.prompt('URL del enlace', previous ?? 'https://')
+    const url = window.prompt(t('editor.toolbar.linkPrompt'), previous ?? 'https://')
     if (url === null) return
     if (url === '') {
       editor.chain().focus().unsetLink().run()
@@ -75,11 +77,11 @@ export function EditorToolbar({ editor, onAttach, canAttach = true }) {
 
   return (
     <div className="flex flex-wrap items-center gap-0.5">
-      <ToolbarButton title="Negrita" label="B" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} />
-      <ToolbarButton title="Itálica" label="I" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} />
-      <ToolbarButton title="Tachado" label="S" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} />
+      <ToolbarButton title={t('editor.toolbar.bold')} label="B" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} />
+      <ToolbarButton title={t('editor.toolbar.italic')} label="I" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} />
+      <ToolbarButton title={t('editor.toolbar.strike')} label="S" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} />
       <ToolbarButton
-        title="Código en línea"
+        title={t('editor.toolbar.code')}
         label="</>"
         active={editor.isActive('code')}
         onClick={() => editor.chain().focus().toggleCode().run()}
@@ -87,11 +89,11 @@ export function EditorToolbar({ editor, onAttach, canAttach = true }) {
 
       <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
 
-      {HEADINGS.map(({ level, title, label }) => (
+      {HEADINGS.map(({ level, titleKey, labelKey, label }) => (
         <ToolbarButton
           key={level}
-          title={title}
-          label={label}
+          title={t(titleKey)}
+          label={labelKey ? t(labelKey) : label}
           active={editor.isActive('heading', { level })}
           onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
         />
@@ -100,31 +102,31 @@ export function EditorToolbar({ editor, onAttach, canAttach = true }) {
       <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
 
       <ToolbarButton
-        title="Lista"
+        title={t('editor.toolbar.list')}
         label="•"
         active={editor.isActive('bulletList')}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       />
       <ToolbarButton
-        title="Lista numerada"
+        title={t('editor.toolbar.ordered')}
         label="1."
         active={editor.isActive('orderedList')}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       />
       <ToolbarButton
-        title="Checklist"
-        label="Tarea"
+        title={t('editor.toolbar.checklist')}
+        label={t('editor.toolbar.checklistLabel')}
         active={editor.isActive('taskList')}
         onClick={() => editor.chain().focus().toggleTaskList().run()}
       />
       <ToolbarButton
-        title="Cita"
-        label="Cita"
+        title={t('editor.toolbar.quote')}
+        label={t('editor.toolbar.quoteLabel')}
         active={editor.isActive('blockquote')}
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
       />
       <ToolbarButton
-        title="Bloque de código"
+        title={t('editor.toolbar.codeBlock')}
         label="{ }"
         active={editor.isActive('codeBlock')}
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
@@ -133,12 +135,12 @@ export function EditorToolbar({ editor, onAttach, canAttach = true }) {
       <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
 
       <ToolbarButton
-        title="Línea horizontal"
+        title={t('editor.toolbar.rule')}
         label="―"
         active={false}
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       />
-      <ToolbarButton title="Enlace" label={<Icon name="link" size={14} />} active={editor.isActive('link')} onClick={setLink} />
+      <ToolbarButton title={t('editor.toolbar.link')} label={<Icon name="link" size={14} />} active={editor.isActive('link')} onClick={setLink} />
       {attachButton}
     </div>
   )

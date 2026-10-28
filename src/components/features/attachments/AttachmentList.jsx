@@ -1,6 +1,7 @@
 import { Icon } from '../../ui/Icon'
 import { formatBytes } from '../../../lib/attachments/files.js'
 import { isImageMime } from '../../../lib/attachments/refs.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * "Adjuntos (N)" al pie de una hoja, sobre el papel (ADR-018). Ver
@@ -11,11 +12,12 @@ import { isImageMime } from '../../../lib/attachments/refs.js'
  * @param {(attachment: import('../../../types/models.js').Attachment) => void} props.onRemove - Pide confirmación (la página).
  */
 export function AttachmentList({ attachments, onOpen, onRemove }) {
+  const { t } = useI18n()
   if (!attachments?.length) return null
 
   return (
-    <section aria-label="Adjuntos" className="border-t border-paper-border px-7 py-3 text-sm text-ink">
-      <h3 className="mb-1.5 text-xs font-medium text-ink-muted">Adjuntos ({attachments.length})</h3>
+    <section aria-label={t('folder.attachments.section')} className="border-t border-paper-border px-7 py-3 text-sm text-ink">
+      <h3 className="mb-1.5 text-xs font-medium text-ink-muted">{t('folder.attachments.title', { count: attachments.length })}</h3>
       <ul className="space-y-0.5">
         {attachments.map((attachment) => (
           <li key={attachment.id} className="group flex items-center gap-2">
@@ -24,7 +26,7 @@ export function AttachmentList({ attachments, onOpen, onRemove }) {
               type="button"
               onClick={() => onOpen(attachment)}
               className="min-w-0 truncate rounded text-left hover:underline"
-              title={`Abrir ${attachment.name}`}
+              title={t('folder.attachments.open', { name: attachment.name })}
             >
               {attachment.name}
             </button>
@@ -32,7 +34,7 @@ export function AttachmentList({ attachments, onOpen, onRemove }) {
             <button
               type="button"
               onClick={() => onRemove(attachment)}
-              aria-label={`Borrar el adjunto ${attachment.name}`}
+              aria-label={t('folder.attachments.remove', { name: attachment.name })}
               className="ml-auto rounded p-1 text-ink-muted opacity-0 transition-opacity hover:text-red-700 focus-visible:opacity-100 group-hover:opacity-100"
             >
               <Icon name="trash" size={14} />

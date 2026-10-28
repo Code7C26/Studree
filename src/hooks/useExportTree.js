@@ -15,6 +15,7 @@ import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService } from '../services/sheets.service.js'
 import { attachmentsService } from '../services/attachments.service.js'
 import { collectTreeAttachments } from '../lib/export/toZip.js'
+import { t } from '../lib/i18n/index.js'
 
 const EXPORT_SHEET_COLUMNS = 'id, subject_id, content_md, created_at, updated_at'
 
@@ -70,7 +71,7 @@ async function buildSubjectTrees(subjectRows, withAttachments) {
 async function fetchSubjectTree(subjectId, withAttachments) {
   const { data: subject, error } = await subjectsService.get(subjectId)
   if (error) throw new Error(error)
-  if (!subject) throw new Error('No se encontró la materia.')
+  if (!subject) throw new Error(t('importExport.export.subjectNotFound'))
 
   const { data: career } = await careersService.get(subject.career_id)
   const [tree] = await buildSubjectTrees([subject], withAttachments)
@@ -81,7 +82,7 @@ async function fetchSubjectTree(subjectId, withAttachments) {
 async function fetchCareerTree(careerId, withAttachments) {
   const { data: career, error: careerError } = await careersService.get(careerId)
   if (careerError) throw new Error(careerError)
-  if (!career) throw new Error('No se encontró la carrera.')
+  if (!career) throw new Error(t('importExport.export.careerNotFound'))
 
   const subjectRows = unwrap(await subjectsService.list(careerId))
   return { name: career.name, subjects: await buildSubjectTrees(subjectRows, withAttachments) }
