@@ -21,6 +21,9 @@
   `studree:ui:lang` y `clearAllCache()` ya **no borra el idioma**. Tests: núcleo, **paridad**
   `es`/`en` y un **trinquete** (`noSpanishLeft.test.js` + `scanSpanish.js`) que impide castellano
   suelto fuera de las áreas pendientes.
+- **Tarea 2 — Selector en Perfil:** hook `useI18n` (`useSyncExternalStore`, sin proveedor) y
+  `LanguageSelector` (radiogroup "Castellano" / "English") en una sección "Idioma / Language" de
+  Perfil.
 
 ---
 

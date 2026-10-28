@@ -46,6 +46,11 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
   `useAuth().signOut()` que ya usa `Header.jsx`. No se muestra si la sesión es anónima
   (mismo criterio que el header: no hay con qué volver a entrar).
 
+- **Idioma (Fase 18).** Entre la cuenta y el contenido cargado hay una sección "Idioma /
+  Language" con el selector Castellano / English (`components/ui/LanguageSelector.jsx`). Es la
+  única "preferencia" del perfil: se guarda en el dispositivo (`studree:ui:lang`), no en
+  Supabase, y sobrevive a cerrar sesión. Ver `docs/features/i18n.md`.
+
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
@@ -53,6 +58,7 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
 | `src/pages/ProfilePage.jsx` | Presentación: card de cuenta (+ form de vinculación si es anónima) y card de resumen de contenido |
 | `src/components/layout/AuthProvider.jsx` | `linkIdentity(email, password)` — la lógica de conversión anónima → permanente |
 | `src/hooks/useAuth.js` | Expone `linkIdentity` en el contrato de `useAuth()` |
+| `src/components/ui/LanguageSelector.jsx` | Selector de idioma (radiogroup de dos botones), usa `useI18n` |
 | `src/hooks/useExplorerTree.js` | Fuente de los conteos (carreras/materias/hojas), sin cambios — se reutiliza tal cual |
 
 ## Restricciones

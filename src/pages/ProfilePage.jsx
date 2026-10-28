@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
 import { useExplorerTree } from '../hooks/useExplorerTree.js'
+import { useI18n } from '../hooks/useI18n.js'
 import { Button } from '../components/ui/Button'
+import { LanguageSelector } from '../components/ui/LanguageSelector.jsx'
 import { TextField } from '../components/ui/TextField'
 
 /**
@@ -29,6 +31,7 @@ function countContent(careers) {
 export function ProfilePage() {
   const { user, isAnonymous, signOut, linkIdentity } = useAuth()
   const { careers, loading: loadingTree } = useExplorerTree()
+  const { t } = useI18n()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -137,6 +140,12 @@ export function ProfilePage() {
           </form>
         </div>
       )}
+
+      <div className="card mt-4 space-y-3">
+        <h2 className="text-sm font-semibold text-text-muted">{t('profile.language.title')}</h2>
+        <p className="text-xs text-text-muted">{t('profile.language.help')}</p>
+        <LanguageSelector />
+      </div>
 
       <div className="card mt-4 space-y-3">
         <h2 className="text-sm font-semibold text-text-muted">Contenido cargado</h2>
