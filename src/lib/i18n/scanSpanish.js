@@ -31,6 +31,33 @@ function isSpanish(text) {
 }
 
 /**
+ * Último carácter no blanco del código ya enmascarado.
+ * @param {string} masked
+ */
+function lastSignificant(masked) {
+  for (let k = masked.length - 1; k >= 0; k -= 1) if (!/\s/.test(masked[k])) return masked[k]
+  return ''
+}
+
+/**
+ * Índice de la `/` que cierra un regex que empieza en `start`, o -1 si no parece un regex.
+ * @param {string} source
+ * @param {number} start
+ */
+function regexEnd(source, start) {
+  let inClass = false
+  for (let j = start + 1; j < source.length; j += 1) {
+    const c = source[j]
+    if (c === '\n') return -1
+    if (c === '\\') { j += 1; continue }
+    if (c === '[') inClass = true
+    else if (c === ']') inClass = false
+    else if (c === '/' && !inClass) return j > start + 1 ? j : -1
+  }
+  return -1
+}
+
+/**
  * Recorre el código una vez: junta los literales de texto y arma una copia "enmascarada"
  * (comentarios y contenido de literales reemplazados por espacios) para buscar texto de JSX.
  * @param {string} source
@@ -56,6 +83,11 @@ function tokenize(source) {
       masked += blank(chunk)
       line += (chunk.match(/\n/g) ?? []).length
       i = end
+    } else if (char === '/' && /[(,=:[!&|?;]/.test(lastSignificant(masked) || ';')) {
+      // Posible literal regex: se enmascara para que sus comillas o backticks no abran un literal.
+      const end = regexEnd(source, i)
+      masked += end === -1 ? char : `/${blank(source.slice(i + 1, end))}/`
+      i = end === -1 ? i + 1 : end + 1
     } else if (char === "'" || char === '"' || char === '`') {
       const startLine = line
       let j = i + 1
@@ -93,7 +125,10 @@ export function findSpanish(source) {
 
   for (const literal of literals) {
     const lineText = lines[literal.line - 1] ?? ''
-    if (/console\./.test(lineText) || /^\s*(import|export)\b.*\bfrom\b/.test(lineText) || /\bimport\(/.test(lineText)) continue
+    // `console.*` puede abrirse unas líneas antes de su literal (llamada de varias líneas).
+    const nearby = lines.slice(Math.max(0, literal.line - 4), literal.line).join('\n')
+    if (/console\./.test(nearby) || /^\s*(import|export)\b.*\bfrom\b/.test(lineText) || /\bimport\(/.test(lineText)) continue
+    if (literal.text.trim().startsWith('/')) continue // rutas ('/carreras')
     if (isSpanish(literal.text)) hits.push({ text: literal.text.trim(), line: literal.line })
   }
 

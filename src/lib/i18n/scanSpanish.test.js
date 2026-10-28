@@ -34,3 +34,13 @@ test('no marca código que ya usa t() ni texto en inglés', () => {
   assert.deepEqual(texts("<p>{t('home.greeting')}</p>"), [])
   assert.deepEqual(texts("const a = 'Save changes'"), [])
 })
+
+test('ignora rutas (/carreras) y console.* de varias líneas', () => {
+  assert.deepEqual(texts("const r = '/carreras'"), [])
+  assert.deepEqual(texts("console.warn(\n  '[auth] Sesión anónima no disponible',\n  error,\n)"), [])
+})
+
+test('un regex con comillas o backtick no rompe el análisis de lo que sigue', () => {
+  assert.deepEqual(texts("const r = /[#>*_~`]/g\nconst a = 'Guardar'"), ['Guardar'])
+  assert.deepEqual(texts('x.replace(/["\']/g, \'\')\n// Acción\nconst a = 1'), [])
+})
