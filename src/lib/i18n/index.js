@@ -29,10 +29,11 @@ const storage = {
 const instance = createI18n({
   dictionaries: { es, en },
   storage,
-  browserLang: () => (typeof navigator === 'undefined' ? undefined : navigator.language),
+  // Solo en el navegador: Node (tests) también define `navigator`, con un idioma que depende del sistema.
+  browserLang: () => (typeof window === 'undefined' ? undefined : navigator.language),
   onChange: applyHtmlLang,
 })
 
 applyHtmlLang(instance.getLang())
 
-export const { t, getLang, setLang, subscribe, LANGS } = instance
+export const { t, tIn, getLang, setLang, subscribe, LANGS } = instance

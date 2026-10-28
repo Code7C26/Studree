@@ -24,6 +24,12 @@
 - **Tarea 2 — Selector en Perfil:** hook `useI18n` (`useSyncExternalStore`, sin proveedor) y
   `LanguageSelector` (radiogroup "Castellano" / "English") en una sección "Idioma / Language" de
   Perfil.
+- **Tarea 3 — Fechas por idioma:** los formateadores de `lib/format/sheetDate.js` y
+  `lib/home/dates.js` reciben un `lang` opcional (por defecto el activo). Los nombres de días y
+  meses y las frases ("hace 3 días", "in 3 days") salen del diccionario `dates`; el castellano
+  da exactamente lo mismo que antes y el inglés usa `10/14` y hora de 12 horas
+  (`Tuesday 10/14 · 6:30 PM`). `sheetLocalIso` y `sheetFileName` (formato de archivo) no
+  cambian. El orden alfabético de `studyItems` usa el idioma activo. Nuevo `core.tIn(lang, …)`.
 
 ---
 

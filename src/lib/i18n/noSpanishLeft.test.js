@@ -34,7 +34,6 @@ export const PENDING = [
   'src/lib/attachments/',
   'src/lib/editor/',
   'src/lib/export/',
-  'src/lib/format/',
   'src/lib/home/',
   'src/lib/import/',
   'src/lib/markdown/',

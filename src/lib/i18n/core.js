@@ -47,17 +47,27 @@ export function createI18n({ dictionaries, storage, browserLang, onChange }) {
   let lang = detectLang(safely(() => storage.get()) ?? null, safely(() => browserLang()))
 
   /**
-   * Traduce una clave. Si falta en el idioma activo cae al castellano y, si tampoco está,
-   * devuelve la propia clave: nunca un texto vacío.
+   * Traduce una clave a un idioma explícito (para los formateadores, que reciben `lang`). Si
+   * falta en ese idioma cae al castellano y, si tampoco está, devuelve la propia clave: nunca
+   * un texto vacío.
+   * @param {string} language
    * @param {string} key
    * @param {Record<string, string|number>} [values]
    * @returns {string}
    */
-  function t(key, values) {
-    const text = resolveText(lookup(dictionaries[lang], key), values) ?? resolveText(lookup(dictionaries.es, key), values)
+  function tIn(language, key, values) {
+    const text = resolveText(lookup(dictionaries[language] ?? dictionaries.es, key), values) ?? resolveText(lookup(dictionaries.es, key), values)
     if (text === undefined) return key
     return values ? text.replace(/\{(\w+)\}/g, (marker, name) => (name in values ? String(values[name]) : marker)) : text
   }
+
+  /**
+   * Traduce una clave al idioma activo.
+   * @param {string} key
+   * @param {Record<string, string|number>} [values]
+   * @returns {string}
+   */
+  const t = (key, values) => tIn(lang, key, values)
 
   /** @returns {'es'|'en'} */
   const getLang = () => lang
@@ -83,5 +93,5 @@ export function createI18n({ dictionaries, storage, browserLang, onChange }) {
     }
   }
 
-  return { t, getLang, setLang, subscribe, LANGS }
+  return { t, tIn, getLang, setLang, subscribe, LANGS }
 }

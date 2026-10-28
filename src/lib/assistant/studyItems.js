@@ -1,6 +1,8 @@
 // Filas de "Mi estudio" (resúmenes y exámenes con su materia/carrera embebidas).
 // Puro: sin React ni services.
 
+import { getLang } from '../i18n/index.js'
+
 /**
  * Descarta las filas de materias o carreras en la papelera, o cuyo embed
  * vino `null` aunque la fila apunte a una (RLS lo oculta o ya no existe).
@@ -28,7 +30,7 @@ export function subjectOptions(rows) {
     const id = r.subject_id ?? r.subject?.id
     if (id && r.subject?.name && !byId.has(id)) byId.set(id, r.subject.name)
   }
-  return [...byId].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+  return [...byId].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, getLang()))
 }
 
 /**

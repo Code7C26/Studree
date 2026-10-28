@@ -106,3 +106,11 @@ test('el idioma inicial sale del storage y, si no hay, del navegador', () => {
   assert.equal(make({ browser: 'en-US' }).i18n.getLang(), 'en')
   assert.equal(make({}).i18n.getLang(), 'es')
 })
+
+test('tIn traduce a un idioma explícito sin tocar el idioma activo', () => {
+  const { i18n } = make()
+  assert.equal(i18n.tIn('en', 'a.hello', { name: 'Ana' }), 'Hello Ana')
+  assert.equal(i18n.tIn('es', 'a.hello', { name: 'Ana' }), 'Hola Ana')
+  assert.equal(i18n.tIn('en', 'a.bye'), 'Chau')
+  assert.equal(i18n.getLang(), 'es')
+})

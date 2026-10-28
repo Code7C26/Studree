@@ -6,16 +6,11 @@
  * no se corre de día por la diferencia con UTC.
  */
 
-const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-const WEEKDAYS_SHORT = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
-const MONTHS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-]
-const DAY_MS = 24 * 60 * 60 * 1000
+import { getLang, tIn } from '../i18n/index.js'
+import { formatSheetDate } from '../format/sheetDate.js'
+import { formatNumericDate, pad } from '../format/dateParts.js'
 
-/** @param {number} value */
-const pad = (value) => String(value).padStart(2, '0')
+const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
  * @param {Date} date
@@ -58,68 +53,70 @@ export function daysUntil(key, todayKey) {
 
 /**
  * @param {number} days
- * @returns {string} "hoy", "mañana", "en 3 días", "ayer", "hace 3 días".
+ * @param {string} [lang]
+ * @returns {string} "hoy", "mañana", "en 3 días", "ayer", "hace 3 días" (en: "today", "in 3 days"…).
  */
-export function formatCountdown(days) {
-  if (days === 0) return 'hoy'
-  if (days === 1) return 'mañana'
-  if (days === -1) return 'ayer'
-  return days > 0 ? `en ${days} días` : `hace ${-days} días`
+export function formatCountdown(days, lang = getLang()) {
+  if (days === 0) return tIn(lang, 'dates.countdown.today')
+  if (days === 1) return tIn(lang, 'dates.countdown.tomorrow')
+  if (days === -1) return tIn(lang, 'dates.countdown.yesterday')
+  return days > 0 ? tIn(lang, 'dates.countdown.inDays', { count: days }) : tIn(lang, 'dates.countdown.daysAgo', { count: -days })
 }
 
 /**
  * @param {string} iso
  * @param {Date} [now]
+ * @param {string} [lang]
  * @returns {string} "recién", "hace 15 min", "hace 2 horas", "hace 3 días" o "el 01/08/2026".
  */
-export function formatRelativeTime(iso, now = new Date()) {
+export function formatRelativeTime(iso, now = new Date(), lang = getLang()) {
   const date = new Date(iso)
   const minutes = Math.floor((now.getTime() - date.getTime()) / 60000)
-  if (minutes < 1) return 'recién'
-  if (minutes < 60) return `hace ${minutes} min`
+  if (minutes < 1) return tIn(lang, 'dates.relative.justNow')
+  if (minutes < 60) return tIn(lang, 'dates.relative.minutesAgo', { count: minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return hours === 1 ? 'hace 1 hora' : `hace ${hours} horas`
+  if (hours < 24) return tIn(lang, 'dates.relative.hoursAgo', { count: hours })
   const days = Math.floor(hours / 24)
-  if (days < 30) return days === 1 ? 'hace 1 día' : `hace ${days} días`
-  return `el ${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`
+  if (days < 30) return tIn(lang, 'dates.relative.daysAgo', { count: days })
+  return tIn(lang, 'dates.relative.onDate', { date: formatNumericDate(date, lang, true) })
 }
 
 /**
- * Mismo formato que la barra de las hojas en La Carpeta (`lib/format/sheetDate.js`
- * de esa fase; se unifican después del merge).
+ * Mismo formato que la barra de las hojas en La Carpeta (`formatSheetDate`).
  * @param {string} iso
  * @param {Date} [now]
+ * @param {string} [lang]
  * @returns {string} "Martes 14/10 · 18:30" (con año si no es el actual).
  */
-export function formatDateTime(iso, now = new Date()) {
-  const date = new Date(iso)
-  const year = date.getFullYear() === now.getFullYear() ? '' : `/${date.getFullYear()}`
-  return `${WEEKDAYS[date.getDay()]} ${pad(date.getDate())}/${pad(date.getMonth() + 1)}${year} · ${pad(date.getHours())}:${pad(date.getMinutes())}`
+export function formatDateTime(iso, now = new Date(), lang = getLang()) {
+  return formatSheetDate(iso, now, lang)
 }
 
 /**
  * @param {string} key
- * @returns {string} "mar 20/10"
+ * @param {string} [lang]
+ * @returns {string} "mar 20/10" (en: "Tue 10/20")
  */
-export function formatShortDate(key) {
+export function formatShortDate(key, lang = getLang()) {
   const date = parseDateKey(key)
-  return `${WEEKDAYS_SHORT[date.getDay()]} ${pad(date.getDate())}/${pad(date.getMonth() + 1)}`
+  return `${tIn(lang, `dates.weekdaysShort.${date.getDay()}`)} ${formatNumericDate(date, lang)}`
 }
 
 /**
  * @param {string} key
- * @returns {string} "20/10"
+ * @param {string} [lang]
+ * @returns {string} "20/10" (en: "10/20")
  */
-export function formatDayMonth(key) {
-  const date = parseDateKey(key)
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`
+export function formatDayMonth(key, lang = getLang()) {
+  return formatNumericDate(parseDateKey(key), lang)
 }
 
 /**
  * @param {number} year
  * @param {number} month - 0-based.
- * @returns {string} "Octubre 2026"
+ * @param {string} [lang]
+ * @returns {string} "Octubre 2026" (en: "October 2026")
  */
-export function formatMonthTitle(year, month) {
-  return `${MONTHS[month]} ${year}`
+export function formatMonthTitle(year, month, lang = getLang()) {
+  return `${tIn(lang, `dates.months.${month}`)} ${year}`
 }
