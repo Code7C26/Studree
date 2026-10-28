@@ -210,6 +210,7 @@ Spec: `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md` · plan:
 | 15 | Compartir por link, flashcards | Pendiente |
 | 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |
 | 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | Pendiente — al final |
+| 18 | **Inglés**: botón para cambiar la app de castellano a inglés (i18n de la interfaz; el contenido de las hojas no se traduce) | Pendiente |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

@@ -6,6 +6,18 @@
 
 ---
 
+## [Sin versión] — 2026-10-26
+
+### Changed — Hoja de ruta: Fase 18 (inglés)
+
+> Request: "agregar una nueva fase que es: agregar un botón para pasar la app a inglés".
+
+- Solo documentación (sin código). `docs/01-project-overview.md`: nueva fila **Fase 18**
+  (botón de idioma, castellano ⇄ inglés), pendiente. Antes de implementarla hay que escribir
+  su spec y `docs/features/i18n.md`.
+
+---
+
 ## [0.18.0] — 2026-10-22
 
 ### Added — Fase 14.1: el Brote, mejoras de uso
