@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '../../ui/Icon'
 import { formatSheetDateLong } from '../../../lib/format/sheetDate.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * Fila de la lista de Mi estudio: título (link a su página), materia o
@@ -15,12 +16,13 @@ import { formatSheetDateLong } from '../../../lib/format/sheetDate.js'
  * @param {() => void} props.onDelete
  */
 export function StudyItemRow({ to, title, subjectName, createdAt, detail, deleteLabel, onDelete }) {
+  const { t } = useI18n()
   return (
     <li className="flex items-center gap-3 border-b border-border/60 py-3">
       <Link to={to} className="min-w-0 flex-1 hover:text-accent-soft">
         <p className="truncate font-medium">{title}</p>
         <p className="mt-0.5 truncate text-xs text-text-muted">
-          {subjectName || 'Varias materias'} · {formatSheetDateLong(createdAt)}
+          {subjectName || t('study.page.multipleSubjects')} · {formatSheetDateLong(createdAt)}
           {detail ? ` · ${detail}` : ''}
         </p>
       </Link>

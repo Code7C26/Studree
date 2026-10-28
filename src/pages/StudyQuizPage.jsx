@@ -6,9 +6,11 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Icon } from '../components/ui/Icon'
 import { studyPath } from '../constants/routes'
 import { itemTitle } from '../lib/assistant/studyItems.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 /** `/estudio/examenes/:attemptId`: el registro de un examen. Ver docs/features/study.md. */
 export function StudyQuizPage() {
+  const { t } = useI18n()
   const { attemptId } = useParams()
   const navigate = useNavigate()
   const { item, loading, error, remove } = useStudyItem('quiz', attemptId)
@@ -17,17 +19,17 @@ export function StudyQuizPage() {
 
   const back = (
     <Link to={studyPath({ tab: 'examenes' })} className="inline-flex items-center gap-1 text-sm text-accent-soft hover:underline">
-      Volver a Mi estudio
+      {t('study.page.back')}
     </Link>
   )
 
-  if (loading) return <p className="mt-10 text-center text-text-muted">Cargando…</p>
+  if (loading) return <p className="mt-10 text-center text-text-muted">{t('common.loading')}</p>
   if (!item) {
     return (
       <div className="mx-auto max-w-3xl space-y-3">
         {back}
         <p role={error ? 'alert' : undefined} className="text-text-muted">
-          {error ?? 'No encontramos ese examen (puede haberse borrado).'}
+          {error ?? t('study.page.quizNotFound')}
         </p>
       </div>
     )
@@ -52,7 +54,7 @@ export function StudyQuizPage() {
           className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-red-300"
         >
           <Icon name="trash" size={14} />
-          Borrar
+          {t('study.page.delete')}
         </button>
       </div>
       {failure && (
@@ -68,9 +70,9 @@ export function StudyQuizPage() {
       />
       <ConfirmDialog
         open={confirm}
-        title="Borrar examen"
-        message="¿Borrar este examen? No se puede deshacer."
-        confirmLabel="Borrar"
+        title={t('study.page.deleteQuizTitle')}
+        message={t('study.page.deleteQuizMessage')}
+        confirmLabel={t('study.page.delete')}
         onConfirm={handleDelete}
         onCancel={() => setConfirm(false)}
       />

@@ -3,6 +3,7 @@ import { Icon } from '../../ui/Icon'
 import { subjectFolderPath } from '../../../constants/routes'
 import { formatSheetDateLong } from '../../../lib/format/sheetDate.js'
 import { answerText } from '../../../lib/assistant/quizRecord.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @typedef {import('../../../lib/assistant/quizRecord.js').RecordQuestion} RecordQuestion
@@ -22,6 +23,7 @@ import { answerText } from '../../../lib/assistant/quizRecord.js'
  * @param {() => void} [props.onNavigate]  Se llama al ir a una hoja (la ventana del examen se cierra).
  */
 export function QuizRecordView({ title, createdAt, score, questions, headingRef, onNavigate }) {
+  const { t } = useI18n()
   return (
     <div className="space-y-4 text-sm">
       <header>
@@ -30,33 +32,33 @@ export function QuizRecordView({ title, createdAt, score, questions, headingRef,
           {createdAt ? ` · ${formatSheetDateLong(createdAt)}` : ''}
         </p>
         <h3 ref={headingRef} tabIndex={-1} className="font-display text-2xl font-bold">
-          Sacaste {score.correct} de {score.total}
+          {t('study.record.score', { correct: score.correct, total: score.total })}
         </h3>
       </header>
 
       {questions === null ? (
-        <p className="text-text-muted">Sin detalle (prueba anterior)</p>
+        <p className="text-text-muted">{t('study.record.noDetail')}</p>
       ) : (
         <ol className="space-y-3">
           {questions.map((q) => {
-            const reference = q.type === 'open' ? 'Respuesta de referencia' : 'Respuesta correcta'
+            const reference = q.type === 'open' ? t('study.record.referenceOpen') : t('study.record.referenceAnswer')
             return (
               <li key={q.id} className="rounded-lg border border-border p-3">
                 <p className="flex items-start gap-1.5 font-medium">
                   {q.correct === true && <Icon name="check" size={14} className="mt-0.5 shrink-0 text-accent-soft" />}
                   {q.correct === false && <Icon name="close" size={14} className="mt-0.5 shrink-0 text-red-300" />}
                   <span className="sr-only">
-                    {q.correct === true ? 'Correcta: ' : q.correct === false ? 'Incorrecta: ' : 'Sin corregir: '}
+                    {q.correct === true ? t('study.record.correct') : q.correct === false ? t('study.record.wrong') : t('study.record.ungradedPrefix')}
                   </span>
                   <span className="whitespace-pre-wrap break-words">{q.prompt}</span>
                 </p>
-                {q.correct === null && <p className="mt-1 text-xs text-warn">Sin corregir</p>}
+                {q.correct === null && <p className="mt-1 text-xs text-warn">{t('study.record.ungraded')}</p>}
                 {q.correct === true && (
-                  <p className="mt-1 whitespace-pre-wrap break-words text-text-muted">Tu respuesta: {answerText(q, q.given)}</p>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-text-muted">{t('study.record.yourAnswer', { answer: answerText(q, q.given) })}</p>
                 )}
                 {q.correct !== true && (
                   <>
-                    <p className="mt-2 whitespace-pre-wrap break-words text-text-muted">Tu respuesta: {answerText(q, q.given)}</p>
+                    <p className="mt-2 whitespace-pre-wrap break-words text-text-muted">{t('study.record.yourAnswer', { answer: answerText(q, q.given) })}</p>
                     <p className="mt-1 whitespace-pre-wrap break-words">
                       {reference}: {answerText(q, q.answer)}
                     </p>
@@ -69,7 +71,7 @@ export function QuizRecordView({ title, createdAt, score, questions, headingRef,
                         className="mt-2 inline-flex items-center gap-1 text-xs text-accent-soft hover:underline"
                       >
                         <Icon name="file-text" size={12} />
-                        {q.sheetDate ? `Hoja del ${formatSheetDateLong(q.sheetDate)}` : 'Ver la hoja'}
+                        {q.sheetDate ? t('study.record.sheetOf', { date: formatSheetDateLong(q.sheetDate) }) : t('study.record.seeSheet')}
                       </Link>
                     )}
                   </>

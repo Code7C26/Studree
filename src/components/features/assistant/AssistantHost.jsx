@@ -3,6 +3,7 @@ import { readCache, writeCache } from '../../../services/cache.service.js'
 import { STORAGE_KEYS } from '../../../constants/storageKeys.js'
 import { assistantBridge } from '../../../lib/assistant/bridge.js'
 import { Brote } from './Brote'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /** El panel (hook, chat y servicios) va en un chunk aparte: el principal casi no crece. */
 const AssistantPanel = lazy(() => import('./AssistantPanel').then((module) => ({ default: module.AssistantPanel })))
@@ -21,6 +22,7 @@ const SLEEP_MS = 5 * 60 * 1000
  * @param {boolean} [props.hidden=false]  Oculta botón y panel sin desmontarlos (modo lectura).
  */
 export function AssistantHost({ hidden = false }) {
+  const { t } = useI18n()
   // En el celular no se reabre solo (ahí tapa todo), pero tampoco se pisa la
   // preferencia guardada: solo se escribe cuando el usuario abre o cierra.
   const [open, setOpen] = useState(
@@ -96,10 +98,10 @@ export function AssistantHost({ hidden = false }) {
       <button
         ref={buttonRef}
         type="button"
-        aria-label="Abrir el Brote"
+        aria-label={t('assistant.host.open')}
         aria-expanded={open}
         aria-controls={loaded ? 'brote-panel' : undefined}
-        title="El Brote, tu asistente"
+        title={t('assistant.host.title')}
         hidden={hidden}
         onClick={toggle}
         className={`${hidden ? 'hidden' : ''} fixed bottom-4 right-4 z-30 rounded-full transition-[opacity,transform] hover:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none sm:bottom-6 sm:right-6 ${

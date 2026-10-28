@@ -9,12 +9,14 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Icon } from '../components/ui/Icon'
 import { studyPath } from '../constants/routes'
 import { rowToSummary } from '../lib/assistant/summaryDoc.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 const BUTTON =
   'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-50'
 
 /** `/estudio/resumenes/:summaryId`: un resumen guardado. Ver docs/features/study.md. */
 export function StudySummaryPage() {
+  const { t } = useI18n()
   const { summaryId } = useParams()
   const navigate = useNavigate()
   const { item, loading, error, remove } = useStudyItem('summary', summaryId)
@@ -25,17 +27,17 @@ export function StudySummaryPage() {
 
   const back = (
     <Link to={studyPath()} className="inline-flex items-center gap-1 text-sm text-accent-soft hover:underline">
-      Volver a Mi estudio
+      {t('study.page.back')}
     </Link>
   )
 
-  if (loading) return <p className="mt-10 text-center text-text-muted">Cargando…</p>
+  if (loading) return <p className="mt-10 text-center text-text-muted">{t('common.loading')}</p>
   if (!item) {
     return (
       <div className="mx-auto max-w-3xl space-y-3">
         {back}
         <p role={error ? 'alert' : undefined} className="text-text-muted">
-          {error ?? 'No encontramos ese resumen (puede haberse borrado).'}
+          {error ?? t('study.page.summaryNotFound')}
         </p>
       </div>
     )
@@ -45,8 +47,8 @@ export function StudySummaryPage() {
 
   const saveAsSheet = () => {
     const result = save(doc)
-    if (!result.ok) setMessage({ ok: false, text: result.error ?? 'No se pudo agregar el resumen como hoja.' })
-    else if (result.inFolder) setMessage({ ok: true, text: 'Agregué el resumen como hoja nueva.' })
+    if (!result.ok) setMessage({ ok: false, text: result.error ?? t('study.summary.sheetFailed') })
+    else if (result.inFolder) setMessage({ ok: true, text: t('study.page.addedAsSheet') })
   }
 
   async function handleDelete() {
@@ -67,20 +69,20 @@ export function StudySummaryPage() {
           className="btn-accent inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
         >
           <Icon name="arrow-down" size={14} />
-          Descargar PDF
+          {t('study.summary.download')}
         </button>
         {doc.subjectId && (
           <button type="button" onClick={saveAsSheet} className={BUTTON}>
             <Icon name="file-text" size={14} />
-            Guardar como hoja
+            {t('study.summary.saveAsSheet')}
           </button>
         )}
         <button type="button" onClick={() => setConfirm(true)} className={`${BUTTON} hover:text-red-300`}>
           <Icon name="trash" size={14} />
-          Borrar
+          {t('study.page.delete')}
         </button>
       </div>
-      <p className="text-xs text-text-muted">Elegí «Guardar como PDF» en el diálogo de impresión.</p>
+      <p className="text-xs text-text-muted">{t('study.summary.pdfHint')}</p>
       {message && (
         <p role={message.ok ? 'status' : 'alert'} className={`text-xs ${message.ok ? 'text-accent-soft' : 'text-red-300'}`}>
           {message.text}
@@ -92,9 +94,9 @@ export function StudySummaryPage() {
       {printing && <SummaryPrint doc={printing} />}
       <ConfirmDialog
         open={confirm}
-        title="Borrar resumen"
-        message="¿Borrar este resumen? No se puede deshacer."
-        confirmLabel="Borrar"
+        title={t('study.page.deleteSummaryTitle')}
+        message={t('study.page.deleteSummaryMessage')}
+        confirmLabel={t('study.page.delete')}
         onConfirm={handleDelete}
         onCancel={() => setConfirm(false)}
       />

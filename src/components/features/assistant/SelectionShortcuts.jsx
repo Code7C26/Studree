@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SHORTCUTS } from '../../../lib/assistant/shortcuts.js'
+import { SHORTCUTS, shortcutName } from '../../../lib/assistant/shortcuts.js'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /** Separación (px) entre la barra y el texto seleccionado / los bordes de la ventana. */
 const GAP = 8
@@ -23,6 +24,7 @@ const BUTTON =
  * @param {(id: string) => void} props.onPick
  */
 export function SelectionShortcuts({ editor, hidden = false, onPick }) {
+  const { t } = useI18n()
   const [position, setPosition] = useState(/** @type {{top: number, left: number}|null} */ (null))
   const barRef = useRef(/** @type {HTMLDivElement|null} */ (null))
 
@@ -115,7 +117,7 @@ export function SelectionShortcuts({ editor, hidden = false, onPick }) {
     <div
       ref={barRef}
       role="toolbar"
-      aria-label="Atajos del Brote sobre el texto seleccionado"
+      aria-label={t('assistant.shortcuts.toolbar')}
       onKeyDown={onToolbarKeyDown}
       onBlur={(event) => {
         // El foco salió de la barra a otro lado que no es el editor: se esconde.
@@ -136,7 +138,7 @@ export function SelectionShortcuts({ editor, hidden = false, onPick }) {
           onClick={() => onPick(shortcut.id)}
           className={BUTTON}
         >
-          {shortcut.label}
+          {shortcutName(shortcut.id)}
         </button>
       ))}
     </div>

@@ -7,10 +7,11 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Icon } from '../components/ui/Icon'
 import { studyPath, studyQuizPath, studySummaryPath } from '../constants/routes'
 import { filterBySubject, filterOptions, itemTitle } from '../lib/assistant/studyItems.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 const TABS = [
-  { id: 'resumenes', label: 'Resúmenes' },
-  { id: 'examenes', label: 'Exámenes' },
+  { id: 'resumenes', labelKey: 'study.page.tabSummaries' },
+  { id: 'examenes', labelKey: 'study.page.tabQuizzes' },
 ]
 
 /**
@@ -18,6 +19,7 @@ const TABS = [
  * Ver docs/features/study.md.
  */
 export function StudyPage() {
+  const { t } = useI18n()
   const { summaries, attempts, loading, error, remove } = useStudy()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'examenes' ? 'examenes' : 'resumenes'
@@ -49,40 +51,39 @@ export function StudyPage() {
   }
 
   const kind = isSummaries ? 'summary' : 'quiz'
-  const noun = isSummaries ? 'resumen' : 'examen'
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-display text-3xl font-bold">Mi estudio</h1>
-      <p className="mt-1 text-sm text-text-muted">Los resúmenes y exámenes que hiciste con el Brote.</p>
+      <h1 className="font-display text-3xl font-bold">{t('study.page.title')}</h1>
+      <p className="mt-1 text-sm text-text-muted">{t('study.page.subtitle')}</p>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div role="tablist" aria-label="Mi estudio" className="flex gap-1">
-          {TABS.map((t) => (
+        <div role="tablist" aria-label={t('study.page.title')} className="flex gap-1">
+          {TABS.map((item) => (
             <button
-              key={t.id}
+              key={item.id}
               type="button"
               role="tab"
-              id={`study-tab-${t.id}`}
-              aria-selected={tab === t.id}
+              id={`study-tab-${item.id}`}
+              aria-selected={tab === item.id}
               aria-controls="study-panel"
-              onClick={() => go({ tab: t.id })}
+              onClick={() => go({ tab: item.id })}
               className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                tab === t.id ? 'bg-surface-2 font-medium text-accent-soft' : 'text-text-muted hover:text-text'
+                tab === item.id ? 'bg-surface-2 font-medium text-accent-soft' : 'text-text-muted hover:text-text'
               }`}
             >
-              {t.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </div>
         <label className="flex items-center gap-2 text-sm text-text-muted">
-          Materia
+          {t('study.page.subject')}
           <select
             value={activeSubject ?? ''}
             onChange={(e) => go({ subjectId: e.target.value || null })}
             className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
           >
-            <option value="">Todas las materias</option>
+            <option value="">{t('study.page.allSubjects')}</option>
             {options.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.name}
@@ -100,16 +101,16 @@ export function StudyPage() {
 
       <div role="tabpanel" id="study-panel" aria-labelledby={`study-tab-${tab}`} className="mt-4">
         {loading ? (
-          <p className="mt-10 text-center text-text-muted">Cargando…</p>
+          <p className="mt-10 text-center text-text-muted">{t('common.loading')}</p>
         ) : visible.length === 0 ? (
           <div className="mt-6">
             <EmptyState
               icon={<Icon name="file-text" size={32} className="text-text-muted" />}
-              title={isSummaries ? 'Sin resúmenes' : 'Sin exámenes'}
+              title={isSummaries ? t('study.page.emptySummariesTitle') : t('study.page.emptyQuizzesTitle')}
               message={
                 isSummaries
-                  ? `Todavía no tenés resúmenes${activeSubject ? ' de esta materia' : ''}. Pedile uno al Brote con «Resumir materia».`
-                  : `Todavía no tenés exámenes${activeSubject ? ' de esta materia' : ''}. Pedile uno al Brote con «Tomame examen».`
+                  ? t(activeSubject ? 'study.page.emptySummariesSubject' : 'study.page.emptySummaries')
+                  : t(activeSubject ? 'study.page.emptyQuizzesSubject' : 'study.page.emptyQuizzes')
               }
             />
           </div>
@@ -122,8 +123,8 @@ export function StudyPage() {
                 title={isSummaries ? row.title : itemTitle(row)}
                 subjectName={row.subject?.name}
                 createdAt={row.created_at}
-                detail={isSummaries ? undefined : `${row.correct} de ${row.total}`}
-                deleteLabel={`Borrar ${noun}: ${isSummaries ? row.title : itemTitle(row)}`}
+                detail={isSummaries ? undefined : t('study.page.score', { correct: row.correct, total: row.total })}
+                deleteLabel={t(isSummaries ? 'study.page.deleteSummaryLabel' : 'study.page.deleteQuizLabel', { title: isSummaries ? row.title : itemTitle(row) })}
                 onDelete={() => setConfirm({ kind, id: row.id })}
               />
             ))}
@@ -133,9 +134,9 @@ export function StudyPage() {
 
       <ConfirmDialog
         open={Boolean(confirm)}
-        title={`Borrar ${noun}`}
-        message={`¿Borrar este ${noun}? No se puede deshacer.`}
-        confirmLabel="Borrar"
+        title={t(isSummaries ? 'study.page.deleteSummaryTitle' : 'study.page.deleteQuizTitle')}
+        message={t(isSummaries ? 'study.page.deleteSummaryMessage' : 'study.page.deleteQuizMessage')}
+        confirmLabel={t('study.page.delete')}
         onConfirm={handleConfirm}
         onCancel={() => setConfirm(null)}
       />

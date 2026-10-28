@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MAX_MESSAGE } from '../../../lib/assistant/requestBuilder.js'
 import { Icon } from '../../ui/Icon'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /** Botón secundario de la tarjeta (Descartar, Seguir en el chat, Responder). */
 const SECONDARY =
@@ -35,6 +36,7 @@ function lastReplyText(replies) {
  * @param {() => void} [props.onEscape]  Después de Esc, ✕, Descartar o Agregar: devuelve el foco al editor de la hoja.
  */
 export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinue, onAnswer, onEscape }) {
+  const { t } = useI18n()
   const { label, replies, busy, status, error, notice, proposal, external, canAnswer } = view
   const [draft, setDraft] = useState('')
   // Lectores de pantalla: se anuncia la respuesta al terminar, no letra por letra.
@@ -63,7 +65,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
     <div
       ref={rootRef}
       role="region"
-      aria-label="Respuesta del Brote"
+      aria-label={t('assistant.inline.region')}
       aria-busy={busy}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.nativeEvent.isComposing) return
@@ -77,9 +79,9 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
     >
       <div className="mb-2 flex items-center gap-2">
         <Icon name="sparkles" size={14} className="shrink-0 text-accent-soft" />
-        <span className="font-semibold text-accent-soft">Brote · {label}</span>
+        <span className="font-semibold text-accent-soft">{t('assistant.inline.title', { label })}</span>
         {external && (
-          <span className="rounded-full border border-warn/40 px-2 py-0.5 text-xs text-warn">Con conocimiento externo</span>
+          <span className="rounded-full border border-warn/40 px-2 py-0.5 text-xs text-warn">{t('assistant.inline.external')}</span>
         )}
         <button
           type="button"
@@ -87,7 +89,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
             onClose()
             onEscape?.()
           }}
-          aria-label="Cerrar la respuesta del Brote"
+          aria-label={t('assistant.inline.close')}
           className="ml-auto rounded p-1 text-text-muted transition-colors hover:text-text"
         >
           <Icon name="close" size={14} />
@@ -98,7 +100,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
         {replies.map((message, index) =>
           message.role === 'user' ? (
             <div key={index} className="ml-6 whitespace-pre-wrap break-words rounded-lg bg-surface-2 px-2.5 py-1.5">
-              <span className="sr-only">Vos: </span>
+              <span className="sr-only">{t('assistant.inline.you')}</span>
               {message.text}
             </div>
           ) : (
@@ -108,7 +110,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
           ),
         )}
 
-        {busy && <div className="text-xs text-text-muted">{status ?? 'Pensando…'}</div>}
+        {busy && <div className="text-xs text-text-muted">{status ?? t('assistant.chat.thinking')}</div>}
 
         {notice && (
           <div role="status" className="rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-text-muted">
@@ -123,7 +125,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
 
         {proposal && (
           <div className="max-h-60 overflow-y-auto whitespace-pre-wrap break-words rounded-md border-l-2 border-accent bg-accent/10 px-2.5 py-1.5">
-            <span className="sr-only">Texto propuesto para la hoja: </span>
+            <span className="sr-only">{t('assistant.inline.proposed')}</span>
             {proposal.markdown}
           </div>
         )}
@@ -138,7 +140,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
           }}
         >
           <label className="flex flex-1 flex-col gap-1 text-xs text-text-muted">
-            Tu respuesta
+            {t('assistant.inline.yourAnswer')}
             <textarea
               rows={2}
               maxLength={MAX_MESSAGE}
@@ -154,7 +156,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
             />
           </label>
           <button type="submit" disabled={!draft.trim()} className="btn-accent px-3 py-1 text-sm disabled:opacity-50">
-            Responder
+            {t('assistant.inline.answer')}
           </button>
         </form>
       )}
@@ -170,7 +172,7 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
               }}
               className="btn-accent px-3 py-1 text-sm"
             >
-              Agregar a la hoja
+              {t('assistant.inline.add')}
             </button>
             <button
               type="button"
@@ -180,12 +182,12 @@ export function InlineAnswerCard({ view, onClose, onAccept, onDiscard, onContinu
               }}
               className={SECONDARY}
             >
-              Descartar
+              {t('assistant.inline.discard')}
             </button>
           </>
         )}
         <button type="button" onClick={onContinue} disabled={busy} className={SECONDARY}>
-          Seguir en el chat
+          {t('assistant.inline.continueChat')}
         </button>
       </div>
 

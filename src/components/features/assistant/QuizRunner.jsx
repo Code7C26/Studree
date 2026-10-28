@@ -4,11 +4,12 @@ import { Icon } from '../../ui/Icon'
 import { studyQuizPath } from '../../../constants/routes'
 import { canRetrySave } from '../../../lib/assistant/quizSession.js'
 import { QuizRecordView } from '../study/QuizRecordView'
+import { useI18n } from '../../../hooks/useI18n.js'
 
-const TYPE_LABEL = { mcq: 'Opción múltiple', tf: 'Verdadero o falso', open: 'Desarrollo' }
+const TYPE_LABEL_KEY = { mcq: 'assistant.quiz.typeMcq', tf: 'assistant.quiz.typeTf', open: 'assistant.quiz.typeOpen' }
 const TF_OPTIONS = [
-  { value: true, label: 'Verdadero' },
-  { value: false, label: 'Falso' },
+  { value: true, labelKey: 'assistant.quiz.true' },
+  { value: false, labelKey: 'assistant.quiz.false' },
 ]
 const BUTTON = 'rounded-lg border border-border px-3 py-1 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-50'
 
@@ -42,6 +43,7 @@ function isAnswered(question, value) {
  * @param {() => void} props.onRetrySave  Reintentar el guardado del resultado.
  */
 export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard, onRetrySave }) {
+  const { t } = useI18n()
   const { questions } = session
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState(/** @type {Record<string, number|boolean|string>} */ ({}))
@@ -82,7 +84,7 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
         <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
           {ungraded > 0 && (
             <p className="text-xs text-text-muted">
-              {ungraded === 1 ? 'Una pregunta de desarrollo no se pudo corregir' : `${ungraded} preguntas de desarrollo no se pudieron corregir`} y no cuenta en el puntaje.
+              {t('assistant.quiz.ungraded', { count: ungraded })}
             </p>
           )}
           {outcome.gradeError && (
@@ -92,17 +94,17 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
           )}
           {outcome.saveError && (
             <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-red-300">
-              <span>{outcome.attemptId ? outcome.saveError : `No se pudo guardar el resultado: ${outcome.saveError}`}</span>
+              <span>{outcome.attemptId ? outcome.saveError : t('assistant.quiz.saveFailed', { error: outcome.saveError })}</span>
               {retry && (
                 <button type="button" onClick={onRetrySave} className={`${BUTTON} ml-auto`}>
-                  Reintentar
+                  {t('assistant.quiz.retry')}
                 </button>
               )}
             </div>
           )}
           {!outcome.saveError && outcome.savedTopics && (
             <p className="text-xs text-text-muted">
-              {session.isReview ? 'Actualicé tus temas flojos.' : 'Guardé lo que fallaste para el Repaso de errores.'}
+              {session.isReview ? t('assistant.quiz.topicsUpdated') : t('assistant.quiz.topicsSaved')}
             </p>
           )}
           <QuizRecordView
@@ -116,11 +118,11 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
         <footer className="flex items-center gap-2 border-t border-border/60 px-5 py-3">
           {outcome.attemptId && (
             <Link to={studyQuizPath(outcome.attemptId)} onClick={onClose} className={BUTTON}>
-              Ver en Mi estudio
+              {t('assistant.quiz.seeInStudy')}
             </Link>
           )}
           <button type="button" onClick={onClose} className="btn-accent ml-auto px-3 py-1 text-sm">
-            Cerrar
+            {t('assistant.quiz.close')}
           </button>
         </footer>
       </>
@@ -142,19 +144,19 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
             onClick={onClose}
             className="ml-auto rounded-lg border border-border px-3 py-1 text-sm text-text-muted transition-colors hover:text-text"
           >
-            Salir
+            {t('assistant.quiz.exit')}
           </button>
           {!grading && (
             <button type="button" onClick={onDiscard} className="rounded-lg border border-border px-3 py-1 text-sm text-text-muted transition-colors hover:text-text">
-              Descartar prueba
+              {t('assistant.quiz.discard')}
             </button>
           )}
         </div>
         <div className="flex items-center gap-3">
           <h3 id="quiz-progress" ref={headingRef} tabIndex={-1} className="text-sm font-medium">
-            Pregunta {index + 1} de {total}
+            {t('assistant.quiz.progress', { current: index + 1, total })}
           </h3>
-          <span className="text-xs text-text-muted">{TYPE_LABEL[question.type]}</span>
+          <span className="text-xs text-text-muted">{t(TYPE_LABEL_KEY[question.type])}</span>
           <div
             role="progressbar"
             aria-labelledby="quiz-progress"
@@ -186,7 +188,7 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
           ))}
         {question.type === 'tf' &&
           TF_OPTIONS.map((option) => (
-            <label key={option.label} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 hover:border-accent/60">
+            <label key={option.labelKey} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 hover:border-accent/60">
               <input
                 type="radio"
                 name={`quiz-${session.key}-${question.id}`}
@@ -194,13 +196,13 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
                 onChange={() => setAnswer(question.id, option.value)}
                 className="accent-accent"
               />
-              {option.label}
+              {t(option.labelKey)}
             </label>
           ))}
         {question.type === 'open' && (
           <>
             <label htmlFor={`quiz-${session.key}-${question.id}`} className="text-xs text-text-muted">
-              Tu respuesta
+              {t('assistant.quiz.yourAnswer')}
             </label>
             <textarea
               id={`quiz-${session.key}-${question.id}`}
@@ -215,28 +217,28 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
 
       <div className="flex items-center gap-2">
         <button type="button" disabled={index === 0 || grading} onClick={() => setIndex((i) => i - 1)} className={BUTTON}>
-          Anterior
+          {t('assistant.quiz.previous')}
         </button>
         {last ? (
           <button type="button" disabled={grading || busy} onClick={finish} className="btn-accent ml-auto inline-flex items-center gap-1 px-3 py-1 text-sm disabled:opacity-50">
             <Icon name="check" size={14} />
-            {grading ? 'Corrigiendo…' : 'Terminar'}
+            {grading ? t('assistant.quiz.grading') : t('assistant.quiz.finish')}
           </button>
         ) : (
           <button type="button" disabled={grading} onClick={() => setIndex((i) => i + 1)} className={`${BUTTON} ml-auto`}>
-            Siguiente
+            {t('assistant.quiz.next')}
           </button>
         )}
       </div>
       {last && pending > 0 && !grading && (
         <p className="text-xs text-text-muted">
-          {pending === 1 ? 'Te queda una pregunta sin responder' : `Te quedan ${pending} preguntas sin responder`}: cuenta como error.
+          {t('assistant.quiz.pending', { count: pending })}
         </p>
       )}
-      {busy && !grading && <p className="text-xs text-text-muted">Esperá a que el Brote termine para corregir.</p>}
+      {busy && !grading && <p className="text-xs text-text-muted">{t('assistant.quiz.waitForBrote')}</p>}
       {grading && (
         <p role="status" className="text-xs text-text-muted">
-          Corrigiendo tus respuestas…
+          {t('assistant.quiz.gradingStatus')}
         </p>
       )}
       </div>

@@ -7,6 +7,7 @@ import { useSaveSummaryAsSheet } from '../../../hooks/useSaveSummaryAsSheet.js'
 import { SummaryDocument } from '../study/SummaryDocument'
 import { SummaryPrint } from '../study/SummaryPrint'
 import { QuizWindow } from './QuizWindow'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 const BUTTON = 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-50'
 
@@ -22,6 +23,7 @@ const BUTTON = 'inline-flex items-center gap-1.5 rounded-lg border border-border
  * @param {() => void} props.onRetry  Reintenta el guardado en Mi estudio.
  */
 export function SummaryWindow({ summaryDoc, open, onClose, onRetry }) {
+  const { t } = useI18n()
   const { doc, status, savedId, saveError } = summaryDoc
   const { printing, print } = usePrintSummary()
   const { save } = useSaveSummaryAsSheet()
@@ -36,7 +38,7 @@ export function SummaryWindow({ summaryDoc, open, onClose, onRetry }) {
   const saveAsSheet = () => {
     const result = save(doc)
     if (!result.ok) {
-      setSheetMessage({ ok: false, text: result.error ?? 'No se pudo agregar el resumen como hoja.' })
+      setSheetMessage({ ok: false, text: result.error ?? t('study.summary.sheetFailed') })
       return
     }
     // Ya está agregada (en la carpeta abierta o al navegar a ella): se cierra la ventana,
@@ -55,34 +57,34 @@ export function SummaryWindow({ summaryDoc, open, onClose, onRetry }) {
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => print(doc)} disabled={Boolean(printing)} className="btn-accent inline-flex items-center gap-1.5 px-3 py-1.5 text-sm">
               <Icon name="arrow-down" size={14} />
-              Descargar PDF
+              {t('study.summary.download')}
             </button>
             {doc.subjectId && (
               <button type="button" onClick={saveAsSheet} className={BUTTON}>
                 <Icon name="file-text" size={14} />
-                Guardar como hoja
+                {t('study.summary.saveAsSheet')}
               </button>
             )}
             {savedId && (
               <Link to={studySummaryPath(savedId)} onClick={onClose} className={BUTTON}>
-                Ver en Mi estudio
+                {t('study.summary.seeInStudy')}
               </Link>
             )}
             <button ref={closeRef} type="button" onClick={onClose} className={`${BUTTON} ml-auto`}>
-              Cerrar
+              {t('study.summary.close')}
             </button>
           </div>
-          <p className="text-xs text-text-muted">Elegí «Guardar como PDF» en el diálogo de impresión.</p>
+          <p className="text-xs text-text-muted">{t('study.summary.pdfHint')}</p>
           {status === 'saving' && (
             <p role="status" className="text-xs text-text-muted">
-              Guardando…
+              {t('study.summary.saving')}
             </p>
           )}
           {status === 'error' && (
             <p role="alert" className="flex flex-wrap items-center gap-2 text-xs text-red-300">
-              {saveError ?? 'No se pudo guardar el resumen.'}
+              {saveError ?? t('study.summary.saveFailed')}
               <button type="button" onClick={onRetry} className={BUTTON}>
-                Reintentar
+                {t('study.summary.retry')}
               </button>
             </p>
           )}

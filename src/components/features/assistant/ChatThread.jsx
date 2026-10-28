@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { threadItems } from '../../../lib/assistant/chatState.js'
 import { ProposalCard } from './ProposalCard'
-
-/** Período legible del uso que informa el servidor. */
-const PERIOD = { day: 'hoy', month: 'este mes' }
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * Conversación con el Brote: mensajes (texto plano), estado, propuestas,
@@ -18,6 +16,7 @@ const PERIOD = { day: 'hoy', month: 'este mes' }
  * @param {() => void} [props.onOpenSummary]  Abre la ventana del resumen.
  */
 export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQuiz, onOpenSummary }) {
+  const { t } = useI18n()
   const endRef = useRef(/** @type {HTMLDivElement|null} */ (null))
   const { messages, proposals, busy, status, error, notice, truncated, usage, quiz, summary } = state
 
@@ -26,10 +25,10 @@ export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQu
   }, [messages, proposals, status, error, notice, quiz, summary])
 
   return (
-    <div role="log" aria-live="polite" aria-busy={busy} aria-label="Conversación con el Brote" className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+    <div role="log" aria-live="polite" aria-busy={busy} aria-label={t('assistant.chat.log')} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
       {messages.length === 0 && !error && !notice && (
         <p className="text-sm text-text-muted">
-          Preguntame algo de tus apuntes, o elegí una acción de arriba. Nunca cambio una hoja sin que lo aceptes.
+          {t('assistant.chat.empty')}
         </p>
       )}
 
@@ -45,31 +44,31 @@ export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQu
               message.role === 'user' ? 'ml-8 bg-surface-2 text-text' : 'mr-4 bg-surface-lit text-text'
             }`}
           >
-            <span className="sr-only">{message.role === 'user' ? 'Vos: ' : 'El Brote: '}</span>
+            <span className="sr-only">{message.role === 'user' ? t('assistant.chat.you') : t('assistant.chat.brote')}</span>
             {message.text}
           </p>
         )
       })}
 
-      {busy && <p className="text-xs text-text-muted">{status ?? 'Pensando…'}</p>}
-      {!busy && truncated && <p className="text-xs text-warn">La respuesta se cortó.</p>}
+      {busy && <p className="text-xs text-text-muted">{status ?? t('assistant.chat.thinking')}</p>}
+      {!busy && truncated && <p className="text-xs text-warn">{t('assistant.chat.truncated')}</p>}
 
       {quizLine && onOpenQuiz && (
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
           <p className="font-medium">
-            {quizLine.done ? `Tu examen: ${quizLine.correct} de ${quizLine.total}` : 'Tenés una prueba abierta'}
+            {quizLine.done ? t('assistant.chat.quizDone', { correct: quizLine.correct, total: quizLine.total }) : t('assistant.chat.quizOpen')}
           </p>
           <button type="button" onClick={onOpenQuiz} className="btn-accent ml-auto px-3 py-1 text-sm">
-            {quizLine.done ? 'Ver resultado' : 'Seguir'}
+            {quizLine.done ? t('assistant.chat.quizSeeResult') : t('assistant.chat.quizContinue')}
           </button>
         </div>
       )}
 
       {summary && onOpenSummary && (
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
-          <p className="min-w-0 break-words font-medium">Tu resumen «{summary.title}» está listo</p>
+          <p className="min-w-0 break-words font-medium">{t('assistant.chat.summaryReady', { title: summary.title })}</p>
           <button type="button" onClick={onOpenSummary} className="btn-accent ml-auto shrink-0 px-3 py-1 text-sm">
-            Abrir
+            {t('assistant.chat.open')}
           </button>
         </div>
       )}
@@ -88,7 +87,11 @@ export function ChatThread({ state, onAccept, onReject, quiz: quizLine, onOpenQu
 
       {usage && Number.isFinite(usage.used) && Number.isFinite(usage.max) && (
         <p className="text-xs text-text-muted">
-          Usaste {usage.used} de {usage.max} {PERIOD[usage.period] ?? ''}.
+          {t('assistant.chat.usage', {
+            used: usage.used,
+            max: usage.max,
+            period: usage.period === 'day' || usage.period === 'month' ? t(`assistant.chat.period.${usage.period}`) : '',
+          })}
         </p>
       )}
       <div ref={endRef} />
