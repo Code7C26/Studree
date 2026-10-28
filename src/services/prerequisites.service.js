@@ -13,6 +13,7 @@ import { cacheKey, readCache, writeCache } from './cache.service.js'
 import { wouldCreateCycle, formatCycle } from '../lib/graph/validateDag.js'
 import { PREREQUISITE_KIND_VALUES } from '../constants/prerequisiteKinds.js'
 import { generateId } from '../lib/id.js'
+import { t } from '../lib/i18n/index.js'
 
 const crud = createCrudService({ table: 'prerequisites', orderBy: 'id' })
 
@@ -48,7 +49,7 @@ export const prerequisitesService = {
       if (error) {
         return {
           data: readCache(key, []),
-          error: translateError(error, 'No se pudieron cargar las correlativas.'),
+          error: translateError(error, t('careerMap.errors.loadPrerequisites')),
         }
       }
 
@@ -57,7 +58,7 @@ export const prerequisitesService = {
     } catch (error) {
       return {
         data: readCache(key, []),
-        error: translateError(error, 'No se pudieron cargar las correlativas.'),
+        error: translateError(error, t('careerMap.errors.loadPrerequisites')),
       }
     }
   },
@@ -77,12 +78,12 @@ export const prerequisitesService = {
     if (!PREREQUISITE_KIND_VALUES.includes(kind)) {
       return {
         data: null,
-        error: `Tipo de correlativa inválido: "${kind}".`,
+        error: t('careerMap.errors.invalidKind', { kind }),
       }
     }
 
     if (subject_id === requires_id) {
-      return { data: null, error: 'Una materia no puede ser correlativa de sí misma.' }
+      return { data: null, error: t('careerMap.errors.selfPrerequisite') }
     }
 
     // Solo las correlativas del MISMO tipo forman el grafo a validar: el circuito
@@ -93,7 +94,7 @@ export const prerequisitesService = {
     if (cycle) {
       return {
         data: null,
-        error: `Esa correlativa crearía un ciclo: ${formatCycle(cycle, namesById)}. Ninguna de esas materias se podría cursar nunca.`,
+        error: t('careerMap.errors.cycle', { cycle: formatCycle(cycle, namesById) }),
       }
     }
 
@@ -112,14 +113,14 @@ export const prerequisitesService = {
 
       if (error) {
         writeCache(key, previous)
-        return { data: null, error: translateError(error, 'No se pudo agregar la correlativa.') }
+        return { data: null, error: translateError(error, t('careerMap.errors.addPrerequisite')) }
       }
 
       writeCache(key, [...previous, data])
       return { data, error: null }
     } catch (error) {
       writeCache(key, previous)
-      return { data: null, error: translateError(error, 'No se pudo agregar la correlativa.') }
+      return { data: null, error: translateError(error, t('careerMap.errors.addPrerequisite')) }
     }
   },
 }

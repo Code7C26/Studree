@@ -27,6 +27,7 @@ import { computeGridLayout, findFreeSpot, resolvePosition } from '../../../lib/g
 import { computeSubjectStates, describeBlockReason } from '../../../lib/graph/subjectStatus.js'
 import { PREREQUISITE_KIND_META, PREREQUISITE_KINDS } from '../../../constants/prerequisiteKinds.js'
 import { useFlowCanvas } from '../../../hooks/useFlowCanvas.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 // Referencia estable: React Flow recrea todos los nodos si `nodeTypes` cambia de identidad.
 const nodeTypes = { subject: SubjectNode }
@@ -72,6 +73,7 @@ function CareerMapCanvas({
   onMoveSubjects,
   onResetLayout,
 }) {
+  const { t, lang } = useI18n()
   const wrapperRef = useRef(null)
   const canvas = useFlowCanvas({ wrapperRef, onMove: onMoveSubjects })
   // El "+" de cada nodo necesita leer posiciones vivas de React Flow; va por un
@@ -109,7 +111,7 @@ function CareerMapCanvas({
             subject,
             saved: subject.pos_x != null && subject.pos_y != null,
             status: state.status,
-            blockReason: describeBlockReason(state),
+            blockReason: describeBlockReason(state, lang),
             usesPrerequisites,
             onNavigate: () => onNavigateSubject(subject.id),
             onChangeStatus: (status) => onChangeStatus(subject.id, status),
@@ -119,7 +121,7 @@ function CareerMapCanvas({
           },
         }
       }),
-    [subjects, states, autoPositions, usesPrerequisites, onNavigateSubject, onChangeStatus, onEditPrerequisites, onDeleteSubject],
+    [subjects, states, autoPositions, usesPrerequisites, onNavigateSubject, onChangeStatus, onEditPrerequisites, onDeleteSubject, lang],
   )
 
   const computedEdges = useMemo(() => {
@@ -204,23 +206,23 @@ function CareerMapCanvas({
 
         <Panel position="top-left" className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={requestCreateAtCenter} className="btn-accent px-3 py-1.5 text-sm shadow">
-            ＋ Materia
+            ＋ {t('careerMap.map.addSubject')}
           </button>
           {hasManualLayout && (
             <button
               type="button"
               onClick={onResetLayout}
               className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-muted shadow transition-colors hover:text-text"
-              title="Volver al acomodo automático"
+              title={t('careerMap.map.resetTitle')}
             >
-              ⟲ Reordenar
+              ⟲ {t('careerMap.map.reset')}
             </button>
           )}
         </Panel>
 
         <Panel position="bottom-center" className="!mb-3 hidden rounded-lg bg-surface/90 px-3 py-1.5 text-[11px] text-text-muted shadow md:block">
-          Doble click en el lienzo: nueva materia · Arrastrá para mover
-          {usesPrerequisites && ' · Uní los puntos para crear una correlativa · Click en una flecha para quitarla'}
+          {t('careerMap.map.hint')}
+          {usesPrerequisites && t('careerMap.map.hintPrereq')}
         </Panel>
       </ReactFlow>
 
@@ -234,8 +236,8 @@ function CareerMapCanvas({
             <span className="text-3xl" aria-hidden="true">
               ＋
             </span>
-            <span className="text-sm font-medium">Agregar primera materia</span>
-            <span className="text-[11px]">o hacé doble click en el lienzo</span>
+            <span className="text-sm font-medium">{t('careerMap.map.addFirst')}</span>
+            <span className="text-[11px]">{t('careerMap.map.orDoubleClick')}</span>
           </button>
         </div>
       )}

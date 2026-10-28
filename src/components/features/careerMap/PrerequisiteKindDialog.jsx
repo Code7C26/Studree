@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import { PREREQUISITE_KINDS, PREREQUISITE_KIND_META } from '../../../constants/prerequisiteKinds.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -15,6 +16,7 @@ import { PREREQUISITE_KINDS, PREREQUISITE_KIND_META } from '../../../constants/p
  * @param {() => void} props.onClose
  */
 export function PrerequisiteKindDialog({ connection, onConfirm, onClose }) {
+  const { t } = useI18n()
   const [kind, setKind] = useState(PREREQUISITE_KINDS.cursar)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -36,12 +38,12 @@ export function PrerequisiteKindDialog({ connection, onConfirm, onClose }) {
   }
 
   return (
-    <Modal open={connection != null} onClose={onClose} title="Nueva correlativa">
+    <Modal open={connection != null} onClose={onClose} title={t('careerMap.kindDialog.title')}>
       {connection && (
         <div className="space-y-4">
           <p className="text-sm">
             <span className="font-semibold">{connection.subject.name}</span>
-            <span className="text-text-muted"> requiere </span>
+            <span className="text-text-muted"> {t('careerMap.kindDialog.requires')} </span>
             <span className="font-semibold">{connection.requires.name}</span>
           </p>
 
@@ -55,8 +57,8 @@ export function PrerequisiteKindDialog({ connection, onConfirm, onClose }) {
               >
                 <input type="radio" name="prereq-kind" className="mt-1" checked={kind === value} onChange={() => setKind(value)} />
                 <span>
-                  <span className="block text-sm font-medium">{PREREQUISITE_KIND_META[value].label}</span>
-                  <span className="block text-xs text-text-muted">{PREREQUISITE_KIND_META[value].help}</span>
+                  <span className="block text-sm font-medium">{t(PREREQUISITE_KIND_META[value].labelKey)}</span>
+                  <span className="block text-xs text-text-muted">{t(PREREQUISITE_KIND_META[value].helpKey)}</span>
                 </span>
               </label>
             ))}
@@ -70,10 +72,10 @@ export function PrerequisiteKindDialog({ connection, onConfirm, onClose }) {
 
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={onClose}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleConfirm} disabled={saving}>
-              {saving ? 'Guardando…' : 'Crear correlativa'}
+              {saving ? t('common.saving') : t('careerMap.kindDialog.create')}
             </Button>
           </div>
         </div>

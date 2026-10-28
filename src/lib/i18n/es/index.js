@@ -1,4 +1,6 @@
 import auth from './auth.js'
+import careerMap from './careerMap.js'
+import careers from './careers.js'
 import common from './common.js'
 import dates from './dates.js'
 import editor from './editor.js'
@@ -12,4 +14,4 @@ import templates from './templates.js'
 import trash from './trash.js'
 
 /** Diccionario en castellano rioplatense: un archivo por área (ver docs/features/i18n.md). */
-export default { auth, common, dates, editor, errors, folder, home, importExport, profile, shell, templates, trash }
+export default { auth, careerMap, careers, common, dates, editor, errors, folder, home, importExport, profile, shell, templates, trash }

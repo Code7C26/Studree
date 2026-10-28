@@ -12,10 +12,7 @@ import { scanSourceTree } from './scanSpanish.js'
  */
 export const PENDING = [
   'src/components/features/assistant/',
-  'src/components/features/careerMap/',
-  'src/components/features/careers/',
   'src/components/features/study/',
-  'src/constants/',
   'src/hooks/',
   'src/lib/assistant/',
   'src/pages/',

@@ -59,3 +59,9 @@ activar, reaparecen.
 
 - [ ] Reordenar carreras (drag).
 - [ ] Ícono elegible por carrera.
+
+## Idioma (Fase 18)
+
+El panel de carreras, las tarjetas y el formulario salen del diccionario `careers` (castellano / inglés,
+ver `docs/features/i18n.md`). Los nombres de carreras y materias son contenido del usuario y no se traducen.
+El tipo "Carrera con correlativas" / "Curso u organizador" sigue guardándose como `uses_prerequisites`.

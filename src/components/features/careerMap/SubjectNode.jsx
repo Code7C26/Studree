@@ -8,6 +8,7 @@
 
 import { Handle, Position } from '@xyflow/react'
 import { STATUS_STYLES, SUBJECT_STATUS_VALUES } from '../../../constants/subjectStatus.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /** Clases de los puntos de conexión: visibles solo si la carrera usa correlativas. */
 const handleClass = (connectable) =>
@@ -30,6 +31,7 @@ const handleClass = (connectable) =>
  * @param {boolean} [props.selected]
  */
 export function SubjectNode({ data, selected }) {
+  const { t } = useI18n()
   const { subject, status, blockReason, usesPrerequisites, onNavigate, onChangeStatus, onEditPrerequisites, onDelete, onAddNext } =
     data
   const style = STATUS_STYLES[status]
@@ -56,14 +58,14 @@ export function SubjectNode({ data, selected }) {
           type="button"
           onClick={onNavigate}
           className="nodrag min-w-0 flex-1 text-left text-sm font-semibold leading-snug hover:text-accent"
-          title={`Abrir ${subject.name}`}
+          title={t('careerMap.node.open', { name: subject.name })}
         >
           <span className="line-clamp-2">{subject.name}</span>
         </button>
         <button
           type="button"
           onClick={onDelete}
-          aria-label={`Eliminar ${subject.name}`}
+          aria-label={t('careerMap.node.delete', { name: subject.name })}
           className="nodrag shrink-0 rounded p-0.5 text-text-muted opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100 focus:opacity-100"
         >
           ✕
@@ -72,17 +74,17 @@ export function SubjectNode({ data, selected }) {
 
       <div className="mt-2 flex items-center gap-1.5">
         <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${style.chip}`}>
-          <span aria-hidden="true">{style.icon}</span> {style.label}
+          <span aria-hidden="true">{style.icon}</span> {t(style.labelKey)}
         </span>
         <select
           value={subject.status}
           onChange={(event) => onChangeStatus(event.target.value)}
-          aria-label="Cambiar estado"
+          aria-label={t('careerMap.node.changeStatus')}
           className="nodrag min-w-0 flex-1 rounded border border-border bg-bg px-1 py-0.5 text-[11px] text-text-muted outline-none transition-colors focus:border-accent"
         >
           {SUBJECT_STATUS_VALUES.map((value) => (
             <option key={value} value={value}>
-              {STATUS_STYLES[value].label}
+              {t(STATUS_STYLES[value].labelKey)}
             </option>
           ))}
         </select>
@@ -91,7 +93,7 @@ export function SubjectNode({ data, selected }) {
             type="button"
             onClick={onEditPrerequisites}
             className="nodrag shrink-0 rounded px-1.5 py-0.5 text-[11px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-            title="Editar correlativas"
+            title={t('careerMap.node.editPrereq')}
           >
             🔗
           </button>
@@ -104,8 +106,8 @@ export function SubjectNode({ data, selected }) {
       <button
         type="button"
         onClick={onAddNext}
-        aria-label={`Agregar materia después de ${subject.name}`}
-        title={usesPrerequisites ? 'Nueva materia que requiere esta' : 'Nueva materia'}
+        aria-label={t('careerMap.node.addAfter', { name: subject.name })}
+        title={usesPrerequisites ? t('careerMap.node.newRequiring') : t('careerMap.node.newSubject')}
         className="nodrag absolute -right-11 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface-2 text-text-muted opacity-0 shadow transition-all hover:border-accent hover:text-accent group-hover:opacity-100 focus:opacity-100"
       >
         +

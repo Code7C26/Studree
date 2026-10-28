@@ -13,6 +13,7 @@
 
 import { SUBJECT_STATUS, BLOCKED_STATUS } from '../../constants/subjectStatus.js'
 import { PREREQUISITE_KINDS } from '../../constants/prerequisiteKinds.js'
+import { getLang, tIn } from '../i18n/index.js'
 
 /**
  * Información derivada de una materia.
@@ -80,12 +81,13 @@ export function computeSubjectStates(subjects, prerequisites) {
  * Texto que explica por qué una materia está bloqueada.
  * Un candado sin decir qué falta no es accionable.
  * @param {SubjectState} state
+ * @param {string} [lang]
  * @returns {string|null} null si no está bloqueada.
  */
-export function describeBlockReason(state) {
+export function describeBlockReason(state, lang = getLang()) {
   if (!state.blocked || state.missingToEnroll.length === 0) return null
   const names = state.missingToEnroll.map((subject) => subject.name).join(', ')
-  return `Bloqueada — falta aprobar: ${names}`
+  return tIn(lang, 'careerMap.blockReason', { names })
 }
 
 /**

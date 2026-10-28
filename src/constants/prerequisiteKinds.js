@@ -15,19 +15,19 @@ export const PREREQUISITE_KINDS = Object.freeze({
 export const PREREQUISITE_KIND_VALUES = Object.freeze(Object.values(PREREQUISITE_KINDS))
 
 /**
- * Etiquetas y estilo de arista por tipo.
+ * Claves de las etiquetas (diccionario `careerMap.kinds`) y estilo de arista por tipo.
  * Solo las de `cursar` participan del cálculo de `bloqueada`.
- * @type {Readonly<Record<import('../types/models.js').PrerequisiteKind, {label: string, help: string, dashed: boolean}>>}
+ * @type {Readonly<Record<import('../types/models.js').PrerequisiteKind, {labelKey: string, helpKey: string, dashed: boolean}>>}
  */
 export const PREREQUISITE_KIND_META = Object.freeze({
   cursar: {
-    label: 'Para cursar',
-    help: 'Debe estar aprobada para poder cursar esta materia.',
+    labelKey: 'careerMap.kinds.cursar.label',
+    helpKey: 'careerMap.kinds.cursar.help',
     dashed: false,
   },
   rendir: {
-    label: 'Para rendir',
-    help: 'Debe estar aprobada para poder rendir el final de esta materia.',
+    labelKey: 'careerMap.kinds.rendir.label',
+    helpKey: 'careerMap.kinds.rendir.help',
     dashed: true,
   },
 })

@@ -8,20 +8,21 @@ import { Button } from '../../ui/Button'
 import { TextField } from '../../ui/TextField'
 import { ColorPicker } from '../../ui/ColorPicker'
 import { DEFAULT_COLOR } from '../../../constants/palette.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /** Las dos variantes de "carrera" (ADR-013). */
 const KIND_OPTIONS = [
   {
     value: true,
     icon: '🔗',
-    title: 'Carrera con correlativas',
-    description: 'Materias con requisitos entre sí. Se ven bloqueos y el camino a seguir.',
+    titleKey: 'careers.form.kindPrereqTitle',
+    descriptionKey: 'careers.form.kindPrereqDesc',
   },
   {
     value: false,
     icon: '📚',
-    title: 'Curso u organizador',
-    description: 'Materias sueltas, sin requisitos. Ideal para cursos, capacitaciones o notas.',
+    titleKey: 'careers.form.kindCourseTitle',
+    descriptionKey: 'careers.form.kindCourseDesc',
   },
 ]
 
@@ -33,6 +34,7 @@ const KIND_OPTIONS = [
  * @param {(values: {name: string, color: string, uses_prerequisites: boolean}) => Promise<string|null>} props.onSubmit
  */
 export function CareerFormModal({ open, onClose, career = null, onSubmit }) {
+  const { t } = useI18n()
   const [name, setName] = useState('')
   const [color, setColor] = useState(DEFAULT_COLOR)
   const [usesPrerequisites, setUsesPrerequisites] = useState(true)
@@ -60,19 +62,19 @@ export function CareerFormModal({ open, onClose, career = null, onSubmit }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={career ? 'Editar carrera' : 'Nueva carrera o curso'}>
+    <Modal open={open} onClose={onClose} title={career ? t('careers.form.editTitle') : t('careers.form.newTitle')}>
       <form onSubmit={handleSubmit} className="space-y-5">
         <TextField
           id="career-form-name"
-          label="Nombre"
+          label={t('careers.form.nameLabel')}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Ej. Licenciatura en Biología"
+          placeholder={t('careers.form.namePlaceholder')}
           autoFocus
         />
 
         <fieldset>
-          <legend className="mb-2 text-sm text-text-muted">Tipo</legend>
+          <legend className="mb-2 text-sm text-text-muted">{t('careers.form.typeLegend')}</legend>
           <div className="grid gap-2">
             {KIND_OPTIONS.map((option) => {
               const selected = usesPrerequisites === option.value
@@ -94,8 +96,8 @@ export function CareerFormModal({ open, onClose, career = null, onSubmit }) {
                     {option.icon}
                   </span>
                   <span>
-                    <span className="block text-sm font-medium">{option.title}</span>
-                    <span className="block text-xs text-text-muted">{option.description}</span>
+                    <span className="block text-sm font-medium">{t(option.titleKey)}</span>
+                    <span className="block text-xs text-text-muted">{t(option.descriptionKey)}</span>
                   </span>
                 </label>
               )
@@ -103,13 +105,13 @@ export function CareerFormModal({ open, onClose, career = null, onSubmit }) {
           </div>
           {career && career.uses_prerequisites !== false && !usesPrerequisites && (
             <p className="mt-2 text-xs text-text-muted">
-              Las correlativas que ya cargaste no se borran: solo se ocultan. Si volvés a activarlas, reaparecen.
+              {t('careers.form.hiddenNote')}
             </p>
           )}
         </fieldset>
 
         <div>
-          <span className="mb-2 block text-sm text-text-muted">Color</span>
+          <span className="mb-2 block text-sm text-text-muted">{t('careers.form.colorLabel')}</span>
           <ColorPicker value={color} onChange={setColor} />
         </div>
 
@@ -121,10 +123,10 @@ export function CareerFormModal({ open, onClose, career = null, onSubmit }) {
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={saving || !name.trim()}>
-            {saving ? 'Guardando…' : career ? 'Guardar' : 'Crear'}
+            {saving ? t('common.saving') : career ? t('common.save') : t('common.create')}
           </Button>
         </div>
       </form>

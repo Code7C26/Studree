@@ -1,6 +1,7 @@
 /** Papelera: página, filas y frases de confirmación. */
 export default {
   title: 'Papelera',
+  movedItem: '"{name}" se movió a la papelera',
   help: 'Lo que borrás queda acá {days} días. Después se borra solo, con sus adjuntos.',
   emptyAll: 'Vaciar papelera',
   emptyTitle: 'La papelera está vacía',

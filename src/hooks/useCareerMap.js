@@ -12,6 +12,7 @@ import { prerequisitesService } from '../services/prerequisites.service.js'
 import { trashService } from '../services/trash.service.js'
 import { PREREQUISITE_KINDS } from '../constants/prerequisiteKinds.js'
 import { onDataChanged } from '../services/dataEvents.js'
+import { t } from '../lib/i18n/index.js'
 
 /**
  * @typedef {Object} CreateSubjectValues
@@ -64,7 +65,7 @@ export function useCareerMap(careerId) {
     const { data: prereqRows, error: prereqError } = await prerequisitesService.listForSubjects(ids)
 
     setCareer(careerRow)
-    setCareerError(careerRow ? null : (getError ?? 'No se encontró la carrera.'))
+    setCareerError(careerRow ? null : (getError ?? t('importExport.export.careerNotFound')))
     setSubjects(subjectRows ?? [])
     setPrerequisites(livePrerequisites(prereqRows ?? [], subjectRows ?? []))
     setError(subjectsError ?? prereqError)

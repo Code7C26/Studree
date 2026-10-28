@@ -1,6 +1,7 @@
 /** Trash: page, rows and confirmation sentences. */
 export default {
   title: 'Trash',
+  movedItem: '“{name}” was moved to the trash',
   help: 'What you delete stays here for {days} days. After that it is deleted automatically, attachments included.',
   emptyAll: 'Empty trash',
   emptyTitle: 'The trash is empty',

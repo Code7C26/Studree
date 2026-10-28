@@ -13,6 +13,7 @@ import { PromptDialog } from '../components/ui/PromptDialog'
 import { ROUTES, subjectFolderPath } from '../constants/routes'
 import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
 import { PREREQUISITE_KIND_META } from '../constants/prerequisiteKinds.js'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * Canvas de materias (+ correlativas, si la carrera las usa) de una carrera.
@@ -21,6 +22,7 @@ import { PREREQUISITE_KIND_META } from '../constants/prerequisiteKinds.js'
 export function CareerMapPage() {
   const { careerId } = useParams()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const {
     career,
     careerError,
@@ -74,7 +76,7 @@ export function CareerMapPage() {
     if (!target) return
     if (target.type === 'subject') {
       const failure = await deleteSubject(target.item.id)
-      if (!failure) setUndo({ message: `"${target.item.name}" se movió a la papelera`, subjectId: target.item.id })
+      if (!failure) setUndo({ message: t('trash.movedItem', { name: target.item.name }), subjectId: target.item.id })
     }
     else await removePrerequisite(target.item.id)
   }
@@ -82,20 +84,24 @@ export function CareerMapPage() {
   function describePendingDelete() {
     if (!pendingDelete) return ''
     if (pendingDelete.type === 'subject') {
-      return `"${pendingDelete.item.name}" se mueve a la papelera con todas sus hojas. Podés restaurarla durante 30 días.`
+      return t('careerMap.page.trashMessage', { name: pendingDelete.item.name })
     }
     const p = pendingDelete.item
-    const subjectName = subjectsById.get(p.subject_id)?.name ?? '¿?'
-    const requiresName = subjectsById.get(p.requires_id)?.name ?? '¿?'
-    return `"${subjectName}" deja de requerir "${requiresName}" (${PREREQUISITE_KIND_META[p.kind].label.toLowerCase()}).`
+    const subjectName = subjectsById.get(p.subject_id)?.name ?? t('careerMap.page.unknown')
+    const requiresName = subjectsById.get(p.requires_id)?.name ?? t('careerMap.page.unknown')
+    return t('careerMap.page.unlinkMessage', {
+      subject: subjectName,
+      requires: requiresName,
+      kind: t(PREREQUISITE_KIND_META[p.kind].labelKey).toLowerCase(),
+    })
   }
 
   if (careerError) {
     return (
       <div>
-        <EmptyState title="Carrera no encontrada" message={careerError} />
+        <EmptyState title={t('careerMap.page.notFound')} message={careerError} />
         <Link to={ROUTES.careers} className="mt-4 inline-block text-sm text-accent hover:underline">
-          ← Volver a mis carreras
+          {t('careerMap.page.backToCareers')}
         </Link>
       </div>
     )
@@ -108,16 +114,16 @@ export function CareerMapPage() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <Link to={ROUTES.careers} className="text-sm text-text-muted hover:text-text">
-            ← Mis carreras
+            {t('careerMap.page.back')}
           </Link>
           <div className="mt-1 flex items-center gap-3">
             {career && <span className="h-6 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: career.color }} aria-hidden="true" />}
-            <h1 className="truncate text-2xl font-bold">{career?.name ?? 'Cargando…'}</h1>
+            <h1 className="truncate text-2xl font-bold">{career?.name ?? t('common.loading')}</h1>
           </div>
           <p className="mt-0.5 text-sm text-text-muted">
             {progress.total > 0
-              ? `${progress.approved}/${progress.total} materias aprobadas (${progress.percent}%)`
-              : 'Todavía no hay materias.'}
+              ? t('careerMap.page.progress', { approved: progress.approved, total: progress.total, percent: progress.percent })
+              : t('careerMap.page.noSubjects')}
           </p>
         </div>
 
@@ -125,7 +131,7 @@ export function CareerMapPage() {
           {career && (
             <label
               className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm"
-              title="Activalo si las materias tienen requisitos entre sí (carrera). Desactivalo para un curso u organizador."
+              title={t('careerMap.page.usesPrereqHint')}
             >
               <input
                 type="checkbox"
@@ -133,11 +139,11 @@ export function CareerMapPage() {
                 checked={usesPrerequisites}
                 onChange={(event) => updateCareer({ uses_prerequisites: event.target.checked })}
               />
-              Usa correlativas
+              {t('careerMap.page.usesPrereq')}
             </label>
           )}
           <Button variant="ghost" onClick={() => setExportOpen(true)}>
-            Exportar
+            {t('careerMap.page.export')}
           </Button>
         </div>
       </div>
@@ -145,7 +151,7 @@ export function CareerMapPage() {
       {error && (
         <p role="alert" className="mt-3 flex items-start justify-between gap-2 rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
           <span>{error}</span>
-          <button type="button" onClick={clearError} aria-label="Cerrar aviso" className="shrink-0">
+          <button type="button" onClick={clearError} aria-label={t('careerMap.page.dismiss')} className="shrink-0">
             ✕
           </button>
         </p>
@@ -153,7 +159,7 @@ export function CareerMapPage() {
 
       <div className="mt-4 min-h-0 flex-1">
         {loading && subjects.length === 0 ? (
-          <p className="mt-8 text-center text-text-muted">Cargando…</p>
+          <p className="mt-8 text-center text-text-muted">{t('common.loading')}</p>
         ) : (
           <CareerMap
             subjects={subjects}
@@ -174,9 +180,9 @@ export function CareerMapPage() {
 
       <PromptDialog
         open={createRequest != null}
-        title={createRequest?.requires ? `Nueva materia después de ${createRequest.requires.name}` : 'Nueva materia'}
-        label="Nombre"
-        placeholder="Ej. Análisis II"
+        title={createRequest?.requires ? t('careerMap.page.newSubjectAfter', { name: createRequest.requires.name }) : t('careerMap.page.newSubject')}
+        label={t('careerMap.page.nameLabel')}
+        placeholder={t('careerMap.page.namePlaceholder')}
         onClose={() => setCreateRequest(null)}
         onSubmit={(name) =>
           createSubject({ name, position: createRequest?.position ?? null, requiresId: createRequest?.requires?.id ?? null })
@@ -184,8 +190,8 @@ export function CareerMapPage() {
       >
         {createRequest?.requires && (
           <p className="text-xs text-text-muted">
-            Va a quedar con <span className="text-text">{createRequest.requires.name}</span> como correlativa para cursar.
-            Podés cambiarla después con 🔗.
+            {t('careerMap.page.linkedBefore')} <span className="text-text">{createRequest.requires.name}</span>{' '}
+            {t('careerMap.page.linkedAfter')}
           </p>
         )}
       </PromptDialog>
@@ -210,9 +216,9 @@ export function CareerMapPage() {
 
       <ConfirmDialog
         open={pendingDelete != null}
-        title={pendingDelete?.type === 'prerequisite' ? 'Quitar correlativa' : 'Mover a la papelera'}
+        title={pendingDelete?.type === 'prerequisite' ? t('careerMap.page.unlinkTitle') : t('careerMap.page.trashTitle')}
         message={describePendingDelete()}
-        confirmLabel={pendingDelete?.type === 'prerequisite' ? 'Quitar' : 'Mover a la papelera'}
+        confirmLabel={pendingDelete?.type === 'prerequisite' ? t('careerMap.page.unlinkConfirm') : t('careerMap.page.trashConfirm')}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />

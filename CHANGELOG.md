@@ -47,6 +47,12 @@
   `getFactoryTemplates(lang)` (mismos `id`); `IMPORT_FALLBACK_NAME` → `importFallbackName(lang)`.
   **Formato de archivo intacto:** claves del frontmatter, `adjuntos/`, `Studree/` y `adjunto:` no se
   traducen (hay un test). El escáner de castellano acepta `i18n-ignore` para esas líneas.
+- **Tarea 7 — Carreras y mapa de carrera:** panel de carreras, tarjetas, formulario, lienzo, nodos,
+  editor y diálogo de correlativas y los mensajes de `prerequisites.service`/`subjects.service` pasan
+  por `t()` (diccionarios `careers` y `careerMap`). `subjectStatus.js` y `prerequisiteKinds.js` guardan
+  `labelKey`/`helpKey` (los identificadores `aprobada`, `cursar`… no cambian), `PALETTE` ya tenía
+  `nameKey`, y `describeBlockReason(state, lang)` traduce el motivo del candado. Test nuevo: cada clave
+  existe en los dos idiomas.
 
 ---
 

@@ -7,6 +7,7 @@ import { UndoToast } from '../components/ui/UndoToast'
 import { Button } from '../components/ui/Button'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { ImportDialog } from '../components/features/import/ImportDialog'
+import { useI18n } from '../hooks/useI18n.js'
 
 /**
  * Workspace: panel de inicio con las carreras / cursos del usuario como
@@ -14,6 +15,7 @@ import { ImportDialog } from '../components/features/import/ImportDialog'
  * Ver docs/features/careers.md.
  */
 export function CareersPage() {
+  const { t } = useI18n()
   const { careers, stats, totals, loading, error, createCareer, updateCareer, deleteCareer, restoreCareer, reload } =
     useCareers()
   const [formOpen, setFormOpen] = useState(false)
@@ -45,31 +47,31 @@ export function CareersPage() {
     setDeleting(null)
     if (!career) return
     const failure = await deleteCareer(career.id)
-    if (!failure) setUndo({ message: `"${career.name}" se movió a la papelera`, careerId: career.id })
+    if (!failure) setUndo({ message: t('trash.movedItem', { name: career.name }), careerId: career.id })
   }
 
   const metrics = [
-    { label: 'Carreras y cursos', value: totals.careers, icon: '🎓' },
-    { label: 'Materias', value: totals.subjects, icon: '📘' },
-    { label: 'Aprobadas', value: totals.approved, icon: '✅' },
+    { label: t('careers.page.metricCareers'), value: totals.careers, icon: '🎓' },
+    { label: t('careers.page.metricSubjects'), value: totals.subjects, icon: '📘' },
+    { label: t('careers.page.metricApproved'), value: totals.approved, icon: '✅' },
   ]
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Mis carreras</h1>
-          <p className="mt-1 text-sm text-text-muted">Elegí una carrera o curso para ver y organizar sus materias.</p>
+          <h1 className="text-3xl font-bold">{t('careers.page.title')}</h1>
+          <p className="mt-1 text-sm text-text-muted">{t('careers.page.subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="ghost" onClick={() => setImportOpen(true)}>
-            Importar
+            {t('careers.page.import')}
           </Button>
           <Button variant="ghost" onClick={() => setExportOpen(true)} disabled={careers.length === 0}>
-            Exportar todo
+            {t('careers.page.exportAll')}
           </Button>
           <button type="button" onClick={openCreate} className="btn-accent gap-2">
-            <span aria-hidden="true">＋</span> Nueva carrera
+            <span aria-hidden="true">＋</span> {t('careers.page.newCareer')}
           </button>
         </div>
       </div>
@@ -92,7 +94,7 @@ export function CareersPage() {
       )}
 
       {loading && careers.length === 0 ? (
-        <p className="mt-10 text-center text-text-muted">Cargando…</p>
+        <p className="mt-10 text-center text-text-muted">{t('common.loading')}</p>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {careers.map((career) => (
@@ -114,7 +116,7 @@ export function CareersPage() {
                 ＋
               </span>
               <span className="text-sm font-medium">
-                {careers.length === 0 ? 'Creá tu primera carrera o curso' : 'Nueva carrera o curso'}
+                {careers.length === 0 ? t('careers.page.createFirst') : t('careers.page.createNew')}
               </span>
             </button>
           </li>
@@ -136,11 +138,11 @@ export function CareersPage() {
 
       <ConfirmDialog
         open={deleting != null}
-        title="Mover a la papelera"
-        confirmLabel="Mover a la papelera"
+        title={t('careers.page.trashTitle')}
+        confirmLabel={t('careers.page.trashConfirm')}
         message={
           deleting
-            ? `"${deleting.name}" se mueve a la papelera con todas sus materias y hojas. Podés restaurarla durante 30 días.`
+            ? t('careers.page.trashMessage', { name: deleting.name })
             : ''
         }
         onConfirm={handleConfirmDelete}

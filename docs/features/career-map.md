@@ -158,3 +158,12 @@ Solo las de `cursar` participan del cálculo de `bloqueada`.
 - [x] Crear correlativas arrastrando una arista entre nodos (2026-10-14).
 - [ ] Filtrar por cuatrimestre / año.
 - [ ] Resaltar el camino crítico de la carrera.
+
+## Idioma (Fase 18)
+
+El lienzo, los nodos y los diálogos de correlativas salen del diccionario `careerMap`. Las constantes
+`STATUS_STYLES` (`subjectStatus.js`) y `PREREQUISITE_KIND_META` (`prerequisiteKinds.js`) guardan una
+`labelKey`/`helpKey` y los componentes hacen `t(entry.labelKey)`; los identificadores que van a la base
+(`aprobada`, `cursando`, `pendiente`, `cursar`, `rendir`) no cambian. `describeBlockReason(state, lang)`
+traduce el motivo del candado y los errores de `prerequisites.service` (ciclo, correlativa de sí misma)
+salen de `careerMap.errors`.

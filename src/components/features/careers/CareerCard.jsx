@@ -5,6 +5,7 @@
 
 import { Link } from 'react-router-dom'
 import { careerPath } from '../../../constants/routes'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -14,6 +15,7 @@ import { careerPath } from '../../../constants/routes'
  * @param {() => void} props.onDelete
  */
 export function CareerCard({ career, stats, onEdit, onDelete }) {
+  const { t } = useI18n()
   const usesPrerequisites = career.uses_prerequisites !== false
   const initial = career.name.trim().charAt(0).toUpperCase()
 
@@ -35,7 +37,7 @@ export function CareerCard({ career, stats, onEdit, onDelete }) {
               {career.name}
             </h2>
             <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
-              {usesPrerequisites ? '🔗 Con correlativas' : '📚 Curso / organizador'}
+              {usesPrerequisites ? `🔗 ${t('careers.card.withPrereq')}` : `📚 ${t('careers.card.course')}`}
             </span>
           </div>
         </div>
@@ -43,7 +45,7 @@ export function CareerCard({ career, stats, onEdit, onDelete }) {
         <div className="mt-6 flex items-end justify-between text-sm">
           <span className="text-text-muted">
             <span className="text-2xl font-bold text-text">{stats.total}</span>{' '}
-            {stats.total === 1 ? 'materia' : 'materias'}
+            {t('careers.card.subjectCount', { count: stats.total })}
           </span>
           <span className="font-medium" style={{ color: career.color }}>
             {stats.percent}%
@@ -56,7 +58,7 @@ export function CareerCard({ career, stats, onEdit, onDelete }) {
           />
         </div>
         <p className="mt-2 text-xs text-text-muted">
-          {stats.total === 0 ? 'Entrá para agregar materias' : `${stats.approved} de ${stats.total} aprobadas`}
+          {stats.total === 0 ? t('careers.card.enterToAdd') : t('careers.card.approvedOf', { approved: stats.approved, total: stats.total })}
         </p>
       </Link>
 
@@ -64,7 +66,7 @@ export function CareerCard({ career, stats, onEdit, onDelete }) {
         <button
           type="button"
           onClick={onEdit}
-          aria-label={`Editar ${career.name}`}
+          aria-label={t('careers.card.edit', { name: career.name })}
           className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
         >
           ✎
@@ -72,7 +74,7 @@ export function CareerCard({ career, stats, onEdit, onDelete }) {
         <button
           type="button"
           onClick={onDelete}
-          aria-label={`Eliminar ${career.name}`}
+          aria-label={t('careers.card.delete', { name: career.name })}
           className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-2 hover:text-red-400"
         >
           ✕

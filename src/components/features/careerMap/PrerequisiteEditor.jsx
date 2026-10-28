@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Modal } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import { PREREQUISITE_KINDS, PREREQUISITE_KIND_META } from '../../../constants/prerequisiteKinds.js'
+import { useI18n } from '../../../hooks/useI18n.js'
 
 /**
  * @param {Object} props
@@ -18,6 +19,7 @@ import { PREREQUISITE_KINDS, PREREQUISITE_KIND_META } from '../../../constants/p
  * @param {(id: string) => Promise<string|null>} props.onRemove
  */
 export function PrerequisiteEditor({ open, onClose, subject, subjects, prerequisites, onAdd, onRemove }) {
+  const { t } = useI18n()
   const [requiresId, setRequiresId] = useState('')
   const [kind, setKind] = useState(PREREQUISITE_KINDS.cursar)
   const [error, setError] = useState(null)
@@ -45,11 +47,11 @@ export function PrerequisiteEditor({ open, onClose, subject, subjects, prerequis
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={`Correlativas de ${subject.name}`}>
+    <Modal open={open} onClose={onClose} title={t('careerMap.editor.title', { name: subject.name })}>
       <form onSubmit={handleAdd} className="space-y-3">
         <div>
           <label className="mb-1 block text-sm text-text-muted" htmlFor="prereq-subject">
-            Requiere
+            {t('careerMap.editor.requires')}
           </label>
           <select
             id="prereq-subject"
@@ -57,7 +59,7 @@ export function PrerequisiteEditor({ open, onClose, subject, subjects, prerequis
             onChange={(event) => setRequiresId(event.target.value)}
             className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-text outline-none transition-colors focus:border-accent"
           >
-            <option value="">Elegir materia…</option>
+            <option value="">{t('careerMap.editor.choose')}</option>
             {options.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
                 {candidate.name}
@@ -70,11 +72,11 @@ export function PrerequisiteEditor({ open, onClose, subject, subjects, prerequis
           {Object.values(PREREQUISITE_KINDS).map((value) => (
             <label key={value} className="flex items-center gap-1.5 text-sm">
               <input type="radio" name="kind" value={value} checked={kind === value} onChange={() => setKind(value)} />
-              {PREREQUISITE_KIND_META[value].label}
+              {t(PREREQUISITE_KIND_META[value].labelKey)}
             </label>
           ))}
         </div>
-        <p className="text-xs text-text-muted">{PREREQUISITE_KIND_META[kind].help}</p>
+        <p className="text-xs text-text-muted">{t(PREREQUISITE_KIND_META[kind].helpKey)}</p>
 
         {error && (
           <p role="alert" className="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300">
@@ -83,24 +85,24 @@ export function PrerequisiteEditor({ open, onClose, subject, subjects, prerequis
         )}
 
         <Button type="submit" disabled={!requiresId || saving} className="w-full">
-          {saving ? 'Agregando…' : 'Agregar correlativa'}
+          {saving ? t('careerMap.editor.adding') : t('careerMap.editor.add')}
         </Button>
       </form>
 
       {current.length > 0 && (
         <div className="mt-5 border-t border-border pt-4">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-text-muted">Correlativas actuales</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wide text-text-muted">{t('careerMap.editor.current')}</h3>
           <ul className="mt-2 space-y-1.5">
             {current.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">
-                  {namesById.get(p.requires_id) ?? 'Materia eliminada'}
-                  <span className="ml-1.5 text-xs text-text-muted">({PREREQUISITE_KIND_META[p.kind].label})</span>
+                  {namesById.get(p.requires_id) ?? t('careerMap.editor.deletedSubject')}
+                  <span className="ml-1.5 text-xs text-text-muted">({t(PREREQUISITE_KIND_META[p.kind].labelKey)})</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => onRemove(p.id)}
-                  aria-label="Quitar correlativa"
+                  aria-label={t('careerMap.editor.remove')}
                   className="shrink-0 p-1 text-text-muted transition-colors hover:text-red-400"
                 >
                   ✕

@@ -9,6 +9,7 @@
 import { createCrudService } from './crudService.js'
 import { DEFAULT_COLOR } from '../constants/palette.js'
 import { SUBJECT_STATUS, SUBJECT_STATUS_VALUES } from '../constants/subjectStatus.js'
+import { t } from '../lib/i18n/index.js'
 
 const crud = createCrudService({ table: 'subjects', parentColumn: 'career_id', softDelete: true })
 
@@ -52,7 +53,7 @@ export const subjectsService = {
     if (!SUBJECT_STATUS_VALUES.includes(status)) {
       return Promise.resolve({
         data: null,
-        error: `Estado inválido: "${status}". Válidos: ${SUBJECT_STATUS_VALUES.join(', ')}.`,
+        error: t('careerMap.errors.invalidStatus', { status, valid: SUBJECT_STATUS_VALUES.join(', ') }),
       })
     }
     return crud.update(id, { status }, careerId)
