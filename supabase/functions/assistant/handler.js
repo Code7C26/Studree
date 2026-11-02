@@ -89,7 +89,8 @@ const json = (status, body) =>
     status,
     headers: { ...CORS_HEADERS, 'content-type': 'application/json; charset=utf-8' },
   })
-const errorResponse = (status, code, message) => json(status, { error: message, code, message })
+const errorResponse = (status, code, message, reason) =>
+  json(status, { error: message, code, message, ...(reason ? { reason } : {}) })
 
 function bearer(header) {
   const m = /^Bearer\s+(\S+)\s*$/i.exec(header ?? '')
@@ -281,7 +282,7 @@ function sseResponse(reqSignal, run, logError) {
  * Los errores de Gemini se propagan (los atrapa `runAction`).
  */
 async function perform({ request, ctx, db, callModel, emit, emitError, now, logError }) {
-  const { action, mode, message, selection } = request
+  const { action, mode, message, selection, uiLang } = request
   const today = now.toISOString().slice(0, 10)
   const userTurn = (text) => ({ role: 'user', parts: [{ text }] })
   const join = (...parts) => parts.filter(Boolean).join('\n\n')
@@ -294,6 +295,7 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
       mapMd: 'No hace falta para esta acción.',
       today,
       hasSelection: false,
+      uiLang,
     })
     const text = join(actionInstruction(action, { scopeLabel: '' }), formatDataBlock('Respuestas', request.answers))
     const res = await callModel(buildGeminiRequest({ systemPrompt, contents: [userTurn(text)], json: { schema: GRADES_SCHEMA } }), null)
@@ -314,7 +316,7 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
       emitError('no_notes')
       return false
     }
-    const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: false })
+    const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: false, uiLang })
     const text = join(
       actionInstruction(action, { scopeLabel: ctx.scopeLabel }),
       message.trim() && `Pedido del usuario: ${message.trim()}`,
@@ -358,7 +360,7 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
       emitError('no_notes')
       return false
     }
-    const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: false, weakTopics })
+    const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: false, weakTopics, uiLang })
     const text = join(
       actionInstruction(action, { scopeLabel: ctx.scopeLabel, quiz }),
       message.trim() && `Pedido del usuario: ${message.trim()}`,
@@ -376,7 +378,7 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
   }
 
   // Acciones conversacionales: chat, shortcut, summary, study_plan, gaps, connections.
-  const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: !!selection })
+  const systemPrompt = buildSystemPrompt({ action, mode, scopeLabel: ctx.scopeLabel, mapMd: ctx.mapMd, today, hasSelection: !!selection, uiLang })
   const instruction = actionInstruction(action, { scopeLabel: ctx.scopeLabel })
   const text = join(
     instruction,
@@ -474,7 +476,7 @@ export async function handleRequest(req, deps) {
   }
   const decision = decideAccess({ plan, action, scope, counts, external })
   if (!decision.allowed) {
-    return errorResponse(decision.code === 'feature' ? 403 : 429, decision.code, decision.message)
+    return errorResponse(decision.code === 'feature' ? 403 : 429, decision.code, decision.message, decision.reason)
   }
 
   const db = deps.makeDb(jwt)

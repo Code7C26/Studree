@@ -62,6 +62,11 @@
 - **Tarea 9 — Brote y Mi estudio (componentes):** botón, panel, chat, tarjetas, propuestas, examen,
   resumen, páginas de Mi estudio y los hooks `useAssistant`/`useSaveSummaryAsSheet` pasan por `t()`
   (diccionarios `assistant` y `study`; en inglés, "Sprout"). El trinquete queda en cero: `PENDING` vacío.
+- **Tarea 10 — Edge Function `assistant`:** el pedido acepta `uiLang`; el prompt reemplaza la voz fija
+  en castellano por una regla de idioma (en `chat`/`shortcut`, el idioma del mensaje; en las acciones sin
+  mensaje, `uiLang`; el registro rioplatense se mantiene en castellano); `decideAccess` y el handler
+  devuelven `reason` en los 403/429. Tests nuevos en `request`, `prompt`, `quota` y `handler`.
+  **Pendiente del estudiante:** volver a desplegar la función (`supabase functions deploy assistant`).
 
 ---
 

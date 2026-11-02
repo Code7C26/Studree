@@ -26,6 +26,7 @@ const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v)
  * @property {{sheetId: string, text: string}} [selection]
  * @property {{count: number, types: Array<'mcq'|'tf'|'open'>}} [quiz]
  * @property {Array<{id: string, question: string, expected: string, given: string}>} [answers]
+ * @property {'es'|'en'} uiLang  Idioma de la interfaz (desempate y idioma de las acciones sin mensaje escrito).
  */
 
 /**
@@ -68,6 +69,8 @@ export function validateRequest(body) {
     history,
     mode,
     scope: scope.type === 'all' ? { type: 'all' } : { type: scope.type, id: scope.id },
+    // Solo 'en' se respeta: cualquier otro valor (o ninguno) cuenta como castellano.
+    uiLang: body.uiLang === 'en' ? 'en' : 'es',
   }
 
   if (body.selection !== undefined) {

@@ -142,3 +142,17 @@ test('periodStart: bordes y período inválido', () => {
   assert.equal(periodStart('day', new Date('2026-10-19T23:30:00-03:00')).toISOString(), '2026-10-20T00:00:00.000Z')
   assert.throws(() => periodStart('week', NOW))
 })
+
+test('decideAccess devuelve reason: la función de Premium o el balde agotado', () => {
+  const subject = { type: 'subject', id: 's1' }
+  assert.equal(acc({ plan: 'free', action: 'weak_review', scope: subject, counts: {} }).reason, 'weakReview')
+  assert.equal(acc({ plan: 'free', action: 'study_plan', scope: subject, counts: {} }).reason, 'studyPlan')
+  assert.equal(acc({ plan: 'free', action: 'connections', scope: subject, counts: {} }).reason, 'connections')
+  assert.equal(acc({ plan: 'free', action: 'chat', scope: { type: 'all' }, counts: { chat: 0 } }).reason, 'allScope')
+  assert.equal(acc({ plan: 'free', action: 'chat', counts: { chat: LIMITS.free.chat.max } }).reason, 'chat')
+  assert.equal(acc({ plan: 'free', action: 'quiz', counts: { quiz: LIMITS.free.quiz.max } }).reason, 'quiz')
+  assert.equal(acc({ plan: 'free', action: 'summary', counts: { summary: LIMITS.free.summary.max } }).reason, 'summary')
+  assert.equal(acc({ plan: 'free', action: 'chat', external: true, counts: { chat: 0, external: LIMITS.free.external.max } }).reason, 'external')
+  assert.equal(acc({ plan: 'free', action: 'chat', counts: {} }).reason, 'unverified')
+  assert.equal(acc({ plan: 'free', action: 'chat', counts: { chat: 0 } }).allowed, true)
+})

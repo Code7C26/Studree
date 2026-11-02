@@ -767,3 +767,28 @@ test('scope.id o selection.sheetId que no son UUID → 400 invalid, sin tocar la
     assert.equal(calls.gemini.length, 0)
   }
 })
+
+test('429 y 403 traen reason y Gemini no se llama', async () => {
+  const quota = makeDeps({ counts: { chat: LIMITS.free.chat.max } })
+  const quotaBody = await (await handleRequest(post(chat()), quota.deps)).json()
+  assert.equal(quotaBody.code, 'quota')
+  assert.equal(quotaBody.reason, 'chat')
+  assert.equal(typeof quotaBody.message, 'string')
+  assert.equal(quota.calls.gemini.length, 0)
+
+  const feature = makeDeps()
+  const featureBody = await (await handleRequest(post(chat({ scope: { type: 'all' } })), feature.deps)).json()
+  assert.equal(featureBody.code, 'feature')
+  assert.equal(featureBody.reason, 'allScope')
+  assert.equal(feature.calls.gemini.length, 0)
+})
+
+test('uiLang llega al prompt: en inglés una acción sin mensaje pide generar en English', async () => {
+  const english = makeDeps({ plan: 'premium' })
+  await events(await handleRequest(post(chat({ uiLang: 'en' })), english.deps))
+  assert.match(systemOf(english.calls.gemini[0]), /mismo idioma/)
+
+  const spanish = makeDeps()
+  await events(await handleRequest(post(chat()), spanish.deps))
+  assert.match(systemOf(spanish.calls.gemini[0]), /rioplatense/)
+})

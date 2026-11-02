@@ -668,3 +668,15 @@ diccionario `assistant` (castellano / inglés, ver `docs/features/i18n.md`). En 
   el mensaje que se manda al modelo en el idioma activo (`buildShortcutRequest(id, selection, lang)`).
 - Lo que el Brote genera (resúmenes, exámenes, títulos) se guarda en el idioma de ese momento y no cambia
   después.
+
+### Idioma en la Edge Function (Fase 18)
+
+- `request.js` acepta `uiLang` (`'es'` | `'en'`); cualquier otro valor, o ninguno, se toma como `'es'`.
+- `prompt.js`: la voz ya no fija el idioma. En `chat` y `shortcut` el Brote **responde en el idioma del
+  mensaje del usuario** (`uiLang` solo desempata si es ambiguo); en las acciones que salen de un botón
+  (`summary`, `quiz`, `weak_review`, `quiz_grade`, `study_plan`, `gaps`, `connections`) genera todo en
+  `uiLang`. En castellano mantiene el registro rioplatense.
+- `quota.js` / `handler.js`: los 403 y 429 suman `reason` (la función de Premium o el balde agotado) además
+  de `code` y `message`; el cliente traduce por `code` + `reason`.
+- **Requiere volver a desplegar la función** (`supabase functions deploy assistant`). Sin eso la app anda,
+  pero los topes llegan en castellano y las respuestas no siguen la regla de idioma.

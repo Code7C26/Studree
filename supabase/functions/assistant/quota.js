@@ -80,10 +80,10 @@ export function decideAccess({ plan, action, scope, counts, external = false }) 
 
   const feature = FEATURE_OF_ACTION[action]
   if (feature && !features[feature]) {
-    return { allowed: false, code: 'feature', message: FEATURE_MESSAGES[feature] }
+    return { allowed: false, code: 'feature', reason: feature, message: FEATURE_MESSAGES[feature] }
   }
   if (scope && (scope.type === 'all' || scope.type === 'career') && !features.allScope) {
-    return { allowed: false, code: 'feature', message: FEATURE_MESSAGES.allScope }
+    return { allowed: false, code: 'feature', reason: 'allScope', message: FEATURE_MESSAGES.allScope }
   }
 
   const bucket = BUCKET_OF[action]
@@ -94,10 +94,10 @@ export function decideAccess({ plan, action, scope, counts, external = false }) 
     const limit = limits[key]
     if (!limit) continue
     if (!Number.isFinite(used[key])) {
-      return { allowed: false, code: 'quota', message: UNVERIFIED }
+      return { allowed: false, code: 'quota', reason: 'unverified', message: UNVERIFIED }
     }
     if (used[key] >= limit.max) {
-      return { allowed: false, code: 'quota', message: QUOTA_MESSAGES[key] }
+      return { allowed: false, code: 'quota', reason: key, message: QUOTA_MESSAGES[key] }
     }
   }
   return { allowed: true }

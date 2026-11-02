@@ -121,3 +121,10 @@ test('scope.id y selection.sheetId tienen que ser UUID (si no, 400 y no un 500 d
   assert.equal(validateRequest({ ...base, scope: { type: 'career', id: 'ABCDEF01-1111-4111-8111-111111111111' } }).ok, true)
   assert.equal(validateRequest({ ...base, selection: { sheetId: UUID, text: 'x' } }).ok, true)
 })
+
+test('uiLang: "en" se conserva; ausente u otro valor → "es"; un pedido anterior sigue siendo válido', () => {
+  assert.equal(validateRequest({ ...base, uiLang: 'en' }).value.uiLang, 'en')
+  assert.equal(validateRequest({ ...base, uiLang: 'es' }).value.uiLang, 'es')
+  for (const bad of ['fr', 5, null, undefined, {}]) assert.equal(validateRequest({ ...base, uiLang: bad }).value.uiLang, 'es')
+  assert.equal(validateRequest(base).ok, true)
+})
