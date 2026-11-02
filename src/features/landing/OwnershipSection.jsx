@@ -1,7 +1,10 @@
-import { OWNERSHIP } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Tu conocimiento es tuyo: el export a Markdown es el puente hacia cualquier IA. */
 export function OwnershipSection() {
+  const { lang } = useI18n()
+  const { ownership: OWNERSHIP } = getLandingCopy(lang)
   return (
     <section aria-labelledby="tuyo-title" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
       <div className="grid items-center gap-10 lg:grid-cols-2">

@@ -1,9 +1,12 @@
-import { BROTE } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 import { Brote } from './Brote.jsx'
 import { PaperHeading, PaperSheet } from './PaperSheet.jsx'
 
 /** El Brote: qué hace con el conocimiento del usuario y cómo se mantiene el control. La demo es ilustrativa. */
 export function BroteSection() {
+  const { lang } = useI18n()
+  const { brote: BROTE } = getLandingCopy(lang)
   const { demo } = BROTE
   return (
     <section id="brote" aria-labelledby="brote-title" className="mx-auto max-w-6xl scroll-mt-6 px-4 py-16 sm:px-6 lg:py-24">

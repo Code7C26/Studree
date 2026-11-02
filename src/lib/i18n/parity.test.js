@@ -46,10 +46,14 @@ test('cada clave tiene los mismos {marcadores} y las mismas formas de plural en 
   assert.deepEqual(problems, [])
 })
 
-test('ningún texto en inglés está vacío', () => {
-  const empty = Object.entries(flatEn)
-    .flatMap(([key, value]) => (isPlural(value) ? Object.entries(value).map(([form, text]) => [`${key}.${form}`, text]) : [[key, value]]))
-    .filter(([, text]) => typeof text !== 'string' || text.trim() === '')
+test('ningún texto en inglés está vacío (salvo que el castellano también lo sea: renglones en blanco de una muestra)', () => {
+  const textsOf = (flat) =>
+    Object.entries(flat).flatMap(([key, value]) =>
+      isPlural(value) ? Object.entries(value).map(([form, text]) => [`${key}.${form}`, text]) : [[key, value]],
+    )
+  const spanish = new Map(textsOf(flatEs))
+  const empty = textsOf(flatEn)
+    .filter(([key, text]) => typeof text !== 'string' || (text.trim() === '' && spanish.get(key) !== ''))
     .map(([key]) => key)
   assert.deepEqual(empty, [])
 })

@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
-import { HERO, NAV_LINKS, START_PATH } from './landingCopy.js'
+import { START_PATH, getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Barra superior de la landing: marca, anclas a los bloques y CTA. */
 export function LandingNav() {
+  const { lang } = useI18n()
+  const { hero: HERO, navLinks: NAV_LINKS, navLabel } = getLandingCopy(lang)
   return (
     <header className="relative z-10">
       <div className="mx-auto flex max-w-6xl items-center gap-5 px-4 py-4 sm:px-6">
@@ -12,7 +15,7 @@ export function LandingNav() {
             Studree
           </span>
         </span>
-        <nav aria-label="Secciones" className="hidden items-center gap-6 text-sm text-text-muted md:flex">
+        <nav aria-label={navLabel} className="hidden items-center gap-6 text-sm text-text-muted md:flex">
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} className="transition-colors hover:text-text">
               {link.label}

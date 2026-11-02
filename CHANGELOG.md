@@ -67,6 +67,10 @@
   mensaje, `uiLang`; el registro rioplatense se mantiene en castellano); `decideAccess` y el handler
   devuelven `reason` en los 403/429. Tests nuevos en `request`, `prompt`, `quota` y `handler`.
   **Pendiente del estudiante:** volver a desplegar la función (`supabase functions deploy assistant`).
+- **Tarea 11 — Landing:** se mergeó la rama `landing` en `fase-18` (conflictos solo en docs y en
+  `App.jsx`, conservando ambos lados) y la landing pasa a castellano / inglés. El copy se movió a los
+  diccionarios `landing` (`getLandingCopy(lang)`); `landingCopy.test.js` valida las mismas reglas de
+  contenido en los dos idiomas. Sin selector propio: sigue el idioma guardado o el del navegador.
 
 ---
 

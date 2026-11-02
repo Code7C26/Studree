@@ -1,4 +1,5 @@
-import { HERO } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 import { Brote } from './Brote.jsx'
 
 /** Ramas del árbol (tronco + tres ramas + ramitas). Se dibujan de abajo hacia arriba al cargar. */
@@ -34,6 +35,8 @@ const LEAVES = [
  * @param {{ className?: string }} props
  */
 export function HeroTree({ className = '' }) {
+  const { lang } = useI18n()
+  const { hero: HERO } = getLandingCopy(lang)
   return (
     <div className={className}>
       <svg viewBox="0 0 360 330" role="img" aria-label={HERO.treeLabel} className="h-auto w-full">

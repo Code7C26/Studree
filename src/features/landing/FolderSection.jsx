@@ -1,14 +1,15 @@
-import { FOLDER } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 import { PaperHeading, PaperSheet } from './PaperSheet.jsx'
 
 /** Mapa de correlativas en miniatura: tres materias y dos conectores. Decorativo. */
-function MiniMap() {
+function MiniMap({ nodes }) {
   return (
     <svg viewBox="0 0 300 70" aria-hidden="true" className="mt-4 h-auto w-full">
       <g className="stroke-border" strokeWidth="2" fill="none">
         <path d="M92 35H104M192 35H204" />
       </g>
-      {FOLDER.map.nodes.map((name, i) => (
+      {nodes.map((name, i) => (
         <g key={name}>
           <rect x={4 + i * 100} y="20" width="88" height="30" rx="15" className="fill-surface-lit stroke-accent" strokeWidth="1.5" />
           <text x={48 + i * 100} y="39" textAnchor="middle" fontSize="11" className="fill-accent-soft font-sans">
@@ -33,6 +34,8 @@ function MiniCalendar() {
 
 /** Tu carpeta: la base de la que lee la IA. Hojas con índice, correlativas e Inicio, tres piezas distintas. */
 export function FolderSection() {
+  const { lang } = useI18n()
+  const FOLDER = getLandingCopy(lang).folder
   const { sheets, map, home } = FOLDER
   return (
     <section aria-labelledby="carpeta-title" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
@@ -48,11 +51,11 @@ export function FolderSection() {
           <div className="mt-5 grid items-start gap-4 sm:grid-cols-[1fr_9rem]">
             <PaperSheet date={sheets.date}>
               <PaperHeading># {sheets.topics[0]}</PaperHeading>
-              <p>La mitocondria produce ATP.</p>
+              <p>{sheets.lines[0]}</p>
               <PaperHeading># {sheets.topics[1]}</PaperHeading>
-              <p>Sintetizan proteínas.</p>
+              <p>{sheets.lines[1]}</p>
             </PaperSheet>
-            <ul aria-label="Índice de temas" className="space-y-1.5 border-l border-border pl-3 text-sm text-text-muted">
+            <ul aria-label={sheets.indexLabel} className="space-y-1.5 border-l border-border pl-3 text-sm text-text-muted">
               {sheets.topics.map((topic, i) => (
                 <li key={topic} className={i === 0 ? 'font-medium text-accent-soft' : ''}>
                   {topic}
@@ -66,7 +69,7 @@ export function FolderSection() {
           <div className="rounded-2xl border border-border bg-surface p-6">
             <h3 className="text-lg font-semibold">{map.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-text-muted">{map.text}</p>
-            <MiniMap />
+            <MiniMap nodes={map.nodes} />
           </div>
           <div className="rounded-2xl border border-border bg-surface p-6">
             <h3 className="text-lg font-semibold">{home.title}</h3>

@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
-import { HERO, START_PATH } from './landingCopy.js'
+import { START_PATH, getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 import { HeroTree } from './HeroTree.jsx'
 
 /** Hero: el titular de la idea central y el árbol de materias con el Brote. */
 export function HeroSection() {
+  const { lang } = useI18n()
+  const { hero: HERO } = getLandingCopy(lang)
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-2 lg:pb-24 lg:pt-14">

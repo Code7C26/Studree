@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
-import { CLOSING, HERO, START_PATH } from './landingCopy.js'
+import { START_PATH, getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 import { Brote } from './Brote.jsx'
 
 /** Cierre: un último CTA. */
 export function ClosingSection() {
+  const { lang } = useI18n()
+  const { closing: CLOSING, hero: HERO } = getLandingCopy(lang)
   return (
     <section aria-labelledby="cierre-title" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
       <div className="flex flex-col items-start gap-6 rounded-3xl border border-accent/40 bg-surface-lit p-8 sm:p-12">

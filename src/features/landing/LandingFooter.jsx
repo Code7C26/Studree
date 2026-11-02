@@ -1,7 +1,10 @@
-import { FOOTER } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Pie de la landing: marca, una línea y el año. */
 export function LandingFooter() {
+  const { lang } = useI18n()
+  const { footer: FOOTER } = getLandingCopy(lang)
   return (
     <footer className="border-t border-border/60">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">

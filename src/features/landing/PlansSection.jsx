@@ -1,7 +1,10 @@
-import { PLANS } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Planes: diferencias cualitativas entre Gratis y Premium (sin precios ni topes numéricos). */
 export function PlansSection() {
+  const { lang } = useI18n()
+  const { plans: PLANS } = getLandingCopy(lang)
   return (
     <section id="planes" aria-labelledby="planes-title" className="mx-auto max-w-6xl scroll-mt-6 px-4 py-16 sm:px-6 lg:py-24">
       <h2 id="planes-title" className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">

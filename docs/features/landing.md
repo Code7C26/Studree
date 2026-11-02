@@ -48,3 +48,20 @@ como terminado.
 `npm run dev` y abrir `/bienvenida`. Verificar: `/` sigue mostrando el Inicio; 375, 768, 1024 y
 1440 px sin scroll horizontal; Tab recorre todo con foco visible; con "reducir movimiento" no hay
 animación. Tests: `node --test "src/features/landing/*.test.js"`.
+
+## Idioma (Fase 18)
+
+La landing se ve en castellano o inglés. **No lleva selector propio**: sigue el idioma guardado en el
+dispositivo (el que se elige en Perfil) o, si no hay ninguno, el del navegador. Consecuencia: quien entra por
+primera vez con el navegador en castellano la ve en castellano, aunque prefiera inglés; si molesta, se puede
+sumar un selector chico más adelante.
+
+- Todo el copy vive en los diccionarios `src/lib/i18n/{es,en}/landing.js` (misma forma que antes:
+  `hero`, `navLinks`, `problem`, `steps`, `brote`, `folder`, `ownership`, `plans`, `closing`, `footer`).
+  `landingCopy.js` quedó con `START_PATH` y `getLandingCopy(lang)`; cada bloque llama a `useI18n()` y lee su
+  parte del copy. En inglés el asistente se llama "Sprout".
+- `landingCopy.test.js` aplica las mismas reglas de contenido (sin emojis, precios, cifras inventadas ni
+  promesas de que el asistente escriba solo) a **los dos idiomas** y verifica que tengan la misma cantidad de
+  textos.
+- Los anclas (`#como-funciona`, `#brote`, `#planes`) y el `<title>`/Open Graph de `index.html` quedan igual
+  (el título estático sigue en castellano).

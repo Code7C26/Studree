@@ -1,9 +1,12 @@
-import { PROBLEM } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 import { PaperHeading, PaperSheet } from './PaperSheet.jsx'
 import { Brote } from './Brote.jsx'
 
 /** El problema: la misma pregunta a un chat genérico y al Brote con las hojas del usuario. Ejemplo ilustrativo. */
 export function ProblemSection() {
+  const { lang } = useI18n()
+  const { problem: PROBLEM } = getLandingCopy(lang)
   return (
     <section aria-labelledby="problema-title" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
       <h2 id="problema-title" className="max-w-[24ch] font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">

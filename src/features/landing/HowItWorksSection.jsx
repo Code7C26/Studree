@@ -1,7 +1,10 @@
-import { STEPS } from './landingCopy.js'
+import { getLandingCopy } from './landingCopy.js'
+import { useI18n } from '../../hooks/useI18n.js'
 
 /** Cómo funciona: tres pasos reales (esto sí es una secuencia, por eso van numerados). */
 export function HowItWorksSection() {
+  const { lang } = useI18n()
+  const { steps: STEPS } = getLandingCopy(lang)
   return (
     <section id="como-funciona" aria-labelledby="como-title" className="mx-auto max-w-6xl scroll-mt-6 px-4 py-16 sm:px-6 lg:py-24">
       <h2 id="como-title" className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
