@@ -118,7 +118,7 @@ test('en inglés: las claves del frontmatter no cambian y el texto descriptivo s
   const [path, md] = [...out.entries()].find(([entry]) => entry.endsWith('.md'))
   assert.ok(path.startsWith('Untitled/'), path)
   for (const key of ['carrera:', 'materia:', 'creada:']) assert.ok(md.includes(key), key)
-  assert.match(md, /[image: lost]/)
+  assert.match(md, /\[image: lost\]/)
   const es = await subjectTreeToZip(FakeZip, subject, new Map(), 'es')
   assert.ok([...es.keys()][0].startsWith('Sin título/'))
 })

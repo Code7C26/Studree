@@ -144,6 +144,20 @@ export function requestMode(action, mode) {
 }
 
 /**
+ * Aviso para cada motivo de `blockReason`. `inline`: el que se ve en la tarjeta de un atajo cuando
+ * el que está respondiendo es el chat (el motivo `busy` cambia de texto).
+ * @param {string} reason
+ * @param {{inline?: boolean, lang?: string}} [options]
+ * @returns {string|undefined}
+ */
+export function blockNotice(reason, { inline = false, lang = getLang() } = {}) {
+  if (reason === 'busy') return tIn(lang, inline ? 'assistant.notices.inlineBusy' : 'assistant.notices.busy')
+  if (reason === 'no_scope') return tIn(lang, 'assistant.notices.noScope')
+  if (reason === 'quiz_open') return tIn(lang, 'assistant.notices.quizOpen')
+  return undefined
+}
+
+/**
  * Por qué no se puede mandar un pedido ahora (o `null` si se puede):
  * `busy` = el Brote está respondiendo; `no_scope` = no hay alcance (free sin
  * materia abierta); `quiz_open` = pedir otra prueba descartaría la abierta.

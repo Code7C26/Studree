@@ -17,7 +17,7 @@ import {
 import { gradeClosed, summarize, openAnswers, mergeResults } from '../lib/assistant/quizScore.js'
 import { planWeakTopicUpdates, attachSubjects } from '../lib/assistant/weakTopics.js'
 import {
-  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS, quizOpenReason,
+  createQuizSession, startSubmit, finishSubmit, failedOutcome, blocksNewQuiz, discardQuiz, QUIZ_ACTIONS,
   canRetrySave, withSavedAttempt,
 } from '../lib/assistant/quizSession.js'
 import {
@@ -34,7 +34,7 @@ import {
 import { createRequestSlot } from '../lib/assistant/requestSlot.js'
 import {
   actionLabel, MAX_MESSAGE, actionScope, blockReason, buildHistory, buildRequest, buildScope, lockedActionMessage,
-  resolveScopeType, scopeOptions,
+  resolveScopeType, scopeOptions, blockNotice,
 } from '../lib/assistant/requestBuilder.js'
 import { t } from '../lib/i18n/index.js'
 import { useI18n } from './useI18n.js'
@@ -42,8 +42,6 @@ import { streamErrorText } from '../lib/assistant/chatState.js'
 
 /** Texto de un aviso del Brote en el idioma activo (diccionario `assistant.notices`). */
 const notice = (key) => t(`assistant.notices.${key}`)
-/** Aviso de cada motivo de `blockReason`. */
-const blockNotice = (reason) => ({ busy: notice('busy'), no_scope: notice('noScope'), quiz_open: quizOpenReason() })[reason]
 
 /**
  * Las propuestas de un pedido con selección llevan esa selección (con su rango),
@@ -297,9 +295,9 @@ export function useAssistant() {
           running: slot.running(), scopeValue, action: fields.action, quizOpen: blocksNewQuiz(quizRef.current),
         })
         if (blocked) {
-          const notice = blockNotice(blocked)
-          setState((s) => setNotice(s, notice))
-          return { error: notice, grades: null }
+          const text = blockNotice(blocked)
+          setState((s) => setNotice(s, text))
+          return { error: text, grades: null }
         }
         if (QUIZ_ACTIONS.includes(fields.action)) {
           let scopeSubjectId = null
@@ -472,8 +470,8 @@ export function useAssistant() {
       running: slot.running(), scopeValue, action: item.request?.action ?? 'shortcut', quizOpen: false,
     })
     if (blocked) {
-      const notice = blocked === 'busy' ? notice('inlineBusy') : blockNotice(blocked)
-      putInline({ ...created, chat: setNotice(finishRequest(created.chat), notice) })
+      const text = blockNotice(blocked, { inline: true })
+      putInline({ ...created, chat: setNotice(finishRequest(created.chat), text) })
       return
     }
     putInline(created)

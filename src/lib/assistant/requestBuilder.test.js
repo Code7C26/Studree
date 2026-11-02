@@ -148,3 +148,14 @@ test('etiquetas, alcances y avisos de Premium en cada idioma', () => {
   assert.deepEqual(labels, ['This sheet', 'This subject', 'The career', 'All my subjects'])
   assert.deepEqual(scopeOptions(ctx, 'free', 'es').map((option) => option.label), ['Esta hoja', 'Esta materia', 'La carrera', 'Todas mis materias'])
 })
+
+import { blockNotice } from './requestBuilder.js'
+
+test('blockNotice: el aviso de cada motivo, y el de la tarjeta de un atajo cuando responde el chat', () => {
+  assert.equal(blockNotice('busy', { lang: 'es' }), 'El Brote todavía está respondiendo: probá cuando termine.')
+  assert.equal(blockNotice('busy', { inline: true, lang: 'es' }), 'El Brote está respondiendo en el chat: probá cuando termine.')
+  assert.equal(blockNotice('busy', { inline: true, lang: 'en' }), 'The Sprout is answering in the chat: try again when it finishes.')
+  assert.equal(blockNotice('no_scope', { lang: 'en' }), 'Open a subject to ask the Sprout (or go Premium to ask about all of them).')
+  assert.equal(blockNotice('quiz_open', { lang: 'es' }), 'Terminá o descartá la prueba abierta para pedir otra.')
+  assert.equal(blockNotice('otro', { lang: 'es' }), undefined)
+})
