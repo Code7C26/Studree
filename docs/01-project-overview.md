@@ -202,6 +202,13 @@ Spec: `docs/superpowers/specs/2026-10-22-brote-mejoras-design.md` · plan:
 | Verificación en el navegador de punta a punta | los 2 docs | ✅ verificada por el estudiante el 2026-10-26 |
 
 > Sin dependencias nuevas: el PDF usa la impresión del navegador (ADR-022).
+### Landing pública (2026-10-21)
+
+Spec: `docs/superpowers/specs/2026-10-21-landing-design.md` · plan: `docs/superpowers/plans/2026-10-21-landing.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Landing en `/bienvenida`, fuera del layout de la app; presenta la idea "tus apuntes + una IA que los conoce" y el Brote (Fase 14) | `features/landing.md` | ✅ (verificación visual en navegador pendiente del estudiante) |
 
 ### Próximas fases (hoja de ruta)
 

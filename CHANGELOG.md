@@ -427,6 +427,36 @@ saver, correlativas vivas y plantillas). `npx eslint src` sin salida y `npm run 
 - **Importar:** las hojas importadas no se suman a la cache local (crecía al cuadrado).
 - **Inicio y Ctrl+K:** no muestran hojas de una materia que está en la papelera.
 
+## [Landing, sin versión asignada] — 2026-10-21
+
+### Added — Landing pública en `/bienvenida`
+
+> Request: "analices el proyecto y armes una landing perfecta para la aplicacion", con foco en
+> clonar el conocimiento del estudiante a una IA, presentando todas las fases (incluida la 14)
+> como terminadas. Se usaron las skills ui-ux-pro-max y frontend-design y búsquedas en 21st.dev
+> solo como referencia (no se copió código de terceros).
+
+- **Ruta nueva `/bienvenida`** (`ROUTES.welcome`), pública y fuera de `AppLayout`. Se eligió en
+  lugar de `/` porque `AuthProvider` abre una sesión anónima a todo visitante: nunca hay "sin
+  sesión". `/` y el resto de la app no cambian.
+- **Bloques:** hero con el árbol y el Brote, el problema (chat genérico vs. el Brote con tus
+  hojas), cómo funciona, el Brote, tu carpeta, tu conocimiento es tuyo (export a Markdown),
+  planes (sin precios ni topes) y cierre. Los ejemplos están hechos a mano; sin testimonios ni
+  cifras.
+- **"Empezar gratis"** entra a `/` (sesión de invitado; la cuenta con email se agrega desde el
+  Perfil). No hay botón "Entrar": `/entrar` rebota a quien ya tiene sesión.
+- **Aislamiento:** no se tocaron `tailwind.config.js`, `index.css`, `package.json`, `LoginPage`,
+  `AuthProvider` ni ningún servicio. Chunk aparte (`lazy`); el bundle principal creció 0,39 kB
+  (469,59 → 469,98 kB). Sin dependencias nuevas.
+- **SEO básico:** `<title>`, descripción y Open Graph en `index.html`.
+- **Tests:** `landingCopy.test.js` (`node --test`) impide emojis, precios y cifras inventadas en
+  los textos.
+- Archivos: `src/pages/LandingPage.jsx`, `src/features/landing/**`, `src/App.jsx`,
+  `src/constants/routes.js`, `index.html`, `CLAUDE.md` (+ copias), `docs/features/landing.md`,
+  `docs/01-project-overview.md`, `docs/02-architecture.md`.
+
+---
+
 ## [0.15.0] — 2026-10-15
 
 ### Changed — Rediseño visual (ADR-018)

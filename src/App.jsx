@@ -23,6 +23,8 @@ const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
 const StudyPage = lazyPage(() => import('./pages/StudyPage'), 'StudyPage')
 const StudySummaryPage = lazyPage(() => import('./pages/StudySummaryPage'), 'StudySummaryPage')
 const StudyQuizPage = lazyPage(() => import('./pages/StudyQuizPage'), 'StudyQuizPage')
+// Landing pública: chunk aparte, solo se descarga al entrar a /bienvenida (docs/features/landing.md).
+const LandingPage = lazyPage(() => import('./pages/LandingPage'), 'LandingPage')
 
 /**
  * Suspense por ruta (no global): mientras baja el chunk, el header y el
@@ -38,6 +40,9 @@ export default function App() {
   useI18n()
   return (
     <Routes>
+      {/* Landing pública, fuera del layout de la app (sin header ni explorador). Ver landing.md. */}
+      <Route path={ROUTES.welcome} element={withSuspense(<LandingPage />)} />
+
       <Route element={<AppLayout />}>
         {/* Única ruta pública (más el catch-all). */}
         <Route path={ROUTES.login} element={<LoginPage />} />

@@ -47,6 +47,7 @@ Studree/
 │   ├── index.css                  # Tailwind + variables de tema globales
 │   ├── pages/                     # Páginas/vistas (una por ruta)
 │   │   ├── HomePage.jsx           # Inicio (`/`): seguí donde dejaste, calendario, tareas, notas
+│   │   ├── LandingPage.jsx        # Landing pública (`/bienvenida`), fuera del layout de la app
 │   │   ├── LoginPage.jsx          # Acceso (email + contraseña)
 │   │   ├── CareersPage.jsx        # Workspace: panel de inicio con las carreras
 │   │   ├── CareerMapPage.jsx      # Canvas de materias + correlativas
@@ -57,6 +58,9 @@ Studree/
 │   │   ├── StudySummaryPage.jsx   # Un resumen guardado (`/estudio/resumenes/:id`)
 │   │   ├── StudyQuizPage.jsx      # Registro de un examen (`/estudio/examenes/:id`)
 │   │   └── ProfilePage.jsx
+│   ├── features/                  # EXCEPCIÓN autorizada (2026-10-21): carpeta de primer nivel, fuera de
+│   │   └── landing/               #   components/features/. Landing pública: un componente por bloque,
+│   │                              #   landingCopy.js (textos) y paperTones.js; con sus tests (node --test)
 │   ├── components/
 │   │   ├── ui/                    # Base: Button, Modal, Drawer, TextField,
 │   │   │                          #       ConfirmDialog, PromptDialog, EmptyState, ColorPicker,
