@@ -18,6 +18,7 @@ export default {
     reorder: 'Could not reorder.',
   },
   sheets: { save: 'Could not save the sheet.', search: 'Could not search.' },
+  plan: { load: 'Could not read your plan.' },
   home: { lastSheet: 'Could not load the last sheet.' },
   trash: {
     move: 'Could not move it to the trash.',

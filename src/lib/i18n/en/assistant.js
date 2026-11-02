@@ -112,6 +112,7 @@ export default {
     accept: 'Accept',
     reject: 'Reject',
     failed: 'Could not be applied.',
+    originMark: '> Added by the Sprout (outside knowledge)',
   },
   editorApply: {
     changed: 'The sheet changed; select the text again.',

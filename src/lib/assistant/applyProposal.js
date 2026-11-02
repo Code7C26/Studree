@@ -1,16 +1,15 @@
 import { getLang, tIn } from '../i18n/index.js'
 // Ayudas puras para aplicar propuestas del Brote. Aplicar siempre lo decide el usuario.
 
-const ORIGIN_MARK = '> Agregado por el Brote (conocimiento externo)'
-
 /**
  * Marca el origen cuando lo agregado no sale de los apuntes del usuario.
  * @param {string} markdown
  * @param {'notes'|'external'} source
+ * @param {string} [lang]  La marca queda escrita en la hoja, en el idioma de ese momento.
  * @returns {string}
  */
-export function withOriginMark(markdown, source) {
-  return source === 'external' ? `${ORIGIN_MARK}\n\n${markdown}` : markdown
+export function withOriginMark(markdown, source, lang = getLang()) {
+  return source === 'external' ? `${tIn(lang, 'assistant.proposal.originMark')}\n\n${markdown}` : markdown
 }
 
 /**

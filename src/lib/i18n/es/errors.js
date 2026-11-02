@@ -18,6 +18,7 @@ export default {
     reorder: 'No se pudo reordenar.',
   },
   sheets: { save: 'No se pudo guardar la hoja.', search: 'No se pudo buscar.' },
+  plan: { load: 'No se pudo leer tu plan.' },
   home: { lastSheet: 'No se pudo cargar la última hoja.' },
   trash: {
     move: 'No se pudo mover a la papelera.',

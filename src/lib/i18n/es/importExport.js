@@ -61,6 +61,7 @@ export default {
     fileNameAll: 'todo',
     subjectNotFound: 'No se encontró la materia.',
     careerNotFound: 'No se encontró la carrera.',
+    failed: 'No se pudo generar el export.',
   },
   file: {
     allHeading: 'Mis apuntes',

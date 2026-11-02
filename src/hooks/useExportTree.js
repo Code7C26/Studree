@@ -131,7 +131,7 @@ export function useExportTree() {
     try {
       return await fetcher()
     } catch (err) {
-      setError(err.message ?? 'No se pudo generar el export.')
+      setError(err.message ?? t('importExport.export.failed'))
       return null
     } finally {
       setLoading(false)

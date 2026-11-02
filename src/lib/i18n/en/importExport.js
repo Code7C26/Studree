@@ -61,6 +61,7 @@ export default {
     fileNameAll: 'all',
     subjectNotFound: 'The subject was not found.',
     careerNotFound: 'The career was not found.',
+    failed: 'Could not generate the export.',
   },
   file: {
     allHeading: 'My notes',

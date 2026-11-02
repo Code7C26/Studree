@@ -51,19 +51,19 @@ export const AttachmentImage = Image.extend({
       options.resolveAttachment(id).then((url) => {
         if (!alive) return
         if (!url) {
-          status.textContent = 'Adjunto no disponible'
+          status.textContent = tIn(getLang(), 'folder.attachments.missing')
           dom.dataset.state = 'missing'
           return
         }
         img.onload = () => status.remove()
         img.onerror = () => {
-          status.textContent = 'Adjunto no disponible'
+          status.textContent = tIn(getLang(), 'folder.attachments.missing')
         }
         img.src = url
         dom.append(img)
       }).catch(() => {
         if (!alive) return
-        status.textContent = 'Adjunto no disponible'
+        status.textContent = tIn(getLang(), 'folder.attachments.missing')
         dom.dataset.state = 'missing'
       })
 

@@ -104,6 +104,7 @@
 | `supabase/functions/assistant/**` · `src/lib/assistant/**` · `components/features/assistant/**` · `useAssistant` · `useAssistantContext` · `assistant.service.js` · `userPlan.service.js` · `quizResults.service.js` | `docs/features/assistant.md` + `docs/03-security.md` |
 | `lib/editor/broteAnchor.js` · `features/assistant/InlineAnswerCard` · `useInlineAnswer` · `useLeaveWarning` · `usePrintSummary` · `useSaveSummaryAsSheet` | `docs/features/assistant.md` (tarjeta, ventanas y PDF) + `docs/features/folder.md` |
 | `pages/LandingPage.jsx` · `src/features/landing/**` (carpeta de primer nivel, no `components/features/`) · ruta `ROUTES.welcome` (`/bienvenida`) · metadatos de `index.html` | `docs/features/landing.md` |
+| `src/lib/i18n/**` · `hooks/useI18n.js` · `components/ui/LanguageSelector.jsx` · `lib/format/dateParts.js` · cualquier texto visible nuevo | `docs/features/i18n.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
@@ -145,3 +146,7 @@
   Gemini solo vive como secret de la Edge Function.
 - Los archivos `.cursorrules`, `.windsurfrules`, `.clinerules` y
   `.github/copilot-instructions.md` son **copias** de este archivo: al editarlo, copiarlo.
+- **Idiomas (ADR-023):** todo texto visible va por `t()` (`useI18n()` en componentes y hooks, `t` directo en `lib/` y
+  `services/`): el castellano se agrega en `src/lib/i18n/es/` y el inglés en `src/lib/i18n/en/` **en la misma tarea**. Los
+  tests de paridad y de castellano suelto (`noSpanishLeft.test.js`) fallan si falta una traducción o si se cuela texto sin
+  pasar por `t()`. El formato de los archivos exportados (claves del frontmatter, `adjuntos/`, `adjunto:`) no se traduce.

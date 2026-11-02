@@ -26,3 +26,8 @@ test('en inglés: título de la propuesta y mensajes del editor', () => {
   assert.equal(proposalTitle({ kind: 'raro' }, 'en'), 'Proposed change')
   assert.equal(proposalTitle({ kind: 'new_sheet' }, 'es'), 'Crear una hoja nueva')
 })
+
+test('la marca de origen sigue el idioma (queda escrita en la hoja, congelada)', () => {
+  assert.equal(withOriginMark('hi', 'external', 'en'), '> Added by the Sprout (outside knowledge)\n\nhi')
+  assert.equal(withOriginMark('hi', 'notes', 'en'), 'hi')
+})

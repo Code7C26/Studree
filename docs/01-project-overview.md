@@ -210,6 +210,19 @@ Spec: `docs/superpowers/specs/2026-10-21-landing-design.md` · plan: `docs/super
 |--------|-----|--------|
 | Landing en `/bienvenida`, fuera del layout de la app; presenta la idea "tus apuntes + una IA que los conoce" y el Brote (Fase 14) | `features/landing.md` | ✅ (verificación visual en navegador pendiente del estudiante) |
 
+### Fase 18: Studree en inglés (2026-11-02, ADR-023)
+
+Spec: `docs/superpowers/specs/2026-10-28-ingles-design.md` · plan: `docs/superpowers/plans/2026-10-28-fase-18-ingles.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Selector **Castellano / English** en Perfil; toda la interfaz cambia al instante y el idioma se recuerda (también al cerrar sesión) | `features/i18n.md`, `features/profile.md` | ✅ |
+| Diccionario propio por área (sin dependencias nuevas), fechas y orden por idioma, formato de archivos exportados intacto | `features/i18n.md` | ✅ |
+| El Brote responde en el idioma del mensaje; topes y errores traducidos por `code` + `reason` | `features/assistant.md`, `API_DOCS.md` | ✅ (falta volver a desplegar la función) |
+| Landing en los dos idiomas (sin selector propio) | `features/landing.md` | ✅ |
+| Verificación visual de cada pantalla en inglés en el navegador | `features/i18n.md` | ⏳ pendiente (el estudiante) |
+
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
@@ -217,7 +230,6 @@ Spec: `docs/superpowers/specs/2026-10-21-landing-design.md` · plan: `docs/super
 | 15 | Compartir por link, flashcards | Pendiente |
 | 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |
 | 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | Pendiente — al final |
-| 18 | **Inglés**: botón para cambiar la app de castellano a inglés (i18n de la interfaz; el contenido de las hojas no se traduce) | Pendiente |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

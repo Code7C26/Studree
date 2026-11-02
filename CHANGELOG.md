@@ -71,6 +71,19 @@
   `App.jsx`, conservando ambos lados) y la landing pasa a castellano / inglés. El copy se movió a los
   diccionarios `landing` (`getLandingCopy(lang)`); `landingCopy.test.js` valida las mismas reglas de
   contenido en los dos idiomas. Sin selector propio: sigue el idioma guardado o el del navegador.
+- **Tarea 12 — Barrido, documentación y cierre:** el barrido amplio encontró y tradujo los últimos textos sueltos
+  (marca "Agregado por el Brote" que queda escrita en la hoja, "Adjunto no disponible", error de exportar, de leer
+  el plan y de ubicar una hoja). ADR-023 en `docs/02-architecture.md`, `docs/features/i18n.md` completo, Fase 18
+  marcada en el overview, y `CLAUDE.md` (+ copias) con la fila de lookup y la regla "todo texto visible va por `t()`".
+  **Formato de archivo sin traducir (con test):** claves del frontmatter, `adjuntos/`, `Studree/` y `adjunto:`.
+
+**Límites conocidos:** un mensaje de error ya mostrado no se retraduce al cambiar de idioma; lo ya creado (plantillas,
+resúmenes, exámenes, marca de origen) queda en el idioma de su momento; la landing no tiene selector propio; el
+trinquete de castellano es una heurística; el inglés va en el bundle principal (+24 kB gzip).
+
+**Pendiente del estudiante:** (1) volver a desplegar la función `assistant`; (2) revisar en el navegador cada
+pantalla en inglés (textos cortados, botones deformados); (3) confirmar el nombre "Sprout" para el Brote en inglés;
+(4) decidir cómo integrar `fase-14`, `fase-18` y `landing` a `main`.
 
 ---
 

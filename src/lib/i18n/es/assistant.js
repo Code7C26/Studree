@@ -112,6 +112,7 @@ export default {
     accept: 'Aceptar',
     reject: 'Rechazar',
     failed: 'No se pudo aplicar.',
+    originMark: '> Agregado por el Brote (conocimiento externo)',
   },
   editorApply: {
     changed: 'La hoja cambió; volvé a seleccionar el texto.',

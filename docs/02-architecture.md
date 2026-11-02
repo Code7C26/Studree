@@ -106,7 +106,9 @@ Studree/
 │   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js, headings.js
 │   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets,
 │   │   │                          # broteAnchor (widget de la tarjeta del Brote, 14.1)
-│   │   ├── format/                # sheetDate.js (fecha y hora de las hojas)
+│   │   ├── format/                # sheetDate.js (fecha y hora de las hojas), dateParts.js
+│   │   ├── i18n/                  # Idiomas (Fase 18, ADR-023): core, index (`t`, `tIn`), detectLang,
+│   │   │                          # es/ y en/ (un diccionario por área), tests de paridad y trinquete
 │   │   ├── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
 │   │   ├── trash/                 # trashItems.js (textos de la papelera, puras)
 │   │   ├── attachments/           # refs.js (`adjunto:<id>`), files.js (puras)
@@ -736,3 +738,39 @@ verlos en una ventana cómoda y sacar un PDF, sin sumar dependencias ni un servi
 - El PDF depende del diálogo de impresión del navegador (el estudiante elige "Guardar como PDF").
 - Una prueba a medias no se guarda: cerrar o recargar la pestaña la pierde (el navegador avisa antes).
 - Los exámenes anteriores a la 0009 no tienen detalle y se muestran como "Sin detalle (prueba anterior)".
+
+### ADR-023: Idiomas de la interfaz con un diccionario propio (castellano / inglés)
+**Fecha:** 2026-11-02
+**Spec:** `docs/superpowers/specs/2026-10-28-ingles-design.md` · plan: `docs/superpowers/plans/2026-10-28-fase-18-ingles.md`
+**Contexto:** toda la interfaz estaba escrita a mano en castellano. El estudiante pidió "simplemente un botón
+para pasar a inglés, como en todas las web", dentro de la configuración, y que el Brote conteste en el idioma
+en que le escriben.
+**Decisión:**
+- **Un núcleo propio sin React** (`src/lib/i18n/`): `createI18n` guarda el idioma activo, traduce (`t`, y `tIn`
+  para un idioma explícito), se suscribe y persiste. Lo usan igual los componentes (vía `useI18n`, con
+  `useSyncExternalStore`, sin proveedor), los hooks, `lib/` y `services/` (que arman mensajes de error).
+- **Diccionarios por área** (`es/` y `en/`, objetos anidados con `{marcadores}` y plurales `{one, other}`).
+  Si falta una clave en inglés cae al castellano; si falta en los dos, devuelve la clave.
+- **El idioma es una preferencia del dispositivo:** `localStorage` (`studree:ui:lang`), que `clearAllCache()`
+  conserva al cerrar sesión. Sin migración ni columna en Supabase. Idioma inicial: el guardado o el del navegador.
+- **Qué se traduce:** todo texto visible, mensajes de error de los services, fechas (nombres y formato) y orden
+  alfabético. **Qué no:** el contenido del usuario, los identificadores guardados en la base (`aprobada`,
+  `cursar`…) y el **formato de los archivos exportados** (claves del frontmatter, `adjuntos/`, `adjunto:`), para
+  que el importador lea cualquier export.
+- **El Brote** responde en el idioma del mensaje del usuario; el pedido lleva `uiLang` para las acciones sin mensaje
+  escrito y para desempatar. Los errores y topes del servidor se traducen en el cliente por `code` + `reason`.
+- **Dos tests protegen el trabajo:** la paridad `es`/`en` (mismas claves y marcadores) y un "trinquete" que falla si
+  aparece castellano visible fuera de los diccionarios.
+**Alternativas descartadas:**
+- **`react-i18next` u otra librería:** la regla del proyecto es no sumar dependencias sin necesidad; el núcleo propio
+  son ~100 líneas y funciona también fuera de React.
+- **Guardar el idioma en Supabase:** exigiría una migración y una pantalla de carga; no hace falta para una
+  preferencia de interfaz.
+- **Traducir el contenido de las hojas o el de las plantillas ya creadas:** es contenido del usuario.
+- **Selector en la landing:** el estudiante pidió el botón solo en la configuración.
+**Consecuencias:**
+- Hay que mantener `es` y `en` en paridad (el test lo exige) y pasar todo texto nuevo por `t()`.
+- Lo **ya creado** (hojas desde plantillas, resúmenes, exámenes) no cambia de idioma al cambiarlo: queda en el idioma de
+  su momento. La **landing** no tiene selector propio: sigue el idioma guardado o el del navegador.
+- El inglés va en el bundle principal (+24 kB gzip): se puede cargar bajo demanda más adelante.
+- Hay que **volver a desplegar la función `assistant`** para que la regla de idioma y los `reason` de los topes lleguen.

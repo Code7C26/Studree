@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { sheetsService } from '../services/sheets.service.js'
+import { t } from '../lib/i18n/index.js'
 
 /**
  * @param {string} sheetId
@@ -21,7 +22,7 @@ export function useSheetLocation(sheetId) {
     sheetsService.get(sheetId).then(({ data, error: getError }) => {
       if (cancelled) return
       if (data) setLocation({ subjectId: data.subject_id, sheetId: data.id })
-      else setError(getError ?? 'Puede que se haya eliminado.')
+      else setError(getError ?? t('folder.page.maybeDeleted'))
     })
     return () => {
       cancelled = true
