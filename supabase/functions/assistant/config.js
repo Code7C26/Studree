@@ -3,7 +3,7 @@
 //
 // ⚠️ Los valores de LIMITS son PROVISORIOS: los define el equipo antes de salir.
 
-/** Acciones registradas en `ai_usage.action` ('quiz_grade' desde la migración 0008). */
+/** Acciones registradas en `ai_usage.action` ('quiz_grade' desde la 0008, 'transcribe' desde la 0011). */
 export const ACTIONS = [
   'chat',
   'shortcut',
@@ -14,6 +14,7 @@ export const ACTIONS = [
   'gaps',
   'connections',
   'quiz_grade',
+  'transcribe',
 ]
 
 /** Balde de tope de cada acción (`null` = no consume cupo). */
@@ -28,6 +29,8 @@ export const BUCKET_OF = {
   connections: 'extras',
   // La corrección también llama a Gemini: tiene su propio balde (Ruling L).
   quiz_grade: 'grade',
+  // Transcribir una foto llama a Gemini con imagen: balde propio (Fase 16).
+  transcribe: 'transcribe',
 }
 
 /** Topes por plan y balde: `{period, max}` o `null` = sin tope. PROVISORIOS. */
@@ -40,6 +43,7 @@ export const LIMITS = {
     // `connections` siguen bloqueados por FEATURES.
     extras: { period: 'month', max: 3 },
     grade: { period: 'day', max: 10 },
+    transcribe: { period: 'day', max: 5 },
     external: { period: 'day', max: 5 },
   },
   premium: {
@@ -48,6 +52,7 @@ export const LIMITS = {
     quiz: null,
     extras: null,
     grade: { period: 'day', max: 100 },
+    transcribe: { period: 'day', max: 100 },
     external: { period: 'day', max: 100 },
   },
 }
@@ -69,6 +74,10 @@ export const MAX = {
   proposalChars: 8000,
   /** Cuerpo del pedido HTTP (15 respuestas de prueba × 3 textos de 4000 entran holgados). */
   bodyChars: 256000,
+  /** Tope del cuerpo cuando viaja una foto (base64 incluido). */
+  photoBodyChars: 2100000,
+  /** Tope de caracteres base64 de la imagen (~1,5 MB binarios). */
+  imageChars: 2000000,
   /** Contenido total de hojas que se le pasa al modelo para armar una prueba. */
   quizSourceChars: 30000,
   /** Materias que se recorren como máximo para juntar hojas de una prueba. */

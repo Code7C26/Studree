@@ -236,8 +236,8 @@ Cinco tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nun
   cambia a mano en el panel de Supabase.** Sin fila = `free`.
 - **`ai_usage`** (`id`, `user_id`, `action`, `external`, `created_at`). `action` en
   `chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
-  `connections` y, desde la `0008`, `quiz_grade` (la corrección de pruebas tiene su balde
-  `grade`). Políticas `select` e `insert` propios; **sin update ni delete**. Índice
+  `connections`, `quiz_grade` (desde la `0008`) y `transcribe` (desde la `0011`; la transcripción
+  de fotos tiene su balde `transcribe`). Políticas `select` e `insert` propios; **sin update ni delete**. Índice
   `(user_id, action, created_at desc)` para contar el uso diario. Qué acciones comparten
   balde y los topes por plan no viven en la base: están en
   `supabase/functions/assistant/config.js` (`BUCKET_OF`, `LIMITS`; p. ej. `study_plan`,
@@ -508,3 +508,5 @@ implementa vectorización en esta etapa.**
 | 2026-10-19 | `ai_usage.action` admite `quiz_grade` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada el 2026-10-19 (`0008_quiz_grade_usage.sql`) |
 | 2026-10-22 | **Fase 14.1**: `summaries` + RLS; `quiz_attempts` suma `subject_id`, `career_id`, `title`, `detail` | Aplicada el 2026-10-22 (`0009_mi_estudio.sql`) |
 | 2026-11-10 | **Fase 15**: `shared_links` + RPC `get_shared_subject` (única `security definer`); `flashcards` (Leitner) + RLS | 🟡 `0010_fase15.sql` escrita; **falta aplicarla** |
+
+| 2026-11-10 | **Fase 16**: `ai_usage.action` admite `transcribe` (CHECK `ai_usage_action_check` reemplazado) | ? `0011_transcribe_usage.sql` escrita; **falta aplicarla** |

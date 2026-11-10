@@ -156,3 +156,18 @@ test('decideAccess devuelve reason: la función de Premium o el balde agotado', 
   assert.equal(acc({ plan: 'free', action: 'chat', counts: {} }).reason, 'unverified')
   assert.equal(acc({ plan: 'free', action: 'chat', counts: { chat: 0 } }).allowed, true)
 })
+
+test('transcribe: balde propio diario, free 5 y premium 100', () => {
+  const r = requiredCounts({ plan: 'free', action: 'transcribe', external: false, now: NOW })
+  assert.deepEqual(r.map((c) => [c.key, c.actions, c.since]), [['transcribe', ['transcribe'], '2026-10-19T00:00:00.000Z']])
+  const max = LIMITS.free.transcribe.max
+  assert.equal(acc({ plan: 'free', action: 'transcribe', counts: { transcribe: max - 1 } }).allowed, true)
+  const capped = acc({ plan: 'free', action: 'transcribe', counts: { transcribe: max } })
+  assert.equal(capped.allowed, false)
+  assert.equal(capped.code, 'quota')
+  assert.equal(capped.reason, 'transcribe')
+  assert.match(capped.message, /fotos/i)
+  assert.equal(acc({ plan: 'free', action: 'transcribe', counts: {} }).reason, 'unverified')
+  assert.equal(acc({ plan: 'premium', action: 'transcribe', counts: { transcribe: 99 } }).allowed, true)
+  assert.equal(acc({ plan: 'premium', action: 'transcribe', counts: { transcribe: 100 } }).allowed, false)
+})
