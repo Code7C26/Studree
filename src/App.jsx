@@ -25,6 +25,8 @@ const StudySummaryPage = lazyPage(() => import('./pages/StudySummaryPage'), 'Stu
 const StudyQuizPage = lazyPage(() => import('./pages/StudyQuizPage'), 'StudyQuizPage')
 // Landing pública: chunk aparte, solo se descarga al entrar a /bienvenida (docs/features/landing.md).
 const LandingPage = lazyPage(() => import('./pages/LandingPage'), 'LandingPage')
+// Materia compartida por link: pública, fuera del layout (Fase 15, docs/features/share.md).
+const SharedSubjectPage = lazyPage(() => import('./pages/SharedSubjectPage'), 'SharedSubjectPage')
 
 /**
  * Suspense por ruta (no global): mientras baja el chunk, el header y el
@@ -42,6 +44,8 @@ export default function App() {
     <Routes>
       {/* Landing pública, fuera del layout de la app (sin header ni explorador). Ver landing.md. */}
       <Route path={ROUTES.welcome} element={withSuspense(<LandingPage />)} />
+      {/* Link para compartir una materia: pública y sin sesión (Fase 15). */}
+      <Route path={ROUTES.shared} element={withSuspense(<SharedSubjectPage />)} />
 
       <Route element={<AppLayout />}>
         {/* Única ruta pública (más el catch-all). */}

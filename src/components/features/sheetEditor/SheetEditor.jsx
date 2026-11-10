@@ -34,6 +34,7 @@ import { ATTACHMENT_PROTOCOL } from '../../../lib/attachments/refs.js'
  * @param {{resolve: (id: string) => Promise<string|null>, isUploading: (id: string) => boolean, open: (id: string) => void}} [props.attachments]
  * @param {(files: FileList) => void} [props.onFiles] - Archivos soltados o pegados sobre la hoja.
  * @param {() => void} [props.onBroteRemoved] - Se borró el bloque de arriba de la tarjeta del Brote (`broteAnchor.js`).
+ * @param {boolean} [props.editable=true] - `false` para la vista pública (solo lectura, Fase 15).
  */
 export function SheetEditor({
   content,
@@ -47,6 +48,7 @@ export function SheetEditor({
   attachments,
   onFiles,
   onBroteRemoved,
+  editable = true,
 }) {
   // Las opciones de las extensiones se fijan al crear el editor: los callbacks
   // van por ref para que siempre se llame a la versión más nueva.
@@ -76,6 +78,7 @@ export function SheetEditor({
       BroteAnchorExtension.configure({ onRemoved: () => callbacks.current.onBroteRemoved?.() }),
     ],
     content: markdownToEditorContent(content),
+    editable,
     onUpdate: ({ editor: instance }) => {
       onChange(editorToMarkdown(instance))
       callbacks.current.onHitsChange?.(getSearchHits(instance).length)

@@ -14,6 +14,7 @@ import { EditorToolbar } from '../components/features/sheetEditor/EditorToolbar'
 import { NewSheetButton } from '../components/features/templates/NewSheetButton'
 import { TemplatesManager } from '../components/features/templates/TemplatesManager'
 import { ExportDialog } from '../components/features/export/ExportDialog'
+import { ShareDialog } from '../components/features/share/ShareDialog'
 import { ImportDialog } from '../components/features/import/ImportDialog'
 import { SelectionShortcuts } from '../components/features/assistant/SelectionShortcuts'
 import { InlineAnswerCard } from '../components/features/assistant/InlineAnswerCard'
@@ -146,6 +147,7 @@ function SubjectFolder({ subjectId }) {
   const [autoFocusKey, setAutoFocusKey] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const importTarget = useMemo(() => (subject ? { mode: 'subject', subjectId, subjectName: subject.name } : null), [subject, subjectId])
   const [notice, setNotice] = useState(null)
@@ -655,6 +657,15 @@ function SubjectFolder({ subjectId }) {
             >
               <Icon name="file-text" /> {t('folder.page.study')}
             </button>
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              disabled={!subject}
+              title={t('share.dialogTitle')}
+              className={`${TOOL} text-text-muted hover:text-text`}
+            >
+              <Icon name="link" /> {t('share.button')}
+            </button>
             <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft hover:text-accent`}>
               {t('folder.page.export')}
             </button>
@@ -819,6 +830,8 @@ function SubjectFolder({ subjectId }) {
       {subject && (
         <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} careerId={subject.career_id} subjectId={subjectId} />
       )}
+
+      {subject && <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} subjectId={subjectId} />}
 
       {importTarget && <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} target={importTarget} />}
 
