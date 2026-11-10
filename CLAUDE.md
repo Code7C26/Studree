@@ -104,6 +104,8 @@
 | `pages/LandingPage.jsx` · `src/features/landing/**` (carpeta de primer nivel, no `components/features/`) · ruta `ROUTES.welcome` (`/bienvenida`) · metadatos de `index.html` | `docs/features/landing.md` |
 | `src/lib/i18n/**` · `hooks/useI18n.js` · `components/ui/LanguageSelector.jsx` · `lib/format/dateParts.js` · cualquier texto visible nuevo | `docs/features/i18n.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
+| `services/sharedLinks.service.js` · `useSharedLink` · `usePublicSubject` · `pages/SharedSubjectPage.jsx` · `features/share/**` · `lib/share/**` | `docs/features/share.md` |
+| `services/flashcards.service.js` · `useFlashcards` · `pages/FlashcardsPage.jsx` · `features/flashcards/**` · `lib/flashcards/**` | `docs/features/flashcards.md` |
 | `src/components/**` (otros) | `docs/features/[feature].md` |
 | `.env*` | `docs/03-security.md` |
 

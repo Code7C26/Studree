@@ -223,11 +223,22 @@ Spec: `docs/superpowers/specs/2026-10-28-ingles-design.md` · plan: `docs/superp
 | Verificación visual de cada pantalla en inglés en el navegador | `features/i18n.md` | ⏳ pendiente (el estudiante) |
 
 
+### Fase 15: Compartir por link y tarjetas (2026-11-10, ADR-024)
+
+Spec: `docs/superpowers/specs/2026-11-10-fase-15-compartir-tarjetas-design.md` · plan: `docs/superpowers/plans/2026-11-10-fase-15.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| **Compartir** una materia con un link público de solo lectura (un link activo, revocable) | `features/share.md` | ✅ (falta aplicar la migración 0010 y la prueba visual) |
+| **Tarjetas** por materia con repaso espaciado por cajas de Leitner | `features/flashcards.md` | ✅ (falta aplicar la migración 0010 y la prueba visual) |
+| Vista pública sin adjuntos, con `[[Tema]]` como texto y TipTap en solo lectura | `features/share.md` | ✅ |
+
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| 15 | Compartir por link, flashcards | Pendiente |
+| 15 | Compartir por link, flashcards | ✅ 2026-11-10 (`features/share.md`, `features/flashcards.md`); falta aplicar la migración 0010 |
 | 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |
 | 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | Pendiente — al final |
 

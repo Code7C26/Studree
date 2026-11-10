@@ -774,3 +774,36 @@ en que le escriben.
   su momento. La **landing** no tiene selector propio: sigue el idioma guardado o el del navegador.
 - El inglés va en el bundle principal (+24 kB gzip): se puede cargar bajo demanda más adelante.
 - Hay que **volver a desplegar la función `assistant`** para que la regla de idioma y los `reason` de los topes lleguen.
+
+### ADR-024: Compartir una materia por link y tarjetas con cajas de Leitner (Fase 15)
+**Fecha:** 2026-11-10
+**Spec:** `docs/superpowers/specs/2026-11-10-fase-15-compartir-tarjetas-design.md` · plan: `docs/superpowers/plans/2026-11-10-fase-15.md`
+**Contexto:** faltaban dos funciones del roadmap: mostrar una materia a alguien sin cuenta y estudiar con
+preguntas y respuestas. La jerarquía ya es Carrera → Materia → Hoja (ADR-014) y los adjuntos viven en un bucket
+privado (ADR-020), así que la vista pública no puede reusar los archivos.
+**Decisión:**
+- **Se comparte la materia completa**, no una hoja: el link abre la Carpeta en modo lectura, con las hojas
+  fechadas. Un solo link activo por materia (`unique (subject_id) where revoked_at is null`), revocable y sin
+  vencimiento automático. El token son 32 hex (128 bits) generados en el cliente.
+- **La lectura pública la hace una RPC `security definer`, `get_shared_subject(token)`** (la única del proyecto):
+  `set search_path = public`, `stable`, solo lectura, `revoke` a `public` y `grant execute` a `anon` y
+  `authenticated`. Filtra por token, link activo y materia/carrera vivas; devuelve solo nombre/color de la
+  materia, nombre de la carrera y las hojas vivas. **Nunca** ids de usuario ni otras materias. Revisión en
+  `docs/03-security.md`.
+- **La vista pública no muestra adjuntos:** los `adjunto:` se quitan del Markdown (`lib/share/publicMarkdown.js`)
+  y los `[[Tema]]` quedan como texto. Se renderiza con TipTap en `editable={false}`, sin HTML crudo.
+- **Tarjetas por materia** (`flashcards`, RLS por dueño) con frente y dorso de 1–2000 caracteres. Repaso con
+  **cajas de Leitner** (1–5; días 0, 1, 2, 4 y 8): acertar sube una caja, fallar vuelve a la 1. El cálculo vive
+  en `lib/flashcards/srs.js` (puro) y el repaso actualiza `box`, `due_at` y `last_reviewed_at` en una escritura.
+  La generación con IA queda fuera de esta fase (toca la Edge Function y cuotas).
+**Alternativas descartadas:**
+- **Compartir una hoja suelta:** la unidad de estudio es la materia; una hoja sola pierde el hilo.
+- **Hacer públicas las tablas (RLS `true`) o usar `service_role` en el cliente:** expondría todas las materias.
+- **Links con vencimiento:** el estudiante quiere control manual; revocar es inmediato.
+- **Guardar los adjuntos en un bucket público:** rompe ADR-020; la vista pública los omite.
+- **SM-2 u otro algoritmo:** Leitner alcanza para el mazo simple y se explica en una frase.
+**Consecuencias:**
+- La migración `0010` **no se aplica sola**: la corre el estudiante (regla del proyecto).
+- La vista pública descarga TipTap en su propio chunk: la primera apertura del link es más pesada que la app.
+- Revocar y volver a generar crea una fila nueva; el link viejo deja de funcionar al instante.
+- Sin generación automática de tarjetas ni estadísticas de repaso en esta fase.

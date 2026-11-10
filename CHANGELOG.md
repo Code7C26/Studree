@@ -6,15 +6,54 @@
 
 ---
 
-## [0.20.0] — 2026-11-10 (borrador)
+## [0.20.0] — 2026-11-10
 
 ### Added — Compartir por link y tarjetas (FASE 15)
 
 > Request: "terminar las funciones pendientes" (roadmap: compartir por link y flashcards).
 > Spec: `docs/superpowers/specs/2026-11-10-fase-15-compartir-tarjetas-design.md` · plan:
-> `docs/superpowers/plans/2026-11-10-fase-15.md`.
+> `docs/superpowers/plans/2026-11-10-fase-15.md` · ADR-024.
 
-- **Tarea 0:** docs de las dos features y borrador del CHANGELOG.
+**Compartir una materia (docs/features/share.md)**
+
+- Link público de **solo lectura** por materia, con un único link activo, revocable y sin
+  vencimiento automático. Token de 32 hex (128 bits) generado en el cliente.
+- Diálogo **Compartir** en la barra de la Carpeta: generar, copiar (con respaldo manual) y
+  revocar con confirmación.
+- Página pública `/compartido/:token` fuera del layout: nombre de la materia y la carrera,
+  hojas fechadas sobre papel y TipTap en `editable={false}`. Sin adjuntos (`adjunto:` se
+  quitan) y con `[[Tema]]` como texto.
+- Migración `0010_fase15.sql`: `shared_links` + RLS por dueño + RPC `get_shared_subject`
+  (`security definer` revisada, `set search_path = public`, `revoke` a `public` y `grant` a
+  `anon`/`authenticated`). **La migración no se aplicó: la corre el estudiante.**
+- Archivos: `services/sharedLinks.service.js`, `hooks/useSharedLink.js`,
+  `hooks/usePublicSubject.js`, `lib/share/token.js`, `lib/share/publicMarkdown.js`,
+  `components/features/share/ShareDialog.jsx`, `pages/SharedSubjectPage.jsx`,
+  `constants/routes.js`, `App.jsx`, `SubjectFolderPage.jsx`, `SheetEditor.jsx` (`editable`).
+
+**Tarjetas con repaso espaciado (docs/features/flashcards.md)**
+
+- Mazo por materia con frente y dorso (1–2000 caracteres), alta, edición y borrado.
+- Repaso con **cajas de Leitner** (0, 1, 2, 4 y 8 días): acertar sube una caja, fallar vuelve
+  a la 1. Sesión frente → mostrar → "La sabía" / "No la sabía", con resumen final.
+- Migración `0010_fase15.sql`: tabla `flashcards` + RLS por dueño + `set_updated_at`.
+- Archivos: `services/flashcards.service.js`, `hooks/useFlashcards.js`,
+  `lib/flashcards/srs.js`, `components/features/flashcards/*`, `pages/FlashcardsPage.jsx`,
+  ruta `/materias/:subjectId/tarjetas`, botón **Tarjetas** en la Carpeta.
+
+**Pruebas y documentación**
+
+- Tests nuevos (Node): `lib/share/token.test.js`, `lib/share/publicMarkdown.test.js`,
+  `lib/flashcards/srs.test.js`; paridad `es`/`en` actualizada. `npm test` 579 en verde,
+  `eslint src` limpio y build correcto.
+- `docs/DB_SCHEMA.md`, `docs/03-security.md`, `docs/API_DOCS.md`, `docs/01-project-overview.md`,
+  `docs/02-architecture.md` (ADR-024), `docs/features/share.md`,
+  `docs/features/flashcards.md`, `CLAUDE.md` (+ copias).
+
+**Pendiente [ESTUDIANTE]**
+
+- Aplicar `supabase/migrations/0010_fase15.sql` y probar con dos cuentas y ventana privada.
+- Verificación visual de la página pública y del mazo en el navegador.
 
 ---
 
