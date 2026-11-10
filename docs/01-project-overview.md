@@ -234,12 +234,22 @@ Spec: `docs/superpowers/specs/2026-11-10-fase-15-compartir-tarjetas-design.md` �
 | Vista pública sin adjuntos, con `[[Tema]]` como texto y TipTap en solo lectura | `features/share.md` | ✅ |
 
 
+### Fase 16: Celular, cámara y lectura sin señal (2026-11-10, ADR-025) — en desarrollo
+
+Spec: `docs/superpowers/specs/2026-11-10-fase-16-celular-camara-design.md` · plan: `docs/superpowers/plans/2026-11-10-fase-16.md`.
+
+| Cambio | Doc | Estado |
+|--------|-----|--------|
+| Carpeta y diálogos adaptados al teléfono (breakpoint `md`) | `features/mobile.md` | En desarrollo |
+| **Foto a hoja**: cámara solo en celular y transcripción con el Brote | `features/photo-notes.md` | En desarrollo |
+| PWA instalable y lectura sin señal desde la cache | `features/mobile.md` | En desarrollo |
+
 ### Próximas fases (hoja de ruta)
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
 | 15 | Compartir por link, flashcards | ✅ 2026-11-10 (`features/share.md`, `features/flashcards.md`); falta aplicar la migración 0010 |
-| 16 | **Celular**: ver las materias desde cualquier lado (responsive de la carpeta, PWA instalable, lectura sin señal) | Pendiente — va al final |
+| 16 | **Celular, cámara y lectura sin señal** | En curso 2026-11-10 (`features/mobile.md`, `features/photo-notes.md`); falta aplicar 0011 y redesplegar |
 | 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | Pendiente — al final |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos

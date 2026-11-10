@@ -6,6 +6,19 @@
 
 ---
 
+## [0.21.0] — 2026-11-10 (en desarrollo)
+
+### Added — Celular, foto a hoja y lectura sin señal (FASE 16)
+
+> Request: "adaptar la app para el móvil y agregar una función para sacarle una foto a una hoja
+> y que el Brote la transcriba a la materia, solo en celular".
+> Spec: `docs/superpowers/specs/2026-11-10-fase-16-celular-camara-design.md` · plan:
+> `docs/superpowers/plans/2026-11-10-fase-16.md` · ADR-025.
+
+_(completar al cerrar la fase)_
+
+---
+
 ## [0.20.0] — 2026-11-10
 
 ### Added — Compartir por link y tarjetas (FASE 15)
