@@ -17,6 +17,7 @@ import { t } from './lib/i18n/index.js'
 const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })))
 const CareerMapPage = lazyPage(() => import('./pages/CareerMapPage'), 'CareerMapPage')
 const SubjectFolderPage = lazyPage(() => import('./pages/SubjectFolderPage'), 'SubjectFolderPage')
+const FlashcardsPage = lazyPage(() => import('./pages/FlashcardsPage'), 'FlashcardsPage')
 const SheetRedirectPage = lazyPage(() => import('./pages/SheetRedirectPage'), 'SheetRedirectPage')
 const TrashPage = lazyPage(() => import('./pages/TrashPage'), 'TrashPage')
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
@@ -62,6 +63,7 @@ export default function App() {
             <Route path={ROUTES.careers} element={<CareersPage />} />
             <Route path={ROUTES.careerMap} element={withSuspense(<CareerMapPage />)} />
             <Route path={ROUTES.subjectFolder} element={withSuspense(<SubjectFolderPage />)} />
+            <Route path={ROUTES.subjectCards} element={withSuspense(<FlashcardsPage />)} />
             <Route path={ROUTES.sheet} element={withSuspense(<SheetRedirectPage />)} />
             <Route path={ROUTES.trash} element={withSuspense(<TrashPage />)} />
             <Route path={ROUTES.study} element={withSuspense(<StudyPage />)} />

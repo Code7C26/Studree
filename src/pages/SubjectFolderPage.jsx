@@ -23,7 +23,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PromptDialog } from '../components/ui/PromptDialog'
 import { UndoToast } from '../components/ui/UndoToast'
-import { careerPath, studyPath } from '../constants/routes'
+import { careerPath, cardsPath, studyPath } from '../constants/routes'
 import { subjectCssVars } from '../constants/subjectTones.js'
 import { extractHeadings } from '../lib/markdown/headings.js'
 import { editorToMarkdown } from '../lib/markdown/serialize.js'
@@ -656,6 +656,15 @@ function SubjectFolder({ subjectId }) {
               className={`${TOOL} text-text-muted hover:text-text`}
             >
               <Icon name="file-text" /> {t('folder.page.study')}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(cardsPath(subjectId))}
+              disabled={!subject}
+              title={t('flashcards.title')}
+              className={`${TOOL} text-text-muted hover:text-text`}
+            >
+              <Icon name="template" /> {t('flashcards.button')}
             </button>
             <button
               type="button"
