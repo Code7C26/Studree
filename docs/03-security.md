@@ -177,6 +177,26 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
   ella misma** (`getUser`) antes de leer datos o llamar a Gemini: sin token o con token inválido →
   401, y sin Supabase configurado → 503, siempre con CORS.
 
+## Compartir por link y tarjetas (Fase 15, ADR-024)
+
+- **La única función `security definer` del proyecto** es `get_shared_subject(text)`
+  (`0010_fase15.sql`). Revisión que la habilita:
+  - `set search_path = public` (evita secuestro de `search_path`).
+  - `stable` y solo lectura; no escribe nada.
+  - `revoke all on function ... from public` y `grant execute` **solo** a `anon, authenticated`.
+  - Filtra por el token (32 hex = 128 bits de azar) y exige `revoked_at is null`,
+    `subjects.deleted_at is null` y `careers.deleted_at is null`.
+  - Devuelve **solo** nombre/color de la materia, nombre de la carrera, y de cada hoja viva su
+    `id`, `created_at` y `content_md`. **Nunca** ids de usuario, emails ni otras materias.
+- Los adjuntos no se exponen: el bucket `attachments` es privado y la vista pública muestra el
+  Markdown con los `adjunto:<id>` quitados (`lib/share/publicMarkdown.js`).
+- `shared_links` y `flashcards` tienen RLS `auth.uid() = user_id`; el `with check` exige además
+  que la materia sea del usuario. Nadie puede crear tarjetas ni links sobre materias ajenas.
+- Un link revocado deja de funcionar de inmediato (la RPC exige `revoked_at is null`). No hay
+  vencimiento automático: se revoca a mano.
+- El token se genera en el cliente con `crypto.randomUUID()` (128 bits). Se guarda en un
+  `unique` index; colisionar es despreciable.
+
 ## Reglas INVIOLABLES
 
 - NUNCA hardcodear credenciales, tokens o claves en el código.

@@ -6,6 +6,18 @@
 
 ---
 
+## [0.20.0] — 2026-11-10 (borrador)
+
+### Added — Compartir por link y tarjetas (FASE 15)
+
+> Request: "terminar las funciones pendientes" (roadmap: compartir por link y flashcards).
+> Spec: `docs/superpowers/specs/2026-11-10-fase-15-compartir-tarjetas-design.md` · plan:
+> `docs/superpowers/plans/2026-11-10-fase-15.md`.
+
+- **Tarea 0:** docs de las dos features y borrador del CHANGELOG.
+
+---
+
 ## [0.19.0] — 2026-10-28
 
 ### Added — Studree en inglés (FASE 18)

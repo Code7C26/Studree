@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** **Supabase (PostgreSQL)** — ver ADR-007.
 **Cache:** `localStorage` (optimista, descartable).
-**Última actualización:** 2026-10-15 (migración 0006: papelera, adjuntos y plantillas)
+**Última actualización:** 2026-11-10 (migración 0010: compartir por link y tarjetas)
 
 > **La Carpeta (2026-10-14, ADR-017).** Jerarquía de 3 niveles (ADR-014): Carrera →
 > Materia → Hoja. Las hojas **no tienen título** (se identifican por su fecha de creación y
@@ -403,6 +403,60 @@ create index on quick_notes (user_id, created_at);
 
 ---
 
+## Compartir por link (0010, ADR-024)
+
+> Una materia se comparte con un link público de solo lectura. Un solo link activo por materia.
+
+```sql
+create table shared_links (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  subject_id uuid not null references subjects(id) on delete cascade,
+  token      text not null unique check (token ~ '^[0-9a-f]{32}$'), -- 128 bits en hex
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz
+);
+
+create unique index shared_links_active_subject_idx
+  on shared_links (subject_id) where revoked_at is null;
+```
+
+- RLS `shared_links_owner`: `auth.uid() = user_id` (leer, crear, revocar). El `with check`
+  además exige que la materia sea del usuario (vía RLS de `subjects`).
+- Revocar es un `update` de `revoked_at`, no un `delete`: así se conserva el historial y el
+  índice parcial permite crear uno nuevo.
+- **RPC `get_shared_subject(p_token text) returns jsonb`**: `security definer`, `stable`,
+  `set search_path = public`; `revoke all from public` + `grant execute to anon, authenticated`.
+  Devuelve `{ subject: {name, color}, career: {name}, sheets: [{id, created_at, content_md}] }`
+  o `null` si el token no existe, está revocado o la materia/carrera está en la papelera.
+  No expone ids de usuario ni datos de otras materias.
+
+## Tarjetas (flashcards, 0010, ADR-024)
+
+```sql
+create table flashcards (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  subject_id       uuid not null references subjects(id) on delete cascade,
+  sheet_id         uuid references sheets(id) on delete set null,
+  front            text not null check (length(btrim(front)) between 1 and 2000),
+  back             text not null check (length(btrim(back)) between 1 and 2000),
+  box              int not null default 1 check (box between 1 and 5), -- Leitner
+  due_at           timestamptz not null default now(),
+  last_reviewed_at timestamptz,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+```
+
+- RLS `flashcards_owner`: `auth.uid() = user_id`; el `with check` exige que la materia sea
+  del usuario. Trigger `flashcards_set_updated_at` (reutiliza `set_updated_at()`).
+- Borrar la materia borra sus tarjetas (cascada); borrar una hoja deja la tarjeta con
+  `sheet_id = null`.
+- Intervalos de repaso por caja (días): `1 → 0, 2 → 1, 3 → 2, 4 → 4, 5 → 8` (`lib/flashcards/srs.js`).
+
+---
+
 ## Cache en `localStorage`
 
 > La cache **no es el modelo**: es una copia descartable para pintar rápido (ADR-007).
@@ -453,3 +507,4 @@ implementa vectorización en esta etapa.**
 | 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | ✅ Aplicada el 2026-10-19 (`0007`) |
 | 2026-10-19 | `ai_usage.action` admite `quiz_grade` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada el 2026-10-19 (`0008_quiz_grade_usage.sql`) |
 | 2026-10-22 | **Fase 14.1**: `summaries` + RLS; `quiz_attempts` suma `subject_id`, `career_id`, `title`, `detail` | Aplicada el 2026-10-22 (`0009_mi_estudio.sql`) |
+| 2026-11-10 | **Fase 15**: `shared_links` + RPC `get_shared_subject` (única `security definer`); `flashcards` (Leitner) + RLS | 🟡 `0010_fase15.sql` escrita; **falta aplicarla** |
