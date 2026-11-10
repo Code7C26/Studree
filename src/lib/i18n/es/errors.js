@@ -28,4 +28,17 @@ export default {
     purge: 'No se pudo borrar para siempre.',
     purgeExpired: 'No se pudo vaciar lo vencido.',
   },
+  share: {
+    load: 'No se pudo leer el link para compartir.',
+    create: 'No se pudo generar el link.',
+    revoke: 'No se pudo revocar el link.',
+    open: 'No se pudo abrir la materia compartida.',
+  },
+  flashcards: {
+    load: 'No se pudieron cargar las tarjetas.',
+    create: 'No se pudo crear la tarjeta.',
+    save: 'No se pudo guardar la tarjeta.',
+    remove: 'No se pudo borrar la tarjeta.',
+    review: 'No se pudo guardar el repaso.',
+  },
 }

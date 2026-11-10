@@ -28,4 +28,17 @@ export default {
     purge: 'Could not delete it forever.',
     purgeExpired: 'Could not empty what has expired.',
   },
+  share: {
+    load: 'Could not read the share link.',
+    create: 'Could not create the link.',
+    revoke: 'Could not revoke the link.',
+    open: 'Could not open the shared subject.',
+  },
+  flashcards: {
+    load: 'Could not load the flashcards.',
+    create: 'Could not create the flashcard.',
+    save: 'Could not save the flashcard.',
+    remove: 'Could not delete the flashcard.',
+    review: 'Could not save the review.',
+  },
 }

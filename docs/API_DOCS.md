@@ -177,6 +177,24 @@ explorador arma el árbol con 3 consultas (carreras, materias y, de las hojas, s
 | `getQuizAttempt(id)` | `ServiceResult<Object\|null>` | Fila completa con `detail`; `null` igual que `getSummary`. |
 | `deleteQuizAttempt(id)` | `ServiceResult<null>` | Borra por id (RLS `_owner`). |
 
+### Compartir y tarjetas (migración 0010, Fase 15)
+
+`sharedLinks.service.js` y `flashcards.service.js`: sin cache y sin avisar "cambió el árbol"
+(`notifies: false`). Registro de links y mazos en [`features/share.md`](features/share.md) y
+[`features/flashcards.md`](features/flashcards.md).
+
+| Función | Retorno | Notas |
+|---------|---------|-------|
+| `sharedLinksService.getForSubject(subjectId)` | `ServiceResult<SharedLink\|null>` | El link **activo** (`revoked_at` NULL), o `null`. |
+| `sharedLinksService.create(subjectId)` | `ServiceResult<SharedLink>` | Reusa el activo; si no hay, inserta con `token` de 32 hex (`newToken()`). Ante carrera con el índice único (`23505`), relee el link que ganó. |
+| `sharedLinksService.revoke(id)` | `ServiceResult<true>` | `revoked_at = now()`; deja de funcionar de inmediato (no borra la fila). |
+| `sharedLinksService.getPublic(token)` | `ServiceResult<PublicSubject\|null>` | Valida el token y llama la RPC `get_shared_subject({p_token})`. `null` si no existe o fue revocado. Sin sesión. |
+| `flashcardsService.listBySubject(subjectId)` | `ServiceResult<Flashcard[]>` | Pagina de a 1000; orden `created_at asc, id`. |
+| `flashcardsService.create({subject_id, sheet_id?, front, back})` | `ServiceResult<Flashcard>` | `front`/`back` recortados; la base exige 1–2000. |
+| `flashcardsService.update(id, {front?, back?})` | `ServiceResult<Flashcard>` | Solo los campos presentes. |
+| `flashcardsService.remove(id)` | `ServiceResult<true>` | Borra por id (RLS `flashcards_owner`). |
+| `flashcardsService.review(id, correct)` | `ServiceResult<Flashcard>` | Lee `box`, calcula con `nextReview` y escribe `box`, `due_at` y `last_reviewed_at` en una sola escritura. |
+
 ### Forma de las respuestas
 
 Los services **no propagan el objeto crudo de Supabase**. Normalizan a:

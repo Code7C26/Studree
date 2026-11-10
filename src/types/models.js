@@ -159,6 +159,39 @@
  */
 
 /**
+ * Link para compartir una materia (migración 0010, Fase 15).
+ * @typedef {Object} SharedLink
+ * @property {string} id
+ * @property {string} subject_id
+ * @property {string} token - 32 hex (128 bits).
+ * @property {string} created_at
+ * @property {string|null} revoked_at
+ */
+
+/**
+ * Tarjeta de repaso (migración 0010, Fase 15). `box` va de 1 a 5 (Leitner).
+ * @typedef {Object} Flashcard
+ * @property {string} id
+ * @property {string} subject_id
+ * @property {string|null} sheet_id
+ * @property {string} front
+ * @property {string} back
+ * @property {number} box
+ * @property {string} due_at
+ * @property {string|null} last_reviewed_at
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
+ */
+
+/**
+ * Materia compartida tal como la devuelve la RPC pública `get_shared_subject`.
+ * @typedef {Object} PublicSubject
+ * @property {{ name: string, color: string|null }} subject
+ * @property {{ name: string }} career
+ * @property {{ id: string, created_at: string, content_md: string }[]} sheets
+ */
+
+/**
  * Resultado normalizado de cualquier operación de un service.
  * Los services NO propagan el error crudo de supabase-js: lo traducen a string
  * para que la UI no dependa de la forma de error del proveedor (ver API_DOCS.md).
