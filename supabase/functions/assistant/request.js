@@ -8,6 +8,8 @@ const SCOPE_TYPES = ['sheet', 'subject', 'career', 'all']
 const QUIZ_TYPES = ['mcq', 'tf', 'open']
 const ROLES = ['user', 'model']
 const NEEDS_MESSAGE = ['chat', 'shortcut']
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/
 
 const fail = (error) => ({ ok: false, error })
 const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -26,6 +28,7 @@ const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v)
  * @property {{sheetId: string, text: string}} [selection]
  * @property {{count: number, types: Array<'mcq'|'tf'|'open'>}} [quiz]
  * @property {Array<{id: string, question: string, expected: string, given: string}>} [answers]
+ * @property {{mimeType: 'image/jpeg'|'image/png'|'image/webp', data: string}} [image]
  * @property {'es'|'en'} uiLang  Idioma de la interfaz (desempate y idioma de las acciones sin mensaje escrito).
  */
 
@@ -112,6 +115,22 @@ export function validateRequest(body) {
       }
     }
     value.answers = answers.map((a) => ({ id: a.id, question: a.question, expected: a.expected, given: a.given }))
+  }
+
+  if (action === 'transcribe') {
+    if (scope.type !== 'subject') return fail('La transcripción necesita una materia.')
+    const img = body.image
+    if (!isObject(img) || !IMAGE_TYPES.includes(img.mimeType) || typeof img.data !== 'string') {
+      return fail('Imagen inválida.')
+    }
+    // Base64 canónico: sin prefijo `data:`, longitud múltiplo de 4 y sin espacios.
+    if (img.data.length === 0 || img.data.length > MAX.imageChars || img.data.length % 4 !== 0) {
+      return fail('Imagen inválida.')
+    }
+    if (!BASE64_RE.test(img.data)) return fail('Imagen inválida.')
+    value.image = { mimeType: img.mimeType, data: img.data }
+  } else if (body.image !== undefined) {
+    return fail('Este pedido no acepta imagen.')
   }
 
   return { ok: true, value }

@@ -128,3 +128,35 @@ test('uiLang: "en" se conserva; ausente u otro valor → "es"; un pedido anterio
   for (const bad of ['fr', 5, null, undefined, {}]) assert.equal(validateRequest({ ...base, uiLang: bad }).value.uiLang, 'es')
   assert.equal(validateRequest(base).ok, true)
 })
+
+const SUBJ = { type: 'subject', id: UUID }
+const IMAGE = { mimeType: 'image/jpeg', data: 'aGVsbG8=' }
+const transcribe = (over = {}) => ({ action: 'transcribe', message: '', scope: SUBJ, image: IMAGE, ...over })
+
+test('transcribe valido: guarda la imagen tal cual', () => {
+  const r = validateRequest(transcribe())
+  assert.equal(r.ok, true)
+  assert.deepEqual(r.value.image, IMAGE)
+  assert.equal(r.value.scope.type, 'subject')
+})
+
+test('transcribe exige imagen y una materia', () => {
+  assert.equal(validateRequest(transcribe({ image: undefined })).ok, false)
+  assert.equal(validateRequest(transcribe({ scope: { type: 'sheet', id: UUID } })).ok, false)
+  assert.equal(validateRequest(transcribe({ scope: { type: 'all' } })).ok, false)
+})
+
+test('transcribe rechaza mime, base64 y tamanos invalidos', () => {
+  for (const mimeType of ['text/plain', 'image/gif', 'IMAGE/JPEG', undefined]) {
+    assert.equal(validateRequest(transcribe({ image: { ...IMAGE, mimeType } })).ok, false)
+  }
+  for (const data of ['', 'data:image/jpeg;base64,aGVsbG8=', 'aGVsbG8', 'aGVs bG8=', 'aGVsbG8==', '-_-_']) {
+    assert.equal(validateRequest(transcribe({ image: { ...IMAGE, data } })).ok, false, data)
+  }
+  const big = 'A'.repeat(MAX.imageChars + 4)
+  assert.equal(validateRequest(transcribe({ image: { ...IMAGE, data: big } })).ok, false)
+})
+
+test('una accion que no es transcribe no acepta image', () => {
+  assert.equal(validateRequest({ ...base, image: IMAGE }).ok, false)
+})

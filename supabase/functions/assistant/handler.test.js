@@ -792,3 +792,48 @@ test('uiLang llega al prompt: en inglés una acción sin mensaje pide generar en
   await events(await handleRequest(post(chat()), spanish.deps))
   assert.match(systemOf(spanish.calls.gemini[0]), /rioplatense/)
 })
+
+const IMAGE = { mimeType: 'image/png', data: 'aGVsbG8=' }
+const transcribe = (over = {}) => ({
+  action: 'transcribe',
+  message: '',
+  scope: { type: 'subject', id: S1 },
+  image: IMAGE,
+  ...over,
+})
+
+test('transcribe: manda la imagen como inlineData, sin herramientas ni historial, y descuenta', async () => {
+  const { deps, calls } = makeDeps({ gemini: [textReply('# Matrices\nUna matriz.')] })
+  const evs = await events(await handleRequest(post(transcribe()), deps))
+  const [args] = calls.gemini
+  assert.equal(args.body.tools, undefined)
+  assert.equal(args.body.generationConfig, undefined)
+  assert.deepEqual(args.body.contents[0].parts[0], { inlineData: IMAGE })
+  assert.match(args.body.contents[0].parts[1].text, /Markdown/)
+  assert.match(systemOf(args), /transcribir/i)
+  assert.deepEqual(evs.filter((e) => e.type === 'text'), [{ type: 'text', delta: '# Matrices\nUna matriz.' }])
+  assert.deepEqual(evs.find((e) => e.type === 'usage'), {
+    type: 'usage',
+    action: 'transcribe',
+    bucket: 'transcribe',
+    used: 1,
+    max: LIMITS.free.transcribe.max,
+    period: 'day',
+  })
+  assert.deepEqual(evs.at(-1), { type: 'done' })
+  assert.deepEqual(calls.record, [{ action: 'transcribe', external: false }])
+})
+
+test('transcribe sin texto: error no_text, sin uso ni done', async () => {
+  const { deps, calls } = makeDeps({ gemini: [textReply('   ')] })
+  const evs = await events(await handleRequest(post(transcribe()), deps))
+  assert.ok(evs.some((e) => e.type === 'error' && e.code === 'no_text'))
+  assert.ok(!evs.some((e) => e.type === 'done'))
+  assert.deepEqual(calls.record, [])
+})
+
+test('el tope normal del cuerpo sigue valiendo para acciones que no son transcribe', async () => {
+  const { deps } = makeDeps()
+  const res = await handleRequest(post(chat({ message: 'x'.repeat(300000) })), deps)
+  assert.equal(res.status, 400)
+})

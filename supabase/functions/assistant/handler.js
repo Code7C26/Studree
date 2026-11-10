@@ -25,7 +25,7 @@ import { planOf, requiredCounts, decideAccess } from './quota.js'
 import { validateRequest } from './request.js'
 import { buildMapMarkdown } from './careerMap.js'
 import { TOOL_DECLARATIONS, createToolRunner } from './tools.js'
-import { buildSystemPrompt, actionInstruction, formatDataBlock } from './prompt.js'
+import { buildSystemPrompt, buildTranscribeSystemPrompt, actionInstruction, formatDataBlock } from './prompt.js'
 import { buildGeminiRequest, GeminiError } from './gemini.js'
 import { runConversation } from './loop.js'
 import { QUIZ_SCHEMA, GRADES_SCHEMA, validateQuiz, validateGrades } from './quiz.js'
@@ -67,6 +67,7 @@ const STREAM_ERRORS = {
   steps: 'El Brote dio demasiadas vueltas sin llegar a una respuesta. Probá con algo más concreto.',
   no_notes: 'No hay apuntes en este alcance todavía.',
   no_weak_topics: 'Todavía no tenés temas flojos para repasar: hacé una prueba primero.',
+  no_text: 'No pudimos leer texto en la foto. Probá con más luz y la hoja derecha.',
   server: 'No se pudo hablar con el Brote. Probá de nuevo.',
 }
 
@@ -287,6 +288,25 @@ async function perform({ request, ctx, db, callModel, emit, emitError, now, logE
   const userTurn = (text) => ({ role: 'user', parts: [{ text }] })
   const join = (...parts) => parts.filter(Boolean).join('\n\n')
 
+  if (action === 'transcribe') {
+    const systemPrompt = buildTranscribeSystemPrompt({ today, uiLang })
+    const contents = [
+      {
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType: request.image.mimeType, data: request.image.data } },
+          { text: actionInstruction('transcribe', { scopeLabel: ctx.scopeLabel }) },
+        ],
+      },
+    ]
+    const res = await callModel(buildGeminiRequest({ systemPrompt, contents }), (delta) => emit({ type: 'text', delta }))
+    if (!String(res.text ?? '').trim()) {
+      emitError('no_text')
+      return false
+    }
+    return true
+  }
+
   if (action === 'quiz_grade') {
     const systemPrompt = buildSystemPrompt({
       action,
@@ -438,12 +458,14 @@ export async function handleRequest(req, deps) {
     return errorResponse(503, 'config', HTTP_MESSAGES.config)
   }
 
-  if (Number(req.headers.get('content-length')) > MAX.bodyChars) return errorResponse(400, 'invalid', HTTP_MESSAGES.body)
+  if (Number(req.headers.get('content-length')) > MAX.photoBodyChars) return errorResponse(400, 'invalid', HTTP_MESSAGES.body)
   let body
   try {
     const raw = await req.text()
-    if (raw.length > MAX.bodyChars) return errorResponse(400, 'invalid', HTTP_MESSAGES.body)
+    if (raw.length > MAX.photoBodyChars) return errorResponse(400, 'invalid', HTTP_MESSAGES.body)
     body = JSON.parse(raw)
+    // El tope normal sigue valiendo para todo lo que no sea una foto.
+    if (body?.action !== 'transcribe' && raw.length > MAX.bodyChars) return errorResponse(400, 'invalid', HTTP_MESSAGES.body)
   } catch {
     return errorResponse(400, 'invalid', HTTP_MESSAGES.body)
   }
