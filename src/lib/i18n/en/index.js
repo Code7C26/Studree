@@ -1,5 +1,6 @@
 import assistant from './assistant.js'
 import auth from './auth.js'
+import camera from './camera.js'
 import careerMap from './careerMap.js'
 import careers from './careers.js'
 import common from './common.js'
@@ -11,6 +12,7 @@ import folder from './folder.js'
 import home from './home.js'
 import importExport from './importExport.js'
 import landing from './landing.js'
+import mobile from './mobile.js'
 import profile from './profile.js'
 import share from './share.js'
 import shell from './shell.js'
@@ -19,4 +21,4 @@ import templates from './templates.js'
 import trash from './trash.js'
 
 /** English dictionary: one file per area, same keys as `es/` (see docs/features/i18n.md). */
-export default { assistant, auth, careerMap, careers, common, dates, editor, errors, flashcards, folder, home, importExport, landing, profile, share, shell, study, templates, trash }
+export default { assistant, auth, camera, careerMap, careers, common, dates, editor, errors, flashcards, folder, home, importExport, landing, mobile, profile, share, shell, study, templates, trash }
