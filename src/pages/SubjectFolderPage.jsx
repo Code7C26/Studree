@@ -7,6 +7,7 @@ import { useFolderAttachments } from '../hooks/useFolderAttachments.js'
 import { useHotkeys } from '../hooks/useHotkeys.js'
 import { useSheetTemplates } from '../hooks/useSheetTemplates.js'
 import { useReadingMode } from '../hooks/useReadingMode.js'
+import { usePhotoSheet } from '../hooks/usePhotoSheet.js'
 import { FolderSheet } from '../components/features/folder/FolderSheet'
 import { TopicIndex } from '../components/features/folder/TopicIndex'
 import { FolderSearchBar } from '../components/features/folder/FolderSearchBar'
@@ -15,6 +16,8 @@ import { NewSheetButton } from '../components/features/templates/NewSheetButton'
 import { TemplatesManager } from '../components/features/templates/TemplatesManager'
 import { ExportDialog } from '../components/features/export/ExportDialog'
 import { ShareDialog } from '../components/features/share/ShareDialog'
+import { PhotoButton } from '../components/features/camera/PhotoButton'
+import { PhotoSheetDialog } from '../components/features/camera/PhotoSheetDialog'
 import { ImportDialog } from '../components/features/import/ImportDialog'
 import { SelectionShortcuts } from '../components/features/assistant/SelectionShortcuts'
 import { InlineAnswerCard } from '../components/features/assistant/InlineAnswerCard'
@@ -102,6 +105,10 @@ function SubjectFolder({ subjectId }) {
     restoreSheet,
     updateLiveContent,
   } = useFolder(subjectId)
+
+  /** Foto a hoja (solo celular): la hoja se crea recién al aprobar la revisión. */
+  const photo = usePhotoSheet({ subjectId, onCreated: handleAddSheet })
+  const photoInputRef = useRef(null)
 
   const realSheetIds = useMemo(() => sheets.filter((sheet) => !isLocalSheet(sheet)).map((sheet) => sheet.id), [sheets])
   const attachmentsState = useFolderAttachments(realSheetIds)
@@ -588,6 +595,20 @@ function SubjectFolder({ subjectId }) {
         }}
       />
 
+      {/* Cámara trasera del teléfono: el botón "Foto" solo existe en celular. */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) photo.pick(file)
+          event.target.value = ''
+        }}
+      />
+
       {!reading && (
         <aside className="sticky top-0 hidden max-h-[calc(100vh-8rem)] w-full max-w-[15rem] self-start justify-self-end overflow-y-auto lg:block">
           {subject && (
@@ -675,6 +696,11 @@ function SubjectFolder({ subjectId }) {
             >
               <Icon name="link" /> {t('share.button')}
             </button>
+            <PhotoButton
+              onClick={() => photoInputRef.current?.click()}
+              disabled={!subject}
+              className={`${TOOL} text-text-muted hover:text-text`}
+            />
             <button type="button" onClick={() => setExportOpen(true)} disabled={!subject} className={`${TOOL} text-accent-soft hover:text-accent`}>
               {t('folder.page.export')}
             </button>
@@ -841,6 +867,14 @@ function SubjectFolder({ subjectId }) {
       )}
 
       {subject && <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} subjectId={subjectId} />}
+
+      <PhotoSheetDialog
+        photo={photo}
+        onRetake={() => {
+          photo.retake()
+          window.requestAnimationFrame(() => photoInputRef.current?.click())
+        }}
+      />
 
       {importTarget && <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} target={importTarget} />}
 
