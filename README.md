@@ -171,12 +171,15 @@ como invitado y, si querés guardar tus apuntes con una cuenta, la creás desde 
 En el celular o en la compu podés **instalarla como app** desde el navegador (Chrome o Edge:
 ícono de instalar en la barra de direcciones).
 
+📘 **[Manual de usuario](docs/MANUAL_USUARIO.md)**: todo Studree explicado paso a paso.
+
 ---
 
 ## Documentación
 
 | Doc | Contenido |
 |-----|-----------|
+| [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md) | **Manual de usuario**: cómo usar Studree paso a paso |
 | [`docs/01-project-overview.md`](docs/01-project-overview.md) | Visión, stack y estado de cada fase |
 | [`docs/02-architecture.md`](docs/02-architecture.md) | Estructura, convenciones y decisiones (ADRs) |
 | [`docs/03-security.md`](docs/03-security.md) | RLS, claves, adjuntos y asistente |

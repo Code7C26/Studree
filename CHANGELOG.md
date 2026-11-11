@@ -6,6 +6,38 @@
 
 ---
 
+## [0.25.3] — 2026-11-11
+
+### Added — Manual de usuario y logo de Mnemora
+
+> Request: "Necesito que vayas creando el manual de usuario. y el logo simple estilo anthropic para
+> MNEMORA."
+
+- `docs/MANUAL_USUARIO.md`: manual para el usuario final (entrar, Inicio, carreras, Carpeta, el
+  Brote, exámenes, tarjetas, celular, compartir/exportar, papelera, planes, atajos y preguntas
+  frecuentes). Enlazado desde el README.
+- `assets/mnemora-logo.svg` / `.png` (tinta sobre claro), `assets/mnemora-logo-light.svg` / `.png`
+  (crema sobre oscuro) y `assets/mnemora-isotipo.svg` / `.png`: wordmark geométrico en mayúsculas
+  dibujado en trazos (no depende de fuentes), con la O como anillo con semilla. Colores del papel
+  (`ink` #2b2620 y `paper` #fbf8ef). Sin cambios de código.
+- `assets/mnemora-pin.svg` / `.png` y `assets/mnemora-pin-oscuro.svg` / `.png`: pin redondo para
+  la remera (isotipo + wordmark dentro de la zona segura).
+- Para imprimir: `assets/onepager-jurado.pdf` (A4, una hoja), `assets/stickers-a4.pdf` (12 stickers de
+  58 mm) y los QRs vectoriales `assets/qr-web.svg` (studree.vercel.app) y `assets/qr-repo.svg` (repo).
+
+### Removed
+
+- `LEAME.md`: era el PDF del README de mayo con la extensión cambiada (GitHub lo mostraba como texto
+  ilegible). Su contenido está ampliado en el README; queda en el historial de git.
+- `Studree.code-workspace` (configuración personal del editor).
+
+### Changed — Orden del repo
+
+- `desing/EJEMPLO DE INTERFAZ.jpeg` → `assets/ejemplo-de-interfaz.jpeg` (referencia en
+  `docs/features/careers.md`); `docs/Perfil del Cliente y Validación de la Idea.pdf.pdf` → `.pdf`.
+
+---
+
 ## [0.25.2] — 2026-11-11
 
 ### Added — Mnemora, la empresa detrás de Studree

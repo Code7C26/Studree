@@ -27,7 +27,7 @@ como **tarjetas grandes y visuales** — no es un canvas de nodos (decisión del
 
 Arriba de la grilla hay una fila de **métricas** (carreras, materias, aprobadas) y la última
 tarjeta es un **"+ Nueva carrera"** punteado, como en el diseño de referencia
-(`desing/EJEMPLO DE INTERFAZ.jpeg`).
+(`assets/ejemplo-de-interfaz.jpeg`).
 
 ## ¿Carrera o curso? (correlativas opcionales — ADR-013)
 
