@@ -39,6 +39,7 @@ Studree/
 │   ├── Investigacion.md           # Investigación previa (librerías)
 │   └── Investigacion #2.md        # Investigación previa (estructura visual)
 ├── assets/                        # Material FUENTE (alta resolución) — Vite NO lo sirve
+├── pitch/                         # Presentación del pitch: HTML+CSS+JS sin dependencias (docs/features/pitch.md)
 ├── public/                        # Assets estáticos servidos tal cual (raíz del sitio)
 │   └── logo.svg                   # Logo (SVG, colores del design system) → /logo.svg
 ├── src/

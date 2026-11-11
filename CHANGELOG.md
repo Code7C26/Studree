@@ -6,6 +6,34 @@
 
 ---
 
+## [0.26.0] — 2026-11-11
+
+### Added — Presentación del pitch (`pitch/`)
+
+> Request: "Crea una presentación de diapositivas web interactiva, moderna y profesional (…) para la
+> defensa del proyecto Studree" (12 diapositivas, modo oscuro + verde, videos incrustados, QR).
+
+- `pitch/index.html`, `pitch/styles.css`, `pitch/app.js`: 12 diapositivas 16:9 (portada con el spot,
+  problema, datos, solución, demo en vivo, encuesta, cliente, I+D, mercado, modelo, finanzas,
+  difusión y cierre). HTML+CSS+JS **sin dependencias ni CDN**: se abre con doble click y anda sin
+  internet. Lienzo de 1920×1080 escalado a la pantalla; flechas, PageUp/PageDown (punteros), Espacio
+  para los videos, F para pantalla completa, `?` para la ayuda y la diapositiva en la URL (`#5`).
+- `pitch/fonts/`: Bricolage Grotesque e Inter locales (Google Fonts, OFL).
+- `pitch/assets/`: logo de Mnemora, ícono de Studree y QR al repo y a la web (copias de `assets/`).
+- `pitch/media/`: el spot (`spot.mp4`) y el anuncio en inglés (`anuncio-en.mp4`, 40 s, con las voces
+  del equipo), con sus pósters. Se agrandan a toda la diapositiva mientras suenan.
+- Datos con fuente: 621 tests (`npm test`), 25 ADR, 13 migraciones; TAM 2.540.854 universitarios
+  (Síntesis de Información Estadísticas Universitarias 2022-2023) y SAM 337.086 en Córdoba
+  (Ministerio de Ciencia y Tecnología de Córdoba, 2023); equilibrio en 6 clientes con $4.999.
+- `docs/features/pitch.md` (nuevo), fila en la tabla de lookup de `CLAUDE.md` (y sus copias) y
+  `pitch/` en la estructura de `docs/02-architecture.md`.
+
+### Pendiente
+
+- `pitch/media/flyer.png`: lo pasa el equipo. Mientras tanto la diapositiva 12 muestra el lugar marcado.
+
+---
+
 ## [0.25.3] — 2026-11-11
 
 ### Added — Manual de usuario y logo de Mnemora

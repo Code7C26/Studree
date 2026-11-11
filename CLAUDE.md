@@ -102,6 +102,7 @@
 | `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
 | `supabase/functions/assistant/**` · `src/lib/assistant/**` · `components/features/assistant/**` · `useAssistant` · `useAssistantContext` · `assistant.service.js` · `userPlan.service.js` · `quizResults.service.js` | `docs/features/assistant.md` + `docs/03-security.md` |
 | `lib/editor/broteAnchor.js` · `features/assistant/InlineAnswerCard` · `useInlineAnswer` · `useLeaveWarning` · `usePrintSummary` · `useSaveSummaryAsSheet` | `docs/features/assistant.md` (tarjeta, ventanas y PDF) + `docs/features/folder.md` |
+| `pitch/**` (presentación del pitch: `index.html`, `styles.css`, `app.js`, `media/`) | `docs/features/pitch.md` |
 | `pages/LandingPage.jsx` · `src/features/landing/**` (carpeta de primer nivel, no `components/features/`) · ruta `ROUTES.welcome` (`/bienvenida`) · metadatos de `index.html` | `docs/features/landing.md` |
 | `src/lib/i18n/**` · `hooks/useI18n.js` · `components/ui/LanguageSelector.jsx` · `lib/format/dateParts.js` · cualquier texto visible nuevo | `docs/features/i18n.md` |
 | `services/supabase.client.js` · `services/cache.service.js` · `supabase/migrations/**` | `docs/DB_SCHEMA.md` + `docs/03-security.md` |
