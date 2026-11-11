@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { subjectsService } from '../services/subjects.service.js'
 import { sheetsService, FOLDER_SHEET_COLUMNS } from '../services/sheets.service.js'
 import { trashService } from '../services/trash.service.js'
-import { cacheKey, clearCache, readCache } from '../services/cache.service.js'
+import { cacheKey, clearCache, readCache, writeCache } from '../services/cache.service.js'
 import { onDataChanged } from '../services/dataEvents.js'
 import { generateId } from '../lib/id.js'
 import {
@@ -73,14 +73,33 @@ export function useFolder(subjectId) {
       const request = (requestRef.current += 1)
       if (!silent) setLoading(true)
 
+      const subjectCacheKey = cacheKey('subject', subjectId)
+
       const [{ data: subjectRow, error: getError }, { data: rows, error: listError }] = await Promise.all([
         subjectsService.get(subjectId),
-        sheetsService.list(subjectId, undefined, { columns: FOLDER_SHEET_COLUMNS }),
+        // La cache se pinta ANTES de la red (lectura sin señal, Fase 16): si la
+        // lista falla, `nextFolderSheets` conserva lo que ya se vio.
+        sheetsService.list(
+          subjectId,
+          (cached) => {
+            if (request !== requestRef.current) return
+            setSheets((current) => nextFolderSheets(current, cached, null, liveRef.current))
+          },
+          { columns: FOLDER_SHEET_COLUMNS },
+        ),
       ])
       if (request !== requestRef.current) return
 
-      setSubject(subjectRow)
-      setSubjectError(subjectRow ? null : (getError ?? t('importExport.export.subjectNotFound')))
+      if (subjectRow) {
+        setSubject(subjectRow)
+        writeCache(subjectCacheKey, subjectRow)
+        setSubjectError(null)
+      } else {
+        // Sin red (o materia borrada): lo último guardado sigue visible.
+        const cachedSubject = readCache(subjectCacheKey, null)
+        setSubject(cachedSubject)
+        setSubjectError(cachedSubject ? null : (getError ?? t('importExport.export.subjectNotFound')))
+      }
       setError(listError)
       // Si la lista falló NO se usan sus filas (son la cache vieja): ver nextFolderSheets.
       setSheets((current) => nextFolderSheets(current, rows, listError, liveRef.current))
