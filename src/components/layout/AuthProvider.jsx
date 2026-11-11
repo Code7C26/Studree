@@ -142,10 +142,13 @@ export function AuthProvider({ children }) {
        * @param {string} password
        */
       async linkIdentity(email, password) {
-        const { data, error } = await supabase.auth.updateUser(
-          { email, password },
-          { emailRedirectTo: confirmRedirect(ROUTES.profile) },
-        )
+        const options = { emailRedirectTo: confirmRedirect(ROUTES.profile) }
+        let { data, error } = await supabase.auth.updateUser({ email, password }, options)
+        // Si un intento anterior falló al mandar el mail, la contraseña ya quedó guardada y
+        // Supabase rechaza repetirla (`same_password`): se reintenta solo con el email.
+        if (error?.code === 'same_password') {
+          ;({ data, error } = await supabase.auth.updateUser({ email }, options))
+        }
         return {
           error: translateAuthError(error),
           // Con confirmación de email activada, el email nuevo queda pendiente

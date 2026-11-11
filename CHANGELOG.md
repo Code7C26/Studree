@@ -6,6 +6,20 @@
 
 ---
 
+## [0.23.2] — 2026-11-11
+
+### Fixed — Reintentar "Guardá tu cuenta" después de un mail fallido
+
+> Request: "no me aparece lo de crear cuenta, solo lo de guardar cuenta, capaz por eso me tira error"
+
+- Causa real del error: Gmail rechazaba el usuario/contraseña del SMTP (`535 BadCredentials` en
+  los logs de Auth). Se corrige en Supabase → SMTP Settings, no en el código.
+- Al fallar el mail, Supabase igual guardaba la contraseña y el reintento con la misma devolvía
+  `same_password`. `linkIdentity` ahora reintenta solo con el email en ese caso.
+- Archivos: `components/layout/AuthProvider.jsx`, `docs/features/profile.md`.
+
+---
+
 ## [0.23.1] — 2026-11-11
 
 ### Fixed — Guardar la cuenta de invitado con un Gmail

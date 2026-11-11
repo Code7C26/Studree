@@ -37,6 +37,9 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
     URL esté en las Redirect URLs de Supabase (`docs/04-deployment.md`).
   - Reintentar enseguida ("only request this after N seconds") o usar un email que ya tiene
     cuenta muestran su propio mensaje, no el genérico (`services/authErrors.js`).
+  - Si el envío del mail falla (ej. SMTP mal configurado), Supabase igual deja guardada la
+    contraseña; al reintentar con la misma responde `same_password`. `linkIdentity` lo detecta y
+    reintenta solo con el email.
   - Implementado en `AuthProvider.linkIdentity(email, password)` (no en el componente,
     Mandamiento II: la lógica de negocio va en el provider/hook, no en la página).
 - **Resumen de contenido, no un dashboard.** Carreras / materias / hojas contadas a partir
