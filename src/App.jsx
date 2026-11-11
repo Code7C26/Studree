@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
 import { RequireAuth } from './components/layout/RequireAuth'
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout'
@@ -9,6 +9,7 @@ import { CareersPage } from './pages/CareersPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ROUTES } from './constants/routes'
 import { useI18n } from './hooks/useI18n.js'
+import { useFirstVisitRedirect } from './hooks/useFirstVisit.js'
 import { t } from './lib/i18n/index.js'
 
 // Páginas pesadas en chunks aparte: React Flow + dagre (canvas) y TipTap
@@ -41,6 +42,9 @@ const withSuspense = (element) => (
 export default function App() {
   // Suscribe la raíz al idioma: al cambiarlo, todo el árbol de rutas vuelve a pintar.
   useI18n()
+  // Primera visita del dispositivo por la raíz: se muestra la landing antes que la app.
+  const showLanding = useFirstVisitRedirect()
+  if (showLanding) return <Navigate to={ROUTES.welcome} replace />
   return (
     <Routes>
       {/* Landing pública, fuera del layout de la app (sin header ni explorador). Ver landing.md. */}

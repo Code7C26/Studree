@@ -209,6 +209,7 @@ Spec: `docs/superpowers/specs/2026-10-21-landing-design.md` · plan: `docs/super
 | Cambio | Doc | Estado |
 |--------|-----|--------|
 | Landing en `/bienvenida`, fuera del layout de la app; presenta la idea "tus apuntes + una IA que los conoce" y el Brote (Fase 14) | `features/landing.md` | ✅ (verificación visual en navegador pendiente del estudiante) |
+| La primera visita de un dispositivo por `/` muestra la landing; después, directo al Inicio. Link "Conocé Studree" en el Perfil (2026-11-11) | `features/landing.md` | ✅ |
 
 ### Fase 18: Studree en inglés (2026-11-02, ADR-023)
 

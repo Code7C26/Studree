@@ -11,8 +11,20 @@
 
 import { STORAGE_KEYS } from '../constants/storageKeys.js'
 
-/** Claves que sobreviven a `clearAllCache()` (el idioma no es dato de ningún usuario). */
-const PRESERVED_KEYS = [STORAGE_KEYS.uiLang]
+/** Claves que sobreviven a `clearAllCache()`: preferencias del dispositivo, no datos de un usuario. */
+const PRESERVED_KEYS = [STORAGE_KEYS.uiLang, STORAGE_KEYS.uiLandingSeen]
+
+/**
+ * Todas las claves guardadas en localStorage (vacío si no hay acceso).
+ * @returns {string[]}
+ */
+export function listStoredKeys() {
+  try {
+    return Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '')
+  } catch {
+    return []
+  }
+}
 
 /**
  * Lee un valor de la cache.

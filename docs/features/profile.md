@@ -51,6 +51,9 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
   única "preferencia" del perfil: se guarda en el dispositivo (`studree:ui:lang`), no en
   Supabase, y sobrevive a cerrar sesión. Ver `docs/features/i18n.md`.
 
+- **"Conocé Studree" (2026-11-11).** Al pie, un link a la landing (`/bienvenida`): es la única
+  forma de volver a verla desde la app después de la primera visita. Ver `docs/features/landing.md`.
+
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |

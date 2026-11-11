@@ -473,6 +473,7 @@ create table flashcards (
 | `studree:ui:explorer-open` | Explorador abierto/cerrado (arranca cerrado, ADR-018) |
 | `studree:ui:assistant-open` | Panel del Brote abierto/cerrado (Fase 14; en el celular no se reabre solo) |
 | `studree:ui:lang` | Idioma de la interfaz, `es` o `en` (Fase 18). Preferencia del dispositivo: **sobrevive a "cerrar sesión"** (`PRESERVED_KEYS` de `cache.service.js`) y no va a Supabase |
+| `studree:ui:landing-seen` | `true` cuando la landing ya se vio en el dispositivo: `/` deja de mandar a `/bienvenida` (`landing.md`). También en `PRESERVED_KEYS` |
 | `studree:cache:important_dates` · `studree:cache:tasks` · `studree:cache:quick_notes` | Colecciones del Inicio (0005) |
 | `studree:cache:home:lastSheet` | "Seguí donde dejaste": `{id, subject_id, updated_at, subject_name, subject_color, preview}`. Guarda solo el preview, no el contenido de la hoja |
 

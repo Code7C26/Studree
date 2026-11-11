@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../constants/routes'
 import { useAuth } from '../hooks/useAuth.js'
 import { useExplorerTree } from '../hooks/useExplorerTree.js'
 import { useI18n } from '../hooks/useI18n.js'
@@ -167,6 +169,12 @@ export function ProfilePage() {
           </dl>
         )}
       </div>
+
+      <p className="mt-6 text-center">
+        <Link to={ROUTES.welcome} className="text-sm text-accent hover:underline">
+          {t('profile.aboutLink')}
+        </Link>
+      </p>
     </section>
   )
 }

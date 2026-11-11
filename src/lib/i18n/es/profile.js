@@ -19,6 +19,7 @@ export default {
   careers: 'Carreras',
   subjects: 'Materias',
   sheets: 'Hojas',
+  aboutLink: 'Conocé Studree',
   language: {
     title: 'Idioma / Language',
     label: 'Idioma de la interfaz',

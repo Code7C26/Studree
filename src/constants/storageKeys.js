@@ -30,4 +30,9 @@ export const STORAGE_KEYS = Object.freeze({
    * borra al cerrar sesión (ver `PRESERVED_KEYS` en cache.service.js).
    */
   uiLang: 'studree:ui:lang',
+  /**
+   * La landing ya se vio en este dispositivo: `/` deja de mandar a `/bienvenida`
+   * (docs/features/landing.md). Del dispositivo: sobrevive a cerrar sesión.
+   */
+  uiLandingSeen: 'studree:ui:landing-seen',
 })

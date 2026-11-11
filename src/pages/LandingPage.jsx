@@ -8,12 +8,15 @@ import { OwnershipSection } from '../features/landing/OwnershipSection'
 import { PlansSection } from '../features/landing/PlansSection'
 import { ClosingSection } from '../features/landing/ClosingSection'
 import { LandingFooter } from '../features/landing/LandingFooter'
+import { useMarkLandingSeen } from '../hooks/useFirstVisit.js'
 
 /**
  * Landing pública de Studree (pública, en /bienvenida). Ver docs/features/landing.md.
- * Solo compone los bloques de `features/landing/`; no lee ni escribe datos.
+ * Compone los bloques de `features/landing/`; no lee ni escribe datos del usuario. Solo marca
+ * en el dispositivo que ya se vio, para que `/` deje de traer acá.
  */
 export function LandingPage() {
+  useMarkLandingSeen()
   return (
     // El layout de la app no la envuelve; scrollea el documento (así funcionan Espacio y RePág).
     <div className="min-h-full bg-bg text-text">

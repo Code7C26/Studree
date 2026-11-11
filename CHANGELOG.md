@@ -6,6 +6,27 @@
 
 ---
 
+## [0.22.0] — 2026-11-11
+
+### Added — La landing aparece en la primera visita
+
+> Request: "la landing que habíamos creado, ¿dónde aparece?" → opción B: que la vea quien entra
+> por primera vez.
+
+- **Primera visita por `/` → `/bienvenida`.** Si el dispositivo nunca usó Studree (ninguna clave
+  `studree:` en `localStorage` salvo el idioma), `App.jsx` redirige a la landing
+  (`hooks/useFirstVisit.js` → `useFirstVisitRedirect`). Los links directos no se desvían.
+- **La landing se marca como vista al abrirla** (`useMarkLandingSeen`, clave nueva
+  `studree:ui:landing-seen`, preservada al cerrar sesión): "Empezar gratis" y las visitas
+  siguientes van directo al Inicio.
+- **Lógica pura con test:** `lib/landing/firstVisit.js` + `firstVisit.test.js`.
+- **`cache.service.js`:** `listStoredKeys()` y la clave nueva en `PRESERVED_KEYS`.
+- **Perfil:** link "Conocé Studree" / "About Studree" a la landing.
+- Docs: `features/landing.md`, `features/profile.md`, `DB_SCHEMA.md` (cache en `localStorage`),
+  `01-project-overview.md`.
+
+---
+
 ## [0.21.2] — 2026-11-11
 
 ### Changed — README actualizado y app online

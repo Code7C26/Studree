@@ -9,15 +9,22 @@ escribís se pueden exportar a Markdown y dárselos a una IA (el Brote) que los 
 completar temas, tomar examen y responder dudas. Presenta el producto, incluida la Fase 14,
 como terminado.
 
-## Ruta y por qué no está en `/`
+## Ruta y cuándo aparece
 
 - `ROUTES.welcome = '/bienvenida'`, declarada en `App.jsx` **fuera de `AppLayout`** (sin header
   ni explorador). La página se carga con `lazy` en su propio chunk.
-- `AuthProvider` crea una sesión anónima a todo visitante nuevo, así que no existe el estado
-  "sin sesión" y una landing condicionada a él no aparecería nunca. Se descartó mostrarla en `/`
-  a los invitados (obliga a cambiar `LoginPage` y quita el Inicio a invitados con datos) y diferir
-  la sesión anónima (toca `AuthProvider`). Al hacer el deploy se puede decidir qué mostrar en la raíz.
-- Abrir `/bienvenida` también crea la sesión de invitado: es el comportamiento de cualquier URL.
+- **Primera visita (2026-11-11, al desplegar):** quien entra por `/` desde un dispositivo que
+  nunca usó Studree va a la landing (`useFirstVisitRedirect` en `App.jsx`). Al abrirla se guarda
+  `studree:ui:landing-seen` (`useMarkLandingSeen`), así que "Empezar gratis" → `/` ya muestra el
+  Inicio y las visitas siguientes van directo a la app.
+- "Primera visita" = no hay ninguna clave `studree:` en `localStorage` salvo el idioma
+  (`lib/landing/firstVisit.js`, con test). Quien ya usaba Studree en ese dispositivo tiene cache
+  y no ve la landing de golpe.
+- Solo se desvía la raíz: un link directo (una materia, `/compartido/...`) entra normal.
+- `studree:ui:landing-seen` es del dispositivo: sobrevive a "cerrar sesión" (`PRESERVED_KEYS`).
+- Desde la app se llega con **"Conocé Studree"**, al pie del Perfil.
+- `AuthProvider` sigue creando la sesión anónima a todo visitante nuevo, también en
+  `/bienvenida`: no se tocó.
 
 ## Estructura
 
@@ -34,7 +41,8 @@ como terminado.
 ## Reglas
 
 - **Aislamiento:** no se modifican `tailwind.config.js`, `index.css`, `package.json`, `LoginPage`,
-  `AuthProvider` ni servicios. Solo tokens existentes. La landing no lee ni escribe datos.
+  `AuthProvider` ni servicios. Solo tokens existentes. La landing no lee ni escribe datos del
+  usuario; lo único que guarda es la marca `studree:ui:landing-seen` del dispositivo.
 - "Empezar gratis" → `/` (entra como invitado; la cuenta con email se agrega en el Perfil). No hay
   botón "Entrar": `/entrar` rebota a quien ya tiene sesión.
 - Los ejemplos (hojas, respuesta del Brote) son ilustrativos y hechos a mano. Sin testimonios,
