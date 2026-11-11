@@ -16,7 +16,8 @@
 - **`README.md` reescrito:** describía la jerarquía vieja de 5 niveles (Unidad y Tema) y daba
   como pendientes funciones ya hechas. Ahora tiene el link a la app, el problema y la solución,
   todas las funcionalidades actuales, el diagrama de arquitectura, seguridad, calidad (tests,
-  ESLint, Método AInnovate) y la instalación con las 11 migraciones y la Edge Function.
+  ESLint, Método AInnovate) y una sección "Probalo" con el link y cómo instalarla como app (sin
+  pasos de instalación local: la guía técnica sigue en `docs/04-deployment.md`).
 - **`docs/01-project-overview.md`** y **`docs/04-deployment.md`**: deploy marcado como hecho.
 
 ---

@@ -160,64 +160,13 @@ public/         manifest y service worker de la PWA
 
 ---
 
-## Cómo levantarlo localmente
+## Probalo
 
-**Requisitos:** Node.js 18 o superior y un proyecto en [Supabase](https://supabase.com) (el plan
-gratuito alcanza).
+Entrá a **[studree.vercel.app](https://studree.vercel.app)**. No hace falta registrarse: entrás
+como invitado y, si querés guardar tus apuntes con una cuenta, la creás desde el Perfil.
 
-1. Instalar dependencias:
-
-   ```bash
-   git clone https://github.com/Code7C26/Studree.git
-   cd Studree
-   npm install
-   ```
-
-2. Copiar las variables de entorno y completarlas con los datos de **Project Settings → API**:
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   ```
-   VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
-   VITE_SUPABASE_ANON_KEY=tu-clave-anon
-   ```
-
-   La `anon key` es pública por diseño: lo que protege los datos es la RLS. **Nunca** pongas la
-   `service_role` ni la clave de Gemini en un `VITE_*`.
-
-3. En el **SQL Editor** de Supabase, correr **en orden** las 11 migraciones de
-   [`supabase/migrations/`](supabase/migrations/) (`0001_init.sql` … `0011_transcribe_usage.sql`).
-
-4. (Opcional, para el Brote) Desplegar la Edge Function con la CLI de Supabase:
-
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <ref-del-proyecto>
-   npx supabase secrets set GEMINI_API_KEY=<clave> GEMINI_MODEL=<modelo>
-   npx supabase functions deploy assistant --no-verify-jwt --use-api
-   ```
-
-   Sin la función, la app funciona igual; solo el Brote y Foto a hoja quedan desactivados.
-
-5. Levantar la app en `http://localhost:5173`:
-
-   ```bash
-   npm run dev
-   ```
-
-### Comandos
-
-```bash
-npm run dev       # servidor de desarrollo
-npm test          # tests
-npm run lint      # ESLint
-npm run build     # build de producción en dist/
-npm run preview   # sirve el build localmente
-```
-
-El despliegue en Vercel está explicado en [`docs/04-deployment.md`](docs/04-deployment.md).
+En el celular o en la compu podés **instalarla como app** desde el navegador (Chrome o Edge:
+ícono de instalar en la barra de direcciones).
 
 ---
 
