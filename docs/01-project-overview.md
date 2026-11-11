@@ -44,7 +44,7 @@ para orientarse (Carrera → Materia → Hoja, ADR-014 y ADR-017).
 | Backend | Supabase (BaaS) | - | Sin servidor propio |
 | Base de datos | PostgreSQL (Supabase) | - | Esquema en `docs/DB_SCHEMA.md` |
 | Auth | Supabase Auth | - | Necesaria para RLS (ver `docs/03-security.md`) |
-| Deploy | _Pendiente_ | - | Candidatos: Vercel / Netlify / GitHub Pages |
+| Deploy | Vercel | - | https://studree.vercel.app (ver `docs/04-deployment.md`) |
 
 ## Estado del Proyecto
 

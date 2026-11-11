@@ -6,6 +6,21 @@
 
 ---
 
+## [0.21.2] — 2026-11-11
+
+### Changed — README actualizado y app online
+
+> Request: "actualizar el README del repositorio, que estaba desactualizado" (para el pitch final).
+
+- **App desplegada en Vercel:** https://studree.vercel.app (repo público en GitHub).
+- **`README.md` reescrito:** describía la jerarquía vieja de 5 niveles (Unidad y Tema) y daba
+  como pendientes funciones ya hechas. Ahora tiene el link a la app, el problema y la solución,
+  todas las funcionalidades actuales, el diagrama de arquitectura, seguridad, calidad (tests,
+  ESLint, Método AInnovate) y la instalación con las 11 migraciones y la Edge Function.
+- **`docs/01-project-overview.md`** y **`docs/04-deployment.md`**: deploy marcado como hecho.
+
+---
+
 ## [0.21.1] — 2026-11-10
 
 ### Changed — Orden del repositorio y deploy en Vercel

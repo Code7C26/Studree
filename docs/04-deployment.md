@@ -1,7 +1,7 @@
 # Deployment — Studree
 
-> **Estado:** Configurado para Vercel (2026-11-10). Falta conectar el repositorio en la cuenta
-> de Vercel y cargar las variables de entorno.
+> **Estado:** Desplegado en Vercel el 2026-11-11: **https://studree.vercel.app**. El repositorio
+> es público porque el plan Hobby no despliega repos privados de una organización de GitHub.
 
 ## Resumen
 
@@ -57,10 +57,10 @@ npm run preview    # sirve dist/ localmente para verificar
 - [x] `npm run build` corre sin errores.
 - [x] Revisado el checklist de seguridad (`docs/03-security.md`).
 - [x] `.env.example` actualizado con todas las variables.
-- [ ] Variables de entorno configuradas en Vercel.
+- [x] Variables de entorno configuradas en Vercel (solo las tres `VITE_*`).
 - [x] Routing de la SPA con fallback a `index.html` (`vercel.json`).
 - [x] CHANGELOG actualizado con la versión a desplegar.
-- [ ] Edge Function `assistant` desplegada con la versión de esta fase.
+- [x] Edge Function `assistant` desplegada con la versión de esta fase.
 
 ## Otros hostings
 

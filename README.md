@@ -1,114 +1,179 @@
-# 📚 Studree
+# Studree
 
-## Descripción
+> **El conocimiento no se guarda. Crece.**
 
-**Studree** es una plataforma web diseñada para ayudar a los estudiantes a organizar sus materias y recursos de estudio de una forma visual e intuitiva.
+Studree es una plataforma web para organizar los apuntes de una carrera o curso como una
+**carpeta escolar digital**, con una IA, **el Brote**, que conoce esos apuntes y estudia con vos.
+Su nombre une *Study + Tree*: cada carrera es un árbol, las materias son sus ramas y los apuntes
+son sus hojas.
 
-Su nombre surge de la unión de **Study + Tree**, representando la idea de que el conocimiento crece como un árbol. En lugar de organizar la información mediante carpetas tradicionales, cada materia se convierte en un **árbol conceptual**, donde los temas principales actúan como el tronco y se ramifican en unidades, subtemas y recursos relacionados.
-
-La aplicación permite almacenar apuntes, archivos, enlaces y material de estudio en un solo lugar, facilitando una organización más clara y un acceso rápido a toda la información.
-
----
-
-## Problemática
-
-Muchos estudiantes distribuyen sus apuntes entre carpetas del celular, WhatsApp, Google Drive, PDFs y diferentes aplicaciones.
-
-Esta desorganización provoca:
-
-* pérdida de tiempo buscando información;
-* dificultad para relacionar conceptos entre materias;
-* pérdida de archivos importantes;
-* una experiencia de estudio poco eficiente.
+**App online: [studree.vercel.app](https://studree.vercel.app)** · funciona en la compu y en el
+celular (se instala como app).
 
 ---
 
-## Propuesta de solución
+## El problema
 
-Studree propone una nueva forma de organizar el aprendizaje mediante una jerarquía visual e interactiva: **Carrera → Materia → Unidad → Tema → Hoja**.
+Los estudiantes reparten sus apuntes entre fotos del pizarrón, el chat del grupo, documentos
+sueltos, PDFs y cuadernos. Cuando llega el parcial:
 
-* 🎓 La carrera (o curso/capacitación) agrupa las materias.
-* 📚 Cada materia puede tener correlativas con otras (opcional — ver más abajo).
-* 📁🔖 Las unidades y los temas se navegan como un canvas de nodos.
-* 📝 Las hojas son los apuntes en sí: se editan en un editor de texto enriquecido y quedan guardadas en Markdown.
+- se pierde tiempo buscando la información;
+- cuesta saber qué falta estudiar de cada tema;
+- las IA genéricas responden "cualquier cosa", porque no conocen lo que se dio en clase.
 
-De esta manera, el estudiante puede explorar visualmente el contenido y comprender cómo se conectan los distintos conceptos.
+Está pensado para estudiantes secundarios y universitarios, y para cualquier persona que haga
+cursos o capacitaciones.
 
-Entre las funcionalidades implementadas se encuentran:
+## La solución
 
-* creación y organización de carreras/cursos y materias;
-* correlativas entre materias (**opcionales**: una carrera sin ninguna cargada funciona igual, como organizador simple — útil para cursos y capacitaciones, no solo carreras universitarias);
-* navegación mediante canvases interactivos (React Flow) y un explorador lateral tipo VSCode;
-* editor de apuntes en rico (negrita, listas, checklists, citas, enlaces), guardado como Markdown;
-* búsqueda rápida de cualquier hoja, materia, unidad o tema (`Ctrl+K`);
-* autenticación y persistencia real en la nube (Supabase).
-
----
-
-## Público objetivo
-
-Studree está dirigido a:
-
-* estudiantes de nivel secundario;
-* estudiantes universitarios;
-* personas que realizan cursos o capacitaciones;
-* cualquier persona que desee organizar su material de estudio de manera visual.
+1. **Tus apuntes, ordenados.** La jerarquía es fija y simple: **Carrera → Materia → Hoja**. Cada
+   materia es una carpeta con sus hojas fechadas, una detrás de otra, sobre papel con renglones.
+   Los temas son los títulos que escribís (`# Tema`), con un índice automático, y `[[Tema]]` salta
+   a cualquiera de ellos.
+2. **Una IA que conoce tu materia.** El Brote lee tus hojas, responde citando de cuál sacó cada
+   dato, marca lo que falta y **propone** el texto. Nunca escribe en una hoja sin que aprietes
+   *Aceptar*.
+3. **Herramientas para estudiar** con ese mismo material: exámenes, resúmenes, tarjetas de repaso
+   y plan de estudio.
 
 ---
 
-## Diseño e identidad visual
+## Funcionalidades
 
-La interfaz está pensada para transmitir una experiencia moderna, limpia y profesional.
+### Organización
+- **Carreras y materias** con tarjetas de progreso y un **mapa de correlativas** interactivo
+  (React Flow). Las correlativas son opcionales, así que también sirve para un curso suelto.
+- **La Carpeta:** todas las hojas de una materia seguidas y en orden, con índice de temas,
+  buscador interno (`Ctrl+F`) y modo lectura.
+- **Editor de hojas** enriquecido (TipTap) con guardado automático; el contenido se guarda como
+  **Markdown**.
+- **Adjuntos** en las hojas (imágenes y archivos): se pueden soltar, pegar o subir.
+- **Plantillas de hoja:** cuatro incluidas y las que crees vos.
+- **Inicio:** "Seguí donde dejaste", calendario de fechas importantes, tareas con vencimiento y
+  notas rápidas.
+- **Buscador global** (`Ctrl+K`) de carreras, materias y contenido de las hojas.
+- **Papelera:** lo que borrás queda 30 días, con *Deshacer*.
 
-Características principales:
+### El Brote (asistente de IA)
+- Chat sobre tus apuntes, en dos modos: **solo con tus hojas** o **con conocimiento externo**
+  (que queda marcado en la hoja).
+- Atajos sobre el texto seleccionado: **Explicar, Refutar, Completar y Preguntame**, con la
+  respuesta debajo del texto.
+- **Exámenes** de opción múltiple, verdadero o falso y desarrollo, con corrección explicada y
+  registro de cada intento.
+- **Resúmenes** de una materia: se pueden guardar como hoja o exportar a PDF.
+- **Mi estudio:** historial de resúmenes y exámenes, filtrable por materia.
+- **Foto a hoja:** sacás una foto del pizarrón o del cuaderno desde el celular y el Brote la pasa
+  a texto, que revisás antes de guardar.
 
-* modo oscuro como diseño principal;
-* tonos grises oscuros para mejorar la concentración;
-* color de acento verde que simboliza crecimiento y aprendizaje;
-* diseño minimalista;
-* navegación basada en un explorador lateral, tabs y un canvas de nodos interactivo.
+### Estudiar y compartir
+- **Tarjetas de repaso** por materia, con repaso espaciado (sistema de cajas de Leitner).
+- **Compartir una materia** con un link público de solo lectura, revocable en cualquier momento.
+- **Exportar** a un único `.md` o a un `.zip` con adjuntos, más **"Copiar para IA"**.
+- **Importar** archivos `.md` y `.zip` (también un vault de Obsidian o un export de Studree).
 
-El objetivo es que el usuario sienta que cada materia crece como un árbol y que su conocimiento evoluciona de forma natural a medida que incorpora nuevos conceptos.
+### Plataforma
+- **Castellano e inglés**: toda la interfaz y el Brote.
+- **Celular y PWA:** interfaz adaptada al teléfono, se instala como app y permite leer los
+  apuntes sin señal.
 
 ---
 
-## Stack tecnológico
+## Arquitectura
+
+```
+ Navegador (React SPA)                      Supabase
+ ┌───────────────────────────┐   HTTPS    ┌──────────────────────────────────┐
+ │ components → hooks →       │──────────▶│ Postgres + Row Level Security     │
+ │ services (única capa que   │           │ Auth (sesión del usuario)         │
+ │ habla con Supabase)        │           │ Storage (bucket privado adjuntos) │
+ │ localStorage = cache       │           │ Edge Function "assistant" ───────▶│── Gemini (Google)
+ │ Service worker (PWA)       │◀──────────│   (la clave vive solo acá)        │
+ └───────────────────────────┘ streaming └──────────────────────────────────┘
+```
+
+- **Supabase es la fuente de verdad.** `localStorage` es solo una cache optimista para que la UI
+  responda al instante y para leer sin señal.
+- **El Markdown es la fuente de verdad del contenido.** El editor convierte de ida y vuelta, y por
+  eso todo es exportable sin pérdida.
+- **Capas separadas:** la lógica pura vive en `src/lib/` (con tests), el acceso a datos en
+  `src/services/`, el estado en `src/hooks/` y la presentación en `src/components/`.
+- **El Brote corre en el servidor:** la Edge Function usa el token del usuario (así respeta la
+  RLS), controla los topes de uso y transmite la respuesta en streaming.
+- Cada decisión importante está registrada como **ADR** (25 en total) en
+  [`docs/02-architecture.md`](docs/02-architecture.md).
+
+## Seguridad
+
+- **Row Level Security** en todas las tablas: cada cuenta ve solo sus datos.
+- En el navegador solo está la clave pública `anon` de Supabase. La clave de Gemini vive como
+  secret de la Edge Function y **nunca llega al cliente**.
+- Los adjuntos van a un bucket **privado**; en el Markdown se referencian por id (`adjunto:<id>`),
+  nunca con una URL pública.
+- El link compartido usa un token aleatorio (122 bits de azar, imposible de adivinar), se puede
+  revocar y solo expone esa materia.
+- El historial del repositorio no contiene secretos (`.env.local` está en `.gitignore`).
+
+Detalle completo en [`docs/03-security.md`](docs/03-security.md).
+
+## Calidad y proceso
+
+- **603 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
+  Markdown, los permisos del asistente, el repaso espaciado, los tokens y la paridad de idiomas.
+- **ESLint** sin errores y build de producción verificado.
+- Tests que **fallan si falta una traducción** o si queda texto visible sin traducir.
+- **Documentation-Driven Development (Método AInnovate):** antes de cada cambio se escribe o
+  actualiza el doc de la funcionalidad, el modelo de datos y el CHANGELOG. Cada fase tiene su
+  diseño y su plan en [`docs/superpowers/`](docs/superpowers/).
+
+---
+
+## Stack
 
 | Capa | Tecnología |
 |------|-----------|
 | Frontend | React 18 + Vite 5 |
-| Lenguaje | JavaScript (ES2022) + JSDoc — sin TypeScript |
-| Estilos | TailwindCSS |
-| Canvas / nodos | React Flow (`@xyflow/react`) + `@dagrejs/dagre` (auto-layout) |
-| Editor de hojas | TipTap v3 (Markdown como fuente de verdad) |
-| Backend / base de datos | Supabase (PostgreSQL + Auth + Row Level Security) |
-| Cache local | `localStorage` (optimista, descartable — Supabase es la fuente de verdad) |
-| Routing | React Router DOM |
+| Lenguaje | JavaScript (ES2022) + JSDoc, sin TypeScript |
+| Estilos | TailwindCSS 3 (design system propio en `tailwind.config.js`) |
+| Editor | TipTap 3 (ProseMirror), con Markdown como formato de guardado |
+| Mapas | React Flow (`@xyflow/react`) + dagre |
+| Routing | React Router 6 |
+| Backend | Supabase: PostgreSQL, Auth, Storage, Row Level Security y Edge Functions (Deno) |
+| IA | Google Gemini, solo desde la Edge Function |
+| Deploy | Vercel (frontend) + Supabase (base y función) |
 
-Documentación técnica completa en [`docs/`](docs/): visión y estado (`01-project-overview.md`), arquitectura y decisiones de diseño —ADRs— (`02-architecture.md`), seguridad (`03-security.md`), modelo de datos (`DB_SCHEMA.md`) y una ficha por funcionalidad en `docs/features/`.
+## Estructura
+
+```
+src/
+  components/   UI por funcionalidad (features/) y componentes base (ui/, layout/)
+  hooks/        estado y orquestación (useFolder, useAssistant, useFlashcards, …)
+  services/     acceso a Supabase (única capa que lo hace)
+  lib/          lógica pura con tests (markdown, editor, asistente, i18n, repaso, …)
+  pages/        una por ruta
+supabase/
+  migrations/   0001 … 0011, en orden
+  functions/assistant/   Edge Function del Brote
+docs/           visión, arquitectura, seguridad, modelo de datos, API y una ficha por funcionalidad
+public/         manifest y service worker de la PWA
+```
 
 ---
 
-## Instalación y uso
+## Cómo levantarlo localmente
 
-### Requisitos
+**Requisitos:** Node.js 18 o superior y un proyecto en [Supabase](https://supabase.com) (el plan
+gratuito alcanza).
 
-* Node.js 18 o superior.
-* Una cuenta de [Supabase](https://supabase.com) (tiene plan gratuito).
-
-### Pasos
-
-1. Clonar el repositorio e instalar dependencias:
+1. Instalar dependencias:
 
    ```bash
-   git clone <url-del-repo>
+   git clone https://github.com/Code7C26/Studree.git
    cd Studree
    npm install
    ```
 
-2. Crear un proyecto en Supabase y copiar la URL y la `anon key` (**Project Settings → API**).
-
-3. Copiar el archivo de variables de entorno y completar las claves:
+2. Copiar las variables de entorno y completarlas con los datos de **Project Settings → API**:
 
    ```bash
    cp .env.example .env.local
@@ -116,56 +181,55 @@ Documentación técnica completa en [`docs/`](docs/): visión y estado (`01-proj
 
    ```
    VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
-   VITE_SUPABASE_ANON_KEY=tu-clave-publica-anon
+   VITE_SUPABASE_ANON_KEY=tu-clave-anon
    ```
 
-   > La `anon key` es pública por diseño: lo que protege los datos es Row Level Security (RLS), no el secreto de esta clave. Ver `docs/03-security.md`.
+   La `anon key` es pública por diseño: lo que protege los datos es la RLS. **Nunca** pongas la
+   `service_role` ni la clave de Gemini en un `VITE_*`.
 
-4. Aplicar el esquema de la base: en el **SQL Editor** del dashboard de Supabase, correr el contenido de [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql). Esto crea las 6 tablas, los índices, los triggers y las políticas de RLS.
+3. En el **SQL Editor** de Supabase, correr **en orden** las 11 migraciones de
+   [`supabase/migrations/`](supabase/migrations/) (`0001_init.sql` … `0011_transcribe_usage.sql`).
 
-5. (Opcional pero recomendado) Activar el inicio de sesión anónimo en **Authentication → Providers → Anonymous Sign-Ins**, para poder entrar sin crear una cuenta con email. Si se deja desactivado, la app pide crear una cuenta con email y contraseña.
+4. (Opcional, para el Brote) Desplegar la Edge Function con la CLI de Supabase:
 
-6. Levantar el servidor de desarrollo:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <ref-del-proyecto>
+   npx supabase secrets set GEMINI_API_KEY=<clave> GEMINI_MODEL=<modelo>
+   npx supabase functions deploy assistant --no-verify-jwt --use-api
+   ```
+
+   Sin la función, la app funciona igual; solo el Brote y Foto a hoja quedan desactivados.
+
+5. Levantar la app en `http://localhost:5173`:
 
    ```bash
    npm run dev
    ```
 
-   La app queda disponible en `http://localhost:5173`.
-
-### Otros comandos
+### Comandos
 
 ```bash
-npm run build    # build de producción
-npm run preview  # sirve el build localmente
-npm run lint     # ESLint
+npm run dev       # servidor de desarrollo
+npm test          # tests
+npm run lint      # ESLint
+npm run build     # build de producción en dist/
+npm run preview   # sirve el build localmente
 ```
 
----
-
-## Estado técnico actual
-
-✅ **Funcional de punta a punta**, sobre una base real en Supabase (no hay datos mock ni placeholders):
-
-* Autenticación (email/contraseña o sesión anónima) con Row Level Security en las 6 tablas.
-* Alta, edición y borrado de carreras, materias, unidades, temas y hojas.
-* Correlativas entre materias con validación de ciclos (no se puede crear una dependencia circular).
-* Canvas de carrera (materias + correlativas) y canvas de materia (unidades → temas), con auto-layout automático.
-* Editor de hojas en rico con guardado automático (Markdown como formato de fuente de verdad).
-* Explorador lateral, tabs de hojas abiertas y buscador global (`Ctrl+K`), con soporte básico de uso en mobile.
-
-🚧 **Pendiente / próximos pasos:**
-
-* Exportar una materia completa a un único archivo `.md` (o `.zip`), pensado para poder llevar los apuntes a una IA como contexto.
-* Reordenar unidades/temas/tabs arrastrando.
-* Progreso por unidad y filtro del canvas de carrera por cuatrimestre/año.
-* Imágenes en las hojas (requiere Supabase Storage) e historial de versiones.
-* Pulido general de la experiencia en dispositivos móviles.
+El despliegue en Vercel está explicado en [`docs/04-deployment.md`](docs/04-deployment.md).
 
 ---
 
-## Filosofía del proyecto
+## Documentación
 
-> **El conocimiento no se guarda en carpetas, crece como un árbol.**
-
-Studree busca transformar la forma en que los estudiantes organizan y exploran sus contenidos académicos, convirtiendo el estudio en una experiencia más visual, intuitiva y conectada.
+| Doc | Contenido |
+|-----|-----------|
+| [`docs/01-project-overview.md`](docs/01-project-overview.md) | Visión, stack y estado de cada fase |
+| [`docs/02-architecture.md`](docs/02-architecture.md) | Estructura, convenciones y decisiones (ADRs) |
+| [`docs/03-security.md`](docs/03-security.md) | RLS, claves, adjuntos y asistente |
+| [`docs/04-deployment.md`](docs/04-deployment.md) | Deploy en Vercel y Supabase |
+| [`docs/DB_SCHEMA.md`](docs/DB_SCHEMA.md) | Modelo de datos |
+| [`docs/API_DOCS.md`](docs/API_DOCS.md) | Services y Edge Function |
+| [`docs/features/`](docs/features/) | Una ficha por funcionalidad |
+| [`CHANGELOG.md`](CHANGELOG.md) | Historial de versiones |
