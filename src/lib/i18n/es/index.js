@@ -13,6 +13,7 @@ import home from './home.js'
 import importExport from './importExport.js'
 import landing from './landing.js'
 import mobile from './mobile.js'
+import plans from './plans.js'
 import profile from './profile.js'
 import share from './share.js'
 import shell from './shell.js'
@@ -21,4 +22,4 @@ import templates from './templates.js'
 import trash from './trash.js'
 
 /** Diccionario en castellano rioplatense: un archivo por área (ver docs/features/i18n.md). */
-export default { assistant, auth, camera, careerMap, careers, common, dates, editor, errors, flashcards, folder, home, importExport, landing, mobile, profile, share, shell, study, templates, trash }
+export default { assistant, auth, camera, careerMap, careers, common, dates, editor, errors, flashcards, folder, home, importExport, landing, mobile, plans, profile, share, shell, study, templates, trash }

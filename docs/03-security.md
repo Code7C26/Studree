@@ -154,7 +154,8 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - **Respuestas = texto plano:** el chat, las propuestas y las pruebas se muestran con
   `whitespace-pre-wrap`, nunca con `dangerouslySetInnerHTML` ni un renderer de Markdown (XSS).
 - **`user_plans` no tiene política de escritura** (solo `select` propio): nadie se sube de
-  plan desde la app; el plan se cambia a mano en el panel de Supabase hasta la Fase 17.
+  plan con un `update` directo; desde la Fase 17 el único camino desde la app es la RPC
+  `simulate_plan_change` (ver "Planes y pago simulado").
 - **`ai_usage` solo permite `select` e `insert` propios** (sin update ni delete): el usuario no
   puede borrar su uso para resetear el tope. El tope lo decide el servidor (`config.js`) y
   **falla cerrado** si no puede contar el uso.
@@ -179,8 +180,9 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 
 ## Compartir por link y tarjetas (Fase 15, ADR-024)
 
-- **La única función `security definer` del proyecto** es `get_shared_subject(text)`
-  (`0010_fase15.sql`). Revisión que la habilita:
+- **Funciones `security definer` del proyecto:** `get_shared_subject(text)` (abajo) y
+  `simulate_plan_change(text)` (Fase 17, sección "Planes y pago simulado"). Revisión de
+  `get_shared_subject` (`0010_fase15.sql`):
   - `set search_path = public` (evita secuestro de `search_path`).
   - `stable` y solo lectura; no escribe nada.
   - `revoke all on function ... from public` y `grant execute` **solo** a `anon, authenticated`.
@@ -196,6 +198,23 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
   vencimiento automático: se revoca a mano.
 - El token se genera en el cliente con `crypto.randomUUID()` (128 bits). Se guarda en un
   `unique` index; colisionar es despreciable.
+
+## Planes y pago simulado (Fase 17)
+
+- **Segunda función `security definer`:** `simulate_plan_change(text)` (`0013_simulated_checkout.sql`).
+  Es el único camino desde la app para escribir `user_plans`, que sigue sin política de escritura.
+  Revisión que la habilita:
+  - `set search_path = public`.
+  - Escribe **solo** la fila de `auth.uid()` (sin sesión → error) y valida `p_plan in ('free','premium')`.
+  - Rechaza invitados (`auth.jwt() ->> 'is_anonymous'`): primero hay que guardar la cuenta.
+  - `revoke all ... from public` y `from anon`; `grant execute` solo a `authenticated`.
+  - Probada el 2026-11-11 con `begin … rollback`: con cuenta escribe su fila; invitado y plan
+    inválido fallan; por RLS cada uno ve solo su fila.
+- **Riesgo aceptado para la demo:** cualquier cuenta con email puede pasarse a Premium gratis, y
+  Premium sube los topes de Gemini (siguen existiendo, `config.js`). Antes de cobrar de verdad se
+  borra la función y el plan lo cambia el webhook del procesador de pagos (checklist abajo).
+- **Sin datos de tarjeta:** el checkout no tiene campos de pago; muestra una tarjeta de prueba
+  fija. No se recolecta ni se manda ningún dato de pago.
 
 ## Foto a hoja y PWA (Fase 16, ADR-025)
 
@@ -237,5 +256,6 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - [ ] **RLS activado en todas las tablas** de Supabase, con políticas por usuario.
 - [ ] `grep -ri "AIza" dist src` sin coincidencias; el nombre `GEMINI_API_KEY` solo en `docs/`, `CHANGELOG.md` (texto), `.env.example` (sin valor) y `supabase/` (lectura del secret); ningún valor de la clave en archivos.
 - [ ] La clave de Gemini es de un proyecto con facturación (nivel pago) antes de abrir el asistente a usuarios reales (en el nivel gratuito Google puede usar los apuntes para mejorar sus productos).
-- [ ] `user_plans` NO tiene política de escritura (solo `select` propio): el plan se cambia a mano en el panel de Supabase. `ai_usage` solo permite `select` e `insert`.
+- [ ] `user_plans` NO tiene política de escritura (solo `select` propio): el plan cambia solo por `simulate_plan_change` (0013) o a mano en el panel. `ai_usage` solo permite `select` e `insert`.
+- [ ] **Antes de cobrar de verdad:** borrar `simulate_plan_change` (cualquier cuenta con email puede pasarse a Premium gratis) y cambiar el plan desde el webhook de un procesador de pagos, en el servidor.
 - [ ] El contenido del usuario se renderiza de forma segura (sin XSS).

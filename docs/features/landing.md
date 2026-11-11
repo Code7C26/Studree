@@ -47,7 +47,8 @@ como terminado.
   botón "Entrar": `/entrar` rebota a quien ya tiene sesión.
 - Los ejemplos (hojas, respuesta del Brote) son ilustrativos y hechos a mano. Sin testimonios,
   logos ni cifras de usuarios.
-- Planes: solo diferencias cualitativas (`asistente-ia-design.md § 9`); sin precios ni topes.
+- Planes: solo diferencias cualitativas (`asistente-ia-design.md § 9`); sin precios ni topes. Al
+  pie, "Ver planes y precios" (`plans.cta`) lleva a `/planes` (Fase 17, `features/plans.md`).
 - Una animación de entrada (el árbol se dibuja), solo con `prefers-reduced-motion: no-preference`.
 - Si cambia lo que hace el Brote o los planes, actualizar `landingCopy.js`.
 

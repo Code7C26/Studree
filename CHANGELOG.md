@@ -6,6 +6,35 @@
 
 ---
 
+## [0.24.0] — 2026-11-11
+
+### Added — Fase 17: planes y pago simulado
+
+> Request: "vamos con la fase 17, terminá toda la fase y a mi cuenta dale la pro así puedo mostrar
+> todo el día de la entrega". Precio elegido: ARS 4.999/mes.
+
+- **`/planes`** (`pages/PlansPage.jsx`): Gratis y Premium lado a lado (las listas salen del copy de
+  la landing), "Tu plan actual", "Pasar a Premium", "Volver a Gratis" (con confirmación) y, para
+  el invitado, "Guardá tu cuenta para pasar a Premium".
+- **Checkout simulado** (modal): resumen, total, tarjeta de prueba fija (•••• 4242, **sin campos
+  de tarjeta**), aviso de simulado, "Procesando el pago…" (mínimo 1,2 s) y "Ya sos Premium".
+- **`0013_simulated_checkout.sql`**: `simulate_plan_change(p_plan)` (`security definer`, revisada
+  en `03-security.md`): escribe solo la fila propia, valida el plan y rechaza invitados. Probada
+  con `begin … rollback` y **aplicada** vía Management API. La cuenta del equipo
+  (`be993ae4…`) quedó en Premium para la entrega.
+- `userPlan.service.js` → `changePlan`; `hooks/usePlan.js`; `constants/plans.js`
+  (`PREMIUM_PRICE`, `DEMO_CARD_LAST4`, `CHECKOUT_DELAY_MS`); `lib/format/price.js` (+ test);
+  ícono `credit-card`.
+- Accesos: chip del plan y "Planes" en el Perfil; "Ver planes y precios" en la sección Planes de
+  la landing (que sigue sin precios).
+- Textos `plans.*`, `errors.plan.{change,guest}`, `profile.plansLink`, `landing.plans.cta` en
+  `es` y `en`.
+- Docs: `features/plans.md` (nuevo), `DB_SCHEMA.md`, `03-security.md`, `API_DOCS.md`,
+  `01-project-overview.md`, `02-architecture.md`, `features/{assistant,landing,profile}.md`,
+  `CLAUDE.md` (+ copias), README.
+
+---
+
 ## [0.23.5] — 2026-11-11
 
 ### Fixed — El invitado no podía iniciar sesión en una cuenta existente

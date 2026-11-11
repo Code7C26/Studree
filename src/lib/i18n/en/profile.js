@@ -29,6 +29,7 @@ export default {
   sheetsCount: { one: '1 sheet', other: '{count} sheets' },
   preferences: 'Preferences',
   aboutLink: 'About Studree',
+  plansLink: 'Plans',
   language: {
     title: 'Language / Idioma',
     label: 'Interface language',

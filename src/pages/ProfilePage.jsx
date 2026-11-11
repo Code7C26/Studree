@@ -125,10 +125,12 @@ export function ProfilePage() {
                 </Chip>
               )}
               {plan && (
-                <Chip tone={plan === 'premium' ? 'solid' : 'neutral'}>
-                  <Icon name="sparkles" size={12} />
-                  {plan === 'premium' ? t('profile.planPremium') : t('profile.planFree')}
-                </Chip>
+                <Link to={ROUTES.plans} className="rounded-full transition-opacity hover:opacity-80">
+                  <Chip tone={plan === 'premium' ? 'solid' : 'neutral'}>
+                    <Icon name="sparkles" size={12} />
+                    {plan === 'premium' ? t('profile.planPremium') : t('profile.planFree')}
+                  </Chip>
+                </Link>
               )}
               {since && <Chip>{t('profile.memberSince', { date: lang === 'en' ? since : since.toLowerCase() })}</Chip>}
             </div>
@@ -223,13 +225,16 @@ export function ProfilePage() {
           <p className="mt-3 text-sm font-medium text-text">{t('profile.language.title')}</p>
           <p className="mb-2 text-xs text-text-muted">{t('profile.language.help')}</p>
           <LanguageSelector />
-          <Link
-            to={ROUTES.welcome}
-            className="mt-auto inline-flex items-center gap-1.5 border-t border-white/[0.07] pt-4 text-sm text-accent hover:underline"
-          >
-            {t('profile.aboutLink')}
-            <Icon name="chevron-right" size={14} />
-          </Link>
+          <div className="mt-auto flex flex-col gap-2 border-t border-white/[0.07] pt-4 text-sm">
+            <Link to={ROUTES.plans} className="inline-flex items-center gap-1.5 text-accent hover:underline">
+              {t('profile.plansLink')}
+              <Icon name="chevron-right" size={14} />
+            </Link>
+            <Link to={ROUTES.welcome} className="inline-flex items-center gap-1.5 text-accent hover:underline">
+              {t('profile.aboutLink')}
+              <Icon name="chevron-right" size={14} />
+            </Link>
+          </div>
         </section>
 
         {/* Tus carreras: una barra por carrera, en su color, con sus hojas. */}

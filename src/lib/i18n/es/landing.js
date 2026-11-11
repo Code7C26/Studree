@@ -116,6 +116,7 @@ export default {
     intro: 'Los apuntes son tuyos en los dos planes. Lo que cambia es cuánto trabaja el Brote con ellos.',
     freeLabel: 'Gratis',
     premiumLabel: 'Premium',
+    cta: 'Ver planes y precios',
     free: [
       'Carreras, materias, hojas, Inicio y exportar: todo.',
       'Preguntas y atajos en el texto, con un tope diario.',

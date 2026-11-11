@@ -98,6 +98,7 @@
 | `services/attachments.service.js` · `useFolderAttachments` · `lib/attachments/**` · `lib/editor/attachmentNodes.js` · `features/attachments/**` | `docs/features/attachments.md` |
 | `docs/superpowers/specs/**` · `docs/superpowers/plans/**` | Specs y planes de diseño (histórico de decisiones; no reemplazan a los docs de features) |
 | `pages/ProfilePage.jsx` · `layout/AuthProvider.jsx` · `hooks/useAuth.js` | `docs/features/profile.md` |
+| `pages/PlansPage.jsx` · `usePlan` · `userPlan.service.js` (`changePlan`) · `constants/plans.js` · `lib/format/price.js` · `simulate_plan_change` | `docs/features/plans.md` + `docs/03-security.md` |
 | `pages/HomePage.jsx` · `features/home/**` · `useHome` · `home.service.js` · `importantDates/tasks/quickNotes.service.js` · `lib/home/**` · `constants/homeLimits.js` | `docs/features/home.md` |
 | `supabase/functions/assistant/**` · `src/lib/assistant/**` · `components/features/assistant/**` · `useAssistant` · `useAssistantContext` · `assistant.service.js` · `userPlan.service.js` · `quizResults.service.js` | `docs/features/assistant.md` + `docs/03-security.md` |
 | `lib/editor/broteAnchor.js` · `features/assistant/InlineAnswerCard` · `useInlineAnswer` · `useLeaveWarning` · `usePrintSummary` · `useSaveSummaryAsSheet` | `docs/features/assistant.md` (tarjeta, ventanas y PDF) + `docs/features/folder.md` |

@@ -86,8 +86,8 @@ bloqueados; **el servidor decide**.
 | Plan de estudio (`study_plan`) | No | Sí |
 | Conexiones entre materias (`connections`) | No | Sí |
 
-Sin fila en `user_plans` = free. El plan se cambia a mano en el panel de Supabase (Fase 17:
-pantalla de planes y pago simulado).
+Sin fila en `user_plans` = free. El plan se cambia desde `/planes` con el checkout simulado
+(Fase 17, `features/plans.md`) o a mano en el panel de Supabase.
 
 ## Cómo desplegar (lo hace el estudiante)
 
@@ -122,8 +122,8 @@ Windows (PowerShell o Git Bash, desde la raíz del proyecto; `npx` baja la CLI s
      dice que no está en sus apuntes.
    - Sin desplegar, el panel avisa "El asistente todavía no está disponible (falta desplegar la
      función)."
-6. Para probar Premium: en el panel de Supabase, crear o editar la fila de `user_plans` del
-   usuario con `plan = 'premium'`.
+6. Para probar Premium: con una cuenta con email, `/planes` → "Pasar a Premium" (pago
+   simulado), o en el panel de Supabase la fila de `user_plans` con `plan = 'premium'`.
 
 ### Privacidad
 

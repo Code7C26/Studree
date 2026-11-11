@@ -16,6 +16,7 @@ export const ROUTES = Object.freeze({
   sheet: '/hojas/:sheetId', // links viejos: redirige a la carpeta en esa hoja
   shared: '/compartido/:token', // materia compartida por link: pública, fuera del layout (Fase 15)
   profile: '/perfil',
+  plans: '/planes', // planes y checkout simulado (Fase 17, docs/features/plans.md)
   trash: '/papelera', // papelera (docs/features/trash.md)
   study: '/estudio', // Mi estudio: resúmenes y exámenes guardados; acepta ?tab=&materia=
   studySummary: '/estudio/resumenes/:summaryId',

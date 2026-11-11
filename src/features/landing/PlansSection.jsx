@@ -1,7 +1,13 @@
+import { Link } from 'react-router-dom'
 import { getLandingCopy } from './landingCopy.js'
 import { useI18n } from '../../hooks/useI18n.js'
+import { ROUTES } from '../../constants/routes.js'
+import { Icon } from '../../components/ui/Icon.jsx'
 
-/** Planes: diferencias cualitativas entre Gratis y Premium (sin precios ni topes numéricos). */
+/**
+ * Planes: diferencias cualitativas entre Gratis y Premium (sin precios ni topes numéricos);
+ * el link lleva a /planes, donde están los precios y el checkout simulado (Fase 17).
+ */
 export function PlansSection() {
   const { lang } = useI18n()
   const { plans: PLANS } = getLandingCopy(lang)
@@ -34,6 +40,15 @@ export function PlansSection() {
           </ul>
         </div>
       </div>
+
+      {/* Los precios viven en /planes (Fase 17), no en la landing. */}
+      <Link
+        to={ROUTES.plans}
+        className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+      >
+        {PLANS.cta}
+        <Icon name="chevron-right" size={14} />
+      </Link>
     </section>
   )
 }

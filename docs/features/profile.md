@@ -77,7 +77,8 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
   2. **Métricas:** carreras, materias y hojas en número grande con ícono.
   3. **Cuenta:** para el invitado es la tarjeta protagonista ("Guardá tu cuenta", aviso en
      `warn` y el formulario); con cuenta, el email y "Salir".
-  4. **Preferencias:** idioma y "Conocé Studree".
+  4. **Preferencias:** idioma, "Planes" (`/planes`) y "Conocé Studree". El chip del plan también
+     lleva a `/planes` (Fase 17, `features/plans.md`).
   5. **Tus carreras:** una barra por carrera en su color con materias y hojas (hasta 6).
   Todo sale del árbol de `useExplorerTree` y del plan: no hay consultas nuevas. Los cálculos son
   puros y con test (`lib/profile/profileStats.js`); `useProfile` junta sesión, árbol y plan.

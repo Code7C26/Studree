@@ -251,7 +251,7 @@ Spec: `docs/superpowers/specs/2026-11-10-fase-16-celular-camara-design.md` · pl
 |------|-----------|--------|
 | 15 | Compartir por link, flashcards | ✅ 2026-11-10 (`features/share.md`, `features/flashcards.md`); falta aplicar la migración 0010 |
 | 16 | **Celular, cámara y lectura sin señal** | ✅ 2026-11-10 (`features/mobile.md`, `features/photo-notes.md`); faltan aplicar 0011, redesplegar y probar en teléfono |
-| 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | Pendiente — al final |
+| 17 | **Planes y pago simulado**: pantalla de planes y checkout simulado para la demo (sin procesador de pagos) | ✅ 2026-11-11 (`features/plans.md`, migración `0013` aplicada) |
 
 > **Mobile** queda en el roadmap pero no es el foco de esta etapa: el canvas con nodos
 > arrastrables no funciona bien en táctil, así que la navegación debe poder resolverse

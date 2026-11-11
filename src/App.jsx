@@ -22,6 +22,8 @@ const FlashcardsPage = lazyPage(() => import('./pages/FlashcardsPage'), 'Flashca
 const SheetRedirectPage = lazyPage(() => import('./pages/SheetRedirectPage'), 'SheetRedirectPage')
 const TrashPage = lazyPage(() => import('./pages/TrashPage'), 'TrashPage')
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage')
+// Planes y checkout simulado (Fase 17, docs/features/plans.md).
+const PlansPage = lazyPage(() => import('./pages/PlansPage'), 'PlansPage')
 const StudyPage = lazyPage(() => import('./pages/StudyPage'), 'StudyPage')
 const StudySummaryPage = lazyPage(() => import('./pages/StudySummaryPage'), 'StudySummaryPage')
 const StudyQuizPage = lazyPage(() => import('./pages/StudyQuizPage'), 'StudyQuizPage')
@@ -59,6 +61,7 @@ export default function App() {
         {/* Todo lo que toca datos del usuario exige sesión (RLS). */}
         <Route element={<RequireAuth />}>
           <Route path={ROUTES.profile} element={withSuspense(<ProfilePage />)} />
+          <Route path={ROUTES.plans} element={withSuspense(<PlansPage />)} />
 
           {/* A partir de acá, el shell (explorador + tabs + palette) — ver navigation-shell.md. */}
           <Route element={<WorkspaceLayout />}>

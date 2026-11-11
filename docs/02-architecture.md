@@ -57,7 +57,8 @@ Studree/
 │   │   ├── StudyPage.jsx          # Mi estudio (`/estudio`, ADR-022): resúmenes y exámenes
 │   │   ├── StudySummaryPage.jsx   # Un resumen guardado (`/estudio/resumenes/:id`)
 │   │   ├── StudyQuizPage.jsx      # Registro de un examen (`/estudio/examenes/:id`)
-│   │   └── ProfilePage.jsx
+│   │   ├── ProfilePage.jsx
+│   │   └── PlansPage.jsx          # Planes y checkout simulado (`/planes`, Fase 17)
 │   ├── features/                  # EXCEPCIÓN autorizada (2026-10-21): carpeta de primer nivel, fuera de
 │   │   └── landing/               #   components/features/. Landing pública: un componente por bloque,
 │   │                              #   landingCopy.js (textos) y paperTones.js; con sus tests (node --test)
@@ -108,7 +109,7 @@ Studree/
 │   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js, headings.js
 │   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets,
 │   │   │                          # broteAnchor (widget de la tarjeta del Brote, 14.1)
-│   │   ├── format/                # sheetDate.js (fecha y hora de las hojas), dateParts.js
+│   │   ├── format/                # sheetDate.js (fecha y hora de las hojas), price.js (Fase 17), dateParts.js
 │   │   ├── i18n/                  # Idiomas (Fase 18, ADR-023): core, index (`t`, `tIn`), detectLang,
 │   │   │                          # es/ y en/ (un diccionario por área), tests de paridad y trinquete
 │   │   ├── export/                # toSingleMarkdown.js, toZip.js, frontmatter.js
@@ -123,7 +124,7 @@ Studree/
 │   │                              # summarySession, studyItems
 │   ├── constants/                 # routes.js, storageKeys.js, palette.js, subjectTones.js (ADR-018),
 │   │                              # subjectStatus.js, prerequisiteKinds.js, homeLimits.js,
-│   │                              # sheetTemplates.js, attachmentLimits.js (Fase 13)
+│   │                              # sheetTemplates.js, attachmentLimits.js (Fase 13), plans.js (Fase 17)
 │   └── types/
 │       └── models.js              # Typedefs JSDoc del modelo de datos
 ├── supabase/
@@ -677,7 +678,8 @@ fuente de verdad, autosave, papelera). La app no tiene servidor propio (Supabase
 | `/estudio` | `StudyPage` | **Mi estudio** (Fase 14.1, ADR-022): resúmenes y exámenes guardados; acepta `?tab=` y `?materia=` — ver `docs/features/study.md` |
 | `/estudio/resumenes/:id` | `StudySummaryPage` | Un resumen guardado: PDF, guardar como hoja, borrar |
 | `/estudio/examenes/:id` | `StudyQuizPage` | Registro de un examen con todas las preguntas |
-| `/perfil` | `ProfilePage` | Perfil (placeholder) |
+| `/perfil` | `ProfilePage` | Perfil: identidad, métricas, cuenta, preferencias y carreras |
+| `/planes` | `PlansPage` | Planes Gratis/Premium y checkout simulado (Fase 17) |
 
 > Las páginas con canvas, el editor y el perfil se cargan con `React.lazy` (chunks
 > aparte) para no meter React Flow, dagre y TipTap en el bundle inicial.

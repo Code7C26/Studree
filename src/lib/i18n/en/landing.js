@@ -116,6 +116,7 @@ export default {
     intro: 'Your notes are yours on both plans. What changes is how much the Sprout works with them.',
     freeLabel: 'Free',
     premiumLabel: 'Premium',
+    cta: 'See plans and pricing',
     free: [
       'Careers, subjects, sheets, Home and export: everything.',
       'Questions and shortcuts in the text, with a daily limit.',

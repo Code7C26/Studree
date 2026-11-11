@@ -236,8 +236,9 @@ fábrica viven en `src/constants/sheetTemplates.js`, no en la base.
 Cinco tablas, todas con RLS y `user_id` con `default auth.uid()` (el cliente nunca lo manda).
 
 - **`user_plans`** (`user_id` PK, `plan` `'free'|'premium'` default `'free'`, `updated_at`).
-  Política **solo `select` propio**: nadie se sube de plan desde la app. **El plan se
-  cambia a mano en el panel de Supabase.** Sin fila = `free`.
+  Política **solo `select` propio**: el cliente no escribe la tabla. El plan cambia con la RPC
+  **`simulate_plan_change(p_plan)`** (`0013`, Fase 17: checkout simulado; solo la fila de
+  `auth.uid()`, rechaza invitados) o a mano en el panel de Supabase. Sin fila = `free`.
 - **`ai_usage`** (`id`, `user_id`, `action`, `external`, `created_at`). `action` en
   `chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
   `connections`, `quiz_grade` (desde la `0008`) y `transcribe` (desde la `0011`; la transcripción
@@ -515,4 +516,5 @@ implementa vectorización en esta etapa.**
 | 2026-11-10 | **Fase 15**: `shared_links` + RPC `get_shared_subject` (única `security definer`); `flashcards` (Leitner) + RLS | ✅ Aplicada (`0010_fase15.sql`, confirmada el 2026-11-11) |
 
 | 2026-11-10 | **Fase 16**: `ai_usage.action` admite `transcribe` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada (`0011_transcribe_usage.sql`, confirmada el 2026-11-11) |
-| 2026-11-11 | **Color de materia = color de carrera**: datos solamente, alinea `subjects.color` con el de su carrera (desde ahora la app lo mantiene así) | 🟡 `0012_subject_color_from_career.sql` escrita; **falta aplicarla** |
+| 2026-11-11 | **Color de materia = color de carrera**: datos solamente, alinea `subjects.color` con el de su carrera (desde ahora la app lo mantiene así) | ✅ `0012_subject_color_from_career.sql` (aplicada 2026-11-11) |
+| 2026-11-11 | **Fase 17 (planes y pago simulado)**: función `simulate_plan_change(p_plan)` (`security definer`) para que el checkout simulado cambie el plan propio | ✅ `0013_simulated_checkout.sql` (aplicada 2026-11-11 vía Management API, tras probarla con `begin … rollback`) |
