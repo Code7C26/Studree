@@ -197,6 +197,25 @@ La anon key **no puede** cambiar el esquema, y está bien que sea así.
 - El token se genera en el cliente con `crypto.randomUUID()` (128 bits). Se guarda en un
   `unique` index; colisionar es despreciable.
 
+## Foto a hoja y PWA (Fase 16, ADR-025)
+
+- **La foto no se guarda:** solo viaja del navegador a la Edge Function `assistant` (con el JWT
+  del usuario y la anon key) y de ahí al modelo. No pasa por Storage, ni por la base, ni por la
+  cache de localStorage, ni por logs (`ai_usage` registra solo `action = 'transcribe'`).
+- **La compresión en el navegador quita el EXIF** (se reencodea en canvas): la foto no lleva
+  geolocalización ni datos del dispositivo.
+- **La imagen es entrada no confiable:** viaja como parte multimodal, no como instrucción. El
+  prompt propio (`buildTranscribeSystemPrompt`) dice que lo que dice la foto son datos.
+- **Validación cerrada en el servidor** (`request.js`): solo `transcribe` acepta `image`; mime
+  en lista corta (jpeg/png/webp), base64 canónico con tope (`MAX.imageChars`, ~1,5 MB) y
+  alcance `subject`. El cuerpo de una foto puede llegar hasta `MAX.photoBodyChars`; el resto
+  de las acciones sigue con `MAX.bodyChars`.
+- **El service worker no cachea datos de usuario:** solo el shell (`/assets/`, íconos, logo,
+  fuentes) y la navegación. Base, Storage, auth y `functions/v1` nunca pasan por cache. Lo que
+  la Carpeta muestra sin señal sale de localStorage (cache optimista, ADR-007), que
+  `clearAllCache()` borra al cerrar sesión: al próximo usuario no le queda contenido del anterior.
+- La migración `0011` solo amplía el CHECK de `ai_usage.action` para registrar `transcribe`.
+
 ## Reglas INVIOLABLES
 
 - NUNCA hardcodear credenciales, tokens o claves en el código.

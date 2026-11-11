@@ -162,6 +162,7 @@ explorador arma el árbol con 3 consultas (carreras, materias y, de las hojas, s
 | `quizResults.service.js` | `listWeakTopics(subjectId?: string\|string[]) → ServiceResult<WeakTopic[]>` | `id, subject_id, sheet_id, topic, misses, last_missed_at`; pagina de a 1000 y parte los `in(...)` de a 100. Sin argumento: todos los del usuario (RLS). |
 | `quizResults.service.js` | `applyWeakTopicUpdates({upserts, deletes}) → ServiceResult<true>` | Upsert con `onConflict: 'user_id,subject_id,topic'` (el `user_id` lo pone `default auth.uid()`), `last_missed_at` = ahora; luego borra `deletes` por id. `misses` viene calculado en el cliente (`planWeakTopicUpdates`): dos pruebas simultáneas pueden pisarse (límite conocido). |
 | `quizResults.service.js` | `resolveQuizSources({sheetIds, subjectIds}) → ServiceResult<{sheets, subjects}>` | Hojas (`subject_id`, `created_at`) y materias (`career_id`) **vivas** (`deleted_at` NULL); una hoja de una materia en la papelera se descarta. Para asignar materia a cada tema fallado y mostrar la fecha de la hoja. |
+| `photos.service.js` (Fase 16) | `compressPhoto(file) → Promise<{dataUrl, mimeType: 'image/jpeg', data}>` y `transcribePhoto({subjectId, image, signal?, onText?}) → ServiceResult<{text}>` | Comprime la foto a JPEG ≤1600 px/≤1,5 MB en el navegador (sin EXIF) y pide `transcribe` al Brote acumulando los `text` SSE. La foto **no se guarda** en ningún lado; cancelar con `signal` no consume uso. Ver `docs/features/photo-notes.md`. |
 
 ### Mi estudio (migración 0009, Fase 14.1)
 
@@ -231,9 +232,9 @@ Detalle completo (eventos, acciones, cuándo se descuenta uso): `docs/features/a
   (CORS). El cliente la llama solo desde `assistant.service.js` (`streamAssistant`).
 - **Cuerpo** (`AssistantRequest`, validado en `supabase/functions/assistant/request.js`):
   `action` (`chat`, `shortcut`, `summary`, `quiz`, `weak_review`, `study_plan`, `gaps`,
-  `connections`, `quiz_grade`), `message`, `history` (últimos 20 turnos `user`/`model`),
+  `connections`, `quiz_grade`, `transcribe`), `message`, `history` (últimos 20 turnos `user`/`model`),
   `mode` (`notes` | `external`), `scope` (`{type: 'sheet'|'subject'|'career'|'all', id?}`) y,
-  según la acción, `selection`, `quiz` o `answers`.
+  según la acción, `selection`, `quiz`, `answers` o `image` (`{mimeType: 'image/jpeg'|'image/png'|'image/webp', data: <base64>}`, solo `transcribe`; el cuerpo puede llegar hasta `MAX.photoBodyChars`).
 - **Errores antes del stream** — JSON `{error, code, message}` (el `message` ya está en
   castellano y es lo que se muestra):
 

@@ -807,3 +807,40 @@ privado (ADR-020), asÃ­ que la vista pÃºblica no puede reusar los archivos.
 - La vista pÃºblica descarga TipTap en su propio chunk: la primera apertura del link es mÃ¡s pesada que la app.
 - Revocar y volver a generar crea una fila nueva; el link viejo deja de funcionar al instante.
 - Sin generaciÃ³n automÃ¡tica de tarjetas ni estadÃ­sticas de repaso en esta fase.
+
+### ADR-025: Celular primero, foto a hoja y PWA sin dependencias (Fase 16)
+**Fecha:** 2026-11-10
+**Spec:** `docs/superpowers/specs/2026-11-10-fase-16-celular-camara-design.md` · plan: `docs/superpowers/plans/2026-11-10-fase-16.md`
+**Contexto:** estudiar pasa en el celular y no había forma de pasar una hoja escrita a mano a la
+Carpeta sin tipearla. Tampoco se podía instalar la app ni leer sin señal.
+**Decisión:**
+- **Un solo punto de corte `md` (768 px)**, el mismo del explorador: por debajo, la app es
+  celular (`useIsMobile` con `matchMedia`). La Carpeta usa barra deslizable en horizontal,
+  papel compacto, `env(safe-area-inset-*)` y botones táctiles de 44 px; los diálogos son
+  hojas inferiores (`Modal`).
+- **Foto a hoja, solo celular:** `<input type="file" accept="image/*" capture="environment">`
+  (nada de `getUserMedia`). La imagen se comprime a JPEG =1600 px y =1,5 MB en el navegador
+  (`lib/photos/photo.js`, reglas puras + canvas en `photos.service.js`), lo que también quita
+  el EXIF. Va al Brote como acción `transcribe` (balde propio, free 5/día, premium 100/día,
+  migración `0011`) y vuelve como Markdown en streaming.
+- **Nada se guarda sin aprobación:** el resultado se muestra en un diálogo editable; recién al
+  tocar "Crear hoja" se agrega una hoja nueva al final de la Carpeta (`addLocalSheet`), con
+  fecha y hora del momento, igual que cualquier hoja. La foto no se persiste en Supabase,
+  Storage, cache ni logs.
+- **PWA sin dependencias:** `manifest.webmanifest` (íconos 192/512, `standalone`) + `sw.js`
+  propio: cache-first para el shell (`/assets/`, `/icons/`, fuentes) y network-first para
+  navegaciones con respaldo. **Nunca cachea** base, Storage, auth ni `functions/v1`. Se
+  registra solo en producción.
+- **Lectura sin señal:** la Carpeta pinta primero la cache de hojas y de la materia
+  (`localStorage`, ADR-007) y recién después reconcilia con Supabase; si la red falla, lo que
+  se ve no se borra y el aviso con "Reintentar" sigue.
+**Alternativas descartadas:**
+- `getUserMedia` con preview propio: flujo nativo del input es menos código y menos permisos.
+- `vite-plugin-pwa` o un OCR externo: ninguna dependencia nueva; el Brote ya existe y cobra cuota.
+- Cache API para los datos: la app ya cachea en localStorage y se limpia al cerrar sesión.
+- Insertar la transcripción en una hoja existente: la Carpeta no tiene cursor de inserción.
+**Consecuencias:**
+- Falta **redesplegar la Edge Function `assistant`** y aplicar las migraciones `0010` + `0011` (estudiante).
+- Las fotos chicas (=1600 px) pueden perder letra menuda: el usuario corrige en el diálogo de revisión.
+- El service worker cachea la build por versión; una build nueva entra con la próxima visita.
+- El botón "Foto" no existe en escritorio: ahí sigue el flujo de escribir o importar.

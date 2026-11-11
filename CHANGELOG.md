@@ -6,7 +6,7 @@
 
 ---
 
-## [0.21.0] — 2026-11-10 (en desarrollo)
+## [0.21.0] — 2026-11-10
 
 ### Added — Celular, foto a hoja y lectura sin señal (FASE 16)
 
@@ -15,7 +15,55 @@
 > Spec: `docs/superpowers/specs/2026-11-10-fase-16-celular-camara-design.md` · plan:
 > `docs/superpowers/plans/2026-11-10-fase-16.md` · ADR-025.
 
-_(completar al cerrar la fase)_
+**Adaptación al celular (docs/features/mobile.md)**
+
+- Punto de corte único `md` (768 px), compartido con el explorador; `useIsMobile` con `matchMedia`.
+- Carpeta: barra de vidrio deslizable en horizontal, papel compacto (margen lateral menor),
+  `safe-area-inset-*`, botones táctiles de 44 px en carpeta, editor y pestañas.
+- Diálogos (`Modal`) como hojas inferiores en celular (`max-h: 90dvh`, scroll interno); en
+  escritorio quedan centrados como antes.
+
+**Foto a hoja — solo celular (docs/features/photo-notes.md)**
+
+- Botón **Foto** (ícono de cámara) en la Carpeta, visible solo con `useIsMobile`; abre la
+  cámara trasera con `<input type="file" accept="image/*" capture="environment">` (sin
+  `getUserMedia`).
+- Compresión en el navegador (`photos.service.js`): JPEG ≤1600 px, calidad 0.82, ≤1,5 MB,
+  sin EXIF; reglas puras en `lib/photos/photo.js` (testeadas en Node).
+- Acción nueva **`transcribe`** en la Edge Function `assistant`: imagen como `inlineData`
+  multimodal con prompt propio (la foto son datos, nunca instrucciones), streaming `text`,
+  `no_text` si no hay texto legible, alcance solo `subject`, validación cerrada
+  (mime/base64/topes) y cuerpo hasta `MAX.photoBodyChars` (2,1 MB) solo para esta acción.
+- Cuota propia: free 5/día, premium 100/día. Migración `0011_transcribe_usage.sql` (CHECK de
+  `ai_usage.action`); **la migración y el redespliegue los corre el estudiante**.
+- Diálogo de revisión con Markdown editable; **nada se guarda sin aprobación**: "Crear hoja"
+  agrega una hoja nueva al final de la Carpeta con el mismo camino que una plantilla.
+- La foto no se persiste (sin Storage, sin base, sin cache, sin logs); `ai_usage` registra solo
+  `action = 'transcribe'`.
+- Archivos: `hooks/usePhotoSheet.js`, `hooks/useIsMobile.js`,
+  `components/features/camera/*`, `services/photos.service.js`, `lib/photos/*`,
+  `lib/assistant/transcribeRequest.js`, `supabase/functions/assistant/*`, migración `0011`.
+
+**PWA y lectura sin señal (docs/features/mobile.md)**
+
+- `manifest.webmanifest` + íconos 192/512 (generados desde `public/logo.jpg`) + `sw.js`
+  propio, registrado solo en producción: cache-first para el shell y network-first para
+  navegaciones. **Nunca cachea** Supabase ni `functions/v1`.
+- La Carpeta pinta primero la cache de hojas y de la materia y recién después reconcilia con
+  Supabase; si la red falla, no borra lo visible y mantiene "Reintentar".
+
+**Pruebas y documentación**
+
+- Tests nuevos (Node): `lib/photos/photo.test.js`, `lib/photos/transcription.test.js`,
+  `lib/assistant/transcribeRequest.test.js`, `lib/editor/folderSheets.test.js` y `transcribe`
+  en `supabase/functions/assistant/{quota,request,handler}.test.js`. `npm test` 603 en verde,
+  `eslint src` limpio y build correcto (sin secretos en `dist`).
+- `docs/features/mobile.md`, `docs/features/photo-notes.md`, `docs/features/assistant.md`
+  (acción `transcribe` y cuota), `docs/API_DOCS.md`, `docs/DB_SCHEMA.md`, `docs/03-security.md`,
+  `docs/02-architecture.md` (ADR-025), `docs/01-project-overview.md`.
+
+**Pendiente del estudiante:** aplicar `0010` + `0011`, redesplegar `assistant`, verificar en un
+teléfono real y la instalación de la PWA.
 
 ---
 
