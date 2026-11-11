@@ -1,0 +1,16 @@
+{
+  "name": "Studree: tus apuntes, con una IA que los conoce",
+  "short_name": "Studree",
+  "description": "Escribí tus apuntes, exportalos a Markdown y dales una IA que los conoce para completar temas, tomarte examen y responder tus dudas.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
