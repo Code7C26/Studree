@@ -45,7 +45,7 @@ export function TabBar({ tabs, activeId, onActivate, onClose, explorerOpen, onTo
             <button
               type="button"
               onClick={() => onActivate(tab.id)}
-              className="max-w-[160px] truncate py-1"
+              className="max-w-[160px] truncate py-1 min-h-11 md:min-h-0"
               title={tab.title}
               aria-current={active ? 'page' : undefined}
             >
@@ -55,7 +55,7 @@ export function TabBar({ tabs, activeId, onActivate, onClose, explorerOpen, onTo
               type="button"
               onClick={() => onClose(tab.id)}
               aria-label={t('shell.tabs.close', { title: tab.title })}
-              className={`rounded p-1 text-text-muted transition-opacity hover:bg-surface-2 hover:text-text focus-visible:opacity-100 ${
+              className={`rounded p-1 min-h-11 md:min-h-0 text-text-muted transition-opacity hover:bg-surface-2 hover:text-text focus-visible:opacity-100 ${
                 active ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
               }`}
             >

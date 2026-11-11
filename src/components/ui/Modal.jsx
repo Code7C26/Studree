@@ -25,12 +25,12 @@ export function Modal({ open, onClose, title, children }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-2xl"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-surface p-6 shadow-2xl pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:rounded-xl sm:pb-6"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"

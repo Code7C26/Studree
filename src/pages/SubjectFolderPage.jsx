@@ -51,7 +51,7 @@ const NOTICE_MS = 3000
 
 /** Botón de la barra de herramientas de la carpeta (Leer, Exportar). */
 const TOOL =
-  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-40'
+  'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-40 min-h-11 md:min-h-0'
 
 /**
  * Lugar de la tarjeta de un atajo del Brote (Fase 14.1): editor con el ancla,
@@ -636,7 +636,7 @@ function SubjectFolder({ subjectId }) {
 
       <div className={reading ? 'w-full max-w-[52rem]' : 'min-w-0'}>
         {!reading && (
-          <div className="glass sticky -top-6 z-10 mb-5 flex w-full flex-wrap items-center gap-2 bg-surface/95 px-2 py-1.5 shadow-lg shadow-black/30">
+          <div className="glass sticky -top-6 z-10 mb-5 flex w-full flex-nowrap items-center gap-2 overflow-x-auto bg-surface/95 px-2 py-1.5 shadow-lg shadow-black/30 md:flex-wrap md:overflow-visible">
             <div className="min-w-[12rem] flex-1">
               <FolderSearchBar
                 term={term}
@@ -733,7 +733,7 @@ function SubjectFolder({ subjectId }) {
           </p>
         )}
 
-        <div className="space-y-8 pb-24">
+        <div className="space-y-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           {loading && sheets.length === 0 ? (
             <p className="mt-8 text-center text-text-muted">{t('common.loading')}</p>
           ) : (

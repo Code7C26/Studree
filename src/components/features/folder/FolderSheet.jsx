@@ -139,7 +139,7 @@ export function FolderSheet({
       data-sheet-key={sheet.key}
       className="paper-sheet scroll-mt-28 rounded-md border-l-[6px] border-[var(--subject)]"
     >
-      <header className="group flex items-center justify-between gap-3 border-b border-paper-border px-7 py-2 text-xs text-ink-muted">
+      <header className="group flex items-center justify-between gap-3 border-b border-paper-border px-4 py-2 text-xs text-ink-muted sm:px-7">
         <span className="font-medium">{formatSheetDateLong(sheet.created_at)}</span>
         <span className="flex items-center gap-2">
           {status && <span className={syncStatus === 'error' ? 'text-red-700' : ''} title={error ?? undefined}>{status}</span>}
@@ -162,7 +162,7 @@ export function FolderSheet({
           </button>
         </span>
       </header>
-      <div className="px-7 py-5">
+      <div className="px-4 py-4 sm:px-7 sm:py-5">
         <SheetEditor
           content={initialContent}
           onChange={handleChange}
@@ -178,7 +178,7 @@ export function FolderSheet({
         />
       </div>
       {uploadError && (
-        <p role="alert" className="border-t border-paper-border px-7 py-2 text-xs text-red-700">
+        <p role="alert" className="border-t border-paper-border px-4 py-2 text-xs text-red-700 sm:px-7">
           {uploadError}
         </p>
       )}

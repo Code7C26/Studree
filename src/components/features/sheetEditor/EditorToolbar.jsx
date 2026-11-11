@@ -26,7 +26,7 @@ function ToolbarButton({ active, onClick, label, title, ariaLabel, disabled }) {
       aria-label={ariaLabel ?? title}
       aria-pressed={active}
       disabled={disabled}
-      className={`rounded px-2 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
+      className={`rounded px-2 py-1 text-xs font-medium transition-colors disabled:opacity-40 min-h-11 min-w-9 md:min-h-0 md:min-w-0 ${
         active ? 'bg-accent/20 text-accent-soft' : 'text-text-muted hover:bg-surface-2 hover:text-text'
       }`}
     >
@@ -76,7 +76,7 @@ export function EditorToolbar({ editor, onAttach, canAttach = true }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5">
+    <div className="flex flex-nowrap items-center gap-0.5 md:flex-wrap">
       <ToolbarButton title={t('editor.toolbar.bold')} label="B" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} />
       <ToolbarButton title={t('editor.toolbar.italic')} label="I" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} />
       <ToolbarButton title={t('editor.toolbar.strike')} label="S" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} />
