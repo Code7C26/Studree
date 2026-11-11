@@ -118,7 +118,7 @@ Detalle completo en [`docs/03-security.md`](docs/03-security.md).
 
 ## Calidad y proceso
 
-- **607 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
+- **610 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
   Markdown, los permisos del asistente, el repaso espaciado, los tokens y la paridad de idiomas.
 - **ESLint** sin errores y build de producción verificado.
 - Tests que **fallan si falta una traducción** o si queda texto visible sin traducir.
@@ -152,7 +152,7 @@ src/
   lib/          lógica pura con tests (markdown, editor, asistente, i18n, repaso, …)
   pages/        una por ruta
 supabase/
-  migrations/   0001 … 0011, en orden
+  migrations/   0001 … 0012, en orden
   functions/assistant/   Edge Function del Brote
 docs/           visión, arquitectura, seguridad, modelo de datos, API y una ficha por funcionalidad
 public/         manifest y service worker de la PWA

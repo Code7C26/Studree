@@ -6,6 +6,29 @@
 
 ---
 
+## [0.22.1] — 2026-11-11
+
+### Fixed — Cambiar el color de una carrera no cambiaba sus materias ni sus hojas
+
+> Request: "al cambiar el color de la carrera no cambia los colores de la materia ni los bordes de
+> la hoja de esa carrera".
+
+- **Causa:** la carpeta, el margen de las hojas, el índice y las pestañas usan `subjects.color`,
+  pero las materias nacían siempre verdes y no tenían selector propio. Cambiar el color de la
+  carrera solo cambiaba la franja de su tarjeta.
+- **`careers.service.js`:** `update` baja el color a todas las materias de la carrera
+  (`subjectsService.setCareerColor`, también las de la papelera) y avisa con `notifyDataChanged()`,
+  así el mapa, el explorador, las pestañas y la carpeta se repintan solos. Vale para editar desde
+  la tarjeta o desde el mapa de carrera.
+- **`subjects.service.js`:** una materia nueva (canvas o Importar) nace con el color de su carrera.
+- **`lib/graph/careerColor.js`** (puro, con test): `withCareerColor` y `pickSubjectColor`.
+- **Migración `0012_subject_color_from_career.sql`** (solo datos, idempotente): alinea las materias
+  que ya existían. **Falta aplicarla** en el SQL Editor de Supabase.
+- Docs: `features/careers.md`, `DB_SCHEMA.md` (nota de color; 0010 y 0011 marcadas como aplicadas),
+  `02-architecture.md`.
+
+---
+
 ## [0.22.0] — 2026-11-11
 
 ### Added — La landing aparece en la primera visita

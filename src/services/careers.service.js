@@ -4,6 +4,7 @@
  */
 
 import { createCrudService } from './crudService.js'
+import { subjectsService } from './subjects.service.js'
 import { DEFAULT_COLOR } from '../constants/palette.js'
 
 const crud = createCrudService({ table: 'careers', orderBy: 'created_at', softDelete: true })
@@ -25,5 +26,21 @@ export const careersService = {
       color: color ?? DEFAULT_COLOR,
       ...(uses_prerequisites ? {} : { uses_prerequisites: false }),
     })
+  },
+
+  /**
+   * Actualiza una carrera. Si trae `color`, lo baja a todas sus materias: la carpeta, el margen
+   * de las hojas y las pestañas usan el color de la materia (ADR-018).
+   * @param {string} id
+   * @param {{name?: string, color?: string, uses_prerequisites?: boolean}} values
+   * @param {string} [parentId]
+   * @param {{silent?: boolean}} [options]
+   * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Career>>}
+   */
+  async update(id, values, parentId, options) {
+    const result = await crud.update(id, values, parentId, options)
+    if (result.error || !values.color) return result
+    const synced = await subjectsService.setCareerColor(id, values.color)
+    return synced.error ? { data: result.data, error: synced.error } : result
   },
 }

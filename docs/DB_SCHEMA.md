@@ -122,6 +122,10 @@ erDiagram
     }
 ```
 
+> **Color de la materia (2026-11-11).** `subjects.color` sigue al de su carrera: al guardar el
+> color de una carrera, `careersService.update` lo baja a todas sus materias (también las de la
+> papelera) y una materia nueva nace con él. La carpeta, las hojas y las pestañas lo leen (ADR-018).
+
 > **Posiciones del canvas (ADR-012).** `subjects.pos_x/pos_y` son coordenadas
 > **opcionales** del canvas de carrera. `NULL` = el nodo lo ubica dagre. "Reordenar" las
 > vuelve a `NULL`. Se guardan en lote con `save_node_positions` (ADR-016).
@@ -508,6 +512,7 @@ implementa vectorización en esta etapa.**
 | 2026-10-19 | **Fase 14 (asistente)**: `user_plans`, `ai_usage`, `quiz_attempts`, `weak_topics` + RLS | ✅ Aplicada el 2026-10-19 (`0007`) |
 | 2026-10-19 | `ai_usage.action` admite `quiz_grade` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada el 2026-10-19 (`0008_quiz_grade_usage.sql`) |
 | 2026-10-22 | **Fase 14.1**: `summaries` + RLS; `quiz_attempts` suma `subject_id`, `career_id`, `title`, `detail` | Aplicada el 2026-10-22 (`0009_mi_estudio.sql`) |
-| 2026-11-10 | **Fase 15**: `shared_links` + RPC `get_shared_subject` (única `security definer`); `flashcards` (Leitner) + RLS | 🟡 `0010_fase15.sql` escrita; **falta aplicarla** |
+| 2026-11-10 | **Fase 15**: `shared_links` + RPC `get_shared_subject` (única `security definer`); `flashcards` (Leitner) + RLS | ✅ Aplicada (`0010_fase15.sql`, confirmada el 2026-11-11) |
 
-| 2026-11-10 | **Fase 16**: `ai_usage.action` admite `transcribe` (CHECK `ai_usage_action_check` reemplazado) | ? `0011_transcribe_usage.sql` escrita; **falta aplicarla** |
+| 2026-11-10 | **Fase 16**: `ai_usage.action` admite `transcribe` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada (`0011_transcribe_usage.sql`, confirmada el 2026-11-11) |
+| 2026-11-11 | **Color de materia = color de carrera**: datos solamente, alinea `subjects.color` con el de su carrera (desde ahora la app lo mantiene así) | 🟡 `0012_subject_color_from_career.sql` escrita; **falta aplicarla** |

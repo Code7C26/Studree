@@ -53,6 +53,12 @@ activar, reaparecen.
 
 - Borrar siempre con `ConfirmDialog` (la cascada de Postgres no se puede deshacer).
 - Colores solo de la paleta (Mandamiento VII).
+- **El color de la carrera es el de todas sus materias (2026-11-11).** La carpeta, el margen de
+  las hojas, los títulos, el índice y las pestañas usan `subjects.color` (ADR-018), y las materias
+  no tienen selector propio. Por eso `careersService.update` baja el color a todas sus materias
+  (`subjectsService.setCareerColor`, también las de la papelera) y avisa con
+  `notifyDataChanged()`; una materia nueva nace con el color de su carrera
+  (`lib/graph/careerColor.js`, con test). La migración `0012` alinea las materias que ya existían.
 - Las estadísticas se calculan con **una** consulta de materias, no una por carrera.
 
 ## Pendiente

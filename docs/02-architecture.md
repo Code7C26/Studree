@@ -102,7 +102,8 @@ Studree/
 │   ├── lib/
 │   │   ├── id.js
 │   │   ├── graph/                 # validateDag.js, dagreLayout.js (carrera), subjectStatus.js,
-│   │   │                          # canvasPositions.js
+│   │   │                          # canvasPositions.js, careerColor.js (color carrera → materias)
+│   │   ├── landing/               # firstVisit.js (landing en la primera visita)
 │   │   ├── markdown/              # serialize.js, parse.js, wikiLinks.js, headings.js
 │   │   ├── editor/                # highlightExtension, computeHighlights, matches, folderSheets,
 │   │   │                          # broteAnchor (widget de la tarjeta del Brote, 14.1)
