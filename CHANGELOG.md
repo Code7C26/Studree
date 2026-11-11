@@ -6,6 +6,24 @@
 
 ---
 
+## [0.23.0] — 2026-11-11
+
+### Changed — Perfil rediseñado
+
+> Request: "mejorar la sección perfil, está muy simple; que se vea más tecnológico y con más
+> detalles como el Inicio".
+
+- **Nueva composición en grilla de vidrio** (como el Inicio): tarjeta de identidad con la luz de
+  lámpara (avatar, chips de cuenta, plan y "Miembro desde", id corto en mono), métricas de
+  carreras, materias y hojas, tarjeta de cuenta (protagonista para el invitado), preferencias y
+  "Tus carreras" con una barra por carrera en su color.
+- **`hooks/useProfile.js`** junta sesión, árbol del explorador y plan; **`lib/profile/profileStats.js`**
+  (puro, con test). Sin consultas nuevas.
+- **Textos** nuevos en `es` y `en` (`profile.*`); se quitan los que ya no se usaban.
+- Docs: `features/profile.md`, `02-architecture.md`.
+
+---
+
 ## [0.22.2] — 2026-11-11
 
 ### Changed — Mails de confirmación de Studree (no de Supabase)

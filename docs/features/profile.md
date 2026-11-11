@@ -1,8 +1,9 @@
 # Feature: Perfil de usuario
 
-> **Estado:** ✅ Implementado (2026-09-28)
-> **Archivos clave:** `src/pages/ProfilePage.jsx`, `src/components/layout/AuthProvider.jsx`,
-> `src/hooks/useAuth.js`, `src/hooks/useExplorerTree.js`
+> **Estado:** ✅ Implementado (2026-09-28) · rediseño visual el 2026-11-11
+> **Archivos clave:** `src/pages/ProfilePage.jsx`, `src/hooks/useProfile.js`,
+> `src/lib/profile/profileStats.js`, `src/components/layout/AuthProvider.jsx`, `src/hooks/useAuth.js`,
+> `src/hooks/useExplorerTree.js`
 > **Dependencias nuevas:** ninguna
 
 ---
@@ -54,11 +55,26 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
 - **"Conocé Studree" (2026-11-11).** Al pie, un link a la landing (`/bienvenida`): es la única
   forma de volver a verla desde la app después de la primera visita. Ver `docs/features/landing.md`.
 
+- **Rediseño (2026-11-11): más tecnológico y con detalle, como el Inicio.** Misma grilla de
+  vidrio (`.glass`) y la luz de lámpara (ADR-018), en este orden (en celular, una columna):
+  1. **Tarjeta de identidad** con la lámpara: avatar (inicial del email con anillo verde, o el
+     Brote si es invitado), email o "Invitado", chips de tipo de cuenta, plan (`getPlan()`, ya
+     existente) y "Miembro desde" (`auth.users.created_at`), y una línea en mono con el id corto.
+  2. **Métricas:** carreras, materias y hojas en número grande con ícono.
+  3. **Cuenta:** para el invitado es la tarjeta protagonista ("Guardá tu cuenta", aviso en
+     `warn` y el formulario); con cuenta, el email y "Salir".
+  4. **Preferencias:** idioma y "Conocé Studree".
+  5. **Tus carreras:** una barra por carrera en su color con materias y hojas (hasta 6).
+  Todo sale del árbol de `useExplorerTree` y del plan: no hay consultas nuevas. Los cálculos son
+  puros y con test (`lib/profile/profileStats.js`); `useProfile` junta sesión, árbol y plan.
+
 ## Componentes / Archivos
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `src/pages/ProfilePage.jsx` | Presentación: card de cuenta (+ form de vinculación si es anónima) y card de resumen de contenido |
+| `src/pages/ProfilePage.jsx` | Presentación: identidad, métricas, cuenta (+ form si es anónima), preferencias y tus carreras |
+| `src/hooks/useProfile.js` | Junta `useAuth`, `useExplorerTree` y `getPlan()`; calcula las estadísticas |
+| `src/lib/profile/profileStats.js` | Puras con test: `profileStats`, `shortId`, `initialOf` |
 | `src/components/layout/AuthProvider.jsx` | `linkIdentity(email, password)` — la lógica de conversión anónima → permanente |
 | `src/hooks/useAuth.js` | Expone `linkIdentity` en el contrato de `useAuth()` |
 | `src/components/ui/LanguageSelector.jsx` | Selector de idioma (radiogroup de dos botones), usa `useI18n` |
