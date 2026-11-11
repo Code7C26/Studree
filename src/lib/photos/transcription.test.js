@@ -23,3 +23,19 @@ test('transcriptionError traduce códigos conocidos y cae en generic', () => {
   assert.match(transcriptionError('inventado'), /transcribir|foto/i)
   assert.match(transcriptionError(null), /transcribir|foto/i)
 })
+
+test('photoTargets: solo hojas guardadas, la más nueva primero, con su fecha', async () => {
+  const { photoTargets } = await import('./transcription.js')
+  const sheets = [
+    { id: 'a', created_at: '2026-11-01T10:00:00Z' },
+    { id: 'local-1', created_at: '2026-11-11T10:00:00Z' },
+    { id: 'b', created_at: '2026-11-10T09:00:00Z' },
+  ]
+  const isLocal = (sheet) => sheet.id.startsWith('local-')
+  const label = (iso) => iso.slice(0, 10)
+  assert.deepEqual(photoTargets(sheets, isLocal, label), [
+    { id: 'b', label: '2026-11-10' },
+    { id: 'a', label: '2026-11-01' },
+  ])
+  assert.deepEqual(photoTargets([], isLocal, label), [])
+})

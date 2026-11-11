@@ -264,7 +264,9 @@ del proveedor ni la clave).
 - **`AssistantPanel`** se carga con `React.lazy` (chunk propio, con el hook, el chat y los
   servicios). Una vez abierto queda montado aunque se cierre: la conversación vive mientras dure la
   sesión (no se guarda, spec § 8). Es un `role="dialog"` no modal con `.glass` casi opaca: lateral
-  (`w-96`) desde `sm`, pantalla completa en el celular. Cuando el usuario lo abre enfoca la entrada
+  (`w-96`) desde `sm`; en el celular, **hoja inferior** del 65 % del alto (`h-[65dvh]`, esquinas de arriba
+  redondeadas, manija), así la hoja de apuntes sigue a la vista (2026-11-11; antes tapaba toda la
+  pantalla). Cuando el usuario lo abre enfoca la entrada
   (si se recordó abierto, no roba el foco al cargar la página); `Esc` cierra y el foco vuelve al
   Brote. Enter envía (no durante una composición IME); Shift+Enter hace salto de línea.
 - Controles: **modo** (Mis apuntes / Con conocimiento externo), **alcance** (Esta hoja, Esta
@@ -322,6 +324,11 @@ del proveedor ni la clave).
   se va del editor y de la barra. Teclado: con texto seleccionado, **Alt+Enter** lleva el
   foco al primer atajo; ← → se mueven (roving tabindex); **Esc** vuelve al editor con la
   selección intacta. El click no le saca el foco ni la selección al editor.
+- **En pantallas táctiles (`pointer: coarse`, 2026-11-11):** la barra va **debajo** de la selección
+  (32 px, para no pisar las manijas) y solo si no entra va arriba: arriba está el menú propio del
+  sistema (Copiar, Pegar…), que tapa cualquier cosa de la página, y por eso antes la barra "no
+  aparecía". Botones del alto de un dedo, `preventDefault` también en `pointerdown` (el toque no le
+  saca el foco al editor) y se reubica con `visualViewport` (abrir o cerrar el teclado).
 - **`lib/assistant/shortcuts.js`**: `buildShortcutRequest(id, selection)` →
   `{action:'shortcut', message, selection:{sheetId, text}}`. El texto va recortado a
   `MAX.selection`; el `message` nombra la acción, cita el texto (recortado para no pasar

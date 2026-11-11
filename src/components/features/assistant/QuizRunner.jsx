@@ -142,7 +142,7 @@ export function QuizRunner({ session, hidden, busy, onSubmit, onClose, onDiscard
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto rounded-lg border border-border px-3 py-1 text-sm text-text-muted transition-colors hover:text-text"
+            className="ml-auto rounded-lg border border-red-500/60 px-3 py-1 text-sm text-red-300 transition-colors hover:bg-red-950/40 hover:text-red-200"
           >
             {t('assistant.quiz.exit')}
           </button>

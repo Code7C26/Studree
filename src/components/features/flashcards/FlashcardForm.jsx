@@ -67,7 +67,7 @@ export function FlashcardForm({ open, initial, onClose, onSubmit }) {
           />
         </label>
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="cancel" onClick={onClose}>
             {t('flashcards.cancel')}
           </Button>
           <Button type="submit" disabled={!valid || saving}>

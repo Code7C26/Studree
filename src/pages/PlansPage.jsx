@@ -100,7 +100,7 @@ function CheckoutDialog({ open, onClose, onPay }) {
       )}
 
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="ghost" onClick={close} disabled={processing}>
+        <Button variant="cancel" onClick={close} disabled={processing}>
           {t('common.cancel')}
         </Button>
         <Button onClick={pay} disabled={processing} aria-live="polite">

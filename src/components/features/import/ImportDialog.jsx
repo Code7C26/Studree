@@ -55,7 +55,7 @@ export function ImportDialog({ open, onClose, target }) {
             </p>
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="cancel" onClick={onClose}>
               {t('common.cancel')}
             </Button>
             <Button onClick={() => inputRef.current?.click()}>{t('importExport.import.choose')}</Button>

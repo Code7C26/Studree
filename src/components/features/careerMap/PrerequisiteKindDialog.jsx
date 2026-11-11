@@ -71,7 +71,7 @@ export function PrerequisiteKindDialog({ connection, onConfirm, onClose }) {
           )}
 
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="cancel" onClick={onClose}>
               {t('common.cancel')}
             </Button>
             <Button onClick={handleConfirm} disabled={saving}>

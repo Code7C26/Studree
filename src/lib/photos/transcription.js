@@ -35,3 +35,18 @@ export function transcriptionError(code, lang) {
   const text = tIn(lang, key)
   return text === key ? tIn(lang, 'camera.errors.generic') : text
 }
+
+/**
+ * Hojas donde se puede agregar una transcripción ("Guardar en", Fase 16): solo las ya
+ * guardadas (las locales todavía no existen en la base), la más nueva primero.
+ * @param {{id: string, created_at: string}[]} sheets
+ * @param {(sheet: {id: string}) => boolean} isLocal
+ * @param {(iso: string) => string} label  Formato de la fecha (ej. `formatSheetDate`).
+ * @returns {{id: string, label: string}[]}
+ */
+export function photoTargets(sheets, isLocal, label) {
+  return sheets
+    .filter((sheet) => !isLocal(sheet))
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0))
+    .map((sheet) => ({ id: sheet.id, label: label(sheet.created_at) }))
+}

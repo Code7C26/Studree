@@ -6,6 +6,30 @@
 
 ---
 
+## [0.25.1] — 2026-11-11
+
+### Fixed — Celular: el Brote, la selección y la foto; Cancelar y Salir en rojo
+
+> Request: "la IA del Brote se abre completa y tapa todo, resalté un texto también y no apareció. Y
+> cuando puse sacar una foto y transcribirla sí o sí tengo que agregar otra hoja, me gustaría la
+> opción de agregarlo a la hoja que yo quiera. Los botones que digan cancelar y salir ponlos en rojo."
+
+- **Panel del Brote en el celular:** hoja inferior del 65 % del alto con manija (antes pantalla
+  completa); en escritorio, igual. `AssistantPanel.jsx`.
+- **Atajos sobre la selección en táctil:** la barra va debajo de la selección (arriba la tapaba el
+  menú Copiar/Pegar del sistema), botones grandes, el toque no le saca el foco al editor y se
+  reubica al abrir el teclado. `SelectionShortcuts.jsx`.
+- **Foto a hoja → "Guardar en":** hoja nueva o al final de una hoja existente
+  (`photoTargets` con test, `usePhotoSheet`, `PhotoSheetDialog`, `SubjectFolderPage`). Textos
+  `camera.{appendSheet,target,targetNew,targetSheet,appendFailed}`.
+- **Cancelar y Salir en rojo:** variante `cancel` de `Button` (borde y texto rojos) en todos los
+  diálogos y en el Perfil; el "Salir" del header y del examen, en el mismo rojo.
+- **Encoding:** `lib/i18n/{es,en}/{camera,mobile}.js` estaban en Latin-1 (en la web salían "�");
+  pasados a UTF-8. Un comentario de `constants/routes.js`, igual.
+- Docs: `features/{assistant,photo-notes,mobile}.md`, `02-architecture.md` (variantes de botón).
+
+---
+
 ## [0.25.0] — 2026-11-11
 
 ### Added — Cartel de entrada: crear cuenta o entrar como invitado

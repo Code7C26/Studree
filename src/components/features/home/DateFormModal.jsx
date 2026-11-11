@@ -55,7 +55,7 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
         <div>
           <p className="text-sm text-text-muted">{t('home.dateForm.confirmDelete', { title: initial.title })}</p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={saving}>
+            <Button variant="cancel" onClick={() => setConfirmingDelete(false)} disabled={saving}>
               {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDelete} disabled={saving}>
@@ -97,7 +97,7 @@ export function DateFormModal({ initial, onClose, onSave, onDelete }) {
               <span />
             )}
             <div className="flex gap-2">
-              <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+              <Button type="button" variant="cancel" onClick={onClose} disabled={saving}>
                 {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>

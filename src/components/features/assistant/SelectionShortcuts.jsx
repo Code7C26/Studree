@@ -5,11 +5,21 @@ import { useI18n } from '../../../hooks/useI18n.js'
 
 /** Separación (px) entre la barra y el texto seleccionado / los bordes de la ventana. */
 const GAP = 8
+/**
+ * En pantallas táctiles la barra va DEBAJO de la selección y más separada: arriba está el menú
+ * propio del sistema (Copiar, Pegar…), que tapa cualquier cosa de la página, y abajo las manijas
+ * de la selección.
+ */
+const TOUCH_GAP = 32
+/** Pantalla táctil (celular, tablet). */
+const isTouch = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches)
 /** Alto aproximado de la barra hasta que se mide. */
 const FALLBACK_HEIGHT = 36
 
 const BUTTON =
   'rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:text-text'
+/** En táctil, botones del alto de un dedo. */
+const TOUCH_BUTTON = 'rounded-md px-3 py-2.5 text-sm text-text transition-colors active:bg-surface-2'
 
 /**
  * Barra flotante con los atajos del Brote junto al texto seleccionado del
@@ -26,6 +36,7 @@ const BUTTON =
 export function SelectionShortcuts({ editor, hidden = false, onPick }) {
   const { t } = useI18n()
   const [position, setPosition] = useState(/** @type {{top: number, left: number}|null} */ (null))
+  const [touch] = useState(isTouch)
   const barRef = useRef(/** @type {HTMLDivElement|null} */ (null))
 
   const update = useCallback(() => {
@@ -48,11 +59,19 @@ export function SelectionShortcuts({ editor, hidden = false, onPick }) {
     }
     const height = barRef.current?.offsetHeight || FALLBACK_HEIGHT
     const width = barRef.current?.offsetWidth || 0
-    const above = start.top - height - GAP
-    const top = above >= GAP ? above : end.bottom + GAP
+    let top
+    if (touch) {
+      // Debajo de la selección (arriba va el menú del sistema); si no entra, arriba.
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+      const below = end.bottom + TOUCH_GAP
+      top = below + height <= viewportHeight - GAP ? below : Math.max(GAP, start.top - height - TOUCH_GAP)
+    } else {
+      const above = start.top - height - GAP
+      top = above >= GAP ? above : end.bottom + GAP
+    }
     const left = Math.max(GAP, Math.min(start.left, window.innerWidth - width - GAP))
     setPosition({ top, left })
-  }, [editor, hidden])
+  }, [editor, hidden, touch])
 
   useEffect(() => {
     update()
@@ -79,6 +98,8 @@ export function SelectionShortcuts({ editor, hidden = false, onPick }) {
     dom.addEventListener('keydown', onKeyDown, true)
     window.addEventListener('scroll', update, true)
     window.addEventListener('resize', update)
+    // En el celular, abrir o cerrar el teclado cambia el área visible.
+    window.visualViewport?.addEventListener('resize', update)
     return () => {
       editor.off('selectionUpdate', update)
       editor.off('update', update)
@@ -87,6 +108,7 @@ export function SelectionShortcuts({ editor, hidden = false, onPick }) {
       dom.removeEventListener('keydown', onKeyDown, true)
       window.removeEventListener('scroll', update, true)
       window.removeEventListener('resize', update)
+      window.visualViewport?.removeEventListener('resize', update)
     }
   }, [editor, hidden, update])
 
@@ -133,10 +155,11 @@ export function SelectionShortcuts({ editor, hidden = false, onPick }) {
           key={shortcut.id}
           type="button"
           tabIndex={index === 0 ? 0 : -1}
-          // Que el click no le saque el foco (ni la selección) al editor.
+          // Que el click (o el toque) no le saque el foco ni la selección al editor.
           onMouseDown={(event) => event.preventDefault()}
+          onPointerDown={(event) => event.preventDefault()}
           onClick={() => onPick(shortcut.id)}
-          className={BUTTON}
+          className={touch ? TOUCH_BUTTON : BUTTON}
         >
           {shortcutName(shortcut.id)}
         </button>

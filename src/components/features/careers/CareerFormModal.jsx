@@ -122,7 +122,7 @@ export function CareerFormModal({ open, onClose, career = null, onSubmit }) {
         )}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="cancel" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={saving || !name.trim()}>

@@ -56,7 +56,7 @@ export const studySummaryPath = (summaryId) => `/estudio/resumenes/${summaryId}`
 /** @param {string} attemptId */
 export const studyQuizPath = (attemptId) => `/estudio/examenes/${attemptId}`
 
-/** Link p�blico de una materia compartida (Fase 15).
+/** Link público de una materia compartida (Fase 15).
  * @param {string} token
  */
 export const sharedPath = (token) => `/compartido/${token}`

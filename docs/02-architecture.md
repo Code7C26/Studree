@@ -193,6 +193,10 @@ Jerarquía (fuente de verdad → uso):
 | `warn` | Urgente / búsqueda / "cursando" | `#f59e0b` |
 | `font-display` | Títulos, saludo, números grandes | Bricolage Grotesque |
 
+> **Botones (`components/ui/Button.jsx`):** `accent` (acción principal), `ghost` (secundaria),
+> `danger` (rojo sólido: borrar) y **`cancel`** (borde y texto rojos: **todo "Cancelar" y "Salir"**,
+> 2026-11-11, para que se distingan). El "Salir" del header y del examen usan el mismo rojo.
+
 > **Color de materia:** nunca el hex crudo para texto. Usar `getSubjectTones` /
 > `subjectCssVars` (`src/constants/subjectTones.js`, ADR-018).
 

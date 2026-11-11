@@ -25,8 +25,14 @@
   (los `text` se van mostrando). Se puede **Cancelar** en cualquier momento: se aborta el
   pedido y no se consume el uso.
 - El resultado llega como **Markdown editable** en el diálogo. "Sacar otra" vuelve a la
-  cámara; "Crear hoja" agrega una **hoja nueva al final** de la materia (fecha y hora del
-  momento, igual que cualquier hoja de la Carpeta) y baja el scroll hasta ella.
+  cámara.
+- **"Guardar en" (2026-11-11):** debajo del texto se elige dónde va. **"Una hoja nueva"** (por
+  defecto) → "Crear hoja" agrega una hoja nueva al final de la materia (fecha y hora del
+  momento) y baja el scroll hasta ella. **"Al final de la hoja del …"** (las hojas ya guardadas,
+  la más nueva primero; `photoTargets` en `lib/photos/transcription.js`, con test) → "Agregar a
+  la hoja" pega el texto al final de esa hoja por su editor (mismo camino que una propuesta
+  `append` del Brote: onUpdate → autosave). Si no se puede, el diálogo sigue abierto con el texto
+  y el aviso "No se pudo agregar a esa hoja…".
 - **Nada se guarda sin aprobación.** Cancelar o cerrar no crea hojas ni deja estados colgados.
 - La foto **no se guarda** en Supabase, Storage, cache ni logs (ver `docs/03-security.md`).
 

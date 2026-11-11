@@ -30,6 +30,14 @@
   como siempre (autosave reintenta; la hoja nueva queda como borrador local, ver
   `features/folder.md` y `features/sheet-editor.md`).
 
+- **El Brote en el celular (2026-11-11):** el panel es una hoja inferior del 65 % del alto (no
+  tapa todo) y la barra de atajos sobre el texto seleccionado va debajo de la selección, con
+  botones táctiles (ver `features/assistant.md`).
+- **Foto a hoja** puede guardarse en una hoja nueva o al final de una hoja que ya existe (ver
+  `features/photo-notes.md`).
+- **Textos de cámara y celular** (`lib/i18n/{es,en}/{camera,mobile}.js`) estaban guardados en
+  Latin-1 y en la web se veían con "�"; se pasaron a UTF-8 (2026-11-11).
+
 ## Cómo funciona por dentro
 
 - `useFolder` pasa `onCached` a `sheetsService.list` y cachea la materia en

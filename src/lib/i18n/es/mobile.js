@@ -1,5 +1,5 @@
-/** Celular: avisos de la app adaptada y sin conexiÛn (Fase 16). */
+/** Celular: avisos de la app adaptada y sin conexi√≥n (Fase 16). */
 export default {
-  offline: 'Sin conexiÛn: est·s viendo lo guardado.',
+  offline: 'Sin conexi√≥n: est√°s viendo lo guardado.',
   retry: 'Reintentar',
 }

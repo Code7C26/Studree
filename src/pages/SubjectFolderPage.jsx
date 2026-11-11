@@ -35,6 +35,7 @@ import { scrollToCurrentHit } from '../lib/editor/highlightExtension.js'
 import { blockEndPos, setBroteAnchor } from '../lib/editor/broteAnchor.js'
 import { formatSheetDate } from '../lib/format/sheetDate.js'
 import { isLocalSheet } from '../lib/editor/folderSheets.js'
+import { photoTargets } from '../lib/photos/transcription.js'
 import { assistantBridge } from '../lib/assistant/bridge.js'
 import { applyProposalToEditor } from '../lib/assistant/editorApply.js'
 import { withOriginMark } from '../lib/assistant/applyProposal.js'
@@ -106,8 +107,9 @@ function SubjectFolder({ subjectId }) {
     updateLiveContent,
   } = useFolder(subjectId)
 
-  /** Foto a hoja (solo celular): la hoja se crea recién al aprobar la revisión. */
-  const photo = usePhotoSheet({ subjectId, onCreated: handleAddSheet })
+  /** Foto a hoja (solo celular): se guarda recién al aprobar la revisión, en una hoja nueva o al final de una elegida. */
+  const photo = usePhotoSheet({ subjectId, onCreated: handlePhotoSave })
+  const photoSheetTargets = useMemo(() => photoTargets(sheets, isLocalSheet, formatSheetDate), [sheets])
   const photoInputRef = useRef(null)
 
   const realSheetIds = useMemo(() => sheets.filter((sheet) => !isLocalSheet(sheet)).map((sheet) => sheet.id), [sheets])
@@ -378,6 +380,28 @@ function SubjectFolder({ subjectId }) {
     const id = addLocalSheet(content)
     setAutoFocusKey(id)
     window.requestAnimationFrame(() => document.getElementById(`hoja-${id}`)?.scrollIntoView({ block: 'center' }))
+  }
+
+  /**
+   * Guarda la transcripción de una foto: hoja nueva (`sheetId` null) o al final de una hoja que
+   * ya existe. Agregar entra por el editor (mismo camino que una propuesta `append` del Brote):
+   * onUpdate → Markdown → autosave.
+   * @param {string} markdown
+   * @param {string|null} sheetId
+   * @returns {{ok: boolean, error?: string}}
+   */
+  function handlePhotoSave(markdown, sheetId) {
+    if (!sheetId) {
+      handleAddSheet(markdown)
+      return { ok: true }
+    }
+    const sheet = sheetsRef.current.find((candidate) => candidate.id === sheetId)
+    const editor = sheet ? editorsRef.current.get(sheet.key) : null
+    if (!editor || editor.isDestroyed) return { ok: false, error: t('camera.appendFailed') }
+    const result = applyProposalToEditor(editor, { kind: 'append', markdown }, null)
+    if (!result.ok) return { ok: false, error: t('camera.appendFailed') }
+    window.requestAnimationFrame(() => document.getElementById(`hoja-${sheet.id}`)?.scrollIntoView({ block: 'end', behavior: 'smooth' }))
+    return { ok: true }
   }
 
   // ---- Brote (asistente) --------------------------------------------------
@@ -870,6 +894,7 @@ function SubjectFolder({ subjectId }) {
 
       <PhotoSheetDialog
         photo={photo}
+        targets={photoSheetTargets}
         onRetake={() => {
           photo.retake()
           window.requestAnimationFrame(() => photoInputRef.current?.click())

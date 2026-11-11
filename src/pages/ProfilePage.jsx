@@ -211,7 +211,7 @@ export function ProfilePage() {
               </h2>
               <p className="mt-2 truncate text-lg font-medium text-text">{user?.email}</p>
               <p className="text-sm text-text-muted">{t('profile.accountHelp')}</p>
-              <Button variant="ghost" onClick={signOut} className="mt-4">
+              <Button variant="cancel" onClick={signOut} className="mt-4">
                 {t('profile.signOut')}
               </Button>
             </>

@@ -69,7 +69,7 @@ export function Header() {
             ofrece "Entrar", para pasar a una cuenta que ya existe.
           */}
           {user && !isAnonymous ? (
-            <button type="button" onClick={signOut} className={LINK_IDLE}>
+            <button type="button" onClick={signOut} className={`${LINK} text-red-400 hover:bg-red-950/40 hover:text-red-300`}>
               {t('shell.nav.signOut')}
             </button>
           ) : (

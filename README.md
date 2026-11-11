@@ -118,7 +118,7 @@ Detalle completo en [`docs/03-security.md`](docs/03-security.md).
 
 ## Calidad y proceso
 
-- **618 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
+- **621 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
   Markdown, los permisos del asistente, el repaso espaciado, los tokens y la paridad de idiomas.
 - **ESLint** sin errores y build de producción verificado.
 - Tests que **fallan si falta una traducción** o si queda texto visible sin traducir.

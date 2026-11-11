@@ -123,10 +123,12 @@ export function AssistantPanel({ open, focusSignal, onClose, onMood }) {
           onClose()
         }
       }}
-      className={`glass fixed inset-0 z-30 flex-col rounded-none bg-surface/95 shadow-2xl shadow-black/40 sm:inset-auto sm:bottom-24 sm:right-6 sm:top-16 sm:w-96 sm:rounded-xl ${
+      // Celular: hoja inferior (65 % del alto) que deja ver la hoja de arriba; desde `sm`, panel lateral.
+      className={`glass fixed inset-x-0 bottom-0 z-30 h-[65dvh] flex-col rounded-none rounded-t-2xl bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-2xl shadow-black/40 sm:inset-auto sm:bottom-24 sm:right-6 sm:top-16 sm:h-auto sm:w-96 sm:rounded-xl sm:pb-0 ${
         open ? 'flex' : 'hidden'
       }`}
     >
+      <span aria-hidden="true" className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" />
       <header className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
         <Brote state={mood} size={32} />
         <h2 id="brote-panel-title" className="font-display text-lg font-bold">

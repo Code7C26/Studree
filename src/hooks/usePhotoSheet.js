@@ -1,7 +1,8 @@
 /**
  * Estado de "Foto a hoja" (Fase 16): comprime la foto, pide la transcripción al
- * Brote, deja revisarla y solo entonces llama a `onCreated`. Cancelar en
- * cualquier paso no crea nada. Ver docs/features/photo-notes.md.
+ * Brote, deja revisarla y elegir dónde va (hoja nueva o al final de una hoja que ya
+ * existe) y solo entonces llama a `onCreated`. Cancelar en cualquier paso no crea
+ * nada. Ver docs/features/photo-notes.md.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -13,7 +14,10 @@ import { t } from '../lib/i18n/index.js'
  */
 
 /**
- * @param {{subjectId: string, onCreated: (markdown: string) => void}} params
+ * @param {{
+ *   subjectId: string,
+ *   onCreated: (markdown: string, sheetId: string|null) => {ok: boolean, error?: string}|void,
+ * }} params  `sheetId` = hoja existente a la que se agrega; `null` = hoja nueva.
  */
 export function usePhotoSheet({ subjectId, onCreated }) {
   const [open, setOpen] = useState(false)
@@ -21,6 +25,8 @@ export function usePhotoSheet({ subjectId, onCreated }) {
   const [preview, setPreview] = useState(/** @type {string|null} */ (null))
   const [draft, setDraft] = useState('')
   const [error, setError] = useState(/** @type {string|null} */ (null))
+  /** Dónde se guarda: `null` = hoja nueva; si no, la id de una hoja que ya existe. */
+  const [targetSheetId, setTargetSheetId] = useState(/** @type {string|null} */ (null))
   const abortRef = useRef(/** @type {AbortController|null} */ (null))
   /** Cada foto arranca una corrida nueva: una respuesta vieja se descarta. */
   const runRef = useRef(0)
@@ -31,6 +37,7 @@ export function usePhotoSheet({ subjectId, onCreated }) {
     setPreview(null)
     setDraft('')
     setError(null)
+    setTargetSheetId(null)
   }, [])
 
   const cancel = useCallback(() => {
@@ -93,7 +100,7 @@ export function usePhotoSheet({ subjectId, onCreated }) {
     [subjectId],
   )
 
-  /** Crea la hoja con el texto revisado. Devuelve false si está vacío. */
+  /** Guarda el texto revisado donde se eligió. Devuelve false si está vacío o no se pudo. */
   const confirm = useCallback(() => {
     const markdown = draft.trim()
     if (!markdown) {
@@ -101,10 +108,15 @@ export function usePhotoSheet({ subjectId, onCreated }) {
       setError(t('camera.empty'))
       return false
     }
-    onCreated(markdown)
+    const result = onCreated(markdown, targetSheetId)
+    if (result && result.ok === false) {
+      // Sigue en revisión con el texto intacto: se puede elegir otra hoja o una nueva.
+      setError(result.error ?? t('camera.appendFailed'))
+      return false
+    }
     cancel()
     return true
-  }, [draft, onCreated, cancel])
+  }, [draft, targetSheetId, onCreated, cancel])
 
   return {
     open,
@@ -112,6 +124,8 @@ export function usePhotoSheet({ subjectId, onCreated }) {
     preview,
     draft,
     setDraft,
+    targetSheetId,
+    setTargetSheetId,
     error,
     pick,
     cancel,
