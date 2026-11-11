@@ -54,16 +54,9 @@ así que los mails de confirmación salen por un **Gmail de la marca**:
   sender name `Studree`. La contraseña es una **contraseña de aplicación** de Google: vive solo en
   Supabase, nunca en el repo ni en un `VITE_*` (`docs/03-security.md`).
 - **Authentication → Rate Limits:** límite de mails subido a 30 por hora.
-- **Plantillas** en castellano con el diseño de Studree, versionadas en `supabase/templates/`. Se
-  pegan a mano en **Authentication → Emails → Templates**:
-
-  | Plantilla de Supabase | Archivo | Asunto | Cuándo sale |
-  |---|---|---|---|
-  | Confirm signup | `confirm-signup.html` | Confirmá tu cuenta de Studree | Crear cuenta desde "Entrar" (`signUp`) |
-  | Change email address | `change-email.html` | Confirmá tu email en Studree | Un invitado agrega email y contraseña en el Perfil (`updateUser`) |
-
-  El logo se carga desde `https://studree.vercel.app/icons/icon-192.png`. Si cambia el texto,
-  editar el archivo y volver a pegarlo.
+- **Plantillas** en castellano con el diseño de Studree, pegadas en **Authentication → Emails →
+  Templates**: *Confirm signup* (crear cuenta desde "Entrar") y *Change email address* (un invitado
+  agrega email y contraseña en el Perfil). No se versionan en el repo.
 
 ## Build local
 

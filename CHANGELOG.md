@@ -15,9 +15,8 @@
 
 - **SMTP propio** con un Gmail de la marca (sender name "Studree") y límite de mails subido a 30
   por hora. Se configura en el dashboard de Supabase; la contraseña de aplicación no está en el repo.
-- **Plantillas en castellano** con el diseño de Studree (papel crema, franja verde, logo, botón):
-  `supabase/templates/confirm-signup.html` (crear cuenta) y `change-email.html` (invitado que
-  guarda su cuenta desde el Perfil).
+- **Plantillas en castellano** con el diseño de Studree (papel crema, franja verde, logo, botón)
+  para *Confirm signup* y *Change email address*, cargadas en el dashboard (no van en el repo).
 - Docs: `docs/04-deployment.md` → "Mails de Auth".
 
 ---
