@@ -3,6 +3,18 @@ import { AuthContext } from '../../hooks/useAuth.js'
 import { supabase, isSupabaseConfigured } from '../../services/supabase.client.js'
 import { clearAllCache } from '../../services/cache.service.js'
 import { translateAuthError } from '../../services/authErrors.js'
+import { ROUTES } from '../../constants/routes'
+
+/**
+ * A dónde vuelve el link del mail de confirmación: al mismo sitio desde el que se pidió
+ * (studree.vercel.app o localhost), no a la "Site URL" fija de Supabase. Supabase solo lo
+ * respeta si la URL está en Authentication → URL Configuration → Redirect URLs.
+ * @param {string} path
+ * @returns {string}
+ */
+function confirmRedirect(path) {
+  return `${window.location.origin}${path}`
+}
 
 /**
  * Provee la sesión a toda la app.
@@ -102,7 +114,11 @@ export function AuthProvider({ children }) {
        * @param {string} password
        */
       async signUp(email, password) {
-        const { data, error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: confirmRedirect(ROUTES.home) },
+        })
         return {
           error: translateAuthError(error),
           // Si Supabase no devuelve sesión, la cuenta quedó pendiente de confirmar.
@@ -126,7 +142,10 @@ export function AuthProvider({ children }) {
        * @param {string} password
        */
       async linkIdentity(email, password) {
-        const { data, error } = await supabase.auth.updateUser({ email, password })
+        const { data, error } = await supabase.auth.updateUser(
+          { email, password },
+          { emailRedirectTo: confirmRedirect(ROUTES.profile) },
+        )
         return {
           error: translateAuthError(error),
           // Con confirmación de email activada, el email nuevo queda pendiente

@@ -18,9 +18,11 @@ export function translateAuthError(error, lang = getLang()) {
 
   if (/Invalid login credentials/i.test(message)) return text('invalidCredentials')
   if (/Email not confirmed/i.test(message)) return text('emailNotConfirmed')
-  if (/User already registered/i.test(message)) return text('alreadyRegistered')
+  // "already been registered": guardar la cuenta de invitado con un email que ya tiene cuenta.
+  if (/User already registered|already been registered/i.test(message)) return text('alreadyRegistered')
   if (/Password should be at least|weak password/i.test(message)) return text('passwordShort')
-  if (/rate limit|too many/i.test(message)) return text('rateLimit')
+  // "only request this after N seconds": reintentar el mail de confirmación antes de tiempo.
+  if (/rate limit|too many|only request this after/i.test(message)) return text('rateLimit')
   if (/Failed to fetch|NetworkError|fetch failed/i.test(message)) return text('network')
   return text('generic')
 }

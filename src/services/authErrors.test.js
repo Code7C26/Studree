@@ -19,6 +19,17 @@ test('translateAuthError en inglés', () => {
   assert.equal(translateAuthError(err('Email not confirmed'), 'en').startsWith('Your email is not confirmed yet.'), true)
 })
 
+test('guardar la cuenta de invitado: email ya usado y reintento muy rápido', () => {
+  assert.equal(
+    translateAuthError(err('A user with this email address has already been registered'), 'es'),
+    'Ese email ya tiene cuenta. Iniciá sesión.',
+  )
+  assert.equal(
+    translateAuthError(err('For security purposes, you can only request this after 42 seconds.'), 'es'),
+    'Demasiados intentos. Esperá un momento.',
+  )
+})
+
 test('red caída y errores desconocidos: mensaje propio, nunca el texto crudo del proveedor', () => {
   assert.equal(translateAuthError(err('Failed to fetch'), 'es'), 'No hay conexión. Revisá tu internet e intentá de nuevo.')
   assert.equal(translateAuthError(err('Failed to fetch'), 'en'), 'No connection. Check your internet and try again.')

@@ -41,8 +41,13 @@ un sitio estático en `dist/` que se sirve desde cualquier hosting de estáticos
 - **Edge Function `assistant`**: se despliega aparte con la CLI de Supabase, no con Vercel
   (ver `docs/features/assistant.md` → "Cómo desplegar"). Sin eso, el Brote y la Foto a hoja
   responden 404.
-- **Auth**: en Supabase → **Authentication → URL Configuration**, agregar el dominio de
-  Vercel a `Site URL` y `Redirect URLs`.
+- **Auth**: en Supabase → **Authentication → URL Configuration**:
+  - `Site URL`: `https://studree.vercel.app`
+  - `Redirect URLs`: `https://studree.vercel.app/**` y `http://localhost:5173/**`
+  El link de los mails de confirmación vuelve a la página desde la que se pidió
+  (`emailRedirectTo` en `AuthProvider`). Si esa URL no está en la lista, Supabase usa la
+  `Site URL`, y si esa sigue en `localhost:3000` el link no abre. Revisado el 2026-11-11: había
+  quedado en `localhost:3000`.
 - Probar la PWA instalada y la lectura sin señal en el celular (`docs/features/mobile.md`).
 
 ### Mails de Auth (hecho el 2026-11-11)

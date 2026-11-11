@@ -33,6 +33,10 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
   - Si el proyecto de Supabase tiene confirmación de email activada, el mail nuevo queda
     pendiente en `new_email` hasta que el usuario abre el link de confirmación — el perfil
     muestra un aviso (`needsConfirmation`), no un error.
+  - El link del mail vuelve al **Perfil del mismo sitio** (`emailRedirectTo`), siempre que esa
+    URL esté en las Redirect URLs de Supabase (`docs/04-deployment.md`).
+  - Reintentar enseguida ("only request this after N seconds") o usar un email que ya tiene
+    cuenta muestran su propio mensaje, no el genérico (`services/authErrors.js`).
   - Implementado en `AuthProvider.linkIdentity(email, password)` (no en el componente,
     Mandamiento II: la lógica de negocio va en el provider/hook, no en la página).
 - **Resumen de contenido, no un dashboard.** Carreras / materias / hojas contadas a partir

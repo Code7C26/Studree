@@ -6,6 +6,23 @@
 
 ---
 
+## [0.23.1] — 2026-11-11
+
+### Fixed — Guardar la cuenta de invitado con un Gmail
+
+> Request: "intenté poner un gmail y no mandó la solicitud a supabase, ¿podés fijarte?"
+
+- El pedido sí llegaba a Supabase (queda el email pendiente de confirmar), pero el link del mail
+  iba a la `Site URL`, que seguía en `http://localhost:3000`. Ahora `signUp` y `linkIdentity`
+  mandan `emailRedirectTo` con el origen actual (`/` y `/perfil`). En Supabase falta poner la
+  `Site URL` y las Redirect URLs (`docs/04-deployment.md`).
+- `translateAuthError`: "already been registered" → "Ese email ya tiene cuenta" y "only request
+  this after N seconds" → "Demasiados intentos"; antes salía el mensaje genérico. Con test.
+- Archivos: `components/layout/AuthProvider.jsx`, `services/authErrors.js` (+ test),
+  `docs/04-deployment.md`, `docs/features/profile.md`.
+
+---
+
 ## [0.23.0] — 2026-11-11
 
 ### Changed — Perfil rediseñado
