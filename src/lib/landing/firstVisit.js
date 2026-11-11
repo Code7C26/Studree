@@ -14,3 +14,13 @@ import { STORAGE_KEYS } from '../../constants/storageKeys.js'
 export function isFirstVisit(keys) {
   return !keys.some((key) => key.startsWith(STORAGE_KEYS.appPrefix) && key !== STORAGE_KEYS.uiLang)
 }
+
+/**
+ * Cartel de entrada ("Crear cuenta" / "Entrar como invitado"): lo ve quien está como invitado y
+ * todavía no eligió en este dispositivo. Con cuenta con email no aparece nunca.
+ * @param {{isAnonymous: boolean, choiceMade: boolean}} state
+ * @returns {boolean}
+ */
+export function needsEntryChoice({ isAnonymous, choiceMade }) {
+  return isAnonymous && !choiceMade
+}

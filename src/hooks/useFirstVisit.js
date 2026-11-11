@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ROUTES } from '../constants/routes'
 import { STORAGE_KEYS } from '../constants/storageKeys.js'
-import { isFirstVisit } from '../lib/landing/firstVisit.js'
-import { listStoredKeys, writeCache } from '../services/cache.service.js'
+import { isFirstVisit, needsEntryChoice } from '../lib/landing/firstVisit.js'
+import { listStoredKeys, readCache, writeCache } from '../services/cache.service.js'
+import { useAuth } from './useAuth.js'
 
 /**
  * `true` si hay que mandar a la landing: es la primera visita del dispositivo y se entra por
@@ -21,4 +22,22 @@ export function useMarkLandingSeen() {
   useEffect(() => {
     writeCache(STORAGE_KEYS.uiLandingSeen, true)
   }, [])
+}
+
+/**
+ * Cartel de entrada: "Crear cuenta" o "Entrar como invitado" la primera vez que se entra a la
+ * app como invitado (docs/features/landing.md). La elección (cualquiera) se recuerda en el
+ * dispositivo, así no reaparece mientras se espera el mail de confirmación.
+ * @returns {{show: boolean, choose: (kind: 'guest'|'signup'|'signin') => void}}
+ */
+export function useEntryChoice() {
+  const { user, isAnonymous } = useAuth()
+  const [choiceMade, setChoiceMade] = useState(() => readCache(STORAGE_KEYS.uiEntryChoice, null) !== null)
+
+  const choose = useCallback((kind) => {
+    writeCache(STORAGE_KEYS.uiEntryChoice, kind)
+    setChoiceMade(true)
+  }, [])
+
+  return { show: Boolean(user) && needsEntryChoice({ isAnonymous, choiceMade }), choose }
 }

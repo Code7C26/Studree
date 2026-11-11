@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isFirstVisit } from './firstVisit.js'
+import { isFirstVisit, needsEntryChoice } from './firstVisit.js'
 
 test('un navegador sin nada de Studree es una primera visita', () => {
   assert.equal(isFirstVisit([]), true)
@@ -18,4 +18,13 @@ test('quien ya vio la landing no es primera visita', () => {
 test('quien ya usó la app en este dispositivo no ve la landing de golpe', () => {
   assert.equal(isFirstVisit(['studree:cache:careers']), false)
   assert.equal(isFirstVisit(['studree:ui:tabs', 'studree:ui:lang']), false)
+})
+
+test('el cartel de entrada aparece al invitado que todavía no eligió', () => {
+  assert.equal(needsEntryChoice({ isAnonymous: true, choiceMade: false }), true)
+})
+
+test('no aparece si ya eligió o si tiene cuenta con email', () => {
+  assert.equal(needsEntryChoice({ isAnonymous: true, choiceMade: true }), false)
+  assert.equal(needsEntryChoice({ isAnonymous: false, choiceMade: false }), false)
 })

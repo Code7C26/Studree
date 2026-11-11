@@ -12,7 +12,7 @@
 import { STORAGE_KEYS } from '../constants/storageKeys.js'
 
 /** Claves que sobreviven a `clearAllCache()`: preferencias del dispositivo, no datos de un usuario. */
-const PRESERVED_KEYS = [STORAGE_KEYS.uiLang, STORAGE_KEYS.uiLandingSeen]
+const PRESERVED_KEYS = [STORAGE_KEYS.uiLang, STORAGE_KEYS.uiLandingSeen, STORAGE_KEYS.uiEntryChoice]
 
 /**
  * Todas las claves guardadas en localStorage (vacío si no hay acceso).

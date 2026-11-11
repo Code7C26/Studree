@@ -15,6 +15,14 @@ export default {
     missingBody:
       'Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local (see .env.example) and restart the dev server.',
   },
+  entry: {
+    title: 'How do you want to start?',
+    text: 'Create your account to sign in from any device, or try Studree as a guest and save your account whenever you want.',
+    signup: 'Create account',
+    guest: 'Continue as guest',
+    guestHelp: 'As a guest, what you add stays on this device until you save your account in your Profile.',
+    signin: 'I already have an account',
+  },
   errors: {
     invalidCredentials: 'Wrong email or password.',
     emailNotConfirmed:

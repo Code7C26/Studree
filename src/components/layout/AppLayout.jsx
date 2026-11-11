@@ -4,6 +4,7 @@ import { ReadingModeProvider } from './ReadingModeProvider'
 import { useReadingMode } from '../../hooks/useReadingMode.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { AssistantHost } from '../features/assistant/AssistantHost'
+import { EntryChoiceDialog } from './EntryChoiceDialog'
 import { ROUTES } from '../../constants/routes'
 
 /** Rutas que viven dentro del shell (WorkspaceLayout: explorador + tabs + palette). */
@@ -47,6 +48,8 @@ function AppShell() {
       {/* El Brote (asistente, Fase 14): con sesión y fuera del login. En modo lectura
           se oculta sin desmontarse (la conversación y el pedido en curso siguen). */}
       {user && location.pathname !== ROUTES.login && <AssistantHost hidden={reading} />}
+      {/* Primera vez como invitado: "Crear cuenta" o "Entrar como invitado" (landing.md). */}
+      {location.pathname !== ROUTES.login && <EntryChoiceDialog />}
     </div>
   )
 }

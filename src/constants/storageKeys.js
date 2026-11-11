@@ -35,4 +35,9 @@ export const STORAGE_KEYS = Object.freeze({
    * (docs/features/landing.md). Del dispositivo: sobrevive a cerrar sesión.
    */
   uiLandingSeen: 'studree:ui:landing-seen',
+  /**
+   * Ya se eligió en el cartel de entrada ("Entrar como invitado"): no vuelve a aparecer en este
+   * dispositivo (docs/features/landing.md). Del dispositivo: sobrevive a cerrar sesión.
+   */
+  uiEntryChoice: 'studree:ui:entry-choice',
 })

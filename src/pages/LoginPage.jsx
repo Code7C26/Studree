@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { Button } from '../components/ui/Button'
 import { TextField } from '../components/ui/TextField'
@@ -12,11 +12,13 @@ import { useI18n } from '../hooks/useI18n.js'
  * puerta de entrada obligatoria a todo el workspace. Ver docs/03-security.md.
  */
 export function LoginPage() {
-  const { user, isAnonymous, loading, configured, signIn, signUp } = useAuth()
+  const { user, isAnonymous, loading, configured, signIn, signUp, linkIdentity } = useAuth()
   const location = useLocation()
+  const [params] = useSearchParams()
   const { t } = useI18n()
 
-  const [mode, setMode] = useState(/** @type {'signin'|'signup'} */ ('signin'))
+  // `?modo=crear` (cartel de entrada): arranca en "Crear cuenta".
+  const [mode, setMode] = useState(/** @type {'signin'|'signup'} */ (params.get('modo') === 'crear' ? 'signup' : 'signin'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -52,7 +54,9 @@ export function LoginPage() {
       const result = await signIn(email, password)
       if (result.error) setError(result.error)
     } else {
-      const result = await signUp(email, password)
+      // Un invitado que crea su cuenta conserva lo que cargó: se le agrega email y contraseña
+      // (mismo camino que "Guardá tu cuenta" del Perfil) en vez de crear otro usuario.
+      const result = isAnonymous ? await linkIdentity(email, password) : await signUp(email, password)
       if (result.error) {
         setError(result.error)
       } else if (result.needsConfirmation) {

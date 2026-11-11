@@ -23,6 +23,9 @@ export const ROUTES = Object.freeze({
   studyQuiz: '/estudio/examenes/:attemptId',
 })
 
+/** Pantalla Entrar abierta en "Crear cuenta" (la usa el cartel de entrada). */
+export const signupPath = () => `${ROUTES.login}?modo=crear` // i18n-ignore: parámetro de URL
+
 /** @param {string} careerId */
 export const careerPath = (careerId) => `/carreras/${careerId}`
 

@@ -6,6 +6,24 @@
 
 ---
 
+## [0.25.0] — 2026-11-11
+
+### Added — Cartel de entrada: crear cuenta o entrar como invitado
+
+> Request: "que siempre que entres a la página por primera vez te salga un cartel de: ingresar como
+> invitado o crear cuenta. No te puede mandar al inicio de una."
+
+- `components/layout/EntryChoiceDialog.jsx` (en `AppLayout`): "Crear cuenta" (→ `/entrar?modo=crear`),
+  "Entrar como invitado" y "Ya tengo cuenta". No se cierra sin elegir; la elección se guarda en
+  `studree:ui:entry-choice` (sobrevive a cerrar sesión) y con cuenta con email no aparece.
+- `needsEntryChoice` (`lib/landing/firstVisit.js`, con test) y `useEntryChoice`
+  (`hooks/useFirstVisit.js`); `signupPath()` en `constants/routes.js`.
+- `LoginPage`: `?modo=crear` abre en "Crear cuenta"; un invitado que crea su cuenta usa
+  `linkIdentity` y conserva lo cargado.
+- Textos `auth.entry.*` en `es` y `en`. Docs: `features/landing.md`, `DB_SCHEMA.md`.
+
+---
+
 ## [0.24.0] — 2026-11-11
 
 ### Added — Fase 17: planes y pago simulado

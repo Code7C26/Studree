@@ -22,6 +22,15 @@ como terminado.
   y no ve la landing de golpe.
 - Solo se desvía la raíz: un link directo (una materia, `/compartido/...`) entra normal.
 - `studree:ui:landing-seen` es del dispositivo: sobrevive a "cerrar sesión" (`PRESERVED_KEYS`).
+- **Cartel de entrada (2026-11-11):** la primera vez que se entra a la app como invitado (después
+  de "Empezar gratis" o por un link directo) no se muestra el Inicio de una: aparece un cartel
+  (`components/layout/EntryChoiceDialog.jsx`, en `AppLayout`, fuera de `/entrar`) con **"Crear
+  cuenta"** (→ `/entrar?modo=crear`), **"Entrar como invitado"** y "Ya tengo cuenta" (→ `/entrar`).
+  No se cierra sin elegir. La elección se guarda en `studree:ui:entry-choice` (del dispositivo,
+  `PRESERVED_KEYS`) y no vuelve a aparecer; con cuenta con email no aparece nunca
+  (`needsEntryChoice` en `lib/landing/firstVisit.js`, con test; hook `useEntryChoice`).
+  "Crear cuenta" siendo invitado usa `linkIdentity` (igual que "Guardá tu cuenta"): no se pierde
+  lo cargado.
 - Desde la app se llega con **"Conocé Studree"**, al pie del Perfil.
 - `AuthProvider` sigue creando la sesión anónima a todo visitante nuevo, también en
   `/bienvenida`: no se tocó.
