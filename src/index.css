@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-text antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* Foco visible y uniforme (web-design-guidelines): reemplaza los outline-none. */
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent-soft;
+  }
+}
+
+@layer components {
+  /* Botón con el color de acento (verde) */
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2
+      font-medium text-bg transition-colors hover:bg-accent-hover;
+  }
+
+  /* Tarjeta / panel base */
+  .card {
+    @apply rounded-xl border border-border bg-surface p-5;
+  }
+
+  /*
+   * La lámpara (ADR-018): un único cono de luz verde suave desde arriba a la
+   * izquierda. Estático. El contenedor necesita `relative` e `isolate`.
+   */
+  .lamp::before {
+    content: '';
+    position: absolute;
+    left: -10%;
+    top: -35%;
+    width: 85%;
+    height: 110%;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse 60% 55% at 35% 30%,
+      theme('colors.accent.soft / 20%'),
+      theme('colors.accent.DEFAULT / 7%') 45%,
+      transparent 72%
+    );
+  }
+
+  /* Panel de vidrio translúcido sobre la luz. */
+  .glass {
+    @apply rounded-xl border border-white/[0.07] bg-surface/60 backdrop-blur-md;
+  }
+
+  /* Hoja: papel crema con renglones y sombra de escritorio. */
+  .paper-sheet {
+    @apply bg-paper text-ink;
+    background-image: repeating-linear-gradient(
+      transparent,
+      transparent 27px,
+      theme('colors.paper.line') 28px
+    );
+    box-shadow: 0 22px 48px rgb(0 0 0 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-peek {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+
+  /*
+   * Contenido del editor de hojas (TipTap/ProseMirror) — ver
+   * docs/features/sheet-editor.md. Va sobre PAPEL CREMA (ADR-018): tinta
+   * oscura (`ink`) sobre `paper`. No hay plugin de tipografía de Tailwind
+   * instalado; se estiliza acá con los tokens del design system (Mandamiento VII).
+   */
+  .sheet-editor .ProseMirror {
+    @apply text-ink outline-none;
+  }
+  .sheet-editor .ProseMirror p {
+    @apply my-2 leading-relaxed;
+  }
+  /* Al saltar a un tema, que la barra de herramientas (sticky, hasta 3 filas) no lo tape. */
+  .sheet-editor .ProseMirror :is(h1, h2, h3, h4) {
+    @apply scroll-mt-36;
+  }
+  .sheet-editor .ProseMirror h1 {
+    @apply mb-3 mt-6 font-display text-3xl font-extrabold first:mt-0;
+    color: var(--subject-ink, theme('colors.accent.hover'));
+  }
+  .sheet-editor .ProseMirror h2 {
+    @apply mb-2 mt-5 font-display text-xl font-bold text-ink first:mt-0;
+  }
+  .sheet-editor .ProseMirror h3 {
+    @apply mb-2 mt-4 text-lg font-semibold first:mt-0;
+  }
+  .sheet-editor .ProseMirror h4 {
+    @apply mb-1 mt-3 text-base font-semibold first:mt-0;
+  }
+  .sheet-editor .ProseMirror ul {
+    @apply my-2 list-disc pl-6;
+  }
+  .sheet-editor .ProseMirror ol {
+    @apply my-2 list-decimal pl-6;
+  }
+  .sheet-editor .ProseMirror li {
+    @apply my-1;
+  }
+  .sheet-editor .ProseMirror ul[data-type='taskList'] {
+    @apply list-none pl-0;
+  }
+  .sheet-editor .ProseMirror ul[data-type='taskList'] li {
+    @apply flex items-start gap-2;
+  }
+  .sheet-editor .ProseMirror ul[data-type='taskList'] li > label {
+    @apply mt-1 select-none;
+  }
+  .sheet-editor .ProseMirror blockquote {
+    @apply my-3 border-l-2 pl-4 text-ink-muted;
+    border-color: var(--subject, theme('colors.accent.DEFAULT'));
+  }
+  .sheet-editor .ProseMirror code {
+    @apply rounded bg-paper-border/40 px-1 py-0.5 font-mono text-[0.85em];
+  }
+  .sheet-editor .ProseMirror pre {
+    @apply my-3 overflow-x-auto rounded-lg bg-paper-border/40 p-3 font-mono text-sm;
+  }
+  .sheet-editor .ProseMirror pre code {
+    @apply bg-transparent p-0;
+  }
+  .sheet-editor .ProseMirror hr {
+    @apply my-6 border-paper-border;
+  }
+  /* Links y [[Tema]] (decoración de highlightExtension) en el color de la materia. */
+  .sheet-editor .ProseMirror a,
+  .sheet-editor .wiki-link {
+    @apply cursor-pointer underline underline-offset-2;
+    color: var(--subject-ink, theme('colors.accent.hover'));
+  }
+  /* Buscador de la carpeta: todas las coincidencias y la actual. */
+  .sheet-editor .search-hit {
+    @apply rounded-sm bg-warn/30;
+  }
+  .sheet-editor .search-hit-current {
+    @apply rounded-sm bg-warn text-ink;
+  }
+  /* Adjuntos en el papel (Fase 13): imagen a lo ancho de la hoja como máximo. */
+  .sheet-editor .sheet-attachment-image {
+    @apply my-2 inline-block max-w-full align-top;
+  }
+  .sheet-editor .sheet-attachment-image img {
+    @apply max-w-full rounded-md border border-paper-border;
+  }
+  .sheet-editor .sheet-attachment-status {
+    @apply inline-block rounded-md border border-dashed border-paper-border px-3 py-2 text-sm text-ink-muted;
+  }
+  .sheet-editor .ProseMirror-selectednode img {
+    @apply ring-2;
+    --tw-ring-color: var(--subject, theme('colors.accent.DEFAULT'));
+  }
+}
+
+/*
+ * El Brote (asistente, Fase 14): una animación por estado. Ver
+ * docs/features/assistant.md. Con `prefers-reduced-motion` queda quieto.
+ */
+.brote-body,
+.brote-leaves {
+  transform-box: view-box;
+}
+.brote-body {
+  transform-origin: 32px 58px;
+}
+.brote-leaves {
+  transform-origin: 32px 24px;
+}
+.brote--idle .brote-leaves {
+  animation: brote-sway 4s ease-in-out infinite;
+}
+.brote--thinking .brote-body {
+  animation: brote-bob 1.4s ease-in-out infinite;
+}
+.brote--thinking .brote-leaves {
+  animation: brote-sway 1.4s ease-in-out infinite;
+}
+.brote--writing .brote-body {
+  animation: brote-bob 0.6s ease-in-out infinite;
+}
+.brote--happy .brote-body {
+  animation: brote-hop 0.5s ease-out 3;
+}
+.brote--sad .brote-leaves {
+  transform: rotate(8deg) translateY(2px);
+}
+.brote--sad .brote-body {
+  transform: translateY(1px);
+}
+.brote--sleeping .brote-body {
+  animation: brote-breathe 3.5s ease-in-out infinite;
+}
+.brote--sleeping .brote-leaves {
+  transform: rotate(-10deg);
+}
+
+@keyframes brote-sway {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+@keyframes brote-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes brote-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  40% {
+    transform: translateY(-6px) scale(0.97, 1.03);
+  }
+}
+@keyframes brote-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03, 0.97);
+  }
+}
+
+/* Impresión del resumen ("Descargar PDF"): solo `#print-root`, sobre blanco. */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 18mm;
+  }
+
+  html.printing,
+  html.printing body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  html.printing body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  html.printing #print-root {
+    display: block;
+    font-size: 11pt;
+  }
+
+  html.printing #print-root * {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  html.printing #print-root .summary-heading {
+    break-after: avoid;
+  }
+
+  html.printing #print-root .summary-section {
+    break-inside: avoid-page;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brote,
+  .brote * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

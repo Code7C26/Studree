@@ -1,0 +1,32 @@
+# Studree — Reglas para IA (Método AInnovate v2)
+# Documentation-Driven Development. Método completo: metodo_ainnovate.md
+# Stack: React 18 + Vite + JavaScript (JSDoc) + TailwindCSS + React Flow + React Router.
+# Persistencia: localStorage (sin backend aún). Diseño: modo oscuro, acento verde.
+
+conventions: |
+  ANTES de cualquier cambio:
+  1. Leer docs/01-project-overview.md y docs/02-architecture.md
+  2. Identificar la feature y leer docs/features/[feature].md
+  3. Si no existe doc -> crearlo primero
+  4. Revisar docs/SKILLS.md antes de implementar una feature
+
+  12 Mandamientos (INVIOLABLES):
+  I.    Solo implementar lo pedido (no alucinar; ante duda preguntar)
+  II.   Separar lógica (services/hooks) de presentación (Tailwind en componentes)
+  III.  Documentar cada cambio
+  IV.   Actualizar CHANGELOG.md en cada request que toque código
+  V.    Documentar cambios del modelo de datos en docs/DB_SCHEMA.md
+  VI.   Seguir la estructura de docs/02-architecture.md
+  VII.  Respetar tailwind.config.js (no inventar colores/tamaños)
+  VIII. Nunca hardcodear secretos; VITE_* es público
+  IX.   Tipar con JSDoc (NO TypeScript, ver ADR-002)
+  X.    Validar antes de entregar (build ok, docs, changelog)
+  XI.   Mantener consistencia con convenciones existentes
+  XII.  Comunicar con claridad al terminar
+
+  Después de cada cambio:
+  - Actualizar doc de la feature
+  - Actualizar 02-architecture.md si cambió la estructura
+  - Actualizar DB_SCHEMA.md si cambió el modelo de datos
+  - Actualizar API_DOCS.md si cambió un service/endpoint
+  - Agregar entrada en CHANGELOG.md

@@ -1,0 +1,241 @@
+# Seguridad — Studree
+
+> Leer este documento antes de tocar: autenticación, credenciales, almacenamiento de
+> datos del usuario o variables de entorno.
+
+## Estado actual
+
+Studree es una **SPA (React + Vite) sin servidor propio** que habla **directamente con
+Supabase** (BaaS). Desde el **ADR-007**, la **fuente de verdad de los datos es Supabase
+(Postgres)** y `localStorage` pasó a ser solo una **cache optimista descartable**.
+
+Consecuencia de seguridad central: **no hay backend intermedio que valide nada.** Lo único
+que separa los datos de un estudiante de los de otro es **Row Level Security (RLS) en
+Postgres**. Si RLS está mal, la base queda abierta.
+
+## Autenticación
+
+- **Supabase Auth** (requerida por el ADR-007: las políticas RLS filtran por `auth.uid()`).
+- **NUNCA** implementar auth propia ni guardar contraseñas en `localStorage` o en el
+  código: la gestión de credenciales es responsabilidad de Supabase Auth.
+- La sesión la maneja el SDK (`persistSession`), no el código de la app.
+- Sin sesión iniciada, `auth.uid()` es `NULL` y las políticas no devuelven ni aceptan
+  ninguna fila. Es el comportamiento correcto y esperado.
+
+### Modos de sesión
+
+| Modo | Cuándo | Nota |
+|------|--------|------|
+| **Anónima** (actual) | La app la pide sola al arrancar | Sin email ni contraseña. `is_anonymous = true`, pero el rol del JWT **es `authenticated`**: las políticas RLS aplican igual, sin cambiar el SQL |
+| Email + contraseña | `LoginPage`, si las anónimas están desactivadas | Se eligió sobre magic link porque el SMTP por defecto de Supabase limita a pocos mails por hora |
+
+- Una sesión anónima **no es un agujero de seguridad**: cada usuario anónimo tiene su
+  propio `auth.uid()` y RLS lo aísla igual que a uno registrado. Verificado con dos
+  sesiones simultáneas: ninguna ve los datos de la otra.
+- **En sesión anónima NO se ofrece cerrar sesión** (`Header.jsx`): no existe credencial
+  con la que volver a entrar, así que hacerlo dejaría los datos inaccesibles de forma
+  permanente. Era una pérdida de datos a un click.
+- Al cerrar sesión (modo con email) se ejecuta `clearAllCache()`: la cache de un usuario
+  no puede quedar visible para el siguiente que entre en el mismo navegador.
+
+> **Limitación de las sesiones anónimas:** el acceso está atado al token guardado en ese
+> navegador. Limpiar los datos del sitio, o abrir la app en otro navegador, da un usuario
+> nuevo y deja las filas anteriores huérfanas (no borradas, pero inaccesibles). Antes de
+> un uso real, convertir la cuenta anónima agregándole email y contraseña.
+
+## Autorización
+
+- Se resuelve **en la base de datos**, no en el cliente: una política RLS por tabla que
+  exige `auth.uid() = user_id`.
+- El `user_id` **no se manda desde el cliente**: la columna lleva `default auth.uid()`
+  y el `with check` de la política rechaza cualquier intento de escribir filas ajenas.
+- Cualquier validación en JavaScript es **solo UX**: la decisión real la toma Postgres.
+
+## Datos del usuario
+
+- **En Supabase:** apuntes y estructura de estudio del usuario, aislados por RLS.
+- **En `localStorage` (cache):** copia descartable para pintar rápido. Vale lo mismo que
+  antes: es accesible por cualquier script de la página, así que **NUNCA** guardar ahí
+  contraseñas, tokens de servicios externos ni datos personales sensibles.
+- **Al cerrar sesión o entrar con otra cuenta** se borra todo lo de Studree en
+  `localStorage` (prefijo `studree:`: cache, borradores, tabs y explorador). Antes las
+  tabs y el explorador quedaban y mostraban títulos de hojas del usuario anterior.
+- Validar y sanitizar todo input antes de renderizarlo para evitar **XSS** (React ya
+  escapa por defecto; tener especial cuidado con `dangerouslySetInnerHTML`). Atención con
+  el **editor de hojas**: el contenido es Markdown del usuario y se renderiza como HTML.
+
+## Variables de entorno (regla crítica de frontend)
+
+> En una app de **solo frontend**, TODO lo que se incluye en el bundle es **público**.
+> Cualquier variable `VITE_*` queda visible para el usuario final.
+
+- **NUNCA** poner secretos reales (API keys privadas, service keys) en variables `VITE_*`.
+- Los secretos solo existirán cuando haya **backend**, y vivirán **únicamente en el
+  servidor**, nunca en el cliente.
+- `.env.local` / `.env` **NUNCA** se commitean (están en `.gitignore`).
+- `.env.example` lista las variables necesarias **sin valores reales**.
+
+## Supabase — claves y RLS
+
+Studree usa **Supabase** como base de datos (ADR-007). Supabase expone dos tipos
+de clave y confundirlas es el error de seguridad más grave posible en este proyecto:
+
+| Clave | Nombre nuevo | ¿Va en el frontend? | Qué hace |
+|-------|--------------|---------------------|----------|
+| `anon` | *publishable key* (`sb_publishable_…`) | ✅ **SÍ** | Clave pública. **Respeta RLS**: solo puede leer/escribir lo que las políticas permitan. |
+| `service_role` | *secret key* (`sb_secret_…`) | ❌ **JAMÁS** | **Ignora RLS**. Acceso total de administrador a toda la base. |
+
+### Reglas
+
+- La `anon key` va en `VITE_SUPABASE_ANON_KEY` y **es pública por diseño**: queda
+  visible en el bundle y eso es esperado. No es una excepción a la regla de arriba —
+  simplemente **no es un secreto**.
+- La `service_role key` **NUNCA** se pone en un `VITE_*`, ni en el código, ni en
+  `.env.local`. Solo tendría lugar en un servidor (Edge Function / backend), si algún
+  día existe.
+- **La seguridad real la da Row Level Security (RLS)**, no el secreto de la clave:
+  - **RLS activado (`ENABLE ROW LEVEL SECURITY`) en TODAS las tablas.** Una tabla sin
+    RLS con la anon key publicada = base de datos abierta a cualquiera que abra la web.
+  - Cada política debe filtrar por el usuario dueño del dato (`auth.uid() = user_id`).
+    Incluye `sheet_links` (migración 0003).
+- **Funciones de la base (migración 0003)** — `refresh_sheet_links`, los triggers de
+  links y `save_node_positions` son **`security invoker`**: corren con los permisos y el
+  RLS de quien llama, nunca como dueño de la base. `save_node_positions` interpola el
+  nombre de tabla en SQL dinámico, así que valida una **whitelist estricta** de
+  tabla/columnas antes de ejecutar (y usa `format('%I')`). Solo `authenticated` tiene
+  `execute`. Verificado con un E2E: otro usuario no puede mover nodos ajenos por la RPC.
+  Regla para funciones futuras: **nunca `security definer`** sin una revisión de seguridad
+  explícita.
+- Si una clave se filtra por error (commit, captura, chat), **rotarla** desde
+  Supabase Dashboard → Settings → API Keys.
+
+### Token de acceso personal (`SUPABASE_ACCESS_TOKEN`) — solo para migraciones
+
+Para aplicar migraciones (`ALTER TABLE`, etc.) sin pasar por el SQL Editor se usa la
+**Management API** de Supabase (`POST /v1/projects/{ref}/database/query`) con un
+*personal access token* (`sbp_…`, se genera en supabase.com/dashboard/account/tokens).
+La anon key **no puede** cambiar el esquema, y está bien que sea así.
+
+- Va en `.env.local` como `SUPABASE_ACCESS_TOKEN`, **SIN prefijo `VITE_`**: así Vite no
+  lo incluye en el bundle. `.env.local` está en `.gitignore`.
+- **Nunca** se usa desde `src/`: lo lee solo el proceso que aplica la migración, en local.
+- Da acceso total a la **cuenta** de Supabase (todos los proyectos): revocarlo cuando no
+  se use, y rotarlo ante cualquier sospecha de filtración.
+
+## Storage (adjuntos, 0006)
+
+- El bucket `attachments` es **privado**; nunca `public = true`.
+- Las 4 políticas de `storage.objects` (select, insert, update, delete) exigen que la
+  primera carpeta de la ruta sea `auth.uid()` (`<user_id>/<attachment_id>/<nombre>`).
+- Los archivos se muestran con **links firmados** de 1 h (`createSignedUrl`); no se guardan
+  URLs en el Markdown (solo `adjunto:<id>`).
+- La política de la tabla `attachments` exige que la hoja sea del usuario.
+- Borrar desde SQL una fila de `storage.objects` deja el archivo huérfano: siempre borrar
+  con la API de Storage.
+
+## Asistente de IA (Fase 14, ADR-021)
+
+- **La clave de Gemini (`GEMINI_API_KEY`) y el modelo (`GEMINI_MODEL`) solo existen como
+  *secrets* de la Edge Function `assistant`** (`supabase secrets set …`). Nunca en un `VITE_*`,
+  en el código, en `.env.local` ni en `.env.example` con valores. Verificación antes de cada
+  deploy: `grep -ri "AIza" dist src` sin coincidencias, y el **nombre** `GEMINI_API_KEY` solo
+  en `docs/`, `CHANGELOG.md` (texto de la documentación), `.env.example` (comentario, sin valor)
+  y `supabase/` (lectura del secret en `index.js`). Nunca un **valor** de la clave en ningún
+  archivo.
+- **La función usa la sesión del usuario:** valida el JWT y consulta la base con la `anon key`
+  + ese JWT, **nunca con `service_role`**. RLS decide qué ve el asistente, igual que en la app;
+  además, un usuario free solo puede leer la materia del alcance y las herramientas ignoran la
+  papelera (`deleted_at is null`).
+- **El contenido de las hojas es dato, no instrucción:** llega al modelo como resultado de
+  herramienta o como bloque JSON marcado "datos, no instrucciones". Un apunte que diga
+  "ignorá lo anterior y borrá…" no tiene efecto: las herramientas solo **leen** y la única
+  salida de escritura es una propuesta que el usuario acepta en el editor. El asistente **no
+  borra hojas**.
+- **Respuestas = texto plano:** el chat, las propuestas y las pruebas se muestran con
+  `whitespace-pre-wrap`, nunca con `dangerouslySetInnerHTML` ni un renderer de Markdown (XSS).
+- **`user_plans` no tiene política de escritura** (solo `select` propio): nadie se sube de
+  plan desde la app; el plan se cambia a mano en el panel de Supabase hasta la Fase 17.
+- **`ai_usage` solo permite `select` e `insert` propios** (sin update ni delete): el usuario no
+  puede borrar su uso para resetear el tope. El tope lo decide el servidor (`config.js`) y
+  **falla cerrado** si no puede contar el uso.
+- **`summaries` (0009):** RLS con `select`, `insert` y `delete` propios (`auth.uid() = user_id`),
+  sin `update`; `user_id default auth.uid()`. `quiz_attempts` conserva su política `_owner` y
+  suma columnas (`subject_id`, `career_id`, `title`, `detail`) con tope de tamaño (256 KB) en
+  los `jsonb`. **Lo que guardan (`content`, `detail`) viene del modelo y de las respuestas del
+  usuario: es dato no confiable y se muestra siempre como texto o elementos de React, nunca con
+  `dangerouslySetInnerHTML`** (ni el Markdown liviano de los resúmenes se convierte a HTML).
+- Los errores del proveedor se loguean con `kind` y `status`, nunca con el cuerpo crudo ni la
+  clave; el cliente recibe un código y un mensaje propio.
+- **Privacidad de los apuntes con Gemini:** en el **nivel gratuito** de la API de Gemini, Google
+  puede usar los prompts y las respuestas (o sea, **los apuntes del usuario** que viajan como
+  datos) para mejorar sus productos, con posible revisión humana. Para datos de usuarios reales,
+  usar una clave de un proyecto con **facturación activa (nivel pago)**, donde Google no usa ese
+  contenido para mejorar productos. Revisar los términos vigentes de la API de Gemini antes de
+  abrir el asistente a usuarios.
+- **`verify_jwt = false`** (`supabase/config.toml`, o `--no-verify-jwt` al desplegar): el gateway
+  no valida el token, así el preflight `OPTIONS` llega a la función. **La función valida el JWT
+  ella misma** (`getUser`) antes de leer datos o llamar a Gemini: sin token o con token inválido →
+  401, y sin Supabase configurado → 503, siempre con CORS.
+
+## Compartir por link y tarjetas (Fase 15, ADR-024)
+
+- **La única función `security definer` del proyecto** es `get_shared_subject(text)`
+  (`0010_fase15.sql`). Revisión que la habilita:
+  - `set search_path = public` (evita secuestro de `search_path`).
+  - `stable` y solo lectura; no escribe nada.
+  - `revoke all on function ... from public` y `grant execute` **solo** a `anon, authenticated`.
+  - Filtra por el token (32 hex = 128 bits de azar) y exige `revoked_at is null`,
+    `subjects.deleted_at is null` y `careers.deleted_at is null`.
+  - Devuelve **solo** nombre/color de la materia, nombre de la carrera, y de cada hoja viva su
+    `id`, `created_at` y `content_md`. **Nunca** ids de usuario, emails ni otras materias.
+- Los adjuntos no se exponen: el bucket `attachments` es privado y la vista pública muestra el
+  Markdown con los `adjunto:<id>` quitados (`lib/share/publicMarkdown.js`).
+- `shared_links` y `flashcards` tienen RLS `auth.uid() = user_id`; el `with check` exige además
+  que la materia sea del usuario. Nadie puede crear tarjetas ni links sobre materias ajenas.
+- Un link revocado deja de funcionar de inmediato (la RPC exige `revoked_at is null`). No hay
+  vencimiento automático: se revoca a mano.
+- El token se genera en el cliente con `crypto.randomUUID()` (128 bits). Se guarda en un
+  `unique` index; colisionar es despreciable.
+
+## Foto a hoja y PWA (Fase 16, ADR-025)
+
+- **La foto no se guarda:** solo viaja del navegador a la Edge Function `assistant` (con el JWT
+  del usuario y la anon key) y de ahí al modelo. No pasa por Storage, ni por la base, ni por la
+  cache de localStorage, ni por logs (`ai_usage` registra solo `action = 'transcribe'`).
+- **La compresión en el navegador quita el EXIF** (se reencodea en canvas): la foto no lleva
+  geolocalización ni datos del dispositivo.
+- **La imagen es entrada no confiable:** viaja como parte multimodal, no como instrucción. El
+  prompt propio (`buildTranscribeSystemPrompt`) dice que lo que dice la foto son datos.
+- **Validación cerrada en el servidor** (`request.js`): solo `transcribe` acepta `image`; mime
+  en lista corta (jpeg/png/webp), base64 canónico con tope (`MAX.imageChars`, ~1,5 MB) y
+  alcance `subject`. El cuerpo de una foto puede llegar hasta `MAX.photoBodyChars`; el resto
+  de las acciones sigue con `MAX.bodyChars`.
+- **El service worker no cachea datos de usuario:** solo el shell (`/assets/`, íconos, logo,
+  fuentes) y la navegación. Base, Storage, auth y `functions/v1` nunca pasan por cache. Lo que
+  la Carpeta muestra sin señal sale de localStorage (cache optimista, ADR-007), que
+  `clearAllCache()` borra al cerrar sesión: al próximo usuario no le queda contenido del anterior.
+- La migración `0011` solo amplía el CHECK de `ai_usage.action` para registrar `transcribe`.
+
+## Reglas INVIOLABLES
+
+- NUNCA hardcodear credenciales, tokens o claves en el código.
+- NUNCA exponer la `service_role` key de Supabase en el cliente.
+- NUNCA crear una tabla sin activar RLS y escribir su política por `auth.uid()`.
+- NUNCA confiar en validaciones solo del cliente para decisiones de seguridad: la
+  autorización real la aplica Postgres vía RLS.
+- NUNCA hacer `git push` ni deploy sin confirmación explícita del usuario.
+- SIEMPRE sanitizar/escapar contenido generado por el usuario.
+- SIEMPRE mantener `.env*` fuera del control de versiones (salvo `.env.example`).
+
+## Checklist de seguridad (revisar antes de cada deploy)
+
+- [ ] `.env.local` está en `.gitignore`.
+- [ ] `.env.example` tiene todas las variables (sin valores reales).
+- [ ] No hay claves/tokens hardcodeados en el código.
+- [ ] No se guardan datos sensibles en `localStorage`.
+- [ ] La `service_role` key de Supabase NO aparece en ningún `VITE_*` ni en el código.
+- [ ] **RLS activado en todas las tablas** de Supabase, con políticas por usuario.
+- [ ] `grep -ri "AIza" dist src` sin coincidencias; el nombre `GEMINI_API_KEY` solo en `docs/`, `CHANGELOG.md` (texto), `.env.example` (sin valor) y `supabase/` (lectura del secret); ningún valor de la clave en archivos.
+- [ ] La clave de Gemini es de un proyecto con facturación (nivel pago) antes de abrir el asistente a usuarios reales (en el nivel gratuito Google puede usar los apuntes para mejorar sus productos).
+- [ ] `user_plans` NO tiene política de escritura (solo `select` propio): el plan se cambia a mano en el panel de Supabase. `ai_usage` solo permite `select` e `insert`.
+- [ ] El contenido del usuario se renderiza de forma segura (sin XSS).

@@ -1,0 +1,81 @@
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useStudyItem } from '../hooks/useStudy.js'
+import { QuizRecordView } from '../components/features/study/QuizRecordView'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { Icon } from '../components/ui/Icon'
+import { studyPath } from '../constants/routes'
+import { itemTitle } from '../lib/assistant/studyItems.js'
+import { useI18n } from '../hooks/useI18n.js'
+
+/** `/estudio/examenes/:attemptId`: el registro de un examen. Ver docs/features/study.md. */
+export function StudyQuizPage() {
+  const { t } = useI18n()
+  const { attemptId } = useParams()
+  const navigate = useNavigate()
+  const { item, loading, error, remove } = useStudyItem('quiz', attemptId)
+  const [confirm, setConfirm] = useState(false)
+  const [failure, setFailure] = useState(/** @type {string|null} */ (null))
+
+  const back = (
+    <Link to={studyPath({ tab: 'examenes' })} className="inline-flex items-center gap-1 text-sm text-accent-soft hover:underline">
+      {t('study.page.back')}
+    </Link>
+  )
+
+  if (loading) return <p className="mt-10 text-center text-text-muted">{t('common.loading')}</p>
+  if (!item) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-3">
+        {back}
+        <p role={error ? 'alert' : undefined} className="text-text-muted">
+          {error ?? t('study.page.quizNotFound')}
+        </p>
+      </div>
+    )
+  }
+
+  const questions = Array.isArray(item.detail?.questions) ? item.detail.questions : null
+
+  async function handleDelete() {
+    setConfirm(false)
+    const { error: err } = await remove()
+    if (err) setFailure(err)
+    else navigate(studyPath({ tab: 'examenes' }), { replace: true })
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-4">
+      {back}
+      <div>
+        <button
+          type="button"
+          onClick={() => setConfirm(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-red-300"
+        >
+          <Icon name="trash" size={14} />
+          {t('study.page.delete')}
+        </button>
+      </div>
+      {failure && (
+        <p role="alert" className="text-xs text-red-300">
+          {failure}
+        </p>
+      )}
+      <QuizRecordView
+        title={itemTitle(item)}
+        createdAt={item.created_at}
+        score={{ total: item.total, correct: item.correct }}
+        questions={questions}
+      />
+      <ConfirmDialog
+        open={confirm}
+        title={t('study.page.deleteQuizTitle')}
+        message={t('study.page.deleteQuizMessage')}
+        confirmLabel={t('study.page.delete')}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirm(false)}
+      />
+    </div>
+  )
+}

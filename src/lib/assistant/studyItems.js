@@ -1,0 +1,76 @@
+// Filas de "Mi estudio" (resúmenes y exámenes con su materia/carrera embebidas).
+// Puro: sin React ni services.
+
+import { getLang, tIn } from '../i18n/index.js'
+
+/**
+ * Descarta las filas de materias o carreras en la papelera, o cuyo embed
+ * vino `null` aunque la fila apunte a una (RLS lo oculta o ya no existe).
+ * @template {{subject_id?: string|null, subject?: {deleted_at?: string|null}|null, career_id?: string|null, career?: {deleted_at?: string|null}|null}} T
+ * @param {T[]} rows
+ * @returns {T[]}
+ */
+export function filterLiveStudyItems(rows) {
+  return (rows ?? []).filter((r) => {
+    if (r.subject_id && (!r.subject || r.subject.deleted_at)) return false
+    if (r.career_id && (!r.career || r.career.deleted_at)) return false
+    return true
+  })
+}
+
+/**
+ * Materias distintas de las filas, por nombre.
+ * @param {Array<{subject?: {id?: string, name?: string}|null, subject_id?: string|null}>} rows
+ * @returns {Array<{id: string, name: string}>}
+ */
+export function subjectOptions(rows) {
+  /** @type {Map<string, string>} */
+  const byId = new Map()
+  for (const r of rows ?? []) {
+    const id = r.subject_id ?? r.subject?.id
+    if (id && r.subject?.name && !byId.has(id)) byId.set(id, r.subject.name)
+  }
+  return [...byId].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, getLang()))
+}
+
+/**
+ * @template {{subject_id?: string|null}} T
+ * @param {T[]} rows
+ * @param {string|null} subjectId
+ * @returns {T[]}
+ */
+export function filterBySubject(rows, subjectId) {
+  return subjectId ? rows.filter((r) => r.subject_id === subjectId) : rows
+}
+
+/**
+ * Opciones del filtro "Materia": las de resúmenes y exámenes juntas, y si la
+ * materia pedida por la URL no está entre ellas, una opción "Esta materia"
+ * para que el selector refleje el filtro activo.
+ * @param {Array<Parameters<typeof subjectOptions>[0][number]>} summaries
+ * @param {Array<Parameters<typeof subjectOptions>[0][number]>} attempts
+ * @param {string|null} activeId
+ * @returns {Array<{id: string, name: string}>}
+ */
+export function filterOptions(summaries, attempts, activeId) {
+  const options = subjectOptions([...(summaries ?? []), ...(attempts ?? [])])
+  if (activeId && !options.some((o) => o.id === activeId)) options.push({ id: activeId, name: tIn(getLang(), 'study.page.thisSubject') })
+  return options
+}
+
+const SCOPE_TYPES = ['sheet', 'subject', 'career', 'all']
+
+/**
+ * Título para mostrar de un examen. Los anteriores a la migración 0009 no lo
+ * tienen: se arma uno según el alcance.
+ * @param {{title?: string|null, scope_type?: string|null}} row
+ * @param {string} [lang]
+ * @returns {string}
+ */
+export function itemTitle(row, lang = getLang()) {
+  const title = String(row?.title ?? '').trim()
+  if (title) return title
+  const scopeType = row?.scope_type ?? ''
+  if (!SCOPE_TYPES.includes(scopeType)) return tIn(lang, 'study.page.previousExam')
+  return tIn(lang, 'study.page.previousExamWhere', { where: tIn(lang, `study.page.scopeFallback.${scopeType}`) })
+}

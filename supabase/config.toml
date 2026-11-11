@@ -1,0 +1,12 @@
+project_id = "studree"
+
+# Config mínima de la CLI de Supabase para desplegar el asistente (Fase 14).
+# Solo cubre la Edge Function: no configura un entorno local (`supabase start`).
+
+[functions.assistant]
+# La función valida el JWT ella misma (`getUser` en handler.js) y responde
+# 401/503 con CORS; el chequeo del gateway se apaga para que el preflight
+# OPTIONS (sin token) llegue a la función. Igual que `--no-verify-jwt`.
+verify_jwt = false
+# Entrada en JavaScript (CLI >= 1.215.0); la ruta es relativa a este archivo.
+entrypoint = "./functions/assistant/index.js"

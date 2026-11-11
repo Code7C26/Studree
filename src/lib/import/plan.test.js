@@ -1,0 +1,180 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { buildImportPlan, markDuplicates, summarizePlan, describeSummary, importFallbackName } from './plan.js'
+
+const now = new Date('2026-10-20T12:00:00Z')
+const md = (path, text = '# Hola', lastModified = null) => ({ path, text, lastModified })
+const plan = (mdEntries, extra = {}) =>
+  buildImportPlan({ mdEntries, filePaths: [], target: { mode: 'careers' }, existingCareers: [], now, ...extra })
+
+test('export de "todo": Studree/Carrera/Materia', () => {
+  const { groups } = plan([md('Studree/Bio/Genética/2026-10-14 18-30.md')])
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0].careerName, 'Bio')
+  assert.equal(groups[0].subjectName, 'Genética')
+})
+
+test('export de una carrera: Carrera/Materia', () => {
+  const { groups } = plan([md('Bio/Genética/a.md'), md('Bio/Física/b.md')])
+  assert.deepEqual(groups.map((g) => `${g.careerName}/${g.subjectName}`).sort(), ['Bio/Física', 'Bio/Genética'])
+})
+
+test('export de una materia: la carrera sale del frontmatter', () => {
+  const { groups } = plan([md('Genética/a.md', '---\ncarrera: "Bio"\nmateria: "Genética"\n---\n# x')])
+  assert.equal(groups[0].careerName, 'Bio')
+  assert.equal(groups[0].subjectName, 'Genética')
+  assert.equal(groups[0].sheets[0].content_md, '# x')
+})
+
+test('un .md suelto va a Importado/Importado', () => {
+  const { groups } = plan([md('clase.md')])
+  assert.equal(groups[0].careerName, importFallbackName())
+  assert.equal(groups[0].subjectName, importFallbackName())
+})
+
+test('reusa carrera y materia existentes sin distinguir mayúsculas ni espacios', () => {
+  const existingCareers = [{ id: 'c1', name: 'Bio', subjects: [{ id: 's1', name: 'Genética' }] }]
+  const { groups } = plan([md('bio/ genética /a.md'), md('Bio/Nueva/b.md')], { existingCareers })
+  const genetica = groups.find((g) => g.subjectName.trim().toLowerCase() === 'genética')
+  assert.equal(genetica.careerId, 'c1')
+  assert.equal(genetica.subjectId, 's1')
+  const nueva = groups.find((g) => g.subjectName === 'Nueva')
+  assert.equal(nueva.careerId, 'c1')
+  assert.equal(nueva.subjectId, null)
+})
+
+test('modo materia: todo va a la materia elegida', () => {
+  const { groups } = buildImportPlan({
+    mdEntries: [md('a/b/c.md'), md('d.md')],
+    filePaths: [],
+    target: { mode: 'subject', subjectId: 's9', subjectName: 'Química' },
+    existingCareers: [],
+    now,
+  })
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0].subjectId, 's9')
+  assert.equal(groups[0].sheets.length, 2)
+})
+
+test('vacíos, ocultos y archivos sin referencia van a skipped', () => {
+  const result = buildImportPlan({
+    mdEntries: [md('Bio/G/vacia.md', '---\nmateria: "G"\n---\n  \n'), md('.obsidian/x.md'), md('__MACOSX/Bio/._a.md')],
+    filePaths: ['Bio/G/suelto.pdf', '.DS_Store'],
+    target: { mode: 'careers' },
+    existingCareers: [],
+    now,
+  })
+  assert.equal(result.groups.length, 0)
+  assert.deepEqual(result.skipped.map((s) => s.path).sort(), ['Bio/G/suelto.pdf', 'Bio/G/vacia.md'])
+})
+
+test('las imágenes referenciadas no van a skipped y quedan en media', () => {
+  const result = buildImportPlan({
+    mdEntries: [md('Bio/G/a.md', '![f](adjuntos/f.png)')],
+    filePaths: ['Bio/G/adjuntos/f.png'],
+    target: { mode: 'careers' },
+    existingCareers: [],
+    now,
+  })
+  assert.equal(result.skipped.length, 0)
+  assert.equal(result.groups[0].sheets[0].media[0].zipPath, 'Bio/G/adjuntos/f.png')
+})
+
+test('markDuplicates: misma fecha (al minuto) y mismo contenido, en la base o repetido en el zip', () => {
+  const base = buildImportPlan({
+    mdEntries: [
+      md('Bio/G/2026-10-14 18-30.md', '# Igual'),
+      md('Bio/G/2026-10-14 18-30 (2).md', '# Igual'),
+      md('Bio/G/2026-10-15 09-00.md', '# Otra'),
+    ],
+    filePaths: [],
+    target: { mode: 'careers' },
+    existingCareers: [{ id: 'c1', name: 'Bio', subjects: [{ id: 's1', name: 'G' }] }],
+    now,
+  })
+  const existing = new Map([['s1', [{ created_at: new Date(2026, 9, 15, 9, 0, 30).toISOString(), content_md: '# Otra\n' }]]])
+  const marked = markDuplicates(base, existing)
+  assert.deepEqual(marked.groups[0].sheets.map((s) => s.duplicate), [false, true, true])
+})
+
+test('summarizePlan y describeSummary', () => {
+  const p = buildImportPlan({
+    mdEntries: [md('Bio/G/a.md', '![f](f.png)'), md('Bio/H/b.md')],
+    filePaths: ['Bio/G/f.png'],
+    target: { mode: 'careers' },
+    existingCareers: [],
+    now,
+  })
+  const summary = summarizePlan(p)
+  assert.deepEqual(summary, { newCareers: 1, newSubjects: 2, sheets: 2, duplicates: 0, media: 1, skipped: 0 })
+  assert.equal(describeSummary(summary), 'Se van a crear 1 carrera, 2 materias, 2 hojas y 1 adjunto.')
+  assert.equal(
+    describeSummary({ newCareers: 0, newSubjects: 0, sheets: 3, duplicates: 2, media: 0, skipped: 0 }),
+    'Se van a crear 3 hojas. 2 hojas ya existen y se saltean.',
+  )
+})
+
+test('Studree/Materia (dos niveles) no crea una carrera "Studree"', () => {
+  const { groups } = plan([md('Studree/Genética/a.md')])
+  assert.equal(groups[0].careerName, importFallbackName())
+  assert.equal(groups[0].subjectName, 'Genética')
+})
+
+test('rutas con barra invertida (zips de Windows)', () => {
+  const { groups } = plan([md('Bio\\G\\a.md')])
+  assert.equal(`${groups[0].careerName}/${groups[0].subjectName}`, 'Bio/G')
+})
+
+test('duplicados ignoran los destinos de links e imágenes', () => {
+  const at = new Date(2026, 9, 14, 18, 30, 10).toISOString()
+  const mk = (text) => buildImportPlan({
+    mdEntries: [md('Bio/G/2026-10-14 18-30.md', text)],
+    filePaths: ['Bio/G/adjuntos/f.png'],
+    target: { mode: 'careers' },
+    existingCareers: [{ id: 'c1', name: 'Bio', subjects: [{ id: 's1', name: 'G' }] }],
+    now,
+  })
+  const existing = new Map([['s1', [{ created_at: at, content_md: '# T\n\n![a](adjunto:abc)' }]]])
+  assert.equal(markDuplicates(mk('# T\n\n![a](adjuntos/f.png)'), existing).groups[0].sheets[0].duplicate, true)
+  assert.equal(markDuplicates(mk('# Otro\n\n![a](adjuntos/f.png)'), existing).groups[0].sheets[0].duplicate, false)
+})
+
+test('duplicados: el texto escapado de la base coincide con el del zip sin escapes', () => {
+  const at = new Date(2026, 9, 14, 18, 30, 10).toISOString()
+  const p = buildImportPlan({
+    mdEntries: [md('Bio/G/2026-10-14 18-30.md', '![_b*.png](adjuntos/_b*.png)')],
+    filePaths: ['Bio/G/adjuntos/_b*.png'],
+    target: { mode: 'careers' },
+    existingCareers: [{ id: 'c1', name: 'Bio', subjects: [{ id: 's1', name: 'G' }] }],
+    now,
+  })
+  const existing = new Map([['s1', [{ created_at: at, content_md: '![\\_b\\*.png](adjunto:x)' }]]])
+  assert.equal(markDuplicates(p, existing).groups[0].sheets[0].duplicate, true)
+})
+
+test('en inglés: el resumen, los motivos de salteo y el nombre de reserva', () => {
+  const summary = { newCareers: 2, newSubjects: 5, sheets: 40, media: 12, duplicates: 3, skipped: 1 }
+  assert.equal(
+    describeSummary(summary, 'es'),
+    'Se van a crear 2 carreras, 5 materias, 40 hojas y 12 adjuntos. 3 hojas ya existen y se saltean. 1 archivo no se importa.',
+  )
+  assert.equal(
+    describeSummary(summary, 'en'),
+    'This will create 2 careers, 5 subjects, 40 sheets and 12 attachments. 3 sheets already exist and will be skipped. 1 file will not be imported.',
+  )
+  assert.equal(describeSummary({ ...summary, newCareers: 0, newSubjects: 0, sheets: 0, media: 0, duplicates: 0, skipped: 0 }, 'en'), 'There are no new sheets to import.')
+  assert.equal(plan([md('vacio.md', '')], { lang: 'en' }).skipped[0].reason, 'It is empty.')
+  assert.equal(plan([md('vacio.md', '')]).skipped[0].reason, 'Está vacía.')
+  assert.equal(plan([], { filePaths: ['foto.png'], lang: 'en' }).skipped[0].reason, 'It is not a .md and is not used in any sheet.')
+  assert.equal(importFallbackName('en'), 'Imported')
+  assert.equal(importFallbackName('es'), 'Importado')
+})
+
+test('un export hecho en inglés se importa igual: las claves del frontmatter no cambian', () => {
+  const text = '---\ncarrera: "Bio"\nmateria: "Genetics"\ncreada: 2025-10-14T18:30\n---\n# x'
+  const english = plan([md('Genetics/a.md', text)], { lang: 'en' }).groups[0]
+  const spanish = plan([md('Genetics/a.md', text)], { lang: 'es' }).groups[0]
+  assert.equal(english.careerName, 'Bio')
+  assert.equal(english.subjectName, 'Genetics')
+  assert.equal(english.sheets[0].created_at, spanish.sheets[0].created_at)
+})
