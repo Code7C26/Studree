@@ -18,6 +18,7 @@ export default {
   linkConfirm:
     'We sent an email to {email} to confirm your account. Until you confirm it, you keep signing in as a guest.',
   linkDone: 'Done, your account now has an email and password.',
+  haveAccount: 'Already have an account? Sign in',
   counting: 'Counting…',
   careers: 'Careers',
   subjects: 'Subjects',

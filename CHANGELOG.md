@@ -6,6 +6,21 @@
 
 ---
 
+## [0.23.5] — 2026-11-11
+
+### Fixed — El invitado no podía iniciar sesión en una cuenta existente
+
+> Request: "dice que tengo que iniciar sesión pero no tengo un botón para iniciar sesión, arreglá eso"
+
+- `LoginPage` redirigía al Inicio con cualquier sesión, incluida la de invitado; ahora solo con
+  una cuenta con email, y al invitado le avisa que lo cargado no pasa a la otra cuenta.
+- `Header`: el invitado ve "Entrar" (sigue sin "Salir").
+- `ProfilePage`: "¿Ya tenés cuenta? Entrá" debajo del formulario de guardar la cuenta.
+- Textos `auth.login.guestNotice` y `profile.haveAccount` en `es` y `en`.
+- Docs: `features/navigation-shell.md`, `features/profile.md`.
+
+---
+
 ## [0.23.4] — 2026-11-11
 
 ### Fixed — Logo centrado

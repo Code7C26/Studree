@@ -12,7 +12,7 @@ import { useI18n } from '../hooks/useI18n.js'
  * puerta de entrada obligatoria a todo el workspace. Ver docs/03-security.md.
  */
 export function LoginPage() {
-  const { user, loading, configured, signIn, signUp } = useAuth()
+  const { user, isAnonymous, loading, configured, signIn, signUp } = useAuth()
   const location = useLocation()
   const { t } = useI18n()
 
@@ -27,7 +27,8 @@ export function LoginPage() {
     return <p className="py-16 text-center text-text-muted">{t('common.loading')}</p>
   }
 
-  if (user) {
+  // El invitado SÍ puede entrar a una cuenta que ya existe (ej. su email "ya tiene cuenta").
+  if (user && !isAnonymous) {
     return <Navigate to={location.state?.from ?? ROUTES.home} replace />
   }
 
@@ -73,6 +74,11 @@ export function LoginPage() {
       <p className="mt-1 text-sm text-text-muted">
         {t('auth.login.subtitle')}
       </p>
+      {isAnonymous && (
+        <p role="note" className="mt-4 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+          {t('auth.login.guestNotice')}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <TextField

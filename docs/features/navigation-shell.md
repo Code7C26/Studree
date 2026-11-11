@@ -140,6 +140,15 @@ semántica/RAG — la vectorización queda fuera de alcance en esta etapa.
 - Los atajos no deben pisar los del navegador salvo `Ctrl+K` (que se intercepta con
   `preventDefault`).
 
+## Sesión en el header
+
+- Con cuenta (email): "Salir".
+- Invitado (sesión anónima): **"Entrar"**, para pasar a una cuenta que ya existe (2026-11-11). No se
+  ofrece "Salir": cerrar la sesión anónima pierde los datos para siempre.
+- Sin sesión: "Entrar".
+- La pantalla Entrar deja pasar al invitado y le avisa que lo cargado como invitado no pasa a la
+  otra cuenta (`auth.login.guestNotice`); solo redirige si ya hay una cuenta con email.
+
 ## Logo e identidad en el header
 
 El logo es el **original**: `public/logo.jpg` (256 px, versión optimizada de

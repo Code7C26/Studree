@@ -9,6 +9,8 @@ export default {
     switchToSignup: '¿No tenés cuenta? Crear una',
     switchToSignin: '¿Ya tenés cuenta? Entrar',
     confirmMail: 'Te mandamos un mail a {email} para confirmar la cuenta.',
+    guestNotice:
+      'Estás como invitado. Si entrás con otra cuenta, lo que cargaste como invitado no pasa a esa cuenta. Para conservarlo, guardá tu cuenta desde el Perfil.',
     missingTitle: 'Falta configurar Supabase',
     missingBody:
       'Completá VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env.local (ver .env.example) y reiniciá el servidor de desarrollo.',

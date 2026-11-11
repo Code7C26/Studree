@@ -191,9 +191,14 @@ export function ProfilePage() {
                   </p>
                 )}
 
-                <Button type="submit" disabled={linking} className="w-full sm:w-auto">
-                  {linking ? t('common.oneMoment') : t('common.save')}
-                </Button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Button type="submit" disabled={linking} className="w-full sm:w-auto">
+                    {linking ? t('common.oneMoment') : t('common.save')}
+                  </Button>
+                  <Link to={ROUTES.login} className="text-center text-sm text-accent hover:underline">
+                    {t('profile.haveAccount')}
+                  </Link>
+                </div>
               </form>
             </>
           ) : (

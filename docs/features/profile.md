@@ -44,6 +44,9 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
     token sigue diciendo "anónimo" hasta vencer. Mientras la sesión sea anónima, `AuthProvider`
     pide un token nuevo (`refreshSession`) al volver a la pestaña (como mucho cada 30 s), y el
     perfil pasa solo a "Cuenta con email".
+  - Si el email ya tiene cuenta ("Ese email ya tiene cuenta. Iniciá sesión"), debajo del
+    formulario está **"¿Ya tenés cuenta? Entrá"** → `/entrar`, que acepta al invitado (antes lo
+    redirigía al Inicio y no había forma de iniciar sesión).
   - Implementado en `AuthProvider.linkIdentity(email, password)` (no en el componente,
     Mandamiento II: la lógica de negocio va en el provider/hook, no en la página).
 - **Resumen de contenido, no un dashboard.** Carreras / materias / hojas contadas a partir

@@ -65,13 +65,14 @@ export function Header() {
 
           {/*
             Con sesión anónima NO se ofrece "Salir": no hay credencial con la que
-            volver a entrar, así que cerrarla perdería los datos para siempre.
+            volver a entrar, así que cerrarla perdería los datos para siempre. Sí se
+            ofrece "Entrar", para pasar a una cuenta que ya existe.
           */}
           {user && !isAnonymous ? (
             <button type="button" onClick={signOut} className={LINK_IDLE}>
               {t('shell.nav.signOut')}
             </button>
-          ) : user && isAnonymous ? null : (
+          ) : (
             <NavLink to={ROUTES.login} className={LINK_IDLE}>
               {t('shell.nav.signIn')}
             </NavLink>

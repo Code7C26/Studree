@@ -18,6 +18,7 @@ export default {
   linkConfirm:
     'Te mandamos un mail a {email} para confirmar la cuenta. Hasta que lo confirmes, seguís entrando como invitado.',
   linkDone: 'Listo, tu cuenta ya tiene email y contraseña.',
+  haveAccount: '¿Ya tenés cuenta? Entrá',
   counting: 'Contando…',
   careers: 'Carreras',
   subjects: 'Materias',
