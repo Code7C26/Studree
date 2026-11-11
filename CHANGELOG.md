@@ -6,6 +6,22 @@
 
 ---
 
+## [0.22.2] — 2026-11-11
+
+### Changed — Mails de confirmación de Studree (no de Supabase)
+
+> Request: "al crear una cuenta manda una autenticación del mail de Supabase, ¿no hay forma de que
+> lo mande el mail de la empresa Studree?".
+
+- **SMTP propio** con un Gmail de la marca (sender name "Studree") y límite de mails subido a 30
+  por hora. Se configura en el dashboard de Supabase; la contraseña de aplicación no está en el repo.
+- **Plantillas en castellano** con el diseño de Studree (papel crema, franja verde, logo, botón):
+  `supabase/templates/confirm-signup.html` (crear cuenta) y `change-email.html` (invitado que
+  guarda su cuenta desde el Perfil).
+- Docs: `docs/04-deployment.md` → "Mails de Auth".
+
+---
+
 ## [0.22.1] — 2026-11-11
 
 ### Fixed — Cambiar el color de una carrera no cambiaba sus materias ni sus hojas

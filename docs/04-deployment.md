@@ -45,6 +45,26 @@ un sitio estático en `dist/` que se sirve desde cualquier hosting de estáticos
   Vercel a `Site URL` y `Redirect URLs`.
 - Probar la PWA instalada y la lectura sin señal en el celular (`docs/features/mobile.md`).
 
+### Mails de Auth (hecho el 2026-11-11)
+
+El SMTP que trae Supabase solo entrega a los miembros del equipo y manda pocos mails por hora,
+así que los mails de confirmación salen por un **Gmail de la marca**:
+
+- **Authentication → Emails → SMTP Settings:** custom SMTP con `smtp.gmail.com`, puerto `465`,
+  sender name `Studree`. La contraseña es una **contraseña de aplicación** de Google: vive solo en
+  Supabase, nunca en el repo ni en un `VITE_*` (`docs/03-security.md`).
+- **Authentication → Rate Limits:** límite de mails subido a 30 por hora.
+- **Plantillas** en castellano con el diseño de Studree, versionadas en `supabase/templates/`. Se
+  pegan a mano en **Authentication → Emails → Templates**:
+
+  | Plantilla de Supabase | Archivo | Asunto | Cuándo sale |
+  |---|---|---|---|
+  | Confirm signup | `confirm-signup.html` | Confirmá tu cuenta de Studree | Crear cuenta desde "Entrar" (`signUp`) |
+  | Change email address | `change-email.html` | Confirmá tu email en Studree | Un invitado agrega email y contraseña en el Perfil (`updateUser`) |
+
+  El logo se carga desde `https://studree.vercel.app/icons/icon-192.png`. Si cambia el texto,
+  editar el archivo y volver a pegarlo.
+
 ## Build local
 
 ```bash

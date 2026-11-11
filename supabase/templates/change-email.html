@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Confirmá tu email en Studree</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f1ede1;">
+    <!-- Texto de vista previa (se ve en la bandeja, no en el mail) -->
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+      Confirmá tu email y entrá a tus apuntes desde cualquier dispositivo.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1ede1;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+            <!-- Marca -->
+            <tr>
+              <td align="center" style="padding-bottom:20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="vertical-align:middle;">
+                      <img src="https://studree.vercel.app/icons/icon-192.png" width="44" height="44" alt="" style="display:block; border:0; border-radius:10px;" />
+                    </td>
+                    <td style="vertical-align:middle; padding-left:12px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:24px; font-weight:800; letter-spacing:-0.5px; color:#2b2620;">
+                      Studree
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Hoja -->
+            <tr>
+              <td style="background-color:#fbf8ef; border:1px solid #e3dcc9; border-radius:16px; overflow:hidden;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="height:6px; line-height:6px; font-size:0; background-color:#22c55e; border-radius:16px 16px 0 0;">&nbsp;</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:36px 36px 8px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                      <h1 style="margin:0 0 14px; font-size:26px; line-height:1.2; font-weight:800; letter-spacing:-0.5px; color:#2b2620;">
+                        Confirmá tu email
+                      </h1>
+                      <p style="margin:0 0 14px; font-size:16px; line-height:1.6; color:#2b2620;">
+                        ¡Hola! Pediste guardar tu cuenta de Studree con <strong>{{ .NewEmail }}</strong>. Tocá el botón para confirmarlo.
+                      </p>
+                      <p style="margin:0 0 28px; font-size:16px; line-height:1.6; color:#2b2620;">
+                        Todo lo que ya cargaste queda en tu cuenta, y vas a poder entrar desde cualquier dispositivo.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Botón -->
+                  <tr>
+                    <td align="center" style="padding:0 36px 28px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" bgcolor="#15803d" style="border-radius:999px;">
+                            <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; padding:15px 34px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:16px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:999px;">
+                              Confirmar mi email
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Link alternativo -->
+                  <tr>
+                    <td style="padding:0 36px 32px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                      <p style="margin:0 0 6px; font-size:13px; line-height:1.5; color:#7a6f5a;">
+                        Si el botón no funciona, copiá y pegá este enlace en el navegador:
+                      </p>
+                      <p style="margin:0; font-size:13px; line-height:1.5; word-break:break-all;">
+                        <a href="{{ .ConfirmationURL }}" target="_blank" style="color:#15803d;">{{ .ConfirmationURL }}</a>
+                      </p>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:18px 36px 26px; border-top:1px solid #ebe5d5; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:13px; line-height:1.5; color:#7a6f5a;">
+                      Si no fuiste vos, ignorá este mail: tu cuenta no cambia.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Pie -->
+            <tr>
+              <td align="center" style="padding:22px 16px 0; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:12px; line-height:1.6; color:#7a6f5a;">
+                <strong style="color:#2b2620;">Studree</strong> · El conocimiento no se guarda. <span style="color:#15803d; font-weight:700;">Crece.</span><br />
+                <a href="https://studree.vercel.app" target="_blank" style="color:#7a6f5a;">studree.vercel.app</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
