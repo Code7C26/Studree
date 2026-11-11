@@ -40,6 +40,10 @@ esta feature no había forma de salir de ese estado sin arriesgarse.
   - Si el envío del mail falla (ej. SMTP mal configurado), Supabase igual deja guardada la
     contraseña; al reintentar con la misma responde `same_password`. `linkIdentity` lo detecta y
     reintenta solo con el email.
+  - Si el link se abre en **otro dispositivo** (ej. el celular), esta pestaña no se entera: su
+    token sigue diciendo "anónimo" hasta vencer. Mientras la sesión sea anónima, `AuthProvider`
+    pide un token nuevo (`refreshSession`) al volver a la pestaña (como mucho cada 30 s), y el
+    perfil pasa solo a "Cuenta con email".
   - Implementado en `AuthProvider.linkIdentity(email, password)` (no en el componente,
     Mandamiento II: la lógica de negocio va en el provider/hook, no en la página).
 - **Resumen de contenido, no un dashboard.** Carreras / materias / hojas contadas a partir

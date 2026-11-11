@@ -84,6 +84,30 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+  const anonymous = session?.user?.is_anonymous === true
+
+  /**
+   * Confirmar el mail en OTRO dispositivo (ej. el link abierto en el celular) no le avisa a
+   * esta pestaña: seguiría como invitado hasta que el token venza (hasta una hora). Mientras la
+   * sesión sea anónima, al volver a la pestaña se pide un token nuevo, que ya trae la cuenta con
+   * email; `onAuthStateChange` actualiza la sesión. Como mucho una vez cada 30 s.
+   */
+  useEffect(() => {
+    if (!anonymous) return undefined
+    let last = 0
+    function refresh() {
+      if (document.visibilityState !== 'visible' || Date.now() - last < 30_000) return
+      last = Date.now()
+      supabase.auth.refreshSession()
+    }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [anonymous])
+
   const value = useMemo(
     () => ({
       session,
@@ -96,7 +120,7 @@ export function AuthProvider({ children }) {
        * anónimo deja los datos inaccesibles PARA SIEMPRE, porque no hay ninguna
        * credencial con la que volver a entrar a ese usuario.
        */
-      isAnonymous: session?.user?.is_anonymous === true,
+      isAnonymous: anonymous,
 
       /**
        * Inicia sesión con email y contraseña.
@@ -157,7 +181,7 @@ export function AuthProvider({ children }) {
         }
       },
     }),
-    [session, loading],
+    [session, loading, anonymous],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -6,6 +6,20 @@
 
 ---
 
+## [0.23.3] — 2026-11-11
+
+### Fixed — Confirmar la cuenta en el celular no actualizaba la compu
+
+> Request: "cuando di confirmar me abrió la cuenta desde el celu pero no desde la compu"
+
+- El link del mail confirma la cuenta en Supabase y abre sesión en el dispositivo donde se abre;
+  la pestaña donde se pidió seguía como invitado hasta que vencía su token. Ahora, mientras la
+  sesión sea anónima, `AuthProvider` pide un token nuevo al volver a la pestaña (`focus` /
+  `visibilitychange`, como mucho cada 30 s).
+- Archivos: `components/layout/AuthProvider.jsx`, `docs/features/profile.md`.
+
+---
+
 ## [0.23.2] — 2026-11-11
 
 ### Fixed — Reintentar "Guardá tu cuenta" después de un mail fallido
