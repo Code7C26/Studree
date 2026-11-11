@@ -1,38 +1,72 @@
 # Deployment — Studree
 
-> **Estado:** Pendiente. Este documento se completará cuando se prepare el primer deploy.
+> **Estado:** Configurado para Vercel (2026-11-10). Falta conectar el repositorio en la cuenta
+> de Vercel y cargar las variables de entorno.
 
 ## Resumen
 
-Studree es una **SPA (Single Page Application)** construida con Vite. El resultado de
-`npm run build` es un sitio estático (carpeta `dist/`) que puede servirse en cualquier
-hosting de estáticos.
+Studree es una **SPA (Single Page Application)** construida con Vite. `npm run build` genera
+un sitio estático en `dist/` que se sirve desde cualquier hosting de estáticos. El archivo
+`vercel.json` ya define lo necesario para Vercel.
 
-## Candidatos de hosting
+## Vercel (hosting elegido)
 
-| Opción | Tipo | Notas |
-|--------|------|-------|
-| Vercel | Estático / SPA | Deploy automático desde GitHub, muy simple |
-| Netlify | Estático / SPA | Similar a Vercel, buen tier gratuito |
-| GitHub Pages | Estático | Gratis; requiere configurar `base` en `vite.config.js` |
+`vercel.json` en la raíz trae:
 
-## Build de producción
+- `buildCommand`: `npm run build`
+- `outputDirectory`: `dist`
+- **rewrites** de todas las rutas a `/index.html` (React Router sin 404 al recargar)
+- `Cache-Control: no-cache` para `/sw.js` (el service worker se actualiza con cada deploy)
+
+### Pasos
+
+1. Subir `main` a GitHub (el deploy se dispara desde ahí).
+2. En https://vercel.com → **Add New → Project** → importar el repositorio `Studree`.
+3. Framework preset: **Vite** (Vercel detecta `npm run build` y `dist` solos; el
+   `vercel.json` tiene la última palabra).
+4. **Environment Variables** (Production y Preview), desde `Project Settings → API` de Supabase:
+
+   | Variable | Valor |
+   |----------|-------|
+   | `VITE_SUPABASE_URL` | `https://<proyecto>.supabase.co` |
+   | `VITE_SUPABASE_ANON_KEY` | la **anon key** pública |
+
+   La `anon key` es pública por diseño: protege RLS, no el secreto de la clave
+   (`docs/03-security.md`). **Nunca** cargar `service_role` ni `GEMINI_API_KEY` en Vercel:
+   la clave de Gemini vive solo como secret de la Edge Function.
+5. **Deploy**. La URL queda del tipo `https://studree.vercel.app`.
+
+### Después del primer deploy
+
+- **Edge Function `assistant`**: se despliega aparte con la CLI de Supabase, no con Vercel
+  (ver `docs/features/assistant.md` → "Cómo desplegar"). Sin eso, el Brote y la Foto a hoja
+  responden 404.
+- **Auth**: en Supabase → **Authentication → URL Configuration**, agregar el dominio de
+  Vercel a `Site URL` y `Redirect URLs`.
+- Probar la PWA instalada y la lectura sin señal en el celular (`docs/features/mobile.md`).
+
+## Build local
 
 ```bash
 npm run build      # genera dist/
 npm run preview    # sirve dist/ localmente para verificar
 ```
 
-## Checklist de pre-deploy (completar cuando aplique)
+## Checklist de pre-deploy
 
-- [ ] `npm run build` corre sin errores.
-- [ ] Revisado el checklist de seguridad (`docs/03-security.md`).
-- [ ] `.env.example` actualizado con todas las variables.
-- [ ] Variables de entorno configuradas en el hosting (si las hay).
-- [ ] Probado el routing de la SPA (fallback a `index.html`).
-- [ ] CHANGELOG actualizado con la versión a desplegar.
+- [x] `npm run build` corre sin errores.
+- [x] Revisado el checklist de seguridad (`docs/03-security.md`).
+- [x] `.env.example` actualizado con todas las variables.
+- [ ] Variables de entorno configuradas en Vercel.
+- [x] Routing de la SPA con fallback a `index.html` (`vercel.json`).
+- [x] CHANGELOG actualizado con la versión a desplegar.
+- [ ] Edge Function `assistant` desplegada con la versión de esta fase.
 
----
+## Otros hostings
 
-> _Este archivo se irá completando con el proceso real de deploy cuando el proyecto
-> llegue a esa fase (ver Fase 5/6 en `01-project-overview.md`)._
+| Opción | Notas |
+|--------|-------|
+| Netlify | Mismas variables; agregar `/* /index.html 200` en `_redirects` si no se usa `vercel.json`. |
+| GitHub Pages | Requiere `base` en `vite.config.js` y un fallback de rutas propio; no recomendado para esta SPA. |
+
+> Este archivo refleja el proceso real de deploy. Actualizarlo si cambia el hosting.

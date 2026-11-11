@@ -6,6 +6,27 @@
 
 ---
 
+## [0.21.1] — 2026-11-10
+
+### Changed — Orden del repositorio y deploy en Vercel
+
+> Request: "ordenar el proyecto para pushear todos los commits y poder levantar el servidor en Vercel".
+
+- **`main` integra todas las fases**: fusión de `fase-16` (que ya contenía `fase-15`, `fase-18`
+  y las anteriores) sobre `origin/main`. Se conservan los README y la documentación de
+  investigación que habían subido los compañeros.
+- **README unificado:** el repositorio tenía `README.md` y `readme.md` a la vez (en Windows son
+  el mismo archivo), lo que dejaba el árbol siempre "modificado". Queda un solo `README.md` con
+  la ficha técnica del proyecto.
+- **`vercel.json`**: build de Vite, salida `dist/`, fallback de rutas de la SPA a
+  `/index.html` y `no-cache` para `/sw.js`.
+- **`docs/04-deployment.md`**: pasos de Vercel, variables de entorno, dominio en Auth y el
+  recordatorio de desplegar la Edge Function aparte.
+- **`.gitignore`**: se ignoran herramientas locales que no son de la app (`.vite/`, `.agents/`,
+  `motion-architect/`, `skills-lock.json`, `generate_video.js`).
+
+---
+
 ## [0.21.0] — 2026-11-10
 
 ### Added — Celular, foto a hoja y lectura sin señal (FASE 16)

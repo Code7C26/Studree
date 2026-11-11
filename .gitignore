@@ -27,3 +27,10 @@ pnpm-debug.log*
 
 # Brainstorming local (visual companion de superpowers)
 .superpowers/
+
+# Herramientas locales (no forman parte de la app)
+.vite/
+.agents/
+motion-architect/
+skills-lock.json
+generate_video.js
