@@ -13,7 +13,7 @@
  * `activate` y el navegador reemplaza el SW con la próxima visita.
  */
 
-const CACHE = 'studree-shell-v1'
+const CACHE = 'studree-shell-v2'
 
 const SHELL = ['/', '/logo.jpg', '/icons/icon-192.png', '/icons/icon-512.png', '/manifest.webmanifest']
 

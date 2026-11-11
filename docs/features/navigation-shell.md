@@ -151,6 +151,10 @@ El logo es el **original**: `public/logo.jpg` (256 px, versión optimizada de
   (dice **STUDREE**; la supuesta errata "STUIDREE" no existía).
 - Todo asset estático servido tal cual va en **`public/`**. Vite **no sirve** la carpeta
   `assets/` de la raíz del repo: eso es material fuente.
+- **Recorte centrado (2026-11-11):** `logo.jpg` y `icons/icon-192.png` / `icon-512.png` salen
+  de `assets/Logo.jpg` con un recorte cuadrado centrado en la carpeta (la carpeta ocupa ~86 % del
+  ancho). El recorte anterior la dejaba corrida a la derecha y abajo. Al cambiar estas imágenes,
+  subir la versión de `CACHE` en `public/sw.js` (las sirve cache-first).
 - **Nunca** referenciar el logo con rutas relativas tipo `./assets/…`.
 - Siempre con `width`/`height` explícitos, para que no haya *layout shift* al cargar.
 

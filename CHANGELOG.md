@@ -6,6 +6,20 @@
 
 ---
 
+## [0.23.4] — 2026-11-11
+
+### Fixed — Logo centrado
+
+> Request: "corregí el logo que no está centrado en la web"
+
+- `public/logo.jpg` y los íconos de la PWA (`icons/icon-192.png`, `icon-512.png`) se
+  regeneraron desde `assets/Logo.jpg` con la carpeta centrada (el recorte anterior la dejaba
+  corrida a la derecha y abajo).
+- `public/sw.js`: `CACHE` pasa a `studree-shell-v2` para que nadie se quede con el logo viejo.
+- Docs: `features/navigation-shell.md`.
+
+---
+
 ## [0.23.3] — 2026-11-11
 
 ### Fixed — Confirmar la cuenta en el celular no actualizaba la compu
