@@ -11,6 +11,11 @@ escolar**), las materias son sus ramas (los **separadores de colores**) y las **
 son los apuntes, todas seguidas y fechadas dentro de su materia, con un índice de temas
 para orientarse (Carrera → Materia → Hoja, ADR-014 y ADR-017).
 
+**Empresa: Mnemora** (definida el 2026-11-11). Studree es su producto, como Claude lo es de
+Anthropic. El nombre viene del griego *mnḗmē* ("memoria"): la empresa construye la memoria de lo
+que aprendés. Aparece en el pie de la landing ("Studree es un producto de Mnemora · ©"), en
+`<meta name="author">`, en `package.json` (`author`) y en el pie de los mails de Supabase.
+
 ## Objetivos
 
 - Centralizar apuntes, archivos, enlaces y material de estudio en un solo lugar.

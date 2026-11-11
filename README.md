@@ -7,6 +7,9 @@ Studree es una plataforma web para organizar los apuntes de una carrera o curso 
 Su nombre une *Study + Tree*: cada carrera es un árbol, las materias son sus ramas y los apuntes
 son sus hojas.
 
+Studree es el primer producto de **Mnemora**, la empresa detrás del proyecto. El nombre viene del
+griego *mnḗmē*, "memoria": Mnemora construye la memoria de lo que aprendés.
+
 **App online: [studree.vercel.app](https://studree.vercel.app)** · funciona en la compu y en el
 celular (se instala como app).
 

@@ -6,6 +6,23 @@
 
 ---
 
+## [0.25.2] — 2026-11-11
+
+### Added — Mnemora, la empresa detrás de Studree
+
+> Request: "necesito crear un nombre de EMPRESA, como Anthropic y Claude: Claude sería Studree…
+> luego lo cambiarás de todos los lados necesarios". Elegido: **Mnemora** (del griego *mnḗmē*,
+> memoria).
+
+- Pie de la landing: "Studree es un producto de Mnemora · © año" (`landing.footer.company` en
+  `es` y `en`).
+- `index.html`: `<meta name="author" content="Mnemora">` y `og:site_name`; `package.json`: `author`.
+- README y `docs/01-project-overview.md`: quién es Mnemora y de dónde viene el nombre.
+- Plantillas de mail de Supabase (fuera del repo): "Un producto de Mnemora" en el pie
+  (`docs/04-deployment.md`).
+
+---
+
 ## [0.25.1] — 2026-11-11
 
 ### Fixed — Celular: el Brote, la selección y la foto; Cancelar y Salir en rojo

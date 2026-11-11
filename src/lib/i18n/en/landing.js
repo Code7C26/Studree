@@ -140,5 +140,6 @@ export default {
   },
   footer: {
     tagline: 'Your knowledge, cloned into an AI that helps you go further.',
+    company: 'Studree is a Mnemora product',
   },
 }

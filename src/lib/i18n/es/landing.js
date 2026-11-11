@@ -140,5 +140,6 @@ export default {
   },
   footer: {
     tagline: 'Tu conocimiento, clonado en una IA que te ayuda a llegar más lejos.',
+    company: 'Studree es un producto de Mnemora',
   },
 }

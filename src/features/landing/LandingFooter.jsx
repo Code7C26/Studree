@@ -1,7 +1,7 @@
 import { getLandingCopy } from './landingCopy.js'
 import { useI18n } from '../../hooks/useI18n.js'
 
-/** Pie de la landing: marca, una línea y el año. */
+/** Pie de la landing: marca, una línea, la empresa (Mnemora) y el año. */
 export function LandingFooter() {
   const { lang } = useI18n()
   const { footer: FOOTER } = getLandingCopy(lang)
@@ -15,7 +15,9 @@ export function LandingFooter() {
           </span>
         </span>
         <p>{FOOTER.tagline}</p>
-        <p>{new Date().getFullYear()}</p>
+        <p>
+          {FOOTER.company} · © {new Date().getFullYear()}
+        </p>
       </div>
     </footer>
   )

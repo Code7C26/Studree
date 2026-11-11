@@ -32,6 +32,8 @@ como terminado.
   "Crear cuenta" siendo invitado usa `linkIdentity` (igual que "Guardá tu cuenta"): no se pierde
   lo cargado.
 - Desde la app se llega con **"Conocé Studree"**, al pie del Perfil.
+- **Pie:** marca, la línea de `footer.tagline` y `footer.company` ("Studree es un producto de
+  Mnemora") con el © del año. Mnemora es la empresa (ver `01-project-overview.md`).
 - `AuthProvider` sigue creando la sesión anónima a todo visitante nuevo, también en
   `/bienvenida`: no se tocó.
 

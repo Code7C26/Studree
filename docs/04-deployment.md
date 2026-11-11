@@ -61,7 +61,8 @@ así que los mails de confirmación salen por un **Gmail de la marca**:
 - **Authentication → Rate Limits:** límite de mails subido a 30 por hora.
 - **Plantillas** en castellano con el diseño de Studree, pegadas en **Authentication → Emails →
   Templates**: *Confirm signup* (crear cuenta desde "Entrar") y *Change email address* (un invitado
-  agrega email y contraseña en el Perfil). No se versionan en el repo.
+  agrega email y contraseña en el Perfil). No se versionan en el repo. El pie de las dos dice
+  "Un producto de Mnemora" (2026-11-11).
 
 ## Build local
 
