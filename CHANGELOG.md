@@ -206,6 +206,21 @@
 
 ---
 
+## [0.25.4] — 2026-11-12
+
+### Added — Manual de usuario como página web, con QR
+
+> Request: "puedes crearme el manual de usuario en html con un qr para que los lleve ahi?"
+
+- `public/manual.html`: el manual (`docs/MANUAL_USUARIO.md`) como página estática, servida en
+  **studree.vercel.app/manual.html** (Vercel sirve los archivos de `dist/` antes del rewrite de la SPA).
+  Índice fijo, papel crema con renglones, adaptada al celular; sin emojis. Generada desde el Markdown con
+  `markdown-it` (ya instalado): si el manual cambia, hay que regenerarla.
+- `public/mnemora-logo.svg` (pie de la página) y `assets/qr-manual.svg` / `.png` (QR a la página).
+- Manual: "carpeta digital" para carrera, curso o capacitación (antes decía "escolar").
+
+---
+
 ## [0.25.3] — 2026-11-11
 
 ### Added — Manual de usuario y logo de Mnemora

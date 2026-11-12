@@ -29,7 +29,7 @@
 
 ## 1. ¿Qué es Studree?
 
-Studree es una **carpeta escolar digital** para los apuntes de tu carrera o curso, con una IA, **el
+Studree es una **carpeta digital** para los apuntes de tu carrera, tu curso o tu capacitación, con una IA, **el
 Brote**, que conoce esos apuntes y estudia con vos.
 
 Todo se ordena en tres niveles:
@@ -84,7 +84,7 @@ Es lo primero que ves al entrar. Te saluda según la hora y te muestra:
 | Bloque | Para qué sirve |
 |--------|----------------|
 | **Seguí donde dejaste** | Abre la última hoja que editaste, justo donde estaba. |
-| **Próxima fecha** | Tu próximo parcial o entrega, con cuántos días faltan. |
+| **Próxima fecha** | Tu próximo examen o entrega, con cuántos días faltan. |
 | **Esta semana** | Cuántas tareas y fechas tenés en los próximos 7 días. Lo vencido sale en rojo. |
 | **Tareas** | Lista de pendientes con fecha límite opcional. Al tildarlas pasan a *Hechas*. |
 | **Calendario** | El mes con tus fechas importantes. Hacé click en un día para agregar una fecha. |

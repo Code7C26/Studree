@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de usuario · Studree</title>
+<meta name="description" content="Cómo usar Studree paso a paso: carreras, la Carpeta, el Brote, exámenes, tarjetas, celular y planes.">
+<meta name="author" content="Mnemora">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117; --paper: #fbf8ef; --line: #ebe5d5; --border: #e3dcc9;
+    --ink: #2b2620; --muted: #7a6f5a; --green: #16a34a; --green-soft: #e8f6ec;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 Inter, system-ui, sans-serif; }
+  a { color: var(--green); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  @media (min-width: 960px) { .wrap { grid-template-columns: 240px minmax(0, 1fr); align-items: start; } }
+
+  header.hero { grid-column: 1 / -1; color: #e6edf3; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  header.hero img { width: 72px; height: 72px; border-radius: 16px; }
+  header.hero h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(28px, 6vw, 44px); line-height: 1.05; margin: 0; }
+  header.hero p { margin: 4px 0 0; color: #8b949e; }
+  header.hero .tag { color: #4ade80; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; }
+  header.hero > div { min-width: 0; flex: 1 1 220px; }
+  header.hero .cta { margin-left: auto; background: #22c55e; color: #0d1117; text-decoration: none; font-weight: 700; padding: 10px 18px; border-radius: 999px; }
+
+  nav.toc { background: #161b22; border: 1px solid #30363d; border-radius: 14px; padding: 18px 16px; color: #e6edf3; }
+  @media (min-width: 960px) { nav.toc { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; } }
+  nav.toc h2 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #8b949e; margin: 0 0 10px; }
+  nav.toc ol { margin: 0; padding-left: 22px; font-size: 14px; }
+  nav.toc li { margin: 4px 0; }
+  nav.toc a { color: #e6edf3; text-decoration: none; }
+  nav.toc a:hover { color: #4ade80; }
+
+  main.sheet {
+    background: var(--paper);
+    background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--line) 31px 32px);
+    border-left: 6px solid var(--green); border-radius: 6px 14px 14px 6px;
+    padding: 28px clamp(18px, 5vw, 56px) 40px; min-width: 0;
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
+  main h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; line-height: 1.15; margin: 44px 0 12px; padding-top: 8px; color: var(--ink); }
+  main h2:first-child { margin-top: 0; }
+  main h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin: 28px 0 8px; color: var(--green); }
+  main p, main li { background: var(--paper); }
+  main ul, main ol { padding-left: 22px; }
+  main li { margin: 4px 0; }
+  main code { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; font-size: .9em; }
+  main pre { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  main pre code { border: 0; padding: 0; }
+  main blockquote { margin: 16px 0; background: var(--green-soft); border-left: 4px solid var(--green); border-radius: 8px; padding: 2px 16px; }
+  .table { overflow-x: auto; margin: 14px 0; background: #fff; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f4efe2; font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+
+  footer { grid-column: 1 / -1; color: #8b949e; text-align: center; font-size: 14px; }
+  footer img { height: 12px; vertical-align: -1px; margin-left: 6px; filter: invert(1) brightness(.75); }
+
+  @media print {
+    body { background: #fff; } nav.toc, header.hero .cta { display: none; }
+    header.hero { color: var(--ink); } main.sheet { box-shadow: none; background-image: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <img src="/icons/icon-192.png" alt="Studree">
+    <div>
+      <h1>Manual de usuario</h1>
+      <p><span class="tag">Studree</span> · El conocimiento no se guarda. Crece.</p>
+    </div>
+    <a class="cta" href="/">Abrir Studree</a>
+  </header>
+  <nav class="toc" aria-label="Índice">
+    <h2>Índice</h2>
+    <ol>
+<li><a href="#1-qué-es-studree">¿Qué es Studree?</a></li>
+<li><a href="#2-empezar-entrar-y-crear-tu-cuenta">Empezar: entrar y crear tu cuenta</a></li>
+<li><a href="#3-recorrido-de-la-pantalla">Recorrido de la pantalla</a></li>
+<li><a href="#4-inicio">Inicio</a></li>
+<li><a href="#5-carreras-y-materias">Carreras y materias</a></li>
+<li><a href="#6-la-carpeta-escribir-tus-apuntes">La Carpeta: escribir tus apuntes</a></li>
+<li><a href="#7-el-brote-tu-asistente-de-ia">El Brote, tu asistente de IA</a></li>
+<li><a href="#8-exámenes-resúmenes-y-mi-estudio">Exámenes, resúmenes y Mi estudio</a></li>
+<li><a href="#9-tarjetas-de-repaso">Tarjetas de repaso</a></li>
+<li><a href="#10-studree-en-el-celular">Studree en el celular</a></li>
+<li><a href="#11-compartir-exportar-e-importar">Compartir, exportar e importar</a></li>
+<li><a href="#12-papelera">Papelera</a></li>
+<li><a href="#13-perfil-idioma-y-planes">Perfil, idioma y planes</a></li>
+<li><a href="#14-atajos-de-teclado">Atajos de teclado</a></li>
+<li><a href="#15-preguntas-frecuentes">Preguntas frecuentes</a></li>
+    </ol>
+  </nav>
+  <main class="sheet">
+<h2 id="1-qué-es-studree">1. ¿Qué es Studree?</h2>
+<p>Studree es una <strong>carpeta digital</strong> para los apuntes de tu carrera, tu curso o tu capacitación, con una IA, <strong>el
+Brote</strong>, que conoce esos apuntes y estudia con vos.</p>
+<p>Todo se ordena en tres niveles:</p>
+<pre><code>Carrera  →  Materia  →  Hoja
+(el árbol)   (las ramas)   (las hojas)
+</code></pre>
+<ul>
+<li><strong>Carrera:</strong> una carrera universitaria, un año del secundario o un curso.</li>
+<li><strong>Materia:</strong> cada materia de esa carrera. Adentro es una carpeta.</li>
+<li><strong>Hoja:</strong> cada apunte. Las hojas no llevan título: se identifican por la fecha y la hora en que
+las creaste, como en una carpeta de papel.</li>
+</ul>
+<h2 id="2-empezar-entrar-y-crear-tu-cuenta">2. Empezar: entrar y crear tu cuenta</h2>
+<ol>
+<li>Entrá a <strong>studree.vercel.app</strong>.</li>
+<li>Aparece un cartel con dos opciones:
+<ul>
+<li><strong>Crear cuenta:</strong> con email y contraseña. Tus apuntes quedan guardados en la nube y podés
+entrar desde cualquier dispositivo.</li>
+<li><strong>Entrar como invitado:</strong> probás Studree sin registrarte. Lo que cargues queda en ese
+dispositivo hasta que guardes tu cuenta.</li>
+</ul>
+</li>
+<li>Si entraste como invitado y querés conservar lo que hiciste, andá a <strong>Perfil → Guardá tu
+cuenta</strong>, poné email y contraseña y confirmá el mail que te llega. <strong>No se pierde nada</strong>: tus
+apuntes pasan a tu cuenta.</li>
+</ol>
+<blockquote>
+<p>Como invitado no hay botón <em>Salir</em>: si cerrás la sesión sin guardar la cuenta, no hay forma
+de volver a entrar a esos apuntes.</p>
+</blockquote>
+<blockquote>
+<p>Si el mail de confirmación no aparece, revisá la carpeta de <strong>Spam</strong>.</p>
+</blockquote>
+<h2 id="3-recorrido-de-la-pantalla">3. Recorrido de la pantalla</h2>
+<ul>
+<li><strong>Barra superior:</strong> logo, buscador (<code>Ctrl+K</code>) y las secciones <strong>Inicio · Carreras · Mi estudio
+· Perfil</strong>.</li>
+<li><strong>Explorador lateral</strong> (<code>Ctrl+B</code>): el árbol de tus carreras y materias. Al pie, la
+<strong>Papelera</strong>.</li>
+<li><strong>Pestañas:</strong> cada materia que abrís queda en una pestaña, como tener varias carpetas abiertas
+sobre la mesa.</li>
+<li><strong>El Brote:</strong> el personaje flotante abajo a la derecha. Tocalo para abrir el asistente.</li>
+</ul>
+<h2 id="4-inicio">4. Inicio</h2>
+<p>Es lo primero que ves al entrar. Te saluda según la hora y te muestra:</p>
+<div class="table"><table><thead>
+<tr>
+<th>Bloque</th>
+<th>Para qué sirve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Seguí donde dejaste</strong></td>
+<td>Abre la última hoja que editaste, justo donde estaba.</td>
+</tr>
+<tr>
+<td><strong>Próxima fecha</strong></td>
+<td>Tu próximo examen o entrega, con cuántos días faltan.</td>
+</tr>
+<tr>
+<td><strong>Esta semana</strong></td>
+<td>Cuántas tareas y fechas tenés en los próximos 7 días. Lo vencido sale en rojo.</td>
+</tr>
+<tr>
+<td><strong>Tareas</strong></td>
+<td>Lista de pendientes con fecha límite opcional. Al tildarlas pasan a <em>Hechas</em>.</td>
+</tr>
+<tr>
+<td><strong>Calendario</strong></td>
+<td>El mes con tus fechas importantes. Hacé click en un día para agregar una fecha.</td>
+</tr>
+<tr>
+<td><strong>Notas rápidas</strong></td>
+<td>Post-its para anotar algo al pasar.</td>
+</tr>
+</tbody>
+</table></div><h2 id="5-carreras-y-materias">5. Carreras y materias</h2>
+<h3 id="crear-una-carrera">Crear una carrera</h3>
+<ol>
+<li>Andá a <strong>Carreras</strong> y tocá <strong>+ Nueva carrera</strong>.</li>
+<li>Elegí nombre, color y tipo:
+<ul>
+<li><strong>Carrera con correlativas:</strong> para carreras con plan de estudios (por ejemplo, la
+universidad).</li>
+<li><strong>Curso / organizador:</strong> para cursos sueltos o el secundario, sin correlativas.</li>
+</ul>
+</li>
+<li>Cada tarjeta muestra cuántas materias tenés, cuántas aprobaste y una barra de progreso.</li>
+</ol>
+<h3 id="el-mapa-de-la-carrera">El mapa de la carrera</h3>
+<p>Al abrir una carrera ves sus materias como un <strong>mapa interactivo</strong>:</p>
+<ul>
+<li><strong>Nueva materia:</strong> con el botón o con doble click en el fondo, que la crea en ese punto.</li>
+<li><strong>Abrir una materia:</strong> doble click sobre ella.</li>
+<li><strong>Mover:</strong> arrastrala. La posición queda guardada. <strong>⟲ Reordenar</strong> vuelve al acomodo
+automático.</li>
+<li><strong>Estado de cada materia:</strong> ○ Pendiente · ◐ Cursando · Aprobada.</li>
+<li><strong>Correlativas</strong> (solo en carreras con correlativas): arrastrá una línea de una materia a
+otra. La línea <strong>sólida</strong> marca la correlativa para <em>cursar</em> y la <strong>punteada</strong>, para <em>rendir
+el final</em>. Las materias que todavía no podés cursar aparecen con un candado, y se
+desbloquean solas cuando aprobás las correlativas.</li>
+</ul>
+<h2 id="6-la-carpeta-escribir-tus-apuntes">6. La Carpeta: escribir tus apuntes</h2>
+<p>Cada materia es <strong>una carpeta</strong>: todas sus hojas seguidas, en el orden en que las creaste, sobre
+papel crema con renglones y el margen del color de la materia.</p>
+<h3 id="escribir">Escribir</h3>
+<ul>
+<li><strong>Nueva hoja:</strong> agrega una hoja con la fecha y la hora de ese momento.</li>
+<li><strong>Nueva hoja ▾</strong> (la flecha del botón): crea la hoja desde una <strong>plantilla</strong>. Hay cuatro
+incluidas (<em>Clase, Resumen, Práctica, Repaso para parcial</em>) y podés guardar las tuyas con
+<strong>Guardar como plantilla</strong> desde cualquier hoja.</li>
+<li><strong>Se guarda solo.</strong> Arriba de cada hoja ves <em>Guardando… / Guardado</em>. No hay botón de guardar.</li>
+<li>La barra de herramientas tiene negrita, cursiva, títulos, listas, listas de tareas, citas y
+código.</li>
+</ul>
+<h3 id="temas-e-índice">Temas e índice</h3>
+<ul>
+<li>Escribí <code># Nombre del tema</code> para crear un <strong>tema</strong>. Todos los temas aparecen en el <strong>índice</strong>
+de la izquierda: tocá uno para ir directo.</li>
+<li>Escribí <code>[[Nombre del tema]]</code> para dejar un <strong>link</strong> a ese tema dentro de la materia.</li>
+</ul>
+<h3 id="buscar-y-leer">Buscar y leer</h3>
+<ul>
+<li><strong>Buscar en la materia</strong> (<code>Ctrl+F</code>): resalta todas las coincidencias en todas las hojas.
+<code>Enter</code> va a la siguiente y <code>Shift+Enter</code>, a la anterior.</li>
+<li><strong>Leer</strong> (modo lectura): oculta todo menos el papel. <code>Esc</code> para salir.</li>
+<li><strong>Buscador global</strong> (<code>Ctrl+K</code>): busca carreras, materias y texto dentro de cualquier hoja.</li>
+</ul>
+<h3 id="adjuntos">Adjuntos</h3>
+<p>Arrastrá, pegá o subí con el clip imágenes y archivos de hasta <strong>20 MB</strong>. Las imágenes se ven en
+el texto y los demás archivos quedan como link. Son privados: solo los ves vos.</p>
+<h2 id="7-el-brote-tu-asistente-de-ia">7. El Brote, tu asistente de IA</h2>
+<p>El Brote <strong>lee tus apuntes</strong> y responde a partir de ellos, citando de qué hoja sacó cada dato.</p>
+<blockquote>
+<p><strong>El Brote nunca escribe en tus hojas sin permiso.</strong> Cuando propone un texto, aparece con
+los botones <strong>Aceptar</strong> y <strong>Descartar</strong>. Tampoco borra hojas.</p>
+</blockquote>
+<h3 id="chat">Chat</h3>
+<p>Tocá el Brote y preguntale lo que quieras sobre tu materia. Podés elegir de dónde saca la
+información:</p>
+<ul>
+<li><strong>Solo mis apuntes:</strong> responde únicamente con lo que escribiste.</li>
+<li><strong>Con conocimiento externo:</strong> puede sumar información de afuera, y eso queda <strong>marcado</strong> para
+que sepas qué no salió de tus hojas.</li>
+</ul>
+<h3 id="atajos-sobre-el-texto">Atajos sobre el texto</h3>
+<p>Seleccioná un párrafo en una hoja y aparecen cuatro botones:</p>
+<div class="table"><table><thead>
+<tr>
+<th>Atajo</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Explicar</strong></td>
+<td>Lo explica con otras palabras o con ejemplos.</td>
+</tr>
+<tr>
+<td><strong>Refutar</strong></td>
+<td>Busca errores o conceptos flojos.</td>
+</tr>
+<tr>
+<td><strong>Completar</strong></td>
+<td>Propone lo que falta para agregar.</td>
+</tr>
+<tr>
+<td><strong>Preguntame</strong></td>
+<td>Te hace preguntas sobre ese texto.</td>
+</tr>
+</tbody>
+</table></div><p>La respuesta aparece justo debajo del texto que seleccionaste.</p>
+<h3 id="otras-cosas-que-hace">Otras cosas que hace</h3>
+<ul>
+<li><strong>Resumir materia:</strong> arma un resumen que podés guardar como hoja o descargar en PDF.</li>
+<li><strong>Tomame examen:</strong> ver la <a href="#8-ex%C3%A1menes-res%C3%BAmenes-y-mi-estudio">sección 8</a>.</li>
+<li><strong>Detectar huecos:</strong> lista los temas que mencionás pero nunca desarrollaste.</li>
+<li><strong>Plan de estudio</strong> <em>(Premium)</em>: usa tus fechas del Inicio para decirte qué repasar y cuándo.</li>
+<li><strong>Repaso de errores</strong> <em>(Premium)</em>: un examen solo con lo que fallaste antes.</li>
+<li><strong>Conexiones entre materias</strong> <em>(Premium)</em>: encuentra conceptos que se repiten entre materias.</li>
+</ul>
+<h2 id="8-exámenes-resúmenes-y-mi-estudio">8. Exámenes, resúmenes y Mi estudio</h2>
+<h3 id="tomar-un-examen">Tomar un examen</h3>
+<ol>
+<li>Pedile al Brote <strong>Tomame examen</strong>.</li>
+<li>Elegí qué temas entran, cuántas preguntas y de qué tipo: <strong>opción múltiple, verdadero o falso
+o desarrollo</strong>.</li>
+<li>Respondé. El Brote corrige cada respuesta, <strong>explica por qué</strong> y te dice en qué hoja está el
+tema.</li>
+</ol>
+<h3 id="mi-estudio">Mi estudio</h3>
+<p>En <strong>Mi estudio</strong> (barra superior) queda todo lo que te generó el Brote:</p>
+<ul>
+<li><strong>Resúmenes:</strong> se pueden releer, <strong>descargar en PDF</strong> o <strong>guardar como hoja</strong>.</li>
+<li><strong>Exámenes:</strong> el registro de cada intento, con tu puntaje (por ejemplo, &quot;7 de 10&quot;) y la
+corrección.</li>
+<li>Arriba hay un filtro por materia.</li>
+</ul>
+<h2 id="9-tarjetas-de-repaso">9. Tarjetas de repaso</h2>
+<p>En la Carpeta, el botón <strong>Tarjetas</strong> abre el mazo de la materia.</p>
+<ol>
+<li><strong>Nueva tarjeta:</strong> escribí el frente (la pregunta) y el dorso (la respuesta).</li>
+<li><strong>Repasar:</strong> te muestra las tarjetas que tocan hoy. Mirá el frente, tocá <strong>Mostrar respuesta</strong> y
+respondé <strong>La sabía</strong> o <strong>No la sabía</strong>.</li>
+<li>Studree usa <strong>repaso espaciado</strong> (sistema de cajas de Leitner): cada vez que acertás, la
+tarjeta vuelve más tarde (1, 2, 4 y 8 días). Si fallás, vuelve al principio. Así repasás más
+lo que más te cuesta.</li>
+</ol>
+<h2 id="10-studree-en-el-celular">10. Studree en el celular</h2>
+<h3 id="instalar-como-app">Instalar como app</h3>
+<ul>
+<li><strong>Android (Chrome):</strong> menú ⋮ → <em>Instalar app</em> o <em>Agregar a la pantalla principal</em>.</li>
+<li><strong>iPhone (Safari):</strong> botón Compartir → <em>Agregar a inicio</em>.</li>
+<li><strong>Computadora (Chrome o Edge):</strong> el ícono de instalar en la barra de direcciones.</li>
+</ul>
+<h3 id="foto-a-hoja">Foto a hoja</h3>
+<ol>
+<li>En la Carpeta, desde el celular, tocá <strong>Foto</strong> (ícono de cámara).</li>
+<li>Sacale una foto al pizarrón o a tu cuaderno.</li>
+<li>El Brote <strong>pasa la foto a texto</strong>. Revisalo y corregilo si hace falta.</li>
+<li>Elegí <strong>Guardar en</strong>: <em>una hoja nueva</em> o <em>al final de una hoja que ya existe</em>.</li>
+</ol>
+<p>La foto <strong>no se guarda</strong>: solo queda el texto que aprobaste.</p>
+<h3 id="sin-señal">Sin señal</h3>
+<p>Las materias que ya abriste se pueden <strong>leer sin conexión</strong>. Lo que escribas sin señal se guarda
+en el teléfono y se sube cuando vuelve la conexión.</p>
+<h2 id="11-compartir-exportar-e-importar">11. Compartir, exportar e importar</h2>
+<h3 id="compartir-una-materia">Compartir una materia</h3>
+<p><strong>Compartir</strong> (en la barra de la Carpeta) → <strong>Generar link</strong> → <strong>Copiar</strong>. Quien lo abra ve la
+materia en <strong>solo lectura</strong>, sin necesidad de cuenta. Los adjuntos no se comparten. Podés
+<strong>revocar</strong> el link cuando quieras y deja de funcionar al instante.</p>
+<h3 id="exportar">Exportar</h3>
+<p>Desde la Carpeta:</p>
+<ul>
+<li><strong><code>.md</code>:</strong> un único archivo con toda la materia.</li>
+<li><strong><code>.zip</code>:</strong> la materia con todos sus adjuntos.</li>
+<li><strong>Copiar para IA:</strong> copia los apuntes listos para pegar en cualquier otra IA.</li>
+</ul>
+<h3 id="importar">Importar</h3>
+<p><strong>Importar</strong> en la Carpeta acepta archivos <code>.md</code> y <code>.zip</code>, incluidos un vault de <strong>Obsidian</strong> o
+un export de Studree.</p>
+<h2 id="12-papelera">12. Papelera</h2>
+<p>Lo que borrás (carreras, materias u hojas) <strong>no desaparece enseguida</strong>:</p>
+<ul>
+<li>Apenas lo borrás aparece el aviso <strong>Deshacer</strong> durante unos segundos.</li>
+<li>Después queda <strong>30 días</strong> en la <strong>Papelera</strong> (al pie del explorador), desde donde lo podés
+<strong>restaurar</strong>.</li>
+<li>Pasados los 30 días se borra para siempre. También lo podés borrar antes a mano o <strong>vaciar la
+papelera</strong>.</li>
+</ul>
+<h2 id="13-perfil-idioma-y-planes">13. Perfil, idioma y planes</h2>
+<h3 id="perfil">Perfil</h3>
+<p>Muestra tu cuenta, cuánto contenido cargaste y tu plan. Desde acá:</p>
+<ul>
+<li><strong>Guardá tu cuenta</strong> si entraste como invitado.</li>
+<li>Cambiar el <strong>idioma</strong>: Castellano o English. Toda la app y el Brote cambian de idioma.</li>
+<li><strong>Salir</strong> de la cuenta.</li>
+</ul>
+<h3 id="planes">Planes</h3>
+<div class="table"><table><thead>
+<tr>
+<th></th>
+<th><strong>Gratis</strong></th>
+<th><strong>Premium</strong> — ARS 4.999/mes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Carreras, materias, hojas, adjuntos, tarjetas</td>
+<td>Sin límite</td>
+<td>Sin límite</td>
+</tr>
+<tr>
+<td>Chat con el Brote</td>
+<td>20 por día</td>
+<td>200 por día</td>
+</tr>
+<tr>
+<td>Resúmenes y exámenes</td>
+<td>3 por mes de cada uno</td>
+<td>Sin tope</td>
+</tr>
+<tr>
+<td>Foto a hoja</td>
+<td>5 por día</td>
+<td>100 por día</td>
+</tr>
+<tr>
+<td>Alcance del Brote</td>
+<td>La materia o la carrera</td>
+<td>Todas tus carreras</td>
+</tr>
+<tr>
+<td>Plan de estudio, repaso de errores, conexiones</td>
+<td>—</td>
+<td></td>
+</tr>
+</tbody>
+</table></div><p>Para pasar a Premium: <strong>Perfil → Planes → Pasar a Premium</strong>. Hace falta haber guardado la
+cuenta.</p>
+<blockquote>
+<p>ℹEn esta versión de demostración <strong>el pago es simulado</strong>: no se cobra nada ni se piden datos
+de tarjeta.</p>
+</blockquote>
+<h2 id="14-atajos-de-teclado">14. Atajos de teclado</h2>
+<div class="table"><table><thead>
+<tr>
+<th>Atajo</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Ctrl+K</code> (<code>Cmd+K</code> en Mac)</td>
+<td>Buscador global</td>
+</tr>
+<tr>
+<td><code>Ctrl+B</code></td>
+<td>Mostrar u ocultar el explorador</td>
+</tr>
+<tr>
+<td><code>Ctrl+F</code> (en una materia)</td>
+<td>Buscar dentro de la materia</td>
+</tr>
+<tr>
+<td><code>Enter</code> / <code>Shift+Enter</code></td>
+<td>Siguiente o anterior resultado</td>
+</tr>
+<tr>
+<td><code>Esc</code></td>
+<td>Cerrar el buscador o salir del modo lectura</td>
+</tr>
+<tr>
+<td><code># </code> al empezar un renglón</td>
+<td>Crear un tema</td>
+</tr>
+<tr>
+<td><code>[[Tema]]</code></td>
+<td>Link a un tema de la misma materia</td>
+</tr>
+</tbody>
+</table></div><h2 id="15-preguntas-frecuentes">15. Preguntas frecuentes</h2>
+<p><strong>¿Mis apuntes los puede ver otra persona?</strong>
+No. Cada cuenta ve solo sus datos, y eso lo controla la base de datos. Solo se ve lo que vos
+compartas con un link, y lo podés revocar.</p>
+<p><strong>¿El Brote inventa cosas?</strong>
+En el modo <em>Solo mis apuntes</em> responde con lo que escribiste y cita la hoja. Si usás
+<em>Conocimiento externo</em>, lo que no sale de tus apuntes queda marcado.</p>
+<p><strong>¿Puedo usar Studree sin internet?</strong>
+Podés leer las materias que ya abriste y escribir. El Brote necesita conexión.</p>
+<p><strong>¿Pierdo algo si cambio de celular?</strong>
+No, siempre que tengas cuenta (no invitado): todo vive en la nube.</p>
+<p><strong>¿Puedo llevarme mis apuntes a otra app?</strong>
+Sí. Exportá a <code>.md</code> o <code>.zip</code>: es texto estándar que abre cualquier editor, incluido Obsidian.</p>
+
+
+  </main>
+  <footer>Studree es un producto de <img src="/mnemora-logo.svg" alt="Mnemora"></footer>
+</div>
+</body>
+</html>

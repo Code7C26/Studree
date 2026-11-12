@@ -172,7 +172,8 @@ En el celular o en la compu podés **instalarla como app**, sin tiendas: en la l
 **"Usalo donde estudies"**, está el botón para instalarla en la compu (Windows, Mac o Linux, con
 Chrome o Edge) y en Android, y los pasos para iPhone (Safari → Compartir → "Agregar a inicio").
 
-📘 **[Manual de usuario](docs/MANUAL_USUARIO.md)**: todo Studree explicado paso a paso.
+📘 **[Manual de usuario](https://studree.vercel.app/manual.html)**: todo Studree explicado paso a paso
+(también en [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md)).
 
 ---
 
