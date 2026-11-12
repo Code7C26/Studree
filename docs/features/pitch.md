@@ -55,7 +55,7 @@ se hace en la web desplegada.
 | 6 | Lo que existe | Libreta/carpeta/Word, ChatGPT y Astra AI frente a Studree | La encuesta; Astra AI según su ficha de la App Store (tutor: subís material y te prepara para un examen) |
 | 7 | La solución | Tus apuntes + una IA que los conoce | Producto |
 | 8 | Demo en vivo | studree.vercel.app | — |
-| 9 | Recorrido | Mayo → noviembre de 2026 · **227** commits · **18** fases · 3 personas de afuera la probaron | `git log`, `docs/01-project-overview.md`, dato del equipo |
+| 9 | Recorrido | Mayo → noviembre de 2026 · **230+** commits · **18** fases · 3 personas de afuera la probaron | `git log`, `docs/01-project-overview.md`, dato del equipo |
 | 10 | I+D técnica | 621 tests · 25 ADR · 13 migraciones · de 5 niveles a la Carpeta (ADR-014, ADR-017) | `npm test`, `docs/02-architecture.md`, `supabase/migrations/` |
 | 11 | Equipo | Mateo: investigación, negocio y documentación final · Nico: la idea y el desarrollo | Dato del equipo |
 | 12 | Mercado | TAM **2.540.854** universitarios (pregrado y grado, 2022) · SAM **337.086** universitarios en Córdoba · SOM **40** estudiantes, como todo su curso, con la versión gratuita (el TP decía 100; el equipo lo bajó a algo concreto de hoy, sin meta de Premium) | Síntesis de Información Estadísticas Universitarias 2022-2023 (Min. de Capital Humano) · Indicadores Provinciales de CyT, Min. de Ciencia y Tecnología de Córdoba (2023) · TP de mercado |
@@ -67,7 +67,8 @@ se hace en la web desplegada.
 **Precio:** los TPs estimaban $7.000 y después $8.000; al lanzar se fijó en $4.999 para que sea
 accesible a estudiantes. La presentación muestra solo el precio actual (el equipo pidió no mencionar
 el del TP). Si cambia `PREMIUM_PRICE`, actualizar la diapositiva 13. El número de commits de la
-diapositiva 9 es una foto del 2026-11-11.
+diapositiva 9 va como piso redondo ("230+", con `data-suffix`): sigue siendo cierto aunque se sigan
+sumando commits. Al 2026-11-12 eran 237.
 
 ## Controles
 

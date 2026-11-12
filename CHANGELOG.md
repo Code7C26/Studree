@@ -206,6 +206,21 @@
 
 ---
 
+## [0.25.5] — 2026-11-12
+
+### Changed — Datos del pitch que no envejecen
+
+> Request: "cambia la presentacion y pone mas de tantos commit porq si seguimos commiteando va a estar
+> mal la informacion de lo que presentemos"
+
+- `pitch/index.html` (diapositiva 9): "227 commits" → **"230+"** (`data-suffix="+"`). Al 2026-11-12
+  eran 237. `docs/features/pitch.md` lo explica.
+- `assets/onepager-jurado.pdf` / `.png`: el mercado ahora coincide con la diapositiva 12 y 13
+  (TAM 2.540.854, SAM 337.086, SOM 40 estudiantes con la versión gratuita, equilibrio en 6 clientes
+  para crecer, con fuentes). Antes decía 100 usuarios y 10 Premium.
+
+---
+
 ## [0.25.4] — 2026-11-12
 
 ### Added — Manual de usuario como página web, con QR
