@@ -9,7 +9,7 @@
 
 ## Descripción
 
-Diapositivas web para la defensa del proyecto (jueves 2026-11-12, 30 min). Son 12 diapositivas
+Diapositivas web para la defensa del proyecto (jueves 2026-11-12, 30 min). Son 13 diapositivas
 16:9 con la marca de Studree (modo oscuro, acento verde, Bricolage Grotesque + Inter) y la de
 Mnemora arriba. El texto de cada diapositiva apoya a la exposición: un dato o una frase fuerte,
 nunca el guion completo.
@@ -53,7 +53,8 @@ se hace en la web desplegada.
 | 9 | Mercado | TAM **2.540.854** universitarios (pregrado y grado, 2022) · SAM **337.086** universitarios en Córdoba · SOM 100 usuarios / 10 Premium | Síntesis de Información Estadísticas Universitarias 2022-2023 (Min. de Capital Humano) · Indicadores Provinciales de CyT, Min. de Ciencia y Tecnología de Córdoba (2023) · TP de mercado |
 | 10 | Modelo de negocio | Freemium: Gratis $0 / Premium **ARS 4.999/mes** y sus topes | `constants/plans.js`, `supabase/functions/assistant/config.js` |
 | 11 | Finanzas | Equilibrio en **6 clientes**: $20.000 ÷ ($4.999 − $1.000) = 5,0 → 6 | TP de punto de equilibrio (costos al lanzar) con el precio actual |
-| 12 | Difusión y cierre | Anuncio en inglés, landing, Instagram @studree_, flyer, QR a la landing | — |
+| 12 | Difusión | Anuncio en inglés, landing, Instagram @studree_ y el flyer grande, como se ve en el feed | — |
+| 13 | Cierre | "Empezá a hacer crecer tu árbol." + QR grande a la landing | — |
 
 **Precio:** los TPs estimaban $7.000 y después $8.000; al lanzar se fijó en $4.999 para que sea
 accesible a estudiantes. La presentación muestra solo el precio actual (el equipo pidió no mencionar

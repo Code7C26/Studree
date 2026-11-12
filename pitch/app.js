@@ -182,13 +182,6 @@
   })
   help.addEventListener('click', () => toggleHelp(false))
 
-  // El flyer todavía puede no existir: se muestra un lugar marcado.
-  document.querySelectorAll('.eco-flyer img').forEach((img) => {
-    const missing = () => img.closest('.eco-flyer').classList.add('is-missing')
-    img.addEventListener('error', missing)
-    if (img.complete && img.naturalWidth === 0) missing()
-  })
-
   // Arranca en la diapositiva de la URL (#5) para que recargar no vuelva al principio.
   const fromHash = parseInt(location.hash.slice(1), 10)
   go(Number.isFinite(fromHash) ? fromHash - 1 : 0)

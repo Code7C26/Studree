@@ -6,6 +6,20 @@
 
 ---
 
+## [0.26.4] — 2026-11-11
+
+### Changed — El flyer, grande en la presentación
+
+> Request: "dame el flayer como png pero ponelo en la presentacion".
+
+- La diapositiva 12 se divide en dos: **Difusión** (anuncio en inglés, landing, Instagram y el flyer
+  grande, dentro de un marco de publicación del feed) y **Cierre** (frase final + QR grande a la
+  landing). La presentación pasa a 13 diapositivas.
+- `assets/flyer-meta-ads.png`: copia del flyer junto a las otras piezas de marca.
+- Docs: `features/pitch.md`.
+
+---
+
 ## [0.26.3] — 2026-11-11
 
 ### Added — Flyer estilo Meta Ads
