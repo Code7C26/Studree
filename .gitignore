@@ -34,3 +34,6 @@ pnpm-debug.log*
 motion-architect/
 skills-lock.json
 generate_video.js
+
+# Audios de WhatsApp (grabaciones personales)
+WhatsApp*
