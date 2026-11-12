@@ -6,6 +6,18 @@
 
 ---
 
+## [0.26.7] — 2026-11-11
+
+### Changed — La presentación no nombra el método
+
+> Request: "podes sacar lo del metodo ainnovate? no lo nombres tal cual si deci que trabajamos con un
+> metodo (skill) de documentacion y sin margen de alucinaciones".
+
+- `pitch/index.html`, diapositiva 10: "Un método de documentación para la IA: primero los documentos,
+  después el código. Sin margen para que invente."
+
+---
+
 ## [0.26.6] — 2026-11-11
 
 ### Changed — Portada de la presentación
