@@ -218,6 +218,8 @@
 - `assets/onepager-jurado.pdf` / `.png`: el mercado ahora coincide con la diapositiva 12 y 13
   (TAM 2.540.854, SAM 337.086, SOM 40 estudiantes con la versión gratuita, equilibrio en 6 clientes
   para crecer, con fuentes). Antes decía 100 usuarios y 10 Premium.
+- Diapositiva 9, agosto: "A la nube" → **"Cuentas propias"** ("Base de datos con Supabase: cada uno
+  entra con su cuenta y ve solo lo suyo"). "A la nube" se confundía con el deploy en Vercel.
 
 ---
 
