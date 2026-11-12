@@ -6,6 +6,19 @@
 
 ---
 
+## [0.26.9] — 2026-11-11
+
+### Changed — El SOM, en algo concreto
+
+> Request: "no se siento que 100 es mucho, pondria 40 como para dar el ejemplo de q la use todo el
+> curso".
+
+- `pitch/index.html`, diapositiva 12: el SOM pasa a **40 estudiantes, como todo su curso**, los
+  primeros que pueden usarla hoy, gratis.
+- Docs: `features/pitch.md`.
+
+---
+
 ## [0.26.8] — 2026-11-11
 
 ### Changed — El mercado habla de lo que existe hoy
