@@ -8,7 +8,7 @@ import { EntryChoiceDialog } from './EntryChoiceDialog'
 import { ROUTES } from '../../constants/routes'
 
 /** Rutas que viven dentro del shell (WorkspaceLayout: explorador + tabs + palette). */
-const WORKSPACE_PREFIXES = ['/carreras', '/materias', '/hojas', '/papelera']
+const WORKSPACE_PREFIXES = ['/carreras', '/materias', '/hojas', '/papelera', '/estudio']
 
 /**
  * Layout raíz: header de navegación + área de contenido.

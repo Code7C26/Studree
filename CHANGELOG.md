@@ -6,6 +6,22 @@
 
 ---
 
+## [0.26.11] — 2026-11-12
+
+### Fixed — Pantallas cortadas y borrar materias
+
+> Requests: "la papelera anda mal y se ve cortada (…) no entiendo como hacer para borrar una materia" y
+> "no se ve completo la seccion mi estudio".
+
+- `components/layout/AppLayout.jsx`: `/papelera` y `/estudio` (con resúmenes y exámenes) pasan a la
+  lista de rutas del workspace. Antes quedaban dentro de la caja centrada de las páginas simples y se
+  veían cortadas a la altura de su contenido.
+- `features/trash/TrashItemRow.jsx`: el nombre de lo borrado usa hasta dos líneas en vez de cortarse.
+- `features/careerMap/SubjectNode.jsx`: la ✕ para borrar una materia se ve siempre (antes solo al pasar
+  el mouse, y nunca en el celular).
+
+---
+
 ## [0.26.10] — 2026-11-12
 
 ### Changed — Vercel en la lista de tecnologías
