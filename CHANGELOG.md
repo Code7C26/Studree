@@ -6,6 +6,19 @@
 
 ---
 
+## [0.26.8] — 2026-11-11
+
+### Changed — El mercado habla de lo que existe hoy
+
+> Request: "nuestra profesora nos dijo q hablemos de la actualidad, tu dices de poner q la meta del
+> anio son 100 usuarios cuando el plan premium todavia esta como opcion".
+
+- `pitch/index.html`, diapositiva 12: el SOM queda en 100 estudiantes usando la versión gratuita el
+  primer año. Se quita "10 en Premium".
+- Docs: `features/pitch.md`.
+
+---
+
 ## [0.26.7] — 2026-11-11
 
 ### Changed — La presentación no nombra el método
