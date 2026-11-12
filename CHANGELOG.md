@@ -6,6 +6,23 @@
 
 ---
 
+## [0.26.1] — 2026-11-11
+
+### Fixed — Las materias del mapa de carrera casi no se podían arrastrar
+
+> Request: "se me buguea las materias en los nodos para mover, no me deja moverlos".
+
+- Causa: el nombre de la materia (casi toda la tarjeta) era un botón con `nodrag`, igual que el
+  selector de estado: solo se podía agarrar desde la inicial, la etiqueta o el borde (los
+  guardados de posición sí llegaban a Supabase cuando se acertaba).
+- `SubjectNode`: el nombre ya no lleva `nodrag` y la tarjeta muestra el cursor de agarrar; los
+  controles chicos siguen con `nodrag`.
+- `CareerMap`: `nodeDragThreshold` de 4 px (un click sigue abriendo la materia) y, tras soltar,
+  300 ms en los que el click del nombre no abre la carpeta.
+- Docs: `features/career-map.md`.
+
+---
+
 ## [0.26.0] — 2026-11-11
 
 ### Added — Presentación del pitch (`pitch/`)

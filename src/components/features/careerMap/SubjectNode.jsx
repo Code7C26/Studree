@@ -3,7 +3,9 @@
  *
  * Estilo n8n: se arrastra libremente, tiene un punto de salida (derecha) para
  * conectar correlativas y un "+" para crear la siguiente materia ya conectada.
- * Los controles internos llevan `nodrag` para que hacer click no arrastre el nodo.
+ * Se agarra desde cualquier lado, también desde el nombre (un click sin mover lo
+ * abre). Solo los controles chicos (estado, borrar, correlativas, "+") llevan
+ * `nodrag`: si el nombre lo llevaba, casi no quedaba de dónde agarrar la tarjeta.
  */
 
 import { Handle, Position } from '@xyflow/react'
@@ -38,7 +40,7 @@ export function SubjectNode({ data, selected }) {
 
   return (
     <div
-      className={`group relative w-[220px] rounded-xl border-2 bg-surface p-3 shadow-md transition-shadow hover:shadow-xl ${style.border} ${
+      className={`group relative w-[220px] cursor-grab rounded-xl border-2 bg-surface p-3 shadow-md transition-shadow hover:shadow-xl active:cursor-grabbing ${style.border} ${
         selected ? 'ring-2 ring-accent/60' : ''
       }`}
       title={blockReason ?? undefined}
@@ -57,7 +59,7 @@ export function SubjectNode({ data, selected }) {
         <button
           type="button"
           onClick={onNavigate}
-          className="nodrag min-w-0 flex-1 text-left text-sm font-semibold leading-snug hover:text-accent"
+          className="min-w-0 flex-1 text-left text-sm font-semibold leading-snug hover:text-accent"
           title={t('careerMap.node.open', { name: subject.name })}
         >
           <span className="line-clamp-2">{subject.name}</span>

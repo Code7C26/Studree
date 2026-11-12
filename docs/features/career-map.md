@@ -18,7 +18,7 @@ correlativa real**. Muestra de un vistazo qué se puede cursar, qué está bloqu
 
 | Acción | Resultado |
 |--------|-----------|
-| Arrastrar un nodo | Se mueve y **la posición se guarda** (ADR-012) |
+| Arrastrar un nodo | Se mueve y **la posición se guarda** (ADR-012). Se agarra desde cualquier lado, también el nombre (2026-11-11: antes el nombre y el selector llevaban `nodrag` y casi no quedaba de dónde agarrarlo). Umbral de 4 px (`nodeDragThreshold`) y, tras soltar, 300 ms en los que un click en el nombre no abre la materia |
 | Doble click / click derecho en el fondo | Nueva materia **en ese punto** |
 | Botón **＋ Materia** (arriba a la izquierda) | Nueva materia (centro de la vista o lugar libre) |
 | **＋** a la derecha de un nodo (hover) | Nueva materia a continuación; si la carrera usa correlativas, nace requiriendo a esa (para cursar) |

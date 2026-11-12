@@ -33,6 +33,11 @@ import { useI18n } from '../../../hooks/useI18n.js'
 const nodeTypes = { subject: SubjectNode }
 const NODE_SIZE = { width: CAREER_NODE_WIDTH, height: CAREER_NODE_HEIGHT }
 
+/** Un click con un temblor de pocos px no empieza a arrastrar la materia. */
+const DRAG_THRESHOLD_PX = 4
+/** Tras soltar una materia, durante este rato un click en su nombre no la abre. */
+const DRAG_CLICK_GUARD_MS = 300
+
 /**
  * @typedef {Object} CareerMapProps
  * @property {import('../../../types/models.js').Subject[]} subjects
@@ -79,6 +84,8 @@ function CareerMapCanvas({
   // El "+" de cada nodo necesita leer posiciones vivas de React Flow; va por un
   // ref (asignado más abajo) para no recrear todos los nodos en cada render.
   const requestNextRef = useRef(() => {})
+  /** Cuándo terminó el último arrastre: soltar una materia no la abre (el nombre también se agarra). */
+  const lastDragEndRef = useRef(0)
 
   // Sin correlativas, el grafo no tiene aristas: no se calculan bloqueos ni se dibujan.
   const activePrerequisites = useMemo(
@@ -113,7 +120,10 @@ function CareerMapCanvas({
             status: state.status,
             blockReason: describeBlockReason(state, lang),
             usesPrerequisites,
-            onNavigate: () => onNavigateSubject(subject.id),
+            onNavigate: () => {
+              if (Date.now() - lastDragEndRef.current < DRAG_CLICK_GUARD_MS) return
+              onNavigateSubject(subject.id)
+            },
             onChangeStatus: (status) => onChangeStatus(subject.id, status),
             onEditPrerequisites: () => onEditPrerequisites(subject),
             onDelete: () => onDeleteSubject(subject),
@@ -188,7 +198,11 @@ function CareerMapCanvas({
         nodeTypes={nodeTypes}
         nodesDraggable
         nodesConnectable={usesPrerequisites}
-        onNodeDragStop={canvas.handleDragStop}
+        nodeDragThreshold={DRAG_THRESHOLD_PX}
+        onNodeDragStop={(event, node, dragged) => {
+          lastDragEndRef.current = Date.now()
+          canvas.handleDragStop(event, node, dragged)
+        }}
         onNodeDoubleClick={(_event, node) => onNavigateSubject(node.id)}
         onConnect={({ source, target }) => onConnect({ requiresId: source, subjectId: target })}
         isValidConnection={({ source, target }) => source !== target}
