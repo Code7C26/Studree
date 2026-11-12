@@ -33,8 +33,12 @@ como terminado.
   lo cargado.
 - Desde la app se llega con **"Conocé Studree"**, al pie del Perfil.
 - **"Usalo donde estudies" (`#descargar`, 2026-11-11, `InstallSection.jsx`):** después de Planes.
-  - **"Probar como invitado en la web"** (también en el hero, al lado de "Empezar gratis"): guarda
-    `studree:ui:entry-choice = 'guest'` (`rememberEntryChoice`) y entra a `/` sin el cartel de entrada.
+  - Un solo llamado a la acción en toda la landing: **"Empezar gratis"** (hero y menú), que abre el
+    cartel de entrada con "Crear cuenta" o "Entrar como invitado". El "Probar como invitado" aparte
+    se sacó (2026-11-11, pedido del equipo: era lo mismo dos veces).
+  - Cada tarjeta tiene **siempre su botón de descarga** ("Descargar para la compu / Android /
+    iPhone"): si el navegador ofrece instalar en ese dispositivo, instala; si no (Firefox, otro
+    dispositivo, iPhone), al tocarlo muestra los pasos debajo.
   - Tres tarjetas: **compu** (Windows/Mac/Linux), **Android sin Play Store** e **iPhone**. Se
     resalta la del dispositivo actual (`detectPlatform` en `lib/landing/platform.js`, con test; un
     iPad nuevo dice "Macintosh" pero tiene pantalla táctil).
@@ -43,8 +47,8 @@ como terminado.
     instala como una app más (WebAPK), sin Play Store. `usePwaInstall` guarda el evento
     `beforeinstallprompt`, que se escucha desde `main.jsx` (`listenForInstallPrompt`) porque el
     navegador lo dispara una sola vez y a veces antes de cargar la landing. Si el navegador no lo
-    ofrece (ya instalada, Firefox, otro dispositivo), la tarjeta muestra los pasos a mano; si ya
-    está instalada, "Ya lo tenés instalado". iPhone no tiene botón (Apple no lo permite): pasos.
+    ofrece, el botón muestra los pasos a mano; si ya está instalada, "Ya lo tenés instalado". En
+    iPhone el botón siempre muestra los pasos (Apple no permite instalar desde la página).
   - "Descargar" en el menú de la landing lleva a esta sección.
 - **Pie:** marca, la línea de `footer.tagline` y `footer.company` ("Studree es un producto de
   Mnemora") con el © del año. Mnemora es la empresa (ver `01-project-overview.md`).

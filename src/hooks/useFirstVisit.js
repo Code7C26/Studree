@@ -41,12 +41,3 @@ export function useEntryChoice() {
 
   return { show: Boolean(user) && needsEntryChoice({ isAnonymous, choiceMade }), choose }
 }
-
-/**
- * Guarda la elección del cartel de entrada sin pasar por el cartel: "Probar como invitado" de la
- * landing entra directo a la app (docs/features/landing.md).
- * @param {'guest'|'signup'|'signin'} kind
- */
-export function rememberEntryChoice(kind) {
-  writeCache(STORAGE_KEYS.uiEntryChoice, kind)
-}

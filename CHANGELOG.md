@@ -6,6 +6,21 @@
 
 ---
 
+## [0.26.2] — 2026-11-11
+
+### Changed — Landing: botón de descarga en cada tarjeta y un solo "Empezar gratis"
+
+> Request: "aunque no funcione debés ponerlo como link para descargar… y también está Empezar
+> gratis y Probá como invitado, que es lo mismo, así que quedate con uno".
+
+- `InstallSection`: cada tarjeta tiene su botón "Descargar para la compu / Android / iPhone";
+  instala si el navegador lo ofrece y, si no, muestra los pasos debajo.
+- Se quita "Probar como invitado" del hero y de la sección (queda "Empezar gratis", que abre el
+  cartel con "Entrar como invitado"); se borra `rememberEntryChoice` y los textos que ya no se usan.
+- Docs: `features/landing.md`.
+
+---
+
 ## [0.26.1] — 2026-11-11
 
 ### Fixed — Las materias del mapa de carrera casi no se podían arrastrar

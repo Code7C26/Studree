@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom'
 import { START_PATH, getLandingCopy } from './landingCopy.js'
 import { useI18n } from '../../hooks/useI18n.js'
-import { rememberEntryChoice } from '../../hooks/useFirstVisit.js'
-import { ROUTES } from '../../constants/routes.js'
 import { HeroTree } from './HeroTree.jsx'
 
 /** Hero: el titular de la idea central y el árbol de materias con el Brote. */
@@ -24,14 +22,6 @@ export function HeroSection() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link to={START_PATH} className="btn-accent rounded-full px-6 py-3 text-sm">
               {HERO.cta}
-            </Link>
-            {/* Entra directo como invitado, sin el cartel de entrada. */}
-            <Link
-              to={ROUTES.home}
-              onClick={() => rememberEntryChoice('guest')}
-              className="rounded-full border border-accent/60 px-6 py-3 text-sm font-medium text-accent-soft transition-colors hover:bg-accent/10"
-            >
-              {HERO.guest}
             </Link>
             <a href="#como-funciona" className="px-3 py-3 text-sm text-text-muted transition-colors hover:text-text">
               {HERO.secondary}
