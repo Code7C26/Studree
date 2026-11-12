@@ -12,11 +12,11 @@ import { Handle, Position } from '@xyflow/react'
 import { STATUS_STYLES, SUBJECT_STATUS_VALUES } from '../../../constants/subjectStatus.js'
 import { useI18n } from '../../../hooks/useI18n.js'
 
-/** Clases de los puntos de conexión: visibles solo si la carrera usa correlativas. */
-const handleClass = (connectable) =>
-  connectable
-    ? '!h-3 !w-3 !border-2 !border-accent !bg-bg transition-transform hover:!scale-125'
-    : '!h-2 !w-2 !border-none !bg-transparent'
+/** Puntos de conexión: siempre se puede unir (correlativa o, sin correlativas, relación). */
+const HANDLE_CLASS = '!h-3 !w-3 !border-2 !border-accent !bg-bg transition-transform hover:!scale-125'
+
+/** Años que ofrece el selector (la base acepta 1..10). */
+const YEARS = [1, 2, 3, 4, 5, 6, 7]
 
 /**
  * @param {Object} props
@@ -27,6 +27,7 @@ const handleClass = (connectable) =>
  * @param {boolean} props.data.usesPrerequisites
  * @param {() => void} props.data.onNavigate
  * @param {(status: import('../../../types/models.js').SubjectStatus) => void} props.data.onChangeStatus
+ * @param {(year: number|null) => void} props.data.onChangeYear
  * @param {() => void} props.data.onEditPrerequisites
  * @param {() => void} props.data.onDelete
  * @param {() => void} props.data.onAddNext
@@ -34,7 +35,7 @@ const handleClass = (connectable) =>
  */
 export function SubjectNode({ data, selected }) {
   const { t } = useI18n()
-  const { subject, status, blockReason, usesPrerequisites, onNavigate, onChangeStatus, onEditPrerequisites, onDelete, onAddNext } =
+  const { subject, status, blockReason, usesPrerequisites, onNavigate, onChangeStatus, onChangeYear, onEditPrerequisites, onDelete, onAddNext } =
     data
   const style = STATUS_STYLES[status]
 
@@ -45,8 +46,8 @@ export function SubjectNode({ data, selected }) {
       }`}
       title={blockReason ?? undefined}
     >
-      <Handle type="target" position={Position.Left} isConnectable={usesPrerequisites} className={handleClass(usesPrerequisites)} />
-      <Handle type="source" position={Position.Right} isConnectable={usesPrerequisites} className={handleClass(usesPrerequisites)} />
+      <Handle type="target" position={Position.Left} className={HANDLE_CLASS} />
+      <Handle type="source" position={Position.Right} className={HANDLE_CLASS} />
 
       <div className="flex items-start gap-2">
         <span
@@ -101,6 +102,23 @@ export function SubjectNode({ data, selected }) {
           </button>
         )}
       </div>
+
+      <label className="mt-1.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+        {t('careerMap.node.year')}
+        <select
+          value={subject.year ?? ''}
+          onChange={(event) => onChangeYear(event.target.value === '' ? null : Number(event.target.value))}
+          aria-label={t('careerMap.node.changeYear')}
+          className="nodrag rounded border border-border bg-bg px-1 py-0.5 text-[11px] text-text-muted outline-none transition-colors focus:border-accent"
+        >
+          <option value="">{t('careerMap.node.noYear')}</option>
+          {YEARS.map((year) => (
+            <option key={year} value={year}>
+              {t('careerMap.map.yearHeader', { year })}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {blockReason && <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-text-muted">{blockReason}</p>}
 

@@ -56,9 +56,10 @@ export function computeSubjectStates(subjects, prerequisites) {
 
     if (prerequisite.kind === PREREQUISITE_KINDS.cursar) {
       state.missingToEnroll.push(required)
-    } else {
+    } else if (prerequisite.kind === PREREQUISITE_KINDS.rendir) {
       state.missingToPass.push(required)
     }
+    // 'relacion' solo une dos materias: no es requisito y no bloquea nada.
   }
 
   for (const [id, state] of states) {

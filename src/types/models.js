@@ -37,6 +37,7 @@
  * @property {number} position    - Orden dentro de la carrera (NO es coordenada).
  * @property {number|null} [pos_x] - Posición manual en el canvas de carrera (ADR-012).
  * @property {number|null} [pos_y]
+ * @property {number|null} [year] - Año de la carrera (1..10, migración 0014); null = sin año.
  * @property {string|null} [deleted_at] - Papelera (0006): NULL = vivo.
  * @property {string} created_at  - Timestamp ISO.
  * @property {string} updated_at  - Timestamp ISO.
@@ -71,7 +72,8 @@
  * - `cursar`: debe estar aprobada para poder CURSAR la materia. Es la única que
  *   participa del cálculo de `bloqueada`.
  * - `rendir`: debe estar aprobada para poder RENDIR EL FINAL de la materia.
- * @typedef {'cursar'|'rendir'} PrerequisiteKind
+ * - `relacion`: solo las une (0014). No es requisito: no bloquea ni ordena el layout.
+ * @typedef {'cursar'|'rendir'|'relacion'} PrerequisiteKind
  */
 
 /**

@@ -1,6 +1,7 @@
 /** A career's map: subjects, prerequisites, statuses and their errors. */
 export default {
   page: {
+    unrelateMessage: '"{subject}" and "{requires}" are no longer related.',
     notFound: 'Career not found',
     backToCareers: '← Back to my careers',
     back: '← My careers',
@@ -29,6 +30,10 @@ export default {
     reset: 'Rearrange',
     addSubject: 'Subject',
     hint: 'Double-click the canvas: new subject · Drag to move',
+    hintRelated: ' · Join the dots to relate two subjects · Click a line to remove it',
+    yearHeader: 'Year {year}',
+    noYear: 'No year',
+    start: 'Start',
     hintPrereq: ' · Join the dots to create a prerequisite · Click an arrow to remove it',
     addFirst: 'Add your first subject',
     orDoubleClick: 'or double-click the canvas',
@@ -45,6 +50,9 @@ export default {
   },
   kindDialog: { title: 'New prerequisite', requires: 'requires', create: 'Create prerequisite' },
   node: {
+    year: 'Year',
+    changeYear: 'Change the subject year',
+    noYear: 'No year',
     changeStatus: 'Change status',
     editPrereq: 'Edit prerequisites',
     open: 'Open {name}',
@@ -57,12 +65,15 @@ export default {
   blockReason: 'Blocked — still to pass: {names}',
   kinds: {
     cursar: { label: 'To enroll', help: 'It must be passed to be able to enroll in this subject.' },
+    relacion: { label: 'Related', help: 'It just links them: not a requirement, it blocks nothing.' },
     rendir: { label: 'To take the final', help: 'It must be passed to be able to take this subject’s final exam.' },
   },
   errors: {
     loadPrerequisites: 'Could not load the prerequisites.',
     addPrerequisite: 'Could not add the prerequisite.',
     invalidKind: 'Invalid prerequisite type: "{kind}".',
+    duplicateRelation: 'Those two subjects are already related.',
+    invalidYear: 'Invalid year: it must be from 1 to 10.',
     selfPrerequisite: 'A subject cannot be its own prerequisite.',
     cycle: 'That prerequisite would create a cycle: {cycle}. None of those subjects could ever be taken.',
     invalidStatus: 'Invalid status: "{status}". Valid ones: {valid}.',

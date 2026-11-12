@@ -1,6 +1,7 @@
 /** Mapa de una carrera: materias, correlativas, estados y sus errores. */
 export default {
   page: {
+    unrelateMessage: '"{subject}" y "{requires}" dejan de estar relacionadas.',
     notFound: 'Carrera no encontrada',
     backToCareers: '← Volver a mis carreras',
     back: '← Mis carreras',
@@ -29,6 +30,10 @@ export default {
     reset: 'Reordenar',
     addSubject: 'Materia',
     hint: 'Doble click en el lienzo: nueva materia · Arrastrá para mover',
+    hintRelated: ' · Uní los puntos para relacionar dos materias · Click en una línea para quitarla',
+    yearHeader: '{year}.º año',
+    noYear: 'Sin año',
+    start: 'Inicio',
     hintPrereq: ' · Uní los puntos para crear una correlativa · Click en una flecha para quitarla',
     addFirst: 'Agregar primera materia',
     orDoubleClick: 'o hacé doble click en el lienzo',
@@ -46,6 +51,9 @@ export default {
   kindDialog: { title: 'Nueva correlativa', requires: 'requiere', create: 'Crear correlativa' },
   node: {
     changeStatus: 'Cambiar estado',
+    year: 'Año',
+    changeYear: 'Cambiar el año de la materia',
+    noYear: 'Sin año',
     editPrereq: 'Editar correlativas',
     open: 'Abrir {name}',
     delete: 'Eliminar {name}',
@@ -57,12 +65,15 @@ export default {
   blockReason: 'Bloqueada — falta aprobar: {names}',
   kinds: {
     cursar: { label: 'Para cursar', help: 'Debe estar aprobada para poder cursar esta materia.' },
+    relacion: { label: 'Relacionada', help: 'Solo las une: no es un requisito y no bloquea nada.' },
     rendir: { label: 'Para rendir', help: 'Debe estar aprobada para poder rendir el final de esta materia.' },
   },
   errors: {
     loadPrerequisites: 'No se pudieron cargar las correlativas.',
     addPrerequisite: 'No se pudo agregar la correlativa.',
     invalidKind: 'Tipo de correlativa inválido: "{kind}".',
+    duplicateRelation: 'Esas dos materias ya están relacionadas.',
+    invalidYear: 'Año inválido: tiene que ser de 1 a 10.',
     selfPrerequisite: 'Una materia no puede ser correlativa de sí misma.',
     cycle: 'Esa correlativa crearía un ciclo: {cycle}. Ninguna de esas materias se podría cursar nunca.',
     invalidStatus: 'Estado inválido: "{status}". Válidos: {valid}.',

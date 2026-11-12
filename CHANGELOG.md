@@ -28,6 +28,31 @@
 
 ---
 
+## [0.27.0] — 2026-11-11
+
+### Added — Mapa de carrera: relacionar materias, dividir por año y línea de inicio
+
+> Request: "en las que no son correlativas tendría que haber una opción para poder unirlas…
+> dale la 1, pero también que tengan una línea de inicio todas las materias y que se pueda
+> dividir por año; necesito que sea práctico".
+
+- **Migración 0014** (aplicada, probada con rollback): `prerequisites.kind` acepta `relacion` y
+  `subjects.year` (1..10 o null).
+- **Relacionada:** línea punteada sin flecha; sin correlativas se crea al unir los puntos, con
+  correlativas es la tercera opción del diálogo. No bloquea, no ordena el layout, no valida
+  ciclos, no se duplica.
+- **Por año:** selector "Año" en cada materia; columnas por año con título ("1.º año", "Sin
+  año"); cambiar el año reacomoda el mapa.
+- **Línea de inicio:** nodo con el nombre de la carrera y una línea a cada año o a cada materia
+  que no depende de otra.
+- `lib/graph/careerStart.js` (+ test), `careerMap/MapMarkers.jsx`, `subjectsService.setYear`,
+  `useCareerMap.setSubjectYear`, `useFlowCanvas` ignora nodos fijos. Textos en `es` y `en`.
+- Probado en Edge (playwright): relación sin flecha, líneas de inicio (3 → 2 al relacionar),
+  columnas y títulos por año y todo igual al recargar.
+- Docs: `features/career-map.md`, `DB_SCHEMA.md`, `API_DOCS.md`.
+
+---
+
 ## [0.26.2] — 2026-11-11
 
 ### Changed — Landing: botón de descarga en cada tarjeta y un solo "Empezar gratis"

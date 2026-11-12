@@ -33,6 +33,27 @@ correlativa real**. Muestra de un vistazo qué se puede cursar, qué está bloqu
 - Supr / Backspace **no** borran nodos (`deleteKeyCode={null}`): borrar siempre pasa por
   la confirmación.
 
+## Relaciones, años y línea de inicio (2026-11-11, migración 0014)
+
+Pedido del equipo: "en las que no son correlativas tendría que haber una opción para unirlas…
+y que tengan una línea de inicio todas las materias y que se pueda dividir por año; práctico".
+
+- **Relacionada** (`prerequisites.kind = 'relacion'`): une dos materias con una línea
+  **punteada sin flecha**. No es requisito: no bloquea (`subjectStatus.js`), no ordena el layout
+  (dagre solo usa `cursar`) y no entra a la validación de ciclos. A–B y B–A son la misma
+  (el service rechaza el duplicado). Sin correlativas, unir los puntos la crea **directo**; con
+  correlativas, es la tercera opción del diálogo de tipo. Click en la línea → quitarla.
+- **Año** (`subjects.year`, 1..10 o null): selector "Año" en cada tarjeta. Con al menos una
+  materia con año, el acomodo automático es en **columnas por año** (`computeYearLayout`, con
+  "Sin año" al final) con su título arriba. Cambiar el año **reacomoda todo** (borra las
+  posiciones manuales, como "Reordenar") para que cada materia caiga en su columna.
+- **Línea de inicio:** un nodo fijo con el nombre de la carrera, a la izquierda de todo
+  (`startPosition`), con una línea a cada **año** o, sin años, a cada materia que **no depende de
+  otra** (`startTargets`). Así ninguna queda suelta.
+- El inicio y los títulos de año son nodos fijos (`data.virtual`): no se arrastran, no se
+  conectan, no se guardan (`useFlowCanvas` los ignora) y no abren nada.
+- Lógica pura con test en `lib/graph/careerStart.js`; nodos en `careerMap/MapMarkers.jsx`.
+
 ## Carrera vs curso: `uses_prerequisites` (ADR-013)
 
 El header del canvas tiene el interruptor **"Usa correlativas"** (también se elige al crear

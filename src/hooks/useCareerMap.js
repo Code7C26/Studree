@@ -42,6 +42,7 @@ import { t } from '../lib/i18n/index.js'
  *   removePrerequisite: (id: string) => Promise<string|null>,
  *   moveSubjects: (moves: Array<{id: string, x: number, y: number}>) => Promise<string|null>,
  *   resetLayout: () => Promise<string|null>,
+ *   setSubjectYear: (id: string, year: number|null) => Promise<string|null>,
  * }}
  */
 export function useCareerMap(careerId) {
@@ -176,6 +177,27 @@ export function useCareerMap(careerId) {
     [careerId, fail],
   )
 
+  /**
+   * Cambia el año de una materia y reacomoda el mapa en columnas por año: borra las posiciones
+   * manuales (como "Reordenar") para que todas caigan en su columna.
+   */
+  const setSubjectYear = useCallback(
+    async (id, year) => {
+      const { data, error: updateError } = await subjectsService.setYear(id, year, careerId)
+      if (updateError) return fail(updateError)
+      const { error: clearError } = await subjectsService.clearPositions([careerId])
+      setSubjects((current) =>
+        current.map((subject) =>
+          subject.id === id ? { ...data, pos_x: null, pos_y: null } : clearError ? subject : { ...subject, pos_x: null, pos_y: null },
+        ),
+      )
+      if (clearError) return fail(clearError)
+      setError(null)
+      return null
+    },
+    [careerId, fail],
+  )
+
   const addPrerequisite = useCallback(
     async ({ subject_id, requires_id, kind }) => {
       const namesById = new Map(subjects.map((subject) => [subject.id, subject.name]))
@@ -260,5 +282,6 @@ export function useCareerMap(careerId) {
     removePrerequisite,
     moveSubjects,
     resetLayout,
+    setSubjectYear,
   }
 }

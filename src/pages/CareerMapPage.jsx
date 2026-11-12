@@ -12,7 +12,7 @@ import { UndoToast } from '../components/ui/UndoToast'
 import { PromptDialog } from '../components/ui/PromptDialog'
 import { ROUTES, subjectFolderPath } from '../constants/routes'
 import { computeCareerProgress } from '../lib/graph/subjectStatus.js'
-import { PREREQUISITE_KIND_META } from '../constants/prerequisiteKinds.js'
+import { PREREQUISITE_KIND_META, PREREQUISITE_KINDS } from '../constants/prerequisiteKinds.js'
 import { useI18n } from '../hooks/useI18n.js'
 
 /**
@@ -41,6 +41,7 @@ export function CareerMapPage() {
     removePrerequisite,
     moveSubjects,
     resetLayout,
+    setSubjectYear,
   } = useCareerMap(careerId)
 
   const [editingSubject, setEditingSubject] = useState(null)
@@ -67,7 +68,13 @@ export function CareerMapPage() {
   function handleConnect({ requiresId, subjectId }) {
     const requires = subjectsById.get(requiresId)
     const subject = subjectsById.get(subjectId)
-    if (requires && subject) setPendingConnection({ requires, subject })
+    if (!requires || !subject) return
+    // Sin correlativas, unir dos materias es una relación: se crea directo, sin preguntar.
+    if (!usesPrerequisites) {
+      addPrerequisite({ subject_id: subject.id, requires_id: requires.id, kind: PREREQUISITE_KINDS.relacion })
+      return
+    }
+    setPendingConnection({ requires, subject })
   }
 
   async function handleConfirmDelete() {
@@ -89,6 +96,9 @@ export function CareerMapPage() {
     const p = pendingDelete.item
     const subjectName = subjectsById.get(p.subject_id)?.name ?? t('careerMap.page.unknown')
     const requiresName = subjectsById.get(p.requires_id)?.name ?? t('careerMap.page.unknown')
+    if (p.kind === PREREQUISITE_KINDS.relacion) {
+      return t('careerMap.page.unrelateMessage', { subject: subjectName, requires: requiresName })
+    }
     return t('careerMap.page.unlinkMessage', {
       subject: subjectName,
       requires: requiresName,
@@ -165,6 +175,8 @@ export function CareerMapPage() {
             subjects={subjects}
             prerequisites={prerequisites}
             usesPrerequisites={usesPrerequisites}
+            careerName={career?.name ?? ''}
+            onChangeYear={setSubjectYear}
             onNavigateSubject={handleNavigateSubject}
             onChangeStatus={setSubjectStatus}
             onEditPrerequisites={setEditingSubject}

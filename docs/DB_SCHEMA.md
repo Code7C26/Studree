@@ -56,6 +56,7 @@ erDiagram
         int position "orden manual en listas"
         float pos_x "canvas de carrera, nullable (ADR-012)"
         float pos_y "canvas de carrera, nullable"
+        smallint year "1..10 o null (0014)"
         timestamp deleted_at "papelera: NULL = vivo (0006)"
         timestamp created_at
         timestamp updated_at
@@ -64,7 +65,7 @@ erDiagram
         uuid id PK
         uuid subject_id FK "la materia condicionada"
         uuid requires_id FK "la materia requerida"
-        string kind "cursar|rendir"
+        string kind "cursar|rendir|relacion (0014)"
         uuid user_id FK
     }
     SHEET {
@@ -519,3 +520,4 @@ implementa vectorización en esta etapa.**
 | 2026-11-10 | **Fase 16**: `ai_usage.action` admite `transcribe` (CHECK `ai_usage_action_check` reemplazado) | ✅ Aplicada (`0011_transcribe_usage.sql`, confirmada el 2026-11-11) |
 | 2026-11-11 | **Color de materia = color de carrera**: datos solamente, alinea `subjects.color` con el de su carrera (desde ahora la app lo mantiene así) | ✅ `0012_subject_color_from_career.sql` (aplicada 2026-11-11) |
 | 2026-11-11 | **Fase 17 (planes y pago simulado)**: función `simulate_plan_change(p_plan)` (`security definer`) para que el checkout simulado cambie el plan propio | ✅ `0013_simulated_checkout.sql` (aplicada 2026-11-11 vía Management API, tras probarla con `begin … rollback`) |
+| 2026-11-11 | **Mapa de carrera**: `prerequisites.kind` acepta `'relacion'` (une dos materias sin requisito: no bloquea, no ordena el layout, no entra a la validación de ciclos y no se duplica A–B / B–A) y `subjects.year smallint` (1..10 o NULL) para las columnas por año | ✅ `0014_subject_year_and_related.sql` (aplicada 2026-11-11 vía Management API, tras probarla con `begin … rollback`) |

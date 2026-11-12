@@ -24,8 +24,8 @@ Regla de oro: **ningún componente ni hook importa `supabase.client.js` ni toca
 | `crudService.js` | **Fábrica** con el CRUD + flujo optimista compartido por las entidades (paginado) |
 | `dataEvents.js` | Aviso global `studree:data-changed` tras crear/renombrar/borrar (refresca el explorador) |
 | `careers.service.js` | CRUD de carreras |
-| `subjects.service.js` | CRUD de materias + cambio de estado |
-| `prerequisites.service.js` | CRUD de correlativas **+ validación DAG** (ADR-009) |
+| `subjects.service.js` | CRUD de materias + cambio de estado + `setYear(id, year, careerId)` (1..10 o null, 0014) |
+| `prerequisites.service.js` | CRUD de correlativas **+ validación DAG** (ADR-009). `relacion` (0014) no valida ciclos y rechaza el duplicado en cualquier sentido (`careerMap.errors.duplicateRelation`) |
 | `sheets.service.js` | Hojas de una materia (sin título, orden por `created_at`) + guardado del Markdown + búsqueda de contenido en el servidor |
 | `importantDates.service.js` | CRUD de fechas importantes del Inicio (título + día) |
 | `tasks.service.js` | CRUD de tareas del Inicio + `rename` + `setDone` |

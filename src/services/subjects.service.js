@@ -100,4 +100,18 @@ export const subjectsService = {
     }
     return crud.update(id, { status }, careerId)
   },
+
+  /**
+   * Año de la materia en la carrera (1..10) o `null` = sin año (migración 0014). El mapa arma
+   * columnas por año. Ver docs/features/career-map.md.
+   * @param {string} id
+   * @param {number|null} year
+   * @param {string} careerId
+   * @returns {Promise<import('../types/models.js').ServiceResult<import('../types/models.js').Subject>>}
+   */
+  setYear(id, year, careerId) {
+    const valid = year === null || (Number.isInteger(year) && year >= 1 && year <= 10)
+    if (!valid) return Promise.resolve({ data: null, error: t('careerMap.errors.invalidYear') })
+    return crud.update(id, { year }, careerId)
+  },
 }

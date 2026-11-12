@@ -11,7 +11,7 @@ import { createCrudService, translateError } from './crudService.js'
 import { getSupabase } from './supabase.client.js'
 import { cacheKey, readCache, writeCache } from './cache.service.js'
 import { wouldCreateCycle, formatCycle } from '../lib/graph/validateDag.js'
-import { PREREQUISITE_KIND_VALUES } from '../constants/prerequisiteKinds.js'
+import { PREREQUISITE_KINDS, PREREQUISITE_KIND_VALUES } from '../constants/prerequisiteKinds.js'
 import { generateId } from '../lib/id.js'
 import { t } from '../lib/i18n/index.js'
 
@@ -86,10 +86,22 @@ export const prerequisitesService = {
       return { data: null, error: t('careerMap.errors.selfPrerequisite') }
     }
 
+    // Una relación no tiene dirección: A–B y B–A son la misma, y no se duplica.
+    if (kind === PREREQUISITE_KINDS.relacion) {
+      const exists = existing.some(
+        (p) =>
+          p.kind === kind &&
+          ((p.subject_id === subject_id && p.requires_id === requires_id) ||
+            (p.subject_id === requires_id && p.requires_id === subject_id)),
+      )
+      if (exists) return { data: null, error: t('careerMap.errors.duplicateRelation') }
+    }
+
     // Solo las correlativas del MISMO tipo forman el grafo a validar: el circuito
-    // de "para cursar" y el de "para rendir" son independientes entre sí.
+    // de "para cursar" y el de "para rendir" son independientes entre sí. Una
+    // relación no es un requisito: no puede dejar nada sin poder cursarse.
     const sameKind = existing.filter((p) => p.kind === kind)
-    const cycle = wouldCreateCycle(sameKind, subject_id, requires_id)
+    const cycle = kind === PREREQUISITE_KINDS.relacion ? null : wouldCreateCycle(sameKind, subject_id, requires_id)
 
     if (cycle) {
       return {

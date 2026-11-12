@@ -53,7 +53,10 @@ export function useFlowCanvas({ wrapperRef, onMove }) {
     return screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
   }, [wrapperRef, screenToFlowPosition])
 
-  const occupiedPositions = useCallback(() => getNodes().map((node) => node.position), [getNodes])
+  /** Materias del lienzo: los nodos fijos (`data.virtual`: inicio, títulos de año) no cuentan. */
+  const realNodes = useCallback(() => getNodes().filter((node) => !node.data?.virtual), [getNodes])
+
+  const occupiedPositions = useCallback(() => realNodes().map((node) => node.position), [realNodes])
 
   const positionOf = useCallback((nodeId) => getNode(nodeId)?.position ?? null, [getNode])
 
@@ -61,18 +64,19 @@ export function useFlowCanvas({ wrapperRef, onMove }) {
   const freezeLayout = useCallback(
     (extra = []) => {
       const extraIds = new Set(extra.map((move) => move.id))
-      const unsaved = getNodes()
+      const unsaved = realNodes()
         .filter((node) => !node.data?.saved && !extraIds.has(node.id))
         .map((node) => ({ id: node.id, x: node.position.x, y: node.position.y }))
       const moves = [...unsaved, ...extra]
       if (moves.length > 0) onMove(moves)
     },
-    [getNodes, onMove],
+    [realNodes, onMove],
   )
 
   const handleDragStop = useCallback(
     (_event, _node, draggedNodes) => {
-      freezeLayout(draggedNodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })))
+      const moved = draggedNodes.filter((node) => !node.data?.virtual)
+      freezeLayout(moved.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y })))
     },
     [freezeLayout],
   )
