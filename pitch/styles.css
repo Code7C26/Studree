@@ -145,7 +145,6 @@ body.theme-accent #progress-bar { background: var(--bg); }
 .founder .avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-on-dark); font-weight: 700; font-size: 20px; }
 .founder strong { display: block; font-size: 22px; }
 .founder div span { font-size: 18px; color: var(--accent-on-dark); }
-.school { margin-top: 30px; font-size: 18px; color: var(--muted); }
 .media-cover { left: 1040px; top: 340px; width: 760px; height: 428px; }
 
 /* ---------- El problema ---------- */

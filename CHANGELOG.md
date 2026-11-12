@@ -6,6 +6,18 @@
 
 ---
 
+## [0.26.6] — 2026-11-11
+
+### Changed — Portada de la presentación
+
+> Request: "saca del html la primera diapositiva lo del 'Técnico en Informática Profesional y
+> Personal'".
+
+- `pitch/index.html`: la portada ya no muestra la línea de la carrera y el instituto (y se quita su
+  estilo `.school`).
+
+---
+
 ## [0.26.5] — 2026-11-11
 
 ### Changed — La presentación como defensa del proceso
