@@ -32,6 +32,20 @@ como terminado.
   "Crear cuenta" siendo invitado usa `linkIdentity` (igual que "Guardá tu cuenta"): no se pierde
   lo cargado.
 - Desde la app se llega con **"Conocé Studree"**, al pie del Perfil.
+- **"Usalo donde estudies" (`#descargar`, 2026-11-11, `InstallSection.jsx`):** después de Planes.
+  - **"Probar como invitado en la web"** (también en el hero, al lado de "Empezar gratis"): guarda
+    `studree:ui:entry-choice = 'guest'` (`rememberEntryChoice`) y entra a `/` sin el cartel de entrada.
+  - Tres tarjetas: **compu** (Windows/Mac/Linux), **Android sin Play Store** e **iPhone**. Se
+    resalta la del dispositivo actual (`detectPlatform` en `lib/landing/platform.js`, con test; un
+    iPad nuevo dice "Macintosh" pero tiene pantalla táctil).
+  - Instalar es la PWA (`manifest.webmanifest` + `sw.js`), no un `.exe` ni un `.apk` firmado: en
+    Chrome/Edge de escritorio queda como programa con ventana propia, y en Android Chrome la
+    instala como una app más (WebAPK), sin Play Store. `usePwaInstall` guarda el evento
+    `beforeinstallprompt`, que se escucha desde `main.jsx` (`listenForInstallPrompt`) porque el
+    navegador lo dispara una sola vez y a veces antes de cargar la landing. Si el navegador no lo
+    ofrece (ya instalada, Firefox, otro dispositivo), la tarjeta muestra los pasos a mano; si ya
+    está instalada, "Ya lo tenés instalado". iPhone no tiene botón (Apple no lo permite): pasos.
+  - "Descargar" en el menú de la landing lleva a esta sección.
 - **Pie:** marca, la línea de `footer.tagline` y `footer.company` ("Studree es un producto de
   Mnemora") con el © del año. Mnemora es la empresa (ver `01-project-overview.md`).
 - `AuthProvider` sigue creando la sesión anónima a todo visitante nuevo, también en

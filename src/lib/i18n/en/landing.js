@@ -6,6 +6,7 @@ export default {
       'Every note is a sheet on your tree. And now someone looks after it with you: an AI that knows your whole degree.',
     cta: 'Start free',
     secondary: 'See how it works',
+    guest: 'Try it as a guest',
     treeLabel: 'Subject tree: Anatomy, Chemistry and Biology, with the Sprout at the root',
     subjects: ['Anatomy', 'Chemistry', 'Biology'],
   },
@@ -14,6 +15,7 @@ export default {
     { label: 'How it works', href: '#como-funciona' },
     { label: 'The Sprout', href: '#brote' },
     { label: 'Plans', href: '#planes' },
+    { label: 'Download', href: '#descargar' },
   ],
   problem: {
     title: 'An AI that does not know your subject will answer anything',
@@ -133,6 +135,30 @@ export default {
       'Mistake review and study plan.',
       'Full outside knowledge.',
     ],
+  },
+  install: {
+    title: 'Use it wherever you study',
+    intro: 'Install it on your computer or phone, no app store needed. Or try it on the web right now, no account required.',
+    guestCta: 'Try it on the web as a guest',
+    guestHelp: 'You get in instantly. Whenever you want, save your account from your Profile and keep everything.',
+    installed: 'Already installed',
+    desktop: {
+      title: 'On your computer',
+      text: 'Windows, Mac or Linux. It installs like a program: its own icon and its own window.',
+      button: 'Install on your computer',
+      howTo: 'Open studree.vercel.app in Chrome or Edge and click the install icon on the right of the address bar.',
+    },
+    android: {
+      title: 'On Android',
+      text: 'No Play Store: Chrome installs it like any other app, with its icon among your apps.',
+      button: 'Install on your phone',
+      howTo: 'On your phone, open studree.vercel.app in Chrome, tap the ⋮ menu and choose "Install app".',
+    },
+    ios: {
+      title: 'On iPhone',
+      text: 'From Safari, two taps and it is on your home screen.',
+      howTo: 'Open studree.vercel.app in Safari, tap Share and choose "Add to Home Screen".',
+    },
   },
   closing: {
     title: 'Start growing your tree',

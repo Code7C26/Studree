@@ -6,6 +6,7 @@ export default {
       'Cada apunte es una hoja de tu árbol. Y ahora hay alguien que lo cuida con vos: una IA que conoce toda tu carrera.',
     cta: 'Empezar gratis',
     secondary: 'Ver cómo funciona',
+    guest: 'Probar como invitado',
     treeLabel: 'Árbol de materias: Anatomía, Química y Biología, con el Brote en la raíz',
     subjects: ['Anatomía', 'Química', 'Biología'],
   },
@@ -14,6 +15,7 @@ export default {
     { label: 'Cómo funciona', href: '#como-funciona' },
     { label: 'El Brote', href: '#brote' },
     { label: 'Planes', href: '#planes' },
+    { label: 'Descargar', href: '#descargar' },
   ],
   problem: {
     title: 'Una IA que no conoce tu materia te responde cualquier cosa',
@@ -133,6 +135,30 @@ export default {
       'Repaso de errores y plan de estudio.',
       'Conocimiento externo completo.',
     ],
+  },
+  install: {
+    title: 'Usalo donde estudies',
+    intro: 'Instalalo en la compu o en el celular, sin tiendas de apps. O probalo ya en la web, sin crear cuenta.',
+    guestCta: 'Probar como invitado en la web',
+    guestHelp: 'Entrás al instante. Cuando quieras, guardás tu cuenta desde el Perfil y no perdés nada.',
+    installed: 'Ya lo tenés instalado',
+    desktop: {
+      title: 'En la compu',
+      text: 'Windows, Mac o Linux. Se instala como un programa: ícono propio y ventana aparte.',
+      button: 'Instalar en la compu',
+      howTo: 'Abrí studree.vercel.app en Chrome o Edge y tocá el ícono de instalar, a la derecha de la barra de direcciones.',
+    },
+    android: {
+      title: 'En Android',
+      text: 'Sin Play Store: Chrome lo instala como una app más, con su ícono entre tus apps.',
+      button: 'Instalar en el celular',
+      howTo: 'Desde el celular, abrí studree.vercel.app en Chrome, tocá el menú ⋮ y elegí "Instalar app".',
+    },
+    ios: {
+      title: 'En iPhone',
+      text: 'Desde Safari, en dos toques queda en tu pantalla de inicio.',
+      howTo: 'Abrí studree.vercel.app en Safari, tocá Compartir y elegí "Agregar a inicio".',
+    },
   },
   closing: {
     title: 'Empezá a hacer crecer tu árbol',

@@ -121,7 +121,7 @@ Detalle completo en [`docs/03-security.md`](docs/03-security.md).
 
 ## Calidad y proceso
 
-- **621 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
+- **624 tests automatizados** (`npm test`, con el runner nativo de Node) sobre la lógica pura, el
   Markdown, los permisos del asistente, el repaso espaciado, los tokens y la paridad de idiomas.
 - **ESLint** sin errores y build de producción verificado.
 - Tests que **fallan si falta una traducción** o si queda texto visible sin traducir.
@@ -168,8 +168,9 @@ public/         manifest y service worker de la PWA
 Entrá a **[studree.vercel.app](https://studree.vercel.app)**. No hace falta registrarse: entrás
 como invitado y, si querés guardar tus apuntes con una cuenta, la creás desde el Perfil.
 
-En el celular o en la compu podés **instalarla como app** desde el navegador (Chrome o Edge:
-ícono de instalar en la barra de direcciones).
+En el celular o en la compu podés **instalarla como app**, sin tiendas: en la landing, sección
+**"Usalo donde estudies"**, está el botón para instalarla en la compu (Windows, Mac o Linux, con
+Chrome o Edge) y en Android, y los pasos para iPhone (Safari → Compartir → "Agregar a inicio").
 
 📘 **[Manual de usuario](docs/MANUAL_USUARIO.md)**: todo Studree explicado paso a paso.
 

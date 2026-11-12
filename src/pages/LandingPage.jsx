@@ -6,6 +6,7 @@ import { BroteSection } from '../features/landing/BroteSection'
 import { FolderSection } from '../features/landing/FolderSection'
 import { OwnershipSection } from '../features/landing/OwnershipSection'
 import { PlansSection } from '../features/landing/PlansSection'
+import { InstallSection } from '../features/landing/InstallSection'
 import { ClosingSection } from '../features/landing/ClosingSection'
 import { LandingFooter } from '../features/landing/LandingFooter'
 import { useMarkLandingSeen } from '../hooks/useFirstVisit.js'
@@ -29,6 +30,7 @@ export function LandingPage() {
         <FolderSection />
         <OwnershipSection />
         <PlansSection />
+        <InstallSection />
         <ClosingSection />
       </main>
       <LandingFooter />

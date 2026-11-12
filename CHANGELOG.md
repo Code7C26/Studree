@@ -66,6 +66,25 @@
 
 ---
 
+## [0.26.0] — 2026-11-11
+
+### Added — Landing: instalar en la compu y en Android sin tiendas, y probar como invitado
+
+> Request: "en la landing, para descargar en la compu y la app para el celular pero sin Play
+> Store; y también que se pueda usar como invitado para probar en la web".
+
+- Sección **"Usalo donde estudies"** (`features/landing/InstallSection.jsx`, `#descargar`):
+  tarjetas compu / Android / iPhone con el botón de instalar (PWA, `hooks/usePwaInstall.js`) o
+  los pasos a mano, resaltando el dispositivo actual (`lib/landing/platform.js` + test).
+- **"Probar como invitado"** en el hero y en la sección: entra a la app sin el cartel de entrada
+  (`rememberEntryChoice` en `hooks/useFirstVisit.js`).
+- `main.jsx` escucha `beforeinstallprompt` desde el arranque. Íconos `monitor`, `smartphone`,
+  `download`. "Descargar" en el menú de la landing. Textos `landing.{hero.guest,install.*}`.
+- No es un `.apk` firmado ni un `.exe`: es la instalación de la PWA (Chrome genera la app de
+  Android sin Play Store). Docs: `features/{landing,mobile}.md`, README.
+
+---
+
 ## [0.25.2] — 2026-11-11
 
 ### Added — Mnemora, la empresa detrás de Studree
