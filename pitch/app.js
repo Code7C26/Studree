@@ -33,7 +33,9 @@
       const suffix = el.dataset.suffix || ''
       const start = performance.now()
       const dur = 1100
+      let done = false
       const tick = (now) => {
+        if (done) return
         const t = Math.min(1, (now - start) / dur)
         const eased = 1 - Math.pow(1 - t, 3)
         el.textContent = fmt(target * eased, decimals) + suffix
@@ -41,8 +43,12 @@
         else el.textContent = fmt(target, decimals) + suffix
       }
       requestAnimationFrame(tick)
-      // Por si el navegador frena las animaciones (pestaña en segundo plano): el valor final queda igual.
-      setTimeout(() => (el.textContent = fmt(target, decimals) + suffix), dur + 100)
+      // Por si el navegador frena las animaciones (pestaña en segundo plano): el valor final queda
+      // igual y ningún cuadro atrasado lo pisa.
+      setTimeout(() => {
+        done = true
+        el.textContent = fmt(target, decimals) + suffix
+      }, dur + 100)
     })
   }
 

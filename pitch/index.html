@@ -14,7 +14,7 @@
   <div id="viewport">
     <div id="stage">
 
-      <!-- Marco fijo: marca arriba, QR al repo en la esquina, progreso abajo -->
+      <!-- Marco fijo: marca arriba, QR a la landing en la esquina, progreso abajo -->
       <header class="chrome-top">
         <div class="brand">
           <img class="brand-mnemora" src="assets/mnemora-logo-light.svg" alt="Mnemora" />
@@ -85,7 +85,88 @@
         </div>
       </section>
 
-      <!-- 4 · La solución ------------------------------------------------- -->
+      <!-- 4 · Validación: encuesta ---------------------------------------- -->
+      <section class="slide slide-survey" data-label="Validación">
+        <div class="glow glow-left"></div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 400 400" aria-hidden="true">
+            <circle cx="200" cy="200" r="170" class="ring-track" />
+            <circle cx="200" cy="200" r="170" class="ring-fill" style="--p: 0.762" />
+          </svg>
+          <span class="ring-value" data-count="76.2" data-decimals="1" data-suffix=" %">76,2 %</span>
+        </div>
+        <div class="stat-copy">
+          <p class="kicker">Lo que nos dijeron los estudiantes</p>
+          <p class="stat-lead">dice que una app <strong>visual y simple</strong> le sería muy útil.</p>
+          <div class="second-stat">
+            <span class="mid" data-count="71.4" data-decimals="1" data-suffix=" %">71,4 %</span>
+            <span>probablemente la usaría para tener <strong>todo en un solo lugar</strong>.</span>
+          </div>
+          <p class="source">Encuesta de validación a estudiantes · 24 respuestas · puntajes 4 y 5 en una escala de 1 a 5</p>
+        </div>
+      </section>
+
+      <!-- 5 · Validación del cliente -------------------------------------- -->
+      <section class="slide slide-client" data-label="Validación">
+        <h2 class="title-lg">Quieren todo en un solo lugar. <em>Visual y simple.</em></h2>
+        <div class="client-grid">
+          <div class="cupid">
+            <p class="panel-label">Perfil del cliente · CUPID</p>
+            <ul>
+              <li><b>C</b><div><strong>Comprador</strong>Estudiantes e instituciones que buscan ordenar su información.</div></li>
+              <li><b>U</b><div><strong>Usuario</strong>Secundarios, terciarios, universitarios y quienes hacen cursos.</div></li>
+              <li><b>P</b><div><strong>Pagador</strong>El estudiante (o su familia) y las instituciones educativas.</div></li>
+              <li><b>I</b><div><strong>Influenciador</strong>Docentes, academias y creadores de contenido educativo.</div></li>
+              <li><b>D</b><div><strong>Decisor</strong>La persona o institución que elige la herramienta.</div></li>
+            </ul>
+          </div>
+          <div class="matrix-wrap">
+            <p class="panel-label">Matriz impacto · frecuencia</p>
+            <div class="matrix">
+              <span class="axis axis-y">Impacto →</span>
+              <span class="axis axis-x">← Frecuencia</span>
+              <div class="q q-hot"><strong>Pierden apuntes seguido</strong>"Hace una semana", "recientemente".</div>
+              <div class="q q-warm"><strong>Quieren una app visual</strong>76,2 % la ve muy útil.</div>
+              <div class="q q-warm"><strong>Anotar no les molesta</strong>El dolor es perder lo anotado.</div>
+              <div class="q q-cold"><strong>Nada de funciones complejas</strong>Casi nadie tiene un orden perfecto.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 · Lo que existe -------------------------------------------------- -->
+      <section class="slide slide-compare" data-label="Lo que existe">
+        <div class="glow glow-right"></div>
+        <h2 class="title-lg">Lo que hay hoy <em>no alcanza.</em></h2>
+        <div class="compare">
+          <div class="alt">
+            <p class="alt-name">Libreta, carpeta y Word</p>
+            <p class="alt-what">Lo que usan hoy los estudiantes que encuestamos.</p>
+            <p class="alt-tag">Le falta</p>
+            <p class="alt-miss">Se pierde, no se puede buscar y no te ayuda a estudiar.</p>
+          </div>
+          <div class="alt">
+            <p class="alt-name">ChatGPT</p>
+            <p class="alt-what">Sabe de todo, menos de tus apuntes.</p>
+            <p class="alt-tag">Le falta</p>
+            <p class="alt-miss">Tus apuntes no están ahí: hay que pasárselos cada vez.</p>
+          </div>
+          <div class="alt">
+            <p class="alt-name">Astra AI</p>
+            <p class="alt-what">Un tutor con IA: le subís material y te prepara para un examen.</p>
+            <p class="alt-tag">Le falta</p>
+            <p class="alt-miss">No es donde escribís: tus apuntes siguen estando en otro lado.</p>
+          </div>
+          <div class="alt alt-us">
+            <p class="alt-name">Studree</p>
+            <p class="alt-what">Tus apuntes viven acá, ordenados por carrera y materia.</p>
+            <p class="alt-tag">Lo distinto</p>
+            <p class="alt-miss">El Brote los conoce y te dice de qué hoja sacó cada dato. Gratis.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7 · La solución ------------------------------------------------- -->
       <section class="slide slide-solution" data-label="La solución">
         <div class="glow glow-left"></div>
         <div class="solution-text">
@@ -117,7 +198,7 @@
         </div>
       </section>
 
-      <!-- 5 · Demo en vivo ------------------------------------------------ -->
+      <!-- 8 · Demo en vivo ------------------------------------------------ -->
       <section class="slide slide-demo" data-label="Demo en vivo" data-theme="accent">
         <p class="live"><span class="live-dot"></span>En vivo</p>
         <h2 class="demo-title">Demo en vivo</h2>
@@ -125,56 +206,47 @@
         <p class="demo-hint">La app desplegada, con una cuenta de demo.</p>
       </section>
 
-      <!-- 6 · Validación: encuesta ---------------------------------------- -->
-      <section class="slide slide-survey" data-label="Validación">
+      <!-- 9 · Recorrido ------------------------------------------------------ -->
+      <section class="slide slide-journey" data-label="Recorrido">
         <div class="glow glow-left"></div>
-        <div class="ring-wrap">
-          <svg class="ring" viewBox="0 0 400 400" aria-hidden="true">
-            <circle cx="200" cy="200" r="170" class="ring-track" />
-            <circle cx="200" cy="200" r="170" class="ring-fill" style="--p: 0.762" />
-          </svg>
-          <span class="ring-value" data-count="76.2" data-decimals="1" data-suffix=" %">76,2 %</span>
-        </div>
-        <div class="stat-copy">
-          <p class="kicker">Lo que nos dijeron los estudiantes</p>
-          <p class="stat-lead">dice que una app <strong>visual y simple</strong> le sería muy útil.</p>
-          <div class="second-stat">
-            <span class="mid" data-count="71.4" data-decimals="1" data-suffix=" %">71,4 %</span>
-            <span>probablemente la usaría para tener <strong>todo en un solo lugar</strong>.</span>
-          </div>
-          <p class="source">Encuesta de validación a estudiantes · 24 respuestas · puntajes 4 y 5 en una escala de 1 a 5</p>
-        </div>
-      </section>
-
-      <!-- 7 · Validación del cliente -------------------------------------- -->
-      <section class="slide slide-client" data-label="Validación">
-        <h2 class="title-lg">Quieren todo en un solo lugar. <em>Visual y simple.</em></h2>
-        <div class="client-grid">
-          <div class="cupid">
-            <p class="panel-label">Perfil del cliente · CUPID</p>
-            <ul>
-              <li><b>C</b><div><strong>Comprador</strong>Estudiantes e instituciones que buscan ordenar su información.</div></li>
-              <li><b>U</b><div><strong>Usuario</strong>Secundarios, terciarios, universitarios y quienes hacen cursos.</div></li>
-              <li><b>P</b><div><strong>Pagador</strong>El estudiante (o su familia) y las instituciones educativas.</div></li>
-              <li><b>I</b><div><strong>Influenciador</strong>Docentes, academias y creadores de contenido educativo.</div></li>
-              <li><b>D</b><div><strong>Decisor</strong>La persona o institución que elige la herramienta.</div></li>
-            </ul>
-          </div>
-          <div class="matrix-wrap">
-            <p class="panel-label">Matriz impacto · frecuencia</p>
-            <div class="matrix">
-              <span class="axis axis-y">Impacto →</span>
-              <span class="axis axis-x">← Frecuencia</span>
-              <div class="q q-hot"><strong>Pierden apuntes seguido</strong>"Hace una semana", "recientemente".</div>
-              <div class="q q-warm"><strong>Quieren una app visual</strong>76,2 % la ve muy útil.</div>
-              <div class="q q-warm"><strong>Anotar no les molesta</strong>El dolor es perder lo anotado.</div>
-              <div class="q q-cold"><strong>Nada de funciones complejas</strong>Casi nadie tiene un orden perfecto.</div>
-            </div>
-          </div>
+        <p class="kicker">Nuestro recorrido</p>
+        <h2 class="title-lg">Seis meses. <em>Y muchos cambios.</em></h2>
+        <ol class="journey">
+          <li class="step">
+            <p class="step-when">Mayo</p>
+            <p class="step-title">La idea</p>
+            <p class="step-text">Nace de una carpeta con hojas de bloc. Primera versión: mapas de nodos en el navegador.</p>
+          </li>
+          <li class="step">
+            <p class="step-when">Agosto</p>
+            <p class="step-title">A la nube</p>
+            <p class="step-text">Cuentas y base de datos: cada uno ve solo lo suyo.</p>
+          </li>
+          <li class="step step-key">
+            <p class="step-when">Octubre</p>
+            <p class="step-title">Lo simplificamos</p>
+            <p class="step-text">Era tedioso. De 5 niveles y nodos, a la Carpeta.</p>
+          </li>
+          <li class="step">
+            <p class="step-when">Octubre</p>
+            <p class="step-title">Nace el Brote</p>
+            <p class="step-text">Una IA que conoce tus apuntes y te toma examen.</p>
+          </li>
+          <li class="step">
+            <p class="step-when">Noviembre</p>
+            <p class="step-title">Lista para usar</p>
+            <p class="step-text">En el celular, en inglés y con tarjetas para repasar.</p>
+          </li>
+        </ol>
+        <div class="journey-stats">
+          <div><b data-count="6" data-decimals="0">6</b>meses de trabajo</div>
+          <div><b data-count="227" data-decimals="0">227</b>commits en el repositorio</div>
+          <div><b data-count="18" data-decimals="0">18</b>fases de desarrollo</div>
+          <div><b data-count="3" data-decimals="0">3</b>personas de afuera la probaron</div>
         </div>
       </section>
 
-      <!-- 8 · I+D técnica ------------------------------------------------- -->
+      <!-- 10 · I+D técnica ------------------------------------------------- -->
       <section class="slide slide-rnd" data-label="I+D">
         <div class="glow glow-right"></div>
         <div class="rnd-head">
@@ -206,7 +278,42 @@
         <p class="stack">React 18 · Vite · Supabase (Postgres, Auth, Storage) · Gemini en una Edge Function · TipTap · React Flow · PWA</p>
       </section>
 
-      <!-- 9 · Mercado ----------------------------------------------------- -->
+      <!-- 11 · Equipo --------------------------------------------------------- -->
+      <section class="slide slide-team" data-label="Equipo">
+        <div class="glow glow-right"></div>
+        <p class="kicker">El equipo · Mnemora</p>
+        <h2 class="title-lg">Dos personas, <em>dos fuertes.</em></h2>
+        <div class="team">
+          <div class="member">
+            <div class="member-head">
+              <span class="avatar">MS</span>
+              <div><p class="member-name">Mateo Salguero</p><p class="member-role">Co-fundador · CEO</p></div>
+            </div>
+            <p class="member-area">La investigación y el negocio</p>
+            <ul>
+              <li>La encuesta y el perfil del cliente</li>
+              <li>El mercado y los números</li>
+              <li>La documentación final</li>
+            </ul>
+            <p class="member-strong">Su fuerte: investigar y ordenar el negocio.</p>
+          </div>
+          <div class="member">
+            <div class="member-head">
+              <span class="avatar">NM</span>
+              <div><p class="member-name">Nicolás Mannatrizio</p><p class="member-role">Co-fundador · CTO</p></div>
+            </div>
+            <p class="member-area">La idea y el producto</p>
+            <ul>
+              <li>La idea, a partir de su carpeta de un curso</li>
+              <li>El desarrollo: base de datos, IA y web</li>
+              <li>La demo y los videos</li>
+            </ul>
+            <p class="member-strong">Su fuerte: convertir una idea en algo que funciona.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12 · Mercado ----------------------------------------------------- -->
       <section class="slide slide-market" data-label="Mercado">
         <div class="circles" aria-hidden="true">
           <div class="circle tam"><span>TAM</span></div>
@@ -234,61 +341,34 @@
         </div>
       </section>
 
-      <!-- 10 · Modelo de negocio ------------------------------------------ -->
-      <section class="slide slide-plans" data-label="Modelo de negocio">
-        <div class="glow glow-right"></div>
-        <div class="plans-head">
-          <p class="kicker">Freemium</p>
-          <h2 class="title-lg">Gratis para empezar. <em>Premium para rendir.</em></h2>
-        </div>
-        <div class="plans">
-          <div class="plan">
-            <p class="plan-name">Gratis</p>
-            <p class="plan-price">$0</p>
-            <ul>
-              <li><span>Apuntes y tarjetas</span><b>Sin límite</b></li>
-              <li><span>Chat con el Brote</span><b>20 por día</b></li>
-              <li><span>Resúmenes y exámenes</span><b>3 por mes</b></li>
-              <li><span>Plan de estudio</span><b>—</b></li>
-            </ul>
-          </div>
-          <div class="plan plan-premium">
-            <p class="plan-name">Premium</p>
-            <p class="plan-price">ARS 4.999<small>/mes</small></p>
-            <ul>
-              <li><span>Apuntes y tarjetas</span><b>Sin límite</b></li>
-              <li><span>Chat con el Brote</span><b>200 por día</b></li>
-              <li><span>Resúmenes y exámenes</span><b>Sin tope</b></li>
-              <li><span>Plan de estudio</span><b>Incluido</b></li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- 11 · Finanzas --------------------------------------------------- -->
-      <section class="slide slide-finance" data-label="Finanzas">
+      <!-- 13 · Lanzamiento ---------------------------------------------------- -->
+      <section class="slide slide-launch" data-label="Lanzamiento">
         <div class="glow glow-left"></div>
-        <div class="finance-main">
-          <span class="huge" data-count="6" data-decimals="0">6</span>
-          <div>
-            <p class="stat-lead">clientes Premium <strong>cubren los costos</strong>.</p>
+        <p class="kicker">Cómo lo lanzamos</p>
+        <h2 class="title-lg">Hoy es gratis. <em>Premium, cuando se use.</em></h2>
+        <div class="launch">
+          <div class="phase phase-now">
+            <p class="phase-when">Hoy · disponible</p>
+            <p class="phase-big">Gratis</p>
+            <p class="phase-note">Apuntes sin límite y el Brote con un tope diario. Mantenerlo hoy nos cuesta <strong>$0</strong>.</p>
+          </div>
+          <div class="phase">
+            <p class="phase-when">Cuando haya uso real</p>
+            <p class="phase-big">ARS 4.999<small>/mes</small></p>
+            <p class="phase-note">Premium: más Brote y plan de estudio. Lo activamos cuando veamos demanda.</p>
+          </div>
+          <div class="phase">
+            <p class="phase-when">¿Es viable?</p>
+            <p class="phase-big" data-count="6" data-decimals="0">6</p>
+            <p class="phase-note">clientes Premium cubren lo que costaría crecer (dominio y hosting pagos).</p>
             <p class="formula">$20.000 ÷ ($4.999 − $1.000) = 5,0 → <strong>6</strong></p>
           </div>
         </div>
-        <div class="breakeven" aria-hidden="true">
-          <div class="be-bar">
-            <i class="be-on"></i><i class="be-on"></i><i class="be-on"></i><i class="be-on"></i><i class="be-on"></i><i class="be-on"></i><i></i><i></i><i></i><i></i>
-          </div>
-          <div class="be-labels"><span class="be-mark">Equilibrio · 6</span><span class="be-goal">Meta año 1 · 10</span></div>
-        </div>
-        <div class="finance-cols">
-          <div><span>Costos fijos</span><b>$20.000/mes</b><em>Dominio propio y hosting al lanzar</em></div>
-          <div><span>Costo variable</span><b>$1.000 por cliente</b><em>IA, almacenamiento y Mercado Pago</em></div>
-          <div class="fc-goal"><span>Meta año 1 · 10 Premium</span><b>≈ $20.000/mes de margen</b><em>$49.990 de ingresos − $30.000 de costos</em></div>
-        </div>
+        <p class="stance">Nuestro objetivo es que sea <em>útil</em>. Que se sostenga sola es la condición, no la meta.</p>
+        <p class="launch-where">Empezamos por Alta Gracia y alrededores: Instagram, el flyer y la landing.</p>
       </section>
 
-      <!-- 12 · Difusión ------------------------------------------------- -->
+      <!-- 14 · Difusión ------------------------------------------------- -->
       <section class="slide slide-diffusion" data-label="Difusión">
         <div class="glow glow-right"></div>
         <div class="diff-head">
@@ -322,7 +402,31 @@
         </figure>
       </section>
 
-      <!-- 13 · Cierre ----------------------------------------------------- -->
+      <!-- 15 · Aprendizajes --------------------------------------------------- -->
+      <section class="slide slide-learn" data-label="Aprendizajes">
+        <div class="glow glow-right"></div>
+        <p class="kicker">Lo que aprendimos</p>
+        <h2 class="title-lg">Lo que nos <em>llevamos.</em></h2>
+        <div class="learn">
+          <div class="lesson">
+            <span>01</span>
+            <strong>Lo simple le gana a lo completo.</strong>
+            <p>Hicimos 5 niveles y un lienzo de nodos. Se veía bien, pero era tedioso. Lo borramos y volvimos a la carpeta.</p>
+          </div>
+          <div class="lesson">
+            <span>02</span>
+            <strong>Los datos se piensan antes que las pantallas.</strong>
+            <p>Aprendimos a diseñar una base de datos, a protegerla para que cada cuenta vea solo lo suyo y a cambiarla sin perder nada.</p>
+          </div>
+          <div class="lesson">
+            <span>03</span>
+            <strong>La IA acelera. El criterio es nuestro.</strong>
+            <p>Sin documentación, la IA se pierde. Primero escribimos qué queremos y por qué; después, el código.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 16 · Cierre ----------------------------------------------------- -->
       <section class="slide slide-final" data-label="Cierre" data-no-corner>
         <div class="glow glow-left"></div>
         <div class="final-text">

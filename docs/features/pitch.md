@@ -9,7 +9,7 @@
 
 ## Descripción
 
-Diapositivas web para la defensa del proyecto (jueves 2026-11-12, 30 min). Son 13 diapositivas
+Diapositivas web para la defensa del proyecto (jueves 2026-11-12, 30 min). Son 16 diapositivas
 16:9 con la marca de Studree (modo oscuro, acento verde, Bricolage Grotesque + Inter) y la de
 Mnemora arriba. El texto de cada diapositiva apoya a la exposición: un dato o una frase fuerte,
 nunca el guion completo.
@@ -20,6 +20,11 @@ se hace en la web desplegada.
 
 ## Decisiones
 
+- **Defensa del proceso, no venta** (devolución de la profesora, 2026-11-11): el pitch final es como
+  defender una tesis. Cuenta de dónde salió la idea, cómo se validó, en qué se diferencia de lo que ya
+  existe, cómo se construyó, qué hizo cada uno y qué aprendieron. **Premium va como futuro**: hoy
+  está la versión gratuita y el cobro se activa cuando haya demanda real. El guion para ensayar está
+  fuera del repo (artifact privado del equipo).
 - **Sin Reveal.js ni CDN** (decisión del equipo, 2026-11-11): un motor propio de ~200 líneas en
   `app.js`. Así funciona sin internet y no suma dependencias al proyecto.
 - **Lienzo fijo de 1920×1080** que se escala a la pantalla (letterbox): se ve igual en el
@@ -43,22 +48,26 @@ se hace en la web desplegada.
 | # | Diapositiva | Dato | Fuente |
 |---|-------------|------|--------|
 | 1 | Portada + spot | — | — |
-| 2 | El problema | La pregunta del apunte perdido | Encuesta de validación |
+| 2 | El problema | La pregunta del apunte perdido (el origen: la carpeta con hojas de bloc de Nico) | Encuesta de validación |
 | 3 | Datos del problema | Solo el **5 %** dice que nunca pierde información | Matriz de la encuesta (rama `mateo-rama`) |
-| 4 | La solución | Tus apuntes + una IA que los conoce | Producto |
-| 5 | Demo en vivo | studree.vercel.app | — |
-| 6 | Validación: encuesta | **76,2 %** muy útil · **71,4 %** probablemente la usaría | Encuesta (escala 1 a 5), 24 respuestas (dato del equipo) |
-| 7 | Validación del cliente | CUPID + matriz impacto-frecuencia | `Perfil del Cliente y Validación de la Idea.pdf` |
-| 8 | I+D técnica | 621 tests · 25 ADR · 13 migraciones · de 5 niveles a la Carpeta (ADR-014, ADR-017) | `npm test`, `docs/02-architecture.md`, `supabase/migrations/` |
-| 9 | Mercado | TAM **2.540.854** universitarios (pregrado y grado, 2022) · SAM **337.086** universitarios en Córdoba · SOM 100 usuarios / 10 Premium | Síntesis de Información Estadísticas Universitarias 2022-2023 (Min. de Capital Humano) · Indicadores Provinciales de CyT, Min. de Ciencia y Tecnología de Córdoba (2023) · TP de mercado |
-| 10 | Modelo de negocio | Freemium: Gratis $0 / Premium **ARS 4.999/mes** y sus topes | `constants/plans.js`, `supabase/functions/assistant/config.js` |
-| 11 | Finanzas | Equilibrio en **6 clientes**: $20.000 ÷ ($4.999 − $1.000) = 5,0 → 6 | TP de punto de equilibrio (costos al lanzar) con el precio actual |
-| 12 | Difusión | Anuncio en inglés, landing, Instagram @studree_ y el flyer grande, como se ve en el feed | — |
-| 13 | Cierre | "Empezá a hacer crecer tu árbol." + QR grande a la landing | — |
+| 4 | Validación: encuesta | **76,2 %** muy útil · **71,4 %** probablemente la usaría | Encuesta (escala 1 a 5), 24 respuestas (dato del equipo) |
+| 5 | Validación del cliente | CUPID + matriz impacto-frecuencia | `Perfil del Cliente y Validación de la Idea.pdf` |
+| 6 | Lo que existe | Libreta/carpeta/Word, ChatGPT y Astra AI frente a Studree | La encuesta; Astra AI según su ficha de la App Store (tutor: subís material y te prepara para un examen) |
+| 7 | La solución | Tus apuntes + una IA que los conoce | Producto |
+| 8 | Demo en vivo | studree.vercel.app | — |
+| 9 | Recorrido | Mayo → noviembre de 2026 · **227** commits · **18** fases · 3 personas de afuera la probaron | `git log`, `docs/01-project-overview.md`, dato del equipo |
+| 10 | I+D técnica | 621 tests · 25 ADR · 13 migraciones · de 5 niveles a la Carpeta (ADR-014, ADR-017) | `npm test`, `docs/02-architecture.md`, `supabase/migrations/` |
+| 11 | Equipo | Mateo: investigación, negocio y documentación final · Nico: la idea y el desarrollo | Dato del equipo |
+| 12 | Mercado | TAM **2.540.854** universitarios (pregrado y grado, 2022) · SAM **337.086** universitarios en Córdoba · SOM 100 usuarios / 10 Premium | Síntesis de Información Estadísticas Universitarias 2022-2023 (Min. de Capital Humano) · Indicadores Provinciales de CyT, Min. de Ciencia y Tecnología de Córdoba (2023) · TP de mercado |
+| 13 | Lanzamiento | Hoy gratis (mantenerlo cuesta $0) · Premium **ARS 4.999/mes** cuando haya uso · equilibrio en **6 clientes**: $20.000 ÷ ($4.999 − $1.000) = 5,0 → 6 | `constants/plans.js`, TP de punto de equilibrio (costos al crecer) con el precio actual |
+| 14 | Difusión | Anuncio en inglés, landing, Instagram @studree_ y el flyer grande, como se ve en el feed | — |
+| 15 | Aprendizajes | Lo simple le gana a lo completo · los datos antes que las pantallas · la IA acelera, el criterio es nuestro | Historia del proyecto (ADR-014, ADR-017, migraciones, método AInnovate) |
+| 16 | Cierre | "Empezá a hacer crecer tu árbol." + QR grande a la landing | — |
 
 **Precio:** los TPs estimaban $7.000 y después $8.000; al lanzar se fijó en $4.999 para que sea
 accesible a estudiantes. La presentación muestra solo el precio actual (el equipo pidió no mencionar
-el del TP). Si cambia `PREMIUM_PRICE`, actualizar las diapositivas 10 y 11.
+el del TP). Si cambia `PREMIUM_PRICE`, actualizar la diapositiva 13. El número de commits de la
+diapositiva 9 es una foto del 2026-11-11.
 
 ## Controles
 

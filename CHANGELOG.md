@@ -6,6 +6,25 @@
 
 ---
 
+## [0.26.5] — 2026-11-11
+
+### Changed — La presentación como defensa del proceso
+
+> Request: "analizalo y decime que ajustes harias" (devolución de la profesora por audio) y las
+> respuestas del equipo: roles, pruebas con 3 personas, Astra AI como competencia, postura "que sea
+> útil" y costo de mantenimiento $0.
+
+- La profesora pidió contar el proceso (no vender) y presentar Premium como futuro. La presentación
+  pasa a **16 diapositivas**: la encuesta y el perfil del cliente van antes de la solución, y se suman
+  **Lo que existe** (libreta/Word, ChatGPT, Astra AI y Studree), **Recorrido** (mayo a noviembre, 227
+  commits, 18 fases, 3 personas la probaron), **Equipo** (qué hizo cada uno y su fuerte),
+  **Lanzamiento** (reemplaza a Planes y Finanzas: hoy gratis, Premium cuando haya uso, equilibrio en 6)
+  y **Aprendizajes**.
+- `pitch/app.js`: un cuadro atrasado de la animación ya no pisa el valor final de los contadores.
+- Docs: `features/pitch.md`.
+
+---
+
 ## [0.26.4] — 2026-11-11
 
 ### Changed — El flyer, grande en la presentación
