@@ -18,9 +18,9 @@ export function TrashItemRow({ item, onRestore, onPurge, busy }) {
 
   return (
     <li className="flex flex-col gap-3 border-b border-border px-1 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-xs text-text-muted">{t(`trash.kinds.${item.kind}`)}</p>
-        <p className="truncate font-medium text-text" title={trashItemTitle(item)}>
+        <p className="line-clamp-2 break-words font-medium text-text" title={trashItemTitle(item)}>
           {trashItemTitle(item)}
         </p>
         <p className="mt-0.5 text-xs text-text-muted">

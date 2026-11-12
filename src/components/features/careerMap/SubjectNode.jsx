@@ -69,7 +69,7 @@ export function SubjectNode({ data, selected }) {
           type="button"
           onClick={onDelete}
           aria-label={t('careerMap.node.delete', { name: subject.name })}
-          className="nodrag shrink-0 rounded p-0.5 text-text-muted opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100 focus:opacity-100"
+          className="nodrag shrink-0 rounded p-0.5 text-text-muted opacity-60 transition-opacity hover:text-red-400 hover:opacity-100 group-hover:opacity-100 focus:opacity-100"
         >
           ✕
         </button>
