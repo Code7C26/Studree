@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Studree · Flyer Meta Ads</title>
+  <!-- Fuente del flyer (anuncio para el feed de Instagram/Facebook, 4:5, 1080×1350).
+       Se exporta a media/flyer.png con una captura del navegador. Doc: docs/features/pitch.md -->
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+      --accent: #22c55e; --accent-on-dark: #86efac; --paper: #fbf8ef; --paper-line: #ebe5d5; --ink: #2b2620; --ink-muted: #7a6f5a;
+      --display: "Bricolage Grotesque", system-ui, sans-serif; --body: "Inter", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1080px; height: 1350px; overflow: hidden; background: var(--bg); }
+    body { position: relative; font-family: var(--body); color: var(--text); -webkit-font-smoothing: antialiased; }
+    em { font-style: normal; color: var(--accent); }
+
+    .glow { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgba(34, 197, 94, 0.22), transparent 70%); }
+    .g1 { width: 1100px; height: 900px; right: -420px; top: 380px; }
+    .g2 { width: 800px; height: 600px; left: -380px; top: -260px; opacity: 0.6; }
+
+    .top { position: absolute; left: 80px; right: 80px; top: 70px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 16px; font-family: var(--display); font-weight: 800; font-size: 40px; letter-spacing: -0.02em; }
+    .brand img { width: 62px; height: 62px; border-radius: 16px; display: block; }
+    .by { display: flex; align-items: center; gap: 10px; font-size: 18px; color: var(--muted); }
+    .by img { height: 17px; display: block; }
+
+    .headline { position: absolute; left: 80px; right: 80px; top: 196px; font-family: var(--display); font-weight: 800; font-size: 104px; line-height: 0.98; letter-spacing: -0.045em; }
+    .sub { position: absolute; left: 80px; right: 160px; top: 430px; font-size: 34px; line-height: 1.35; color: var(--muted); }
+    .sub strong { color: var(--text); font-weight: 600; }
+
+    /* Antes: archivos sueltos */
+    .chip { position: absolute; display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; padding: 14px 22px; border-radius: 14px;
+      background: var(--surface); border: 1.5px solid var(--border); font-size: 23px; font-weight: 500; color: var(--muted); box-shadow: 0 18px 40px #00000088; }
+    .chip i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .k1 { left: 60px; top: 600px; transform: rotate(-7deg); opacity: 0.9; }
+    .k2 { left: 120px; top: 700px; transform: rotate(4deg); opacity: 0.75; }
+    .k3 { left: 50px; top: 800px; transform: rotate(-3deg); opacity: 0.6; }
+    .arrow { position: absolute; left: 225px; top: 885px; width: 140px; height: 105px; }
+
+    /* Después: la hoja ordenada con el Brote */
+    .sheet { position: absolute; left: 440px; top: 590px; width: 570px; padding: 22px 34px 8px 82px; border-radius: 22px; transform: rotate(2.5deg);
+      background: var(--paper); color: var(--ink); font-size: 24px; line-height: 50px; box-shadow: 0 50px 100px #000000cc;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 48px, var(--paper-line) 48px, var(--paper-line) 50px); background-position: 0 22px; }
+    .sheet::before { content: ""; position: absolute; left: 58px; top: 0; bottom: 0; width: 2px; background: rgba(21, 128, 61, 0.35); }
+    .sheet .date { color: var(--ink-muted); font-size: 19px; }
+    .sheet .h { font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: -0.02em; color: #15803d; }
+    .sheet mark { background: rgba(34, 197, 94, 0.3); color: inherit; border-radius: 4px; padding: 2px 4px; }
+    .brote { position: absolute; left: 380px; top: 930px; width: 560px; display: flex; gap: 18px; align-items: center; padding: 20px 24px;
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 22px; box-shadow: 0 30px 70px #000000cc; }
+    .brote svg { width: 72px; height: 72px; flex-shrink: 0; overflow: visible; }
+    .brote strong { display: block; font-size: 19px; color: var(--accent-on-dark); }
+    .brote span { display: block; font-size: 26px; margin-top: 2px; }
+    .brote small { display: block; font-size: 17px; color: var(--muted); margin-top: 4px; }
+
+    /* Pie con el llamado a la acción */
+    .foot { position: absolute; left: 80px; right: 80px; bottom: 76px; display: flex; align-items: center; justify-content: space-between; }
+    .url strong { display: block; font-family: var(--display); font-weight: 800; font-size: 38px; letter-spacing: -0.02em; }
+    .url span { display: block; font-size: 22px; color: var(--muted); margin-top: 4px; }
+    .cta { display: inline-flex; align-items: center; gap: 14px; padding: 26px 44px; border-radius: 999px; background: var(--accent); color: var(--bg);
+      font-family: var(--display); font-weight: 800; font-size: 38px; letter-spacing: -0.01em; box-shadow: 0 0 60px rgba(34, 197, 94, 0.35); }
+  </style>
+</head>
+<body>
+  <div class="glow g1"></div>
+  <div class="glow g2"></div>
+
+  <div class="top">
+    <div class="brand"><img src="assets/studree-icon.png" alt="" />Studree</div>
+    <div class="by">by <img src="assets/mnemora-logo-light.svg" alt="Mnemora" /></div>
+  </div>
+
+  <h1 class="headline">Dejá de perder <em>tus apuntes.</em></h1>
+  <p class="sub">Toda tu carrera en un solo lugar y <strong>una IA que estudia con vos</strong>.</p>
+
+  <span class="chip k1"><i style="background:#3b82f6"></i>foto_pizarron (3).jpg</span>
+  <span class="chip k2"><i style="background:#22c55e"></i>Chat del grupo · 248</span>
+  <span class="chip k3"><i style="background:#8b5cf6"></i>resumen FINAL v2.docx</span>
+  <svg class="arrow" viewBox="0 0 120 90" fill="none" stroke="#22c55e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 12 C 40 70, 70 80, 104 62" /><path d="M86 52 L104 62 L92 80" />
+  </svg>
+
+  <div class="sheet">
+    <p class="date">12 de marzo · 18:40</p>
+    <p class="h"># Mitocondria</p>
+    <p>Produce ATP en la respiración celular.</p>
+    <p><mark>Tiene doble membrana y ADN propio.</mark></p>
+    <p>Las crestas aumentan la superficie.</p>
+    <p>&nbsp;</p>
+  </div>
+  <div class="brote">
+    <svg viewBox="0 0 64 64"><path d="M32 24V15" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/><path d="M32 16C26 6 15 7 12 12c5 6 14 7 20 4Z" fill="#4ade80"/><path d="M32 15c4-9 14-11 19-7-3 7-12 10-19 7Z" fill="#22c55e"/><circle cx="32" cy="40" r="19" fill="#22c55e"/><ellipse cx="26" cy="31" rx="7" ry="4" fill="#4ade80" opacity=".6"/><g fill="#0d1117"><path d="M22 36q3-3 6 0" fill="none" stroke="#0d1117" stroke-width="2.2" stroke-linecap="round"/><path d="M36 36q3-3 6 0" fill="none" stroke="#0d1117" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="19.5" cy="42" r="3" fill="rgba(252,165,165,.5)"/><circle cx="44.5" cy="42" r="3" fill="rgba(252,165,165,.5)"/><path d="M25 41q7 7 14 0" fill="none" stroke="#0d1117" stroke-width="2.2" stroke-linecap="round"/></svg>
+    <div>
+      <strong>El Brote</strong>
+      <span>¿Te tomo examen de este tema?</span>
+      <small>Responde con tus propios apuntes</small>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="url"><strong>studree.vercel.app</strong><span>Gratis para empezar</span></div>
+    <div class="cta">Probalo gratis →</div>
+  </div>
+</body>
+</html>

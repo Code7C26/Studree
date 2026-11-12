@@ -301,7 +301,6 @@ body.theme-accent #progress-bar { background: var(--bg); }
 .plan li { display: flex; justify-content: space-between; padding: 14px 0; border-top: 1.5px solid var(--border); font-size: 24px; color: var(--muted); }
 .plan li b { color: var(--text); font-weight: 600; }
 .plan-premium li b { color: var(--accent-on-dark); }
-.plans-note { margin-top: 34px; font-size: 24px; color: var(--muted); }
 
 /* ---------- 11 · Finanzas ---------- */
 .finance-main { display: flex; align-items: center; gap: 60px; margin-top: 30px; }
@@ -340,11 +339,10 @@ body.theme-accent #progress-bar { background: var(--bg); }
 .eco-flyer.is-missing::before { content: ""; width: 46px; height: 62px; flex-shrink: 0; border-radius: 6px; border: 2px dashed var(--border); }
 .close-right { position: absolute; left: 1100px; top: 190px; width: 700px; }
 .cta { font-family: var(--display); font-weight: 800; font-size: 84px; line-height: 1; letter-spacing: -0.04em; }
-.qrs { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 48px; }
-.qr-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 24px 18px 20px; border-radius: 24px; background: var(--paper); color: var(--ink); text-decoration: none; box-shadow: 0 30px 70px #00000088; }
-.qr-card img { width: 240px; height: 240px; display: block; margin-bottom: 12px; }
-.qr-card strong { font-family: var(--display); font-size: 28px; color: var(--ink); }
-.qr-card span { font-size: 16px; color: var(--ink-muted); }
+.qr-card { display: flex; align-items: center; gap: 34px; margin-top: 52px; padding: 28px 36px 28px 28px; border-radius: 28px; background: var(--paper); color: var(--ink); text-decoration: none; box-shadow: 0 30px 70px #00000088; }
+.qr-card img { width: 300px; height: 300px; display: block; flex-shrink: 0; }
+.qr-card strong { display: block; font-family: var(--display); font-size: 40px; line-height: 1.05; letter-spacing: -0.02em; color: var(--ink); }
+.qr-card span { display: block; margin-top: 12px; font-size: 22px; font-weight: 600; color: #15803d; }
 .close-sign { display: flex; align-items: center; gap: 14px; margin-top: 40px; font-size: 24px; color: var(--muted); }
 
 /* ---------- Navegación con mouse y ayuda ---------- */

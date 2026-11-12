@@ -6,6 +6,28 @@
 
 ---
 
+## [0.26.3] — 2026-11-11
+
+### Added — Flyer estilo Meta Ads
+
+> Request: "El flayer publicitario generralo tu, seria estilo meta ads (…) 24 respuestas eran las de
+> la encuesta. tambien saca el qr de el repo solo pone el qr para que te mande a la landing. saca lo
+> de que en el tp lo estimamos a 8mil."
+
+- `pitch/flyer.html` → `pitch/media/flyer.png`: anuncio para el feed de Instagram/Facebook (4:5,
+  1080×1350). "Dejá de perder tus apuntes.", archivos sueltos que pasan a la hoja ordenada con el
+  Brote, y un solo CTA ("Probalo gratis"). Aparece en la diapositiva 12.
+
+### Changed — Presentación
+
+- QR: uno solo, a la landing (`pitch/assets/qr-landing.svg` → `studree.vercel.app/bienvenida`), en la
+  esquina y en el cierre. Se quitan los QR al repo y a la web de `pitch/assets/`.
+- Diapositivas 3 y 6: la encuesta dice "24 respuestas".
+- Diapositiva 10: se quita la nota del precio estimado en el TP ($8.000).
+- Docs: `features/pitch.md`.
+
+---
+
 ## [0.26.2] — 2026-11-11
 
 ### Changed — Landing: botón de descarga en cada tarjeta y un solo "Empezar gratis"
