@@ -6,6 +6,16 @@
 
 ---
 
+## [0.26.10] — 2026-11-12
+
+### Changed — Vercel en la lista de tecnologías
+
+> Request: "te falto poner vercel".
+
+- `pitch/index.html`, diapositiva 10: la línea de tecnologías suma Vercel (donde está publicada la web).
+
+---
+
 ## [0.26.9] — 2026-11-11
 
 ### Changed — El SOM, en algo concreto
